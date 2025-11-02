@@ -1,0 +1,39 @@
+{
+  "existing_tables": [
+    "companies",
+    "users",
+    "activity_logs"
+  ],
+  "missing_tables": [
+    "stores",
+    "tables",
+    "tasks"
+  ],
+  "all_tables": [
+    "auth.audit_log_entries",
+    "auth.flow_state",
+    "auth.identities",
+    "auth.instances",
+    "auth.mfa_amr_claims",
+    "auth.mfa_challenges",
+    "auth.mfa_factors",
+    "auth.oauth_authorizations",
+    "auth.oauth_clients",
+    "auth.oauth_consents",
+    "auth.one_time_tokens",
+    "auth.refresh_tokens",
+    "auth.saml_providers",
+    "auth.saml_relay_states",
+    "auth.schema_migrations",
+    "auth.sessions",
+    "auth.sso_domains",
+    "auth.sso_providers",
+    "auth.users",
+    "public.activity_logs",
+    "public.branches",
+    "public.companies",
+    "public.daily_revenue",
+    "public.revenue_summary",
+    "public.users"
+  ]
+}

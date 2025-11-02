@@ -1,0 +1,37 @@
+# <type>: <subject>
+# |<----  Sử dụng tối đa 50 ký tự  ---->|
+
+# Giải thích chi tiết (tùy chọn)
+# |<----   Gói dòng ở 72 ký tự   ---->|
+
+# --- COMMIT END ---
+# Type có thể là:
+#    feat     : Tính năng mới
+#    fix      : Sửa lỗi
+#    refactor : Cấu trúc lại code (không thêm tính năng, không sửa lỗi)
+#    style    : Thay đổi format, thiếu dấu chấm phẩy, v.v. (không thay đổi code)
+#    test     : Thêm test, cải thiện test
+#    docs     : Thay đổi tài liệu
+#    chore    : Cập nhật task build, package manager, v.v.
+#    perf     : Cải thiện hiệu năng
+#    ci       : Thay đổi CI/CD
+#    build    : Thay đổi build system hoặc dependencies
+#    revert   : Hoàn tác commit trước
+# --------------------
+# Ghi nhớ:
+#    Viết hoa chữ cái đầu trong subject
+#    Sử dụng thì hiện tại: "add" không phải "added" hoặc "adds"
+#    Không dấu chấm ở cuối subject
+#    Tách subject và body bằng dòng trống
+#    Body giải thích "cái gì" và "tại sao" (không phải "như thế nào")
+#    Mỗi dòng trong body không quá 72 ký tự
+# --------------------
+# Ví dụ:
+#   feat: Add user authentication with JWT
+#   
+#   - Implement login/logout endpoints
+#   - Add JWT token generation and validation
+#   - Store tokens in AsyncStorage
+#   
+#   Closes #123
+# --------------------
