@@ -1,0 +1,56 @@
+name: flutter_sabohub
+description: 'SABOHUB - Quản lý quán bida chuyên nghiệp'
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.4.9
+
+  # Navigation
+  go_router: ^14.2.7
+
+  # Network
+  dio: ^5.4.0
+  http: ^1.1.0
+
+  # Supabase
+  supabase_flutter: ^2.10.3
+  flutter_dotenv: ^6.0.0
+
+  # Local Storage
+  sqflite: ^2.3.0
+
+  # UI Components
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.0
+  google_fonts: ^6.1.0
+
+  # Utilities
+  intl: ^0.18.1
+  equatable: ^2.0.5
+  shared_preferences: ^2.2.2
+  url_launcher: ^6.2.2
+  uuid: ^4.5.1
+  
+  # AI Features
+  flutter_markdown: ^0.7.4
+  file_picker: ^8.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - .env
+    - assets/images/

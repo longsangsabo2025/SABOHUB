@@ -1,0 +1,133 @@
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/macos/Flutter/ephemeral/
+**/macos/Runner/GeneratedPluginRegistrant.swift
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+*/build/
+.dart_tool/
+
+# Flutter SDK (LARGE FILE - DO NOT PUSH)
+flutter_sdk/
+flutter_sdk.zip
+**/flutter_sdk/
+**/flutter_sdk.zip
+
+# Build artifacts (LARGE FILES - DO NOT PUSH)
+**/android/app/build/
+**/ios/build/
+**/android/build/
+**/windows/build/
+**/macos/build/
+**/linux/build/
+**/web/build/
+build/
+**/build/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Platform-specific build directories and large files
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/app/outputs/
+**/android/app/intermediates/
+**/android/.gradle/
+**/ios/build/
+**/ios/Runner.xcworkspace/xcuserdata/
+
+# Large binaries (GITHUB SIZE LIMIT)
+*.apk
+*.app
+*.ipa
+*.deb
+*.dmg
+*.rpm
+*.msi
+*.exe
+*.zip
+*.tar.gz
+*.tar.bz2
+*.7z
+*.rar
+*.so
+*.dll
+*.dylib
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code
+.vscode/settings.json
+
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# Environment files
+.env*.local
+.env
+.env.production
+supabase/functions/.env
+supabase/functions/.env.local
+
+# Android Signing (NEVER COMMIT THESE!)
+**/android/key.properties
+**/android/app/key.properties
+*.jks
+*.keystore
+upload-keystore.jks
+
+# iOS Signing
+**/ios/Runner/GoogleService-Info.plist
+**/ios/exportOptions.plist
+
+# CodeMagic
+.codemagic.yaml.local
+**/codemagic-export.plist
+
+# Coverage
+coverage/
+*.lcov
+
+# Cache directories
+.cache/
+.metadata
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

@@ -1,0 +1,111 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../widgets/dev_role_switcher.dart';
+import 'ai_management/ai_management_dashboard.dart';
+import 'ceo_analytics_page.dart';
+import 'ceo_companies_page.dart';
+import 'ceo_dashboard_page.dart';
+import 'ceo_reports_settings_page.dart';
+import 'ceo_tasks_page.dart';
+
+/// CEO Main Layout with Bottom Navigation
+class CEOMainLayout extends ConsumerStatefulWidget {
+  const CEOMainLayout({super.key});
+
+  @override
+  ConsumerState<CEOMainLayout> createState() => _CEOMainLayoutState();
+}
+
+class _CEOMainLayoutState extends ConsumerState<CEOMainLayout> {
+  int _currentIndex = 0;
+  final PageController _pageController = PageController();
+
+  final List<Widget> _pages = const [
+    CEODashboardPage(),
+    CEOTasksPage(),
+    CEOCompaniesPage(),
+    CEOAnalyticsPage(),
+    CEOReportsPage(),
+    AIManagementDashboard(),
+  ];
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onTabSelected(int index) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _currentIndex = index;
+    });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            children: _pages,
+          ),
+          // DEV: Role Switcher Button
+          const DevRoleSwitcher(),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomNavigation(),
+    );
+  }
+
+  Widget _buildBottomNavigation() {
+    return BottomNavigationBar(
+      currentIndex: _currentIndex,
+      onTap: _onTabSelected,
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: const Color(0xFF3B82F6),
+      unselectedItemColor: Colors.grey,
+      selectedFontSize: 12,
+      unselectedFontSize: 12,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.dashboard),
+          label: 'Dashboard',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.assignment),
+          label: 'Công việc',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.business),
+          label: 'Công ty',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.analytics),
+          label: 'Phân tích',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.assessment),
+          label: 'Báo cáo',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.psychology),
+          label: 'AI Center',
+        ),
+      ],
+    );
+  }
+}
