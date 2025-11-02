@@ -1,0 +1,5 @@
+# Local keystore configuration - DO NOT COMMIT TO GIT
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+storeFile=YOUR_PATH_TO/upload-keystore.jks
