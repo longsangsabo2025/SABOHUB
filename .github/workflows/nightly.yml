@@ -1,0 +1,55 @@
+name: Nightly Quality Check
+
+on:
+  schedule:
+    # Run every night at 2 AM UTC (9 AM Vietnam time)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  nightly-check:
+    name: Full Quality Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📚 Check out code
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: 🔍 Type check
+        run: npm run type-check
+
+      - name: 🧹 Lint code
+        run: npm run lint
+
+      - name: 🧪 Run all tests with coverage
+        run: npm run test:coverage
+
+      - name: 📊 Generate test report
+        if: always()
+        run: |
+          echo "## Nightly Quality Check Report" >> $GITHUB_STEP_SUMMARY
+          echo "- Date: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📈 Upload coverage report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-coverage-${{ github.run_number }}
+          path: coverage
+          retention-days: 7
+
+      - name: 🔔 Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Nightly quality check failed! Please review the logs."

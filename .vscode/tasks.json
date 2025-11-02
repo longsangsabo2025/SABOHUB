@@ -1,0 +1,195 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🧪 Run All Tests",
+      "type": "shell",
+      "command": "flutter test",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🧪 Run Tests with Coverage",
+      "type": "shell",
+      "command": "flutter test --coverage",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "👀 Run Tests in Watch Mode",
+      "type": "shell",
+      "command": "flutter test --watch",
+      "group": "test",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔍 Flutter Analyze",
+      "type": "shell",
+      "command": "flutter analyze",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "✨ Dart Format",
+      "type": "shell",
+      "command": "dart format lib/ test/",
+      "group": "build",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔧 Dart Fix",
+      "type": "shell",
+      "command": "dart fix --apply",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🎨 Format and Fix",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "✨ Dart Format",
+        "🔧 Dart Fix"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "🚀 Start Flutter Web",
+      "type": "shell",
+      "command": "flutter run -d chrome",
+      "isBackground": true,
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📱 Run on Android",
+      "type": "shell",
+      "command": "flutter run -d android",
+      "isBackground": true,
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🍎 Run on iOS",
+      "type": "shell",
+      "command": "flutter run -d ios",
+      "isBackground": true,
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🌐 Run on Web",
+      "type": "shell",
+      "command": "flutter run -d chrome",
+      "isBackground": true,
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔐 Setup Database RLS",
+      "type": "shell",
+      "command": "./scripts/db-setup.sh",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📊 Full Quality Check",
+      "dependsOn": [
+        "🔍 Flutter Analyze",
+        "✨ Dart Format",
+        "🧪 Run All Tests"
+      ],
+      "dependsOrder": "sequence",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "🔄 Flutter Clean & Get",
+      "dependsOn": [
+        "Flutter Clean",
+        "Flutter Pub Get"
+      ],
+      "dependsOrder": "sequence",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Flutter Clean",
+      "type": "shell",
+      "command": "flutter clean",
+      "group": "build",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter Pub Get",
+      "type": "shell",
+      "command": "flutter pub get",
+      "group": "build",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

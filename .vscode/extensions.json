@@ -1,0 +1,48 @@
+{
+  "recommendations": [
+    // Essential
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next",
+    
+    // React Native & Expo
+    "msjsdiag.vscode-react-native",
+    "expo.vscode-expo-tools",
+    "dsznajder.es7-react-js-snippets",
+    
+    // Testing
+    "orta.vscode-jest",
+    "firsttris.vscode-jest-runner",
+    
+    // Database & Backend
+    "supabase.supabase-vscode",
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+    
+    // Git & Version Control
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+    
+    // Productivity
+    "christian-kohler.path-intellisense",
+    "usernamehw.errorlens",
+    "streetsidesoftware.code-spell-checker",
+    "gruntfuggly.todo-tree",
+    "wayou.vscode-todo-highlight",
+    
+    // Code Quality
+    "sonarsource.sonarlint-vscode",
+    "bradlc.vscode-tailwindcss",
+    
+    // TypeScript Helpers
+    "yoavbls.pretty-ts-errors",
+    "styled-components.vscode-styled-components",
+    
+    // AI Assistance
+    "github.copilot",
+    "github.copilot-chat",
+    
+    // File Icons
+    "pkief.material-icon-theme"
+  ]
+}
