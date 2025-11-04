@@ -18,7 +18,7 @@ class DocumentInsightsWidget extends ConsumerWidget {
       return _buildNoInsights(context);
     }
 
-    final insights = _extractInsights(file.analysis!);
+    final insights = _extractInsights(file.analysisResults!);
 
     if (insights.isEmpty) {
       return _buildNoInsights(context);

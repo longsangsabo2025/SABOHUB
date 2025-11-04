@@ -154,7 +154,7 @@ class DocumentAnalysisService {
       }
 
       // Extract insights from analysis
-      final analysis = file.analysis!;
+      final analysis = file.analysisResults!;
       final insights = <Map<String, dynamic>>[];
 
       // Extract key insights based on file type
