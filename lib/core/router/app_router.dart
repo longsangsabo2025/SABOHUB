@@ -3,7 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/user.dart' as user_model;
+import '../../pages/auth/employee_signup_page.dart';
+import '../../pages/auth/forgot_password_page.dart';
 import '../../pages/auth/login_page.dart';
+import '../../pages/auth/signup_page.dart';
+import '../../pages/company/company_settings_page.dart';
+import '../../pages/employees/create_employee_page.dart';
+import '../../pages/employees/create_invitation_page.dart';
+import '../../pages/employees/employee_list_page.dart';
 import '../../pages/role_based_dashboard.dart';
 import '../../pages/staff/staff_checkin_page.dart';
 import '../../pages/staff/staff_messages_page.dart';
@@ -18,6 +25,8 @@ import '../navigation/navigation_models.dart' as nav;
 class AppRoutes {
   static const String home = '/';
   static const String login = '/login';
+  static const String signup = '/signup';
+  static const String forgotPassword = '/forgot-password';
   static const String profile = '/profile';
 
   // Staff routes
@@ -40,6 +49,16 @@ class AppRoutes {
   static const String ceoAnalytics = '/ceo/analytics';
   static const String ceoCompanies = '/ceo/companies';
   static const String ceoSettings = '/ceo/settings';
+
+  // Company routes
+  static const String companySettings = '/company/settings';
+  static const String createEmployee = '/employees/create';
+  static const String createInvitation = '/employees/invite';
+  static const String employeeList = '/employees/list';
+  static const String joinInvitation = '/join/:code';
+
+  // Debug routes (temporarily disabled)
+  // static const String debugSettings = '/debug/settings';
 }
 
 /// Current user role provider (based on auth state)
@@ -101,15 +120,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.login,
     redirect: (context, state) {
       final isLoggedIn = authState.isAuthenticated;
-      final isLoginRoute = state.matchedLocation == AppRoutes.login;
+      final isAuthRoute = state.matchedLocation == AppRoutes.login ||
+          state.matchedLocation == AppRoutes.signup ||
+          state.matchedLocation == AppRoutes.forgotPassword;
 
-      // If not logged in and not on login page, redirect to login
-      if (!isLoggedIn && !isLoginRoute) {
+      // If not logged in and not on auth pages, redirect to login
+      if (!isLoggedIn && !isAuthRoute) {
         return AppRoutes.login;
       }
 
-      // If logged in and on login page, redirect to home
-      if (isLoggedIn && isLoginRoute) {
+      // If logged in and on auth pages, redirect to home
+      if (isLoggedIn && isAuthRoute) {
         return AppRoutes.home;
       }
 
@@ -125,6 +146,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginPage(),
+      ),
+
+      // Signup route
+      GoRoute(
+        path: AppRoutes.signup,
+        builder: (context, state) => const SignUpPage(),
+      ),
+
+      // Forgot Password route
+      GoRoute(
+        path: AppRoutes.forgotPassword,
+        builder: (context, state) => const ForgotPasswordPage(),
       ),
 
       // Home route
@@ -233,6 +266,45 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ),
       ),
+
+      // Company routes
+      GoRoute(
+        path: AppRoutes.companySettings,
+        builder: (context, state) => const CompanySettingsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.createEmployee,
+        builder: (context, state) => const CreateEmployeePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.createInvitation,
+        builder: (context, state) => const CreateInvitationPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.employeeList,
+        builder: (context, state) => const EmployeeListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.joinInvitation,
+        builder: (context, state) {
+          final code = state.pathParameters['code'];
+          if (code == null) {
+            return const Scaffold(
+              body: Center(
+                child: Text('Invalid invitation link'),
+              ),
+            );
+          }
+          return EmployeeSignupPage(invitationCode: code);
+        },
+      ),
+
+      // Debug routes (temporarily disabled)
+      // if (kDebugMode)
+      //   GoRoute(
+      //     path: AppRoutes.debugSettings,
+      //     builder: (context, state) => const DebugSettingsPage(),
+      //   ),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(

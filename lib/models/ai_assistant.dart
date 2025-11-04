@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// AI Assistant Model
 /// Represents an AI assistant instance for a company
 class AIAssistant {
@@ -29,6 +31,22 @@ class AIAssistant {
 
   /// Create from Supabase JSON
   factory AIAssistant.fromJson(Map<String, dynamic> json) {
+    // Handle settings field - it might be a JSON string or Map
+    Map<String, dynamic> settingsMap = {};
+    final settingsField = json['settings'];
+    if (settingsField != null) {
+      if (settingsField is String) {
+        try {
+          settingsMap = jsonDecode(settingsField) as Map<String, dynamic>;
+        } catch (e) {
+          // If JSON parsing fails, keep as empty map
+          settingsMap = {};
+        }
+      } else if (settingsField is Map<String, dynamic>) {
+        settingsMap = settingsField;
+      }
+    }
+
     return AIAssistant(
       id: json['id'] as String,
       companyId: json['company_id'] as String,
@@ -37,10 +55,14 @@ class AIAssistant {
       name: json['name'] as String? ?? 'AI Trợ lý',
       instructions: json['instructions'] as String?,
       model: json['model'] as String? ?? 'gpt-4-turbo-preview',
-      settings: json['settings'] as Map<String, dynamic>? ?? {},
+      settings: settingsMap,
       isActive: json['is_active'] as bool? ?? true,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : DateTime.now(),
     );
   }
 

@@ -1,9 +1,20 @@
+import 'package:flutter/material.dart';
+
 /// App-wide constants for SABOHUB Flutter application
 class AppConstants {
   // App Info
   static const String appName = 'SABOHUB';
   static const String appDescription = 'Quản lý quán bida chuyên nghiệp';
   static const String appVersion = '1.0.0';
+
+  // Colors
+  static const Color primaryColor = Color(0xFF2E7D32); // Green
+  static const Color secondaryColor = Color(0xFF4CAF50);
+  static const Color accentColor = Color(0xFFFF9800); // Orange
+  static const Color errorColor = Color(0xFFE53935);
+  static const Color warningColor = Color(0xFFFF9800);
+  static const Color successColor = Color(0xFF4CAF50);
+  static const Color backgroundColor = Color(0xFFF5F5F5);
 
   // API Configuration
   static const String supabaseUrl = 'https://your-project.supabase.co';
@@ -70,34 +81,4 @@ class AppConstants {
   static const int maxFileSize = 10 * 1024 * 1024; // 10MB
   static const List<String> allowedImageTypes = ['jpg', 'jpeg', 'png', 'webp'];
   static const List<String> allowedDocTypes = ['pdf', 'doc', 'docx', 'txt'];
-}
-
-/// User roles enum matching React Native version
-enum UserRole {
-  staff('STAFF'),
-  shiftLeader('SHIFT_LEADER'),
-  manager('MANAGER'),
-  ceo('CEO');
-
-  const UserRole(this.value);
-  final String value;
-
-  static UserRole fromString(String value) {
-    return UserRole.values.firstWhere(
-      (role) => role.value == value,
-      orElse: () => UserRole.staff,
-    );
-  }
-
-  bool get canViewDashboard => true;
-  bool get canManageStaff => this == UserRole.ceo || this == UserRole.manager;
-  bool get canViewReports =>
-      this == UserRole.ceo ||
-      this == UserRole.manager ||
-      this == UserRole.shiftLeader;
-  bool get canManageCompanies => this == UserRole.ceo;
-  bool get canViewAnalytics => this == UserRole.ceo || this == UserRole.manager;
-  bool get canManageTables => true;
-  bool get canCreateOrders => true;
-  bool get canProcessPayments => this != UserRole.staff;
 }

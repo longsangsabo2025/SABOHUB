@@ -17,6 +17,34 @@ class EmployeeService {
 
   EmployeeService({Ref? ref}) : _ref = ref;
 
+  /// Check if email already exists
+  Future<bool> emailExists(String email) async {
+    try {
+      final result = await _supabase
+          .from('users')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle();
+      return result != null;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Get existing user by email
+  Future<Map<String, dynamic>?> getUserByEmail(String email) async {
+    try {
+      final result = await _supabase
+          .from('users')
+          .select('id, email, name, role, is_active')
+          .eq('email', email)
+          .maybeSingle();
+      return result;
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Generate email based on role and company
   String generateEmployeeEmail({
     required String companyName,
@@ -104,50 +132,135 @@ class EmployeeService {
         }
       }
 
+      // Check if email already exists before creating
+      if (await emailExists(email)) {
+        throw Exception(
+            'Email $email đã được sử dụng. Vui lòng thử email khác.');
+      }
+
       // Generate secure password
       final tempPassword = _generateTempPassword();
 
       print('📧 Employee email: $email');
       print('🔑 Temp password: $tempPassword');
 
-      // Method 1: Use Service Role to create auth user directly
-      final adminSupabase = SupabaseClient(
-        'https://dqddxowyikefqcdiioyh.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTc5NzEzNiwiZXhwIjoyMDc3MzczMTM2fQ.kPmlYlVd7wi_Luzp3MHjXmR8gUqrqDHy9PSzwFDq3XI',
-      );
+      // Retry mechanism for auth creation
+      int retryCount = 0;
+      const maxRetries = 3;
+      UserResponse? authResponse;
 
-      // Create auth user with admin privileges
-      final authResponse = await adminSupabase.auth.admin.createUser(
-        AdminUserAttributes(
-          email: email,
-          password: tempPassword,
-          emailConfirm: true, // Skip email confirmation
-          userMetadata: {
-            'role': role.value,
-            'company_id': companyId,
-            'full_name': _generateDefaultName(role),
-          },
-        ),
-      );
+      while (retryCount < maxRetries) {
+        try {
+          // Method 1: Use Service Role to create auth user directly
+          final adminSupabase = SupabaseClient(
+            'https://dqddxowyikefqcdiioyh.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTc5NzEzNiwiZXhwIjoyMDc3MzczMTM2fQ.kPmlYlVd7wi_Luzp3MHjXmR8gUqrqDHy9PSzwFDq3XI',
+          );
 
-      if (authResponse.user == null) {
+          // Create auth user with admin privileges
+          authResponse = await adminSupabase.auth.admin.createUser(
+            AdminUserAttributes(
+              email: email,
+              password: tempPassword,
+              emailConfirm: true, // Skip email confirmation
+              userMetadata: {
+                'role': role.value,
+                'company_id': companyId,
+                'full_name': _generateDefaultName(role),
+              },
+            ),
+          );
+
+          if (authResponse.user != null) {
+            break; // Success, exit retry loop
+          }
+        } catch (e) {
+          retryCount++;
+          print('⚠️ Auth creation attempt $retryCount failed: $e');
+          if (retryCount >= maxRetries) {
+            throw Exception(
+                'Failed to create auth user after $maxRetries attempts: $e');
+          }
+          // Wait before retry
+          await Future.delayed(Duration(milliseconds: 500 * retryCount));
+        }
+      }
+
+      if (authResponse?.user == null) {
         throw Exception('Failed to create auth user');
       }
 
-      final newUserId = authResponse.user!.id;
+      final newUserId = authResponse!.user!.id;
       print('✅ Auth user created: $newUserId');
 
-      // Create user record in database
-      await _supabase.from('users').insert({
-        'id': newUserId,
-        'email': email,
-        'role': role.value,
-        'company_id': companyId,
-        'full_name': _generateDefaultName(role),
-        'is_active': true,
-      });
+      // Database insertion with retry and duplicate handling
+      retryCount = 0;
+      while (retryCount < maxRetries) {
+        try {
+          // Check if user already exists in database
+          final existingUser = await _supabase
+              .from('users')
+              .select('id')
+              .eq('id', newUserId)
+              .maybeSingle();
 
-      print('✅ Database record created');
+          if (existingUser != null) {
+            print('⚠️ User already exists in database, updating instead...');
+            // Update existing record
+            await _supabase.from('users').update({
+              'email': email,
+              'role': role.value,
+              'company_id': companyId,
+              'full_name': _generateDefaultName(role),
+              'is_active': true,
+              'updated_at': DateTime.now().toIso8601String(),
+            }).eq('id', newUserId);
+          } else {
+            // Create new user record in database
+            await _supabase.from('users').insert({
+              'id': newUserId,
+              'email': email,
+              'role': role.value,
+              'company_id': companyId,
+              'full_name': _generateDefaultName(role),
+              'is_active': true,
+            });
+          }
+
+          print('✅ Database record created/updated');
+          break; // Success, exit retry loop
+        } catch (e) {
+          retryCount++;
+          print('⚠️ Database insertion attempt $retryCount failed: $e');
+
+          if (e.toString().contains('23505') &&
+              e.toString().contains('users_pkey')) {
+            // If it's a duplicate key error, try to handle it gracefully
+            print('🔄 Handling duplicate key, attempting to update record...');
+            try {
+              await _supabase.from('users').update({
+                'email': email,
+                'role': role.value,
+                'company_id': companyId,
+                'full_name': _generateDefaultName(role),
+                'is_active': true,
+                'updated_at': DateTime.now().toIso8601String(),
+              }).eq('id', newUserId);
+              print('✅ Successfully updated existing record');
+              break;
+            } catch (updateError) {
+              print('❌ Update also failed: $updateError');
+            }
+          }
+
+          if (retryCount >= maxRetries) {
+            throw Exception(
+                'Failed to create database record after $maxRetries attempts: $e');
+          }
+          // Wait before retry
+          await Future.delayed(Duration(milliseconds: 500 * retryCount));
+        }
+      }
 
       // Return complete user data
       final newUser = app_models.User(

@@ -1,0 +1,34 @@
+{
+  "name": "sabohub-database-testing",
+  "version": "1.0.0",
+  "description": "Comprehensive testing suite for SABOHUB database and system features",
+  "main": "index.js",
+  "scripts": {
+    "test:triggers": "node test-triggers.js",
+    "test:features": "node test-all-features.js",
+    "test:ui": "node test-ui-integration.js",
+    "test:e2e": "node test-e2e-workflows.js",
+    "test:remaining": "node test-all-remaining-features.js",
+    "test:report": "node final-system-report.js",
+    "fix:production": "node fix-production-ready.js",
+    "test:all": "npm run test:triggers && npm run test:features && npm run test:ui && npm run test:e2e && npm run test:remaining && npm run test:report"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^17.2.3",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "sabohub",
+    "database",
+    "testing",
+    "supabase",
+    "flutter",
+    "postgresql"
+  ],
+  "author": "SABOHUB Team",
+  "license": "MIT"
+}

@@ -134,6 +134,25 @@ class NavigationConfig {
       label: 'Cài đặt',
       allowedRoles: [UserRole.ceo],
     ),
+
+    // Company settings (accessible by managers and CEOs)
+    NavigationItem(
+      route: '/company/settings',
+      icon: Icons.business,
+      activeIcon: Icons.business,
+      label: 'Công ty',
+      allowedRoles: [UserRole.manager, UserRole.ceo],
+    ),
+
+    // Debug Navigation (temporarily disabled)
+    // if (kDebugMode)
+    //   NavigationItem(
+    //     route: '/debug/settings',
+    //     icon: Icons.bug_report,
+    //     activeIcon: Icons.bug_report,
+    //     label: '🔧 Debug',
+    //     allowedRoles: [UserRole.staff, UserRole.shiftLeader, UserRole.manager, UserRole.ceo],
+    //   ),
   ];
 
   /// Get navigation items for a specific role

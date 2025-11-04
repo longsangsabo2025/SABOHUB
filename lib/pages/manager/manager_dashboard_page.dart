@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../providers/manager_provider_cached.dart';
+import '../../widgets/team_management_tab.dart';
 
 /// Manager Dashboard Page
 /// Management overview with team metrics and operations
@@ -53,9 +54,15 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
               _buildOperationsSection(),
               const SizedBox(height: 24),
               teamAsync.when(
-                data: (cachedTeam) => _buildTeamSection(cachedTeam.data),
+                data: (cachedTeam) => Container(
+                  height: 600, // Fixed height for team management
+                  child: const TeamManagementTab(),
+                ),
                 loading: () => _buildLoadingTeam(),
-                error: (_, __) => _buildTeamSection([]),
+                error: (_, __) => Container(
+                  height: 400,
+                  child: const TeamManagementTab(),
+                ),
               ),
               const SizedBox(height: 24),
               activitiesAsync.when(

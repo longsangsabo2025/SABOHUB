@@ -63,12 +63,17 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
 
   @override
   Widget build(BuildContext context) {
+    print('🔍 AIAssistantTab: Building with companyId: ${widget.companyId}');
     final assistantAsync = ref.watch(aiAssistantProvider(widget.companyId));
 
     return assistantAsync.when(
       data: (assistant) => _buildChatInterface(assistant),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => _buildErrorView(error),
+      error: (error, stack) {
+        print('❌ AIAssistantTab Error: $error');
+        print('❌ AIAssistantTab CompanyId: ${widget.companyId}');
+        return _buildErrorView(error);
+      },
     );
   }
 
@@ -410,6 +415,8 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
   }
 
   Widget _buildErrorView(Object error) {
+    final String errorMessage = error.toString();
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -431,9 +438,18 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
             ),
             const SizedBox(height: 8),
             Text(
-              error.toString(),
+              'Chi tiết lỗi:\n$errorMessage',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Company ID: ${widget.companyId}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[500],
+                    fontFamily: 'monospace',
                   ),
               textAlign: TextAlign.center,
             ),

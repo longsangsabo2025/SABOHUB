@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/task.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/task_provider.dart';
+
 /// Staff Tasks Page
 /// Daily task assignments and completion for staff
 class StaffTasksPage extends ConsumerStatefulWidget {
@@ -155,34 +159,81 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
   }
 
   Widget _buildContent() {
+    final user = ref.watch(currentUserProvider);
+    if (user == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     switch (_selectedTab) {
       case 0:
-        return _buildTodoTasksTab();
+        return _buildTasksForStatus(TaskStatus.todo);
       case 1:
-        return _buildInProgressTasksTab();
+        return _buildTasksForStatus(TaskStatus.inProgress);
       case 2:
-        return _buildCompletedTasksTab();
+        return _buildTasksForStatus(TaskStatus.completed);
       default:
-        return _buildTodoTasksTab();
+        return _buildTasksForStatus(TaskStatus.todo);
     }
   }
 
-  Widget _buildTodoTasksTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildTaskSummary(),
-          const SizedBox(height: 24),
-          _buildPriorityTasks(),
-          const SizedBox(height: 24),
-          _buildRegularTasks(),
-        ],
+  Widget _buildTasksForStatus(TaskStatus status) {
+    final user = ref.watch(currentUserProvider);
+    if (user == null) return const SizedBox.shrink();
+
+    final tasksAsync = ref.watch(
+        tasksByStatusProvider((status: status, branchId: user.branchId)));
+
+    return tasksAsync.when(
+      data: (tasks) {
+        // Filter tasks assigned to current user
+        final userTasks =
+            tasks.where((task) => task.assigneeId == user.id).toList();
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(tasksByStatusProvider);
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                if (status == TaskStatus.todo) _buildTaskSummary(userTasks),
+                if (status == TaskStatus.todo) const SizedBox(height: 24),
+                ...userTasks.map((task) => _buildTaskCard(task)).toList(),
+                if (userTasks.isEmpty) _buildEmptyState(status),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text('Lỗi: $error'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.invalidate(tasksByStatusProvider),
+              child: const Text('Thử lại'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTaskSummary() {
+  Widget _buildTaskSummary(List<Task> tasks) {
+    final totalTasks = tasks.length;
+    final priorityTasks =
+        tasks.where((task) => task.priority == TaskPriority.high).length;
+    final completedTasks =
+        tasks.where((task) => task.status == TaskStatus.completed).length;
+    final remainingTasks = totalTasks - completedTasks;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -210,12 +261,12 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
           Row(
             children: [
               Expanded(
-                child: _buildSummaryItem(
-                    'Tổng cộng', '12', 'nhiệm vụ', const Color(0xFF6B7280)),
+                child: _buildSummaryItem('Tổng cộng', '$totalTasks', 'nhiệm vụ',
+                    const Color(0xFF6B7280)),
               ),
               Expanded(
-                child: _buildSummaryItem('Ưu tiên cao', '3', 'việc quan trọng',
-                    const Color(0xFFEF4444)),
+                child: _buildSummaryItem('Ưu tiên cao', '$priorityTasks',
+                    'việc quan trọng', const Color(0xFFEF4444)),
               ),
             ],
           ),
@@ -223,12 +274,12 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
           Row(
             children: [
               Expanded(
-                child: _buildSummaryItem(
-                    'Hoàn thành', '7', 'đã xong', const Color(0xFF10B981)),
+                child: _buildSummaryItem('Hoàn thành', '$completedTasks',
+                    'đã xong', const Color(0xFF10B981)),
               ),
               Expanded(
-                child: _buildSummaryItem(
-                    'Còn lại', '5', 'cần làm', const Color(0xFF3B82F6)),
+                child: _buildSummaryItem('Còn lại', '$remainingTasks',
+                    'cần làm', const Color(0xFF3B82F6)),
               ),
             ],
           ),
@@ -849,6 +900,228 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildTaskCard(Task task) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  task.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              _buildPriorityBadge(task.priority),
+            ],
+          ),
+          if (task.description.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              task.description,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                Icons.access_time,
+                size: 16,
+                color: Colors.grey.shade500,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Deadline: ${_formatDate(task.dueDate)}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              const Spacer(),
+              if (task.status == TaskStatus.todo ||
+                  task.status == TaskStatus.inProgress)
+                _buildActionButton(task),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriorityBadge(TaskPriority priority) {
+    Color color;
+    String text;
+
+    switch (priority) {
+      case TaskPriority.urgent:
+        color = const Color(0xFFDC2626);
+        text = 'Khẩn cấp';
+        break;
+      case TaskPriority.high:
+        color = const Color(0xFFEF4444);
+        text = 'Cao';
+        break;
+      case TaskPriority.medium:
+        color = const Color(0xFFF59E0B);
+        text = 'Trung bình';
+        break;
+      case TaskPriority.low:
+        color = const Color(0xFF10B981);
+        text = 'Thấp';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(Task task) {
+    final isInProgress = task.status == TaskStatus.inProgress;
+
+    return ElevatedButton(
+      onPressed: () => _updateTaskStatus(task),
+      style: ElevatedButton.styleFrom(
+        backgroundColor:
+            isInProgress ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      child: Text(
+        isInProgress ? 'Hoàn thành' : 'Bắt đầu',
+        style: const TextStyle(fontSize: 12),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(TaskStatus status) {
+    String message;
+    IconData icon;
+
+    switch (status) {
+      case TaskStatus.todo:
+        message = 'Không có nhiệm vụ nào cần làm';
+        icon = Icons.task_alt;
+        break;
+      case TaskStatus.inProgress:
+        message = 'Không có nhiệm vụ nào đang thực hiện';
+        icon = Icons.hourglass_empty;
+        break;
+      case TaskStatus.completed:
+        message = 'Chưa hoàn thành nhiệm vụ nào hôm nay';
+        icon = Icons.check_circle_outline;
+        break;
+      default:
+        message = 'Không có nhiệm vụ';
+        icon = Icons.task;
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 64,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final taskDate = DateTime(date.year, date.month, date.day);
+
+    if (taskDate == today) {
+      return 'Hôm nay ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } else if (taskDate == tomorrow) {
+      return 'Ngày mai ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } else {
+      return '${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    }
+  }
+
+  Future<void> _updateTaskStatus(Task task) async {
+    try {
+      final nextStatus = task.status == TaskStatus.todo
+          ? TaskStatus.inProgress
+          : TaskStatus.completed;
+
+      await ref.read(taskServiceProvider).updateTask(task.id, {
+        'status': nextStatus.name,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+
+      // Invalidate providers to refresh data
+      ref.invalidate(tasksByStatusProvider);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(nextStatus == TaskStatus.inProgress
+              ? '✅ Đã bắt đầu nhiệm vụ'
+              : '🎉 Hoàn thành nhiệm vụ!'),
+          backgroundColor: const Color(0xFF10B981),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Lỗi: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildCompletedItem(

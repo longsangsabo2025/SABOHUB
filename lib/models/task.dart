@@ -44,6 +44,7 @@ class Task {
   final TaskStatus status;
   final String? assignedTo;
   final String? assignedToName;
+  final String? assigneeId; // Add this field
   final DateTime dueDate;
   final DateTime? completedAt;
   final String createdBy;
@@ -61,6 +62,7 @@ class Task {
     required this.status,
     this.assignedTo,
     this.assignedToName,
+    this.assigneeId, // Add this field to constructor
     required this.dueDate,
     this.completedAt,
     required this.createdBy,
@@ -90,6 +92,7 @@ class Task {
     TaskStatus? status,
     String? assignedTo,
     String? assignedToName,
+    String? assigneeId,
     DateTime? dueDate,
     DateTime? completedAt,
     String? createdBy,
@@ -107,6 +110,7 @@ class Task {
       status: status ?? this.status,
       assignedTo: assignedTo ?? this.assignedTo,
       assignedToName: assignedToName ?? this.assignedToName,
+      assigneeId: assigneeId ?? this.assigneeId,
       dueDate: dueDate ?? this.dueDate,
       completedAt: completedAt ?? this.completedAt,
       createdBy: createdBy ?? this.createdBy,

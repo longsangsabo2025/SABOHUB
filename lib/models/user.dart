@@ -27,6 +27,7 @@ class User extends Equatable {
   final String? phone;
   final String? avatarUrl;
   final String? expoPushToken;
+  final String? branchId; // Add branchId for staff/branch association
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -38,6 +39,7 @@ class User extends Equatable {
     this.phone,
     this.avatarUrl,
     this.expoPushToken,
+    this.branchId, // Add branchId to constructor
     this.createdAt,
     this.updatedAt,
   });
@@ -51,6 +53,7 @@ class User extends Equatable {
         phone,
         avatarUrl,
         expoPushToken,
+        branchId,
         createdAt,
         updatedAt,
       ];
@@ -65,6 +68,7 @@ class User extends Equatable {
       phone: json['phone'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       expoPushToken: json['expo_push_token'] as String?,
+      branchId: json['branch_id'] as String?, // Add branchId
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -84,6 +88,7 @@ class User extends Equatable {
       'phone': phone,
       'avatar_url': avatarUrl,
       'expo_push_token': expoPushToken,
+      'branch_id': branchId, // Add branchId
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -98,6 +103,7 @@ class User extends Equatable {
     String? phone,
     String? avatarUrl,
     String? expoPushToken,
+    String? branchId, // Add branchId
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -109,6 +115,7 @@ class User extends Equatable {
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       expoPushToken: expoPushToken ?? this.expoPushToken,
+      branchId: branchId ?? this.branchId, // Add branchId
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -170,36 +177,48 @@ class User extends Equatable {
   }
 }
 
-/// Demo users for testing
+/// Demo users for testing - Khớp với database thực tế
 class DemoUsers {
   static const List<User> users = [
+    // CEO accounts
     User(
       id: '1',
-      name: 'Nguyễn Văn CEO',
-      email: 'ceo@sabohub.com',
+      name: 'Nguyễn Văn CEO 1',
+      email: 'ceo1@sabohub.com',
       role: UserRole.ceo,
       phone: '0901234567',
     ),
     User(
       id: '2',
-      name: 'Trần Thị Quản Lý',
-      email: 'manager@sabohub.com',
+      name: 'Trần Thị CEO 2',
+      email: 'ceo2@sabohub.com',
+      role: UserRole.ceo,
+      phone: '0901234568',
+    ),
+    // Manager account
+    User(
+      id: '3',
+      name: 'Trần Thị Quản Lý 1',
+      email: 'manager1@sabohub.com',
       role: UserRole.manager,
       phone: '0902234567',
     ),
+    // Shift Leader account (demo)
     User(
-      id: '3',
+      id: '4',
       name: 'Lê Văn Trưởng Ca',
       email: 'shift@sabohub.com',
       role: UserRole.shiftLeader,
       phone: '0903234567',
     ),
+    // Staff account
     User(
-      id: '4',
-      name: 'Phạm Thị Nhân Viên',
-      email: 'staff@sabohub.com',
+      id: '5',
+      name: 'Phạm Thị Nhân Viên 1',
+      email: 'staff1@sabohub.com',
       role: UserRole.staff,
       phone: '0904234567',
+      branchId: 'branch-1', // Add branchId for staff
     ),
   ];
 

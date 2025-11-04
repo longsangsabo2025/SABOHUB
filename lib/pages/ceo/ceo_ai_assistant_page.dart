@@ -254,7 +254,9 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
 
     // Mock mode for testing
     if (apiKey == null || apiKey.isEmpty) {
-      if (kDebugMode) { print('⚠️ Using MOCK AI mode - No API key'); }
+      if (kDebugMode) {
+        print('⚠️ Using MOCK AI mode - No API key');
+      }
       await Future.delayed(const Duration(seconds: 1));
       return _mockAIResponse(userInput);
     }
@@ -270,7 +272,9 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
   /// Execute AI function
   Future<Map<String, dynamic>> _executeFunction(
       String functionName, Map<String, dynamic> args) async {
-    if (kDebugMode) { print('🚀 Executing function: $functionName with args: $args'); }
+    if (kDebugMode) {
+      print('🚀 Executing function: $functionName with args: $args');
+    }
 
     // Simulate API delay
     await Future.delayed(const Duration(seconds: 2));

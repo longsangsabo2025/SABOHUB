@@ -87,7 +87,9 @@ class FileUploadService {
         );
         uploadedFiles.add(uploadedFile);
       } catch (e) {
-        if (kDebugMode) { print('Failed to upload file ${file.path}: $e'); }
+        if (kDebugMode) {
+          print('Failed to upload file ${file.path}: $e');
+        }
         // Continue with other files
       }
     }

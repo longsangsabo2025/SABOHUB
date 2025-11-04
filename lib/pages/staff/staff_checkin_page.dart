@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../models/user.dart';
+import '../../providers/attendance_provider.dart';
+import '../../providers/auth_provider.dart';
+
 /// Staff Check-in Page
 /// Attendance and scheduling for staff members
 class StaffCheckinPage extends ConsumerStatefulWidget {
@@ -12,24 +16,62 @@ class StaffCheckinPage extends ConsumerStatefulWidget {
 }
 
 class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
-  bool _isCheckedIn = false;
-  final String _currentShift = 'Ca chiều (14:00-22:00)';
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(currentUserProvider);
+    if (user == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final todayAttendanceAsync =
+        ref.watch(userTodayAttendanceProvider(user.id));
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildCheckinCard(),
-            const SizedBox(height: 24),
-            _buildTodaySchedule(),
-            const SizedBox(height: 24),
-            _buildAttendanceHistory(),
-          ],
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(userTodayAttendanceProvider);
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: todayAttendanceAsync.when(
+            data: (attendance) => Column(
+              children: [
+                _buildCheckinCard(user, attendance),
+                const SizedBox(height: 24),
+                _buildTodaySchedule(),
+                const SizedBox(height: 24),
+                _buildAttendanceHistory(),
+              ],
+            ),
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(50),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (error, stack) => Center(
+              child: Column(
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Lỗi: $error'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () =>
+                        ref.invalidate(userTodayAttendanceProvider),
+                    child: const Text('Thử lại'),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -83,22 +125,28 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
     );
   }
 
-  Widget _buildCheckinCard() {
+  Widget _buildCheckinCard(User user, Attendance? attendance) {
+    final isCheckedIn =
+        attendance?.checkOutTime == null && attendance?.checkInTime != null;
+    final currentShift = _getCurrentShift();
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF10B981),
-            Color(0xFF059669),
-          ],
+          colors: isCheckedIn
+              ? [const Color(0xFF10B981), const Color(0xFF059669)]
+              : [const Color(0xFF6B7280), const Color(0xFF4B5563)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF10B981).withValues(alpha: 0.3),
+            color: (isCheckedIn
+                    ? const Color(0xFF10B981)
+                    : const Color(0xFF6B7280))
+                .withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -122,9 +170,9 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Nguyễn Văn Staff',
-                      style: TextStyle(
+                    Text(
+                      user.name,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -132,7 +180,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _currentShift,
+                      currentShift,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white.withValues(alpha: 0.9),
@@ -145,13 +193,13 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _isCheckedIn
+                  color: isCheckedIn
                       ? Colors.white.withValues(alpha: 0.2)
                       : Colors.orange.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  _isCheckedIn ? 'ĐÃ VÀO CA' : 'CHƯA VÀO CA',
+                  isCheckedIn ? 'ĐÃ VÀO CA' : 'CHƯA VÀO CA',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -171,7 +219,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
             child: Column(
               children: [
                 Text(
-                  _isCheckedIn ? 'Thời gian làm việc' : 'Sẵn sàng vào ca?',
+                  isCheckedIn ? 'Thời gian làm việc' : 'Sẵn sàng vào ca?',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.white.withValues(alpha: 0.9),
@@ -179,8 +227,8 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _isCheckedIn
-                      ? '3 giờ 25 phút'
+                  isCheckedIn
+                      ? _formatWorkingTime(attendance?.checkInTime)
                       : DateTime.now().toString().substring(11, 16),
                   style: const TextStyle(
                     fontSize: 32,
@@ -192,26 +240,38 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _isCheckedIn = !_isCheckedIn;
-                      });
-                    },
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                            if (isCheckedIn) {
+                              _handleCheckOut(user);
+                            } else {
+                              _handleCheckIn(user);
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF10B981),
+                      foregroundColor: isCheckedIn
+                          ? const Color(0xFFEF4444)
+                          : const Color(0xFF10B981),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
-                      _isCheckedIn ? 'CHECK OUT' : 'CHECK IN',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            isCheckedIn ? 'CHECK OUT' : 'CHECK IN',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -500,5 +560,91 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
         ],
       ),
     );
+  }
+
+  String _getCurrentShift() {
+    final now = DateTime.now();
+    final hour = now.hour;
+
+    if (hour >= 6 && hour < 14) {
+      return 'Ca sáng (06:00-14:00)';
+    } else if (hour >= 14 && hour < 22) {
+      return 'Ca chiều (14:00-22:00)';
+    } else {
+      return 'Ca đêm (22:00-06:00)';
+    }
+  }
+
+  String _formatWorkingTime(DateTime? checkInTime) {
+    if (checkInTime == null) return '00:00';
+
+    final now = DateTime.now();
+    final difference = now.difference(checkInTime);
+    final hours = difference.inHours;
+    final minutes = difference.inMinutes % 60;
+
+    return '${hours}h ${minutes}m';
+  }
+
+  Future<void> _handleCheckIn(User user) async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await ref.read(attendanceServiceProvider).checkIn(
+            userId: user.id,
+            branchId: null, // TODO: Add branchId to User model
+          );
+
+      ref.invalidate(userTodayAttendanceProvider);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Đã điểm danh vào ca thành công!'),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Lỗi điểm danh: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleCheckOut(User user) async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await ref.read(attendanceServiceProvider).checkOut(
+            userId: user.id,
+            branchId: null, // TODO: Add branchId to User model
+          );
+
+      ref.invalidate(userTodayAttendanceProvider);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Đã điểm danh ra ca thành công!'),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Lỗi điểm danh: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 }

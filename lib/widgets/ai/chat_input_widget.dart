@@ -77,12 +77,17 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
               // Automatically trigger file processing in background
               unawaited(
                 fileUploadService.processFile(uploadedFile.id).catchError((e) {
-                  if (kDebugMode) { print('Failed to process file ${uploadedFile.fileName}: $e'); }
+                  if (kDebugMode) {
+                    print(
+                        'Failed to process file ${uploadedFile.fileName}: $e');
+                  }
                   return uploadedFile; // Return the original file on error
                 }),
               );
             } catch (e) {
-              if (kDebugMode) { print('Failed to upload ${file.name}: $e'); }
+              if (kDebugMode) {
+                print('Failed to upload ${file.name}: $e');
+              }
             }
           }
         }
