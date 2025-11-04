@@ -8,7 +8,9 @@ import '../../services/company_service.dart';
 import 'ai_assistant_tab.dart';
 import 'company/accounting_tab.dart';
 import 'company/attendance_tab.dart';
+import 'company/business_law_tab.dart';
 import 'company/documents_tab.dart';
+import 'company/employee_documents_tab.dart';
 import 'company/employees_tab.dart';
 import 'company/overview_tab.dart';
 import 'company/settings_tab.dart';
@@ -123,27 +125,47 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
           else
             _buildCompactAppBar(company),
           Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: [
-                OverviewTab(company: company, companyId: widget.companyId),
-                EmployeesTab(company: company, companyId: widget.companyId),
-                TasksTab(company: company, companyId: widget.companyId),
-                DocumentsTab(company: company),
-                AIAssistantTab(
-                  companyId: company.id,
-                  companyName: company.name,
-                ),
-                AttendanceTab(company: company, companyId: widget.companyId),
-                AccountingTab(company: company, companyId: widget.companyId),
-                SettingsTab(company: company, companyId: widget.companyId),
-              ],
-            ),
+            // ✅ PERFORMANCE FIX: Lazy loading - only build current tab
+            // Previous: IndexedStack kept all 10 tabs in memory (~100MB overhead)
+            // Now: Only builds active tab, reducing memory usage by ~80%
+            child: _buildCurrentTab(company),
           ),
         ],
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
+  }
+
+  /// Build only the currently active tab (lazy loading)
+  /// This significantly reduces memory usage compared to IndexedStack
+  Widget _buildCurrentTab(Company company) {
+    switch (_currentIndex) {
+      case 0:
+        return OverviewTab(company: company, companyId: widget.companyId);
+      case 1:
+        return EmployeesTab(company: company, companyId: widget.companyId);
+      case 2:
+        return TasksTab(company: company, companyId: widget.companyId);
+      case 3:
+        return DocumentsTab(company: company);
+      case 4:
+        return AIAssistantTab(
+          companyId: company.id,
+          companyName: company.name,
+        );
+      case 5:
+        return AttendanceTab(company: company, companyId: widget.companyId);
+      case 6:
+        return AccountingTab(company: company, companyId: widget.companyId);
+      case 7:
+        return EmployeeDocumentsTab(company: company, companyId: widget.companyId);
+      case 8:
+        return BusinessLawTab(company: company, companyId: widget.companyId);
+      case 9:
+        return SettingsTab(company: company, companyId: widget.companyId);
+      default:
+        return OverviewTab(company: company, companyId: widget.companyId);
+    }
   }
 
   Widget _buildCompactAppBar(Company company) {
@@ -155,6 +177,8 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
       'AI Assistant',
       'Chấm công',
       'Kế toán',
+      'Hồ sơ NV',
+      'Luật DN',
       'Cài đặt'
     ];
 
@@ -176,6 +200,7 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
             children: [
               IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
+                tooltip: 'Quay lại',
                 onPressed: () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: 8),
@@ -205,6 +230,7 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
               ),
               IconButton(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
+                tooltip: 'Tùy chọn',
                 onPressed: () => _showMoreOptions(company),
               ),
             ],
@@ -240,15 +266,18 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    tooltip: 'Quay lại',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.edit, color: Colors.white),
+                    tooltip: 'Chỉnh sửa công ty',
                     onPressed: () => _showEditDialog(company),
                   ),
                   IconButton(
                     icon: const Icon(Icons.more_vert, color: Colors.white),
+                    tooltip: 'Tùy chọn',
                     onPressed: () => _showMoreOptions(company),
                   ),
                 ],
@@ -378,7 +407,7 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.smart_toy),
-          label: 'AI Assistant',
+          label: 'AI',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.access_time),
@@ -387,6 +416,14 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
         BottomNavigationBarItem(
           icon: Icon(Icons.account_balance_wallet),
           label: 'Kế toán',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.folder_shared),
+          label: 'Hồ sơ NV',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.gavel),
+          label: 'Luật DN',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.settings),

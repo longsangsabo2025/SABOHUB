@@ -1,5 +1,6 @@
 import '../core/services/supabase_service.dart';
 import '../models/accounting.dart';
+import '../utils/logger_service.dart';
 
 /// Accounting Service
 /// Handles all accounting-related database operations
@@ -69,8 +70,17 @@ class AccountingService {
         startDate: startDate,
         endDate: endDate,
       );
-    } catch (e) {
-      print('Error getting accounting summary: $e');
+    } catch (e, stackTrace) {
+      // ✅ Proper error logging instead of silent print
+      logger.error('Failed to get accounting summary', e, stackTrace);
+      logger.logUserAction('accounting_summary_error', {
+        'company_id': companyId,
+        'start_date': startDate.toIso8601String(),
+        'end_date': endDate.toIso8601String(),
+        'error': e.toString(),
+      });
+      
+      // Return empty data with zeros
       return AccountingSummary(
         totalRevenue: 0,
         totalExpense: 0,

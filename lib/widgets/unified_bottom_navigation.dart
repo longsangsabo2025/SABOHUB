@@ -77,6 +77,11 @@ class _UnifiedBottomNavigationState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // Chia navigation items thành 2 hàng
+    final itemsPerRow = (_navigationItems.length / 2).ceil();
+    final firstRowItems = _navigationItems.take(itemsPerRow).toList();
+    final secondRowItems = _navigationItems.skip(itemsPerRow).toList();
+
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -90,25 +95,63 @@ class _UnifiedBottomNavigationState
       ),
       child: SafeArea(
         child: Container(
-          height: 80,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _navigationItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final isSelected = index == widget.currentIndex;
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Hàng 1
+              SizedBox(
+                height: 72,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: firstRowItems.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final item = entry.value;
+                    final isSelected = index == widget.currentIndex;
 
-              return Expanded(
-                child: _NavigationButton(
-                  item: item,
-                  isSelected: isSelected,
-                  onTap: () => _handleTap(index),
-                  scaleController: _scaleController,
-                  theme: theme,
+                    return Expanded(
+                      child: _NavigationButton(
+                        item: item,
+                        isSelected: isSelected,
+                        onTap: () => _handleTap(index),
+                        scaleController: _scaleController,
+                        theme: theme,
+                      ),
+                    );
+                  }).toList(),
                 ),
-              );
-            }).toList(),
+              ),
+              // Divider mỏng giữa 2 hàng
+              if (secondRowItems.isNotEmpty)
+                Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                ),
+              // Hàng 2
+              if (secondRowItems.isNotEmpty)
+                SizedBox(
+                  height: 72,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: secondRowItems.asMap().entries.map((entry) {
+                      final index = entry.key + firstRowItems.length;
+                      final item = entry.value;
+                      final isSelected = index == widget.currentIndex;
+
+                      return Expanded(
+                        child: _NavigationButton(
+                          item: item,
+                          isSelected: isSelected,
+                          onTap: () => _handleTap(index),
+                          scaleController: _scaleController,
+                          theme: theme,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+            ],
           ),
         ),
       ),

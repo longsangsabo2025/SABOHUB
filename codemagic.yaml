@@ -25,6 +25,8 @@ workflows:
     scripts:
       - name: Set up .env file
         script: |
+          #!/usr/bin/env bash
+          
           cat <<EOF > .env
           SUPABASE_URL=$SUPABASE_URL
           SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
@@ -82,14 +84,23 @@ workflows:
         # Environment variables from .env file
         SUPABASE_URL: $SUPABASE_URL
         SUPABASE_ANON_KEY: $SUPABASE_ANON_KEY
+        SUPABASE_SERVICE_ROLE_KEY: $SUPABASE_SERVICE_ROLE_KEY
+        # Google Drive credentials
+        GOOGLE_DRIVE_CLIENT_ID_ANDROID: $GOOGLE_DRIVE_CLIENT_ID_ANDROID
+        GOOGLE_DRIVE_CLIENT_ID_WEB: $GOOGLE_DRIVE_CLIENT_ID_WEB
       flutter: stable
       java: 17
     scripts:
       - name: Set up .env file
         script: |
+          #!/usr/bin/env bash
+          
           cat <<EOF > .env
           SUPABASE_URL=$SUPABASE_URL
           SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+          SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
+          GOOGLE_DRIVE_CLIENT_ID_ANDROID=$GOOGLE_DRIVE_CLIENT_ID_ANDROID
+          GOOGLE_DRIVE_CLIENT_ID_WEB=$GOOGLE_DRIVE_CLIENT_ID_WEB
           EOF
       - name: Get Flutter packages
         script: |

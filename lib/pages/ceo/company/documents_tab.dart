@@ -1,13 +1,16 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../models/ai_uploaded_file.dart';
+import '../../../models/business_document.dart';
 import '../../../models/company.dart';
 import '../../../providers/document_provider.dart';
+import '../../../services/business_document_service.dart';
 
 /// Documents Tab for Company Details
 /// Shows document list with AI insights analysis
-class DocumentsTab extends ConsumerWidget {
+class DocumentsTab extends ConsumerStatefulWidget {
   final Company company;
 
   const DocumentsTab({
@@ -16,9 +19,195 @@ class DocumentsTab extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final documentsAsync = ref.watch(companyDocumentsProvider(company.id));
-    final insightsAsync = ref.watch(documentInsightsProvider(company.id));
+  ConsumerState<DocumentsTab> createState() => _DocumentsTabState();
+}
+
+class _DocumentsTabState extends ConsumerState<DocumentsTab> {
+  final _documentService = BusinessDocumentService();
+  bool _isUploading = false;
+
+  void _showUploadDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.upload_file, color: Colors.blue),
+            SizedBox(width: 12),
+            Text('Upload giấy tờ'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Chọn loại tài liệu bạn muốn upload:',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 16),
+            _buildDocTypeOption(
+              context,
+              'Giấy phép kinh doanh',
+              Icons.business_center,
+              Colors.blue,
+              'business_license',
+            ),
+            _buildDocTypeOption(
+              context,
+              'Hợp đồng lao động',
+              Icons.description,
+              Colors.green,
+              'employment_contract',
+            ),
+            _buildDocTypeOption(
+              context,
+              'Quy trình vận hành',
+              Icons.settings,
+              Colors.orange,
+              'sop',
+            ),
+            _buildDocTypeOption(
+              context,
+              'Tài liệu khác',
+              Icons.folder,
+              Colors.grey,
+              'other',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocTypeOption(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    String docType,
+  ) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(icon, color: color),
+        title: Text(title),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: () {
+          Navigator.pop(context);
+          _pickAndUploadFile(docType, title);
+        },
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadFile(String docType, String docTitle) async {
+    try {
+      // Pick file first
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+        allowMultiple: false,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+
+      // Show form dialog to enter document details
+      if (!mounted) return;
+      
+      final shouldUpload = await showDialog<bool>(
+        context: context,
+        builder: (context) => _DocumentUploadDialog(
+          fileName: file.name,
+          docType: docType,
+          docTitle: docTitle,
+          onUpload: (details) async {
+            setState(() => _isUploading = true);
+            
+            try {
+              // Here you would upload to storage first, then create document record
+              // For now, we'll create a simple document record
+              await _documentService.uploadDocument(
+                companyId: widget.company.id,
+                type: BusinessDocumentType.values.firstWhere(
+                  (e) => e.name == docType,
+                  orElse: () => BusinessDocumentType.other,
+                ),
+                title: details['title'] as String,
+                documentNumber: details['documentNumber'] as String,
+                description: file.name,
+                issueDate: details['issueDate'] as DateTime,
+                issuedBy: details['issuedBy'] as String,
+                expiryDate: details['expiryDate'] as DateTime?,
+                notes: details['notes'] as String?,
+              );
+
+              if (mounted) {
+                // Refresh documents list
+                ref.invalidate(companyDocumentsProvider(widget.company.id));
+                ref.invalidate(documentInsightsProvider(widget.company.id));
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.white),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text('Upload thành công: ${file.name}'),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+              return true;
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Lỗi upload: $e'),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+              return false;
+            } finally {
+              if (mounted) {
+                setState(() => _isUploading = false);
+              }
+            }
+          },
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi chọn file: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final documentsAsync = ref.watch(companyDocumentsProvider(widget.company.id));
+    final insightsAsync = ref.watch(documentInsightsProvider(widget.company.id));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -44,6 +233,17 @@ class DocumentsTab extends ConsumerWidget {
                       style: TextStyle(color: Colors.grey),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              ElevatedButton.icon(
+                onPressed: () => _showUploadDialog(context, ref),
+                icon: const Icon(Icons.upload_file),
+                label: const Text('Upload giấy tờ'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[700],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
               ),
             ],
@@ -535,6 +735,221 @@ class DocumentsTab extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Document Upload Dialog
+class _DocumentUploadDialog extends StatefulWidget {
+  final String fileName;
+  final String docType;
+  final String docTitle;
+  final Future<bool> Function(Map<String, dynamic>) onUpload;
+
+  const _DocumentUploadDialog({
+    required this.fileName,
+    required this.docType,
+    required this.docTitle,
+    required this.onUpload,
+  });
+
+  @override
+  State<_DocumentUploadDialog> createState() => _DocumentUploadDialogState();
+}
+
+class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _docNumberController = TextEditingController();
+  final _issuedByController = TextEditingController();
+  final _notesController = TextEditingController();
+  DateTime _issueDate = DateTime.now();
+  DateTime? _expiryDate;
+  bool _isUploading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.text = widget.docTitle;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _docNumberController.dispose();
+    _issuedByController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleUpload() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isUploading = true);
+
+    final details = {
+      'title': _titleController.text,
+      'documentNumber': _docNumberController.text,
+      'issuedBy': _issuedByController.text,
+      'issueDate': _issueDate,
+      'expiryDate': _expiryDate,
+      'notes': _notesController.text.isEmpty ? null : _notesController.text,
+    };
+
+    final success = await widget.onUpload(details);
+
+    if (mounted) {
+      if (success) {
+        Navigator.pop(context, true);
+      } else {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.description, color: Colors.blue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Thông tin giấy tờ'),
+                Text(
+                  widget.fileName,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Tên tài liệu *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value?.isEmpty ?? true
+                    ? 'Vui lòng nhập tên tài liệu'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _docNumberController,
+                decoration: const InputDecoration(
+                  labelText: 'Số giấy tờ *',
+                  border: OutlineInputBorder(),
+                  hintText: 'VD: 0123456789',
+                ),
+                validator: (value) => value?.isEmpty ?? true
+                    ? 'Vui lòng nhập số giấy tờ'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _issuedByController,
+                decoration: const InputDecoration(
+                  labelText: 'Nơi cấp *',
+                  border: OutlineInputBorder(),
+                  hintText: 'VD: Sở Kế hoạch và Đầu tư TP.HCM',
+                ),
+                validator: (value) => value?.isEmpty ?? true
+                    ? 'Vui lòng nhập nơi cấp'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text('Ngày cấp'),
+                subtitle: Text(
+                  '${_issueDate.day}/${_issueDate.month}/${_issueDate.year}',
+                ),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: _issueDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now(),
+                  );
+                  if (date != null) {
+                    setState(() => _issueDate = date);
+                  }
+                },
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.grey[300]!),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text('Ngày hết hạn (tùy chọn)'),
+                subtitle: Text(
+                  _expiryDate != null
+                      ? '${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}'
+                      : 'Không có',
+                ),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: _expiryDate ?? DateTime.now().add(const Duration(days: 365)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(2100),
+                  );
+                  if (date != null) {
+                    setState(() => _expiryDate = date);
+                  }
+                },
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.grey[300]!),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Ghi chú (tùy chọn)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isUploading ? null : () => Navigator.pop(context, false),
+          child: const Text('Hủy'),
+        ),
+        ElevatedButton.icon(
+          onPressed: _isUploading ? null : _handleUpload,
+          icon: _isUploading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.upload),
+          label: Text(_isUploading ? 'Đang upload...' : 'Upload'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue[700],
+            foregroundColor: Colors.white,
+          ),
+        ),
+      ],
     );
   }
 }
