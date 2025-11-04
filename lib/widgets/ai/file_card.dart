@@ -38,7 +38,7 @@ class FileCard extends StatelessWidget {
                 color: _getFileColor().withOpacity(0.1),
                 child: file.isImage
                     ? Image.network(
-                        file.storageUrl,
+                        file.fileUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return _buildFileIcon();
@@ -126,7 +126,7 @@ class FileCard extends StatelessWidget {
     IconData icon;
     String label;
 
-    if (file.isPending) {
+    if (file.isUploaded) {
       color = Colors.orange;
       icon = Icons.hourglass_empty;
       label = 'Chờ';
@@ -134,7 +134,7 @@ class FileCard extends StatelessWidget {
       color = Colors.blue;
       icon = Icons.sync;
       label = 'Đang xử lý';
-    } else if (file.isCompleted) {
+    } else if (file.isAnalyzed) {
       color = Colors.green;
       icon = Icons.check_circle;
       label = 'Xong';

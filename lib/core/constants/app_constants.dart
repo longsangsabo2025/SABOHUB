@@ -27,43 +27,6 @@ class AppConstants {
   static const String themeKey = 'theme_mode';
   static const String languageKey = 'language';
   static const String companyKey = 'selected_company';
-
-  // Demo Users (matching React Native version)
-  static const Map<String, Map<String, dynamic>> demoUsers = {
-    'ceo@sabohub.com': {
-      'id': '1',
-      'name': 'Nguyễn Văn CEO',
-      'email': 'ceo@sabohub.com',
-      'role': 'CEO',
-      'phone': '0901234567',
-      'password': 'demo123',
-    },
-    'manager@sabohub.com': {
-      'id': '2',
-      'name': 'Trần Thị Quản Lý',
-      'email': 'manager@sabohub.com',
-      'role': 'MANAGER',
-      'phone': '0902234567',
-      'password': 'demo123',
-    },
-    'shift@sabohub.com': {
-      'id': '3',
-      'name': 'Lê Văn Trưởng Ca',
-      'email': 'shift@sabohub.com',
-      'role': 'SHIFT_LEADER',
-      'phone': '0903234567',
-      'password': 'demo123',
-    },
-    'staff@sabohub.com': {
-      'id': '4',
-      'name': 'Phạm Thị Nhân Viên',
-      'email': 'staff@sabohub.com',
-      'role': 'STAFF',
-      'phone': '0904234567',
-      'password': 'demo123',
-    },
-  };
-
   // Animation Durations
   static const Duration shortAnimation = Duration(milliseconds: 200);
   static const Duration mediumAnimation = Duration(milliseconds: 300);

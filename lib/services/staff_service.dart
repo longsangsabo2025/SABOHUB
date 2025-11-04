@@ -9,7 +9,7 @@ class StaffService {
   /// Get all staff members
   Future<List<Staff>> getAllStaff({String? branchId}) async {
     try {
-      var query = _supabase.from('users').select();
+      var query = _supabase.from('users').select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at');
 
       if (branchId != null) {
         query = query.eq('branch_id', branchId);
@@ -27,7 +27,7 @@ class StaffService {
   Future<Staff?> getStaffById(String id) async {
     try {
       final response =
-          await _supabase.from('users').select().eq('id', id).single();
+          await _supabase.from('users').select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at').eq('id', id).single();
 
       return Staff.fromJson(response);
     } catch (e) {
@@ -38,7 +38,7 @@ class StaffService {
   /// Get staff by role
   Future<List<Staff>> getStaffByRole(String role, {String? branchId}) async {
     try {
-      var query = _supabase.from('users').select().eq('role', role);
+      var query = _supabase.from('users').select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at').eq('role', role);
 
       if (branchId != null) {
         query = query.eq('branch_id', branchId);
@@ -72,7 +72,7 @@ class StaffService {
             'branch_id': branchId,
             'status': 'active',
           })
-          .select()
+          .select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
           .single();
 
       return Staff.fromJson(response);
@@ -88,7 +88,7 @@ class StaffService {
           .from('users')
           .update(updates)
           .eq('id', id)
-          .select()
+          .select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
           .single();
 
       return Staff.fromJson(response);

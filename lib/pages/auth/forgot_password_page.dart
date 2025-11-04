@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../providers/auth_provider.dart';
 
 class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -16,6 +17,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   final _emailController = TextEditingController();
   bool _isLoading = false;
   bool _emailSent = false;
+  DateTime? _lastSendTime; // Warning #8: Track last send time
+  static const _sendCooldown =
+      Duration(seconds: 60); // Warning #8: 60 second cooldown
 
   @override
   void dispose() {
@@ -26,40 +30,94 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
   Future<void> _sendResetEmail() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Warning #8 Fix: Check cooldown
+    if (_lastSendTime != null) {
+      final timeSinceLastSend = DateTime.now().difference(_lastSendTime!);
+      if (timeSinceLastSend < _sendCooldown) {
+        final remaining = _sendCooldown - timeSinceLastSend;
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.timer_outlined, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '⏱️ Vui lòng đợi ${remaining.inSeconds}s trước khi gửi lại',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Implement real password reset with Supabase
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      // Call Supabase password reset
+      await ref
+          .read(authProvider.notifier)
+          .resetPassword(_emailController.text.trim());
 
-      setState(() {
-        _isLoading = false;
-        _emailSent = true;
-      });
+      // Warning #8: Record successful send time
+      _lastSendTime = DateTime.now();
 
-      _showSuccessSnackBar('Email đặt lại mật khẩu đã được gửi');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _emailSent = true;
+        });
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text('✉️ Email đặt lại mật khẩu đã được gửi!'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (e) {
       setState(() => _isLoading = false);
-      _showErrorSnackBar('Không thể gửi email: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('Lỗi: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.errorColor,
-      ),
-    );
-  }
-
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppConstants.successColor,
-      ),
-    );
   }
 
   @override

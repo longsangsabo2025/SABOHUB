@@ -327,9 +327,16 @@ class AIService {
     try {
       // Get file info first to delete from storage
       final file = await getUploadedFile(fileId);
-      if (file != null) {
-        // Delete from storage
-        await _supabase.storage.from('ai-files').remove([file.storagePath]);
+      if (file != null && file.fileUrl.isNotEmpty) {
+        // Extract storage path from URL
+        // URL format: https://xxx.supabase.co/storage/v1/object/public/ai-files/path
+        final uri = Uri.parse(file.fileUrl);
+        final pathSegments = uri.pathSegments;
+        final bucketIndex = pathSegments.indexOf('ai-files');
+        if (bucketIndex != -1 && bucketIndex < pathSegments.length - 1) {
+          final storagePath = pathSegments.sublist(bucketIndex + 1).join('/');
+          await _supabase.storage.from('ai-files').remove([storagePath]);
+        }
       }
 
       // Delete from database

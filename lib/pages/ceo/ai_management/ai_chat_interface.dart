@@ -101,7 +101,7 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
               // Assistant Selector
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedAssistant,
+                  initialValue: _selectedAssistant,
                   decoration: InputDecoration(
                     contentPadding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

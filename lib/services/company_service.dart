@@ -1,18 +1,21 @@
 import '../core/services/supabase_service.dart';
 import '../models/company.dart';
+import 'branch_service.dart';
 
 /// Company Service
 /// Handles all company-related database operations
 /// Note: Uses 'companies' table in database (renamed from 'stores')
 class CompanyService {
   final _supabase = supabase.client;
+  final _branchService = BranchService();
 
   /// Get all companies
   Future<List<Company>> getAllCompanies() async {
     try {
       final response = await _supabase
           .from('companies')
-          .select()
+          .select(
+              'id, name, address, phone, email, business_type, is_active, created_at, updated_at')
           .order('created_at', ascending: false);
 
       return (response as List).map((json) => Company.fromJson(json)).toList();
@@ -24,8 +27,12 @@ class CompanyService {
   /// Get company by ID
   Future<Company?> getCompanyById(String id) async {
     try {
-      final response =
-          await _supabase.from('companies').select().eq('id', id).single();
+      final response = await _supabase
+          .from('companies')
+          .select(
+              'id, name, address, phone, email, business_type, is_active, created_at, updated_at')
+          .eq('id', id)
+          .single();
 
       return Company.fromJson(response);
     } catch (e) {
@@ -42,6 +49,13 @@ class CompanyService {
     String? businessType,
   }) async {
     try {
+      // Verify user is authenticated
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // ✅ Insert company WITHOUT owner_id (schema doesn't have this column)
       final response = await _supabase
           .from('companies')
           .insert({
@@ -49,13 +63,33 @@ class CompanyService {
             'address': address,
             'phone': phone,
             'email': email,
-            'business_type': businessType ?? 'billiards',
+            'business_type':
+                businessType ?? 'restaurant', // Default to restaurant
             'is_active': true,
+            // ❌ REMOVED: 'owner_id': userId - column doesn't exist in schema
           })
-          .select()
+          .select(
+              'id, name, address, phone, email, business_type, is_active, created_at, updated_at')
           .single();
 
-      return Company.fromJson(response);
+      final company = Company.fromJson(response);
+
+      // 🎯 Tự động tạo chi nhánh "Trung tâm" cho công ty mới
+      try {
+        await _branchService.createBranch(
+          companyId: company.id,
+          name: 'Chi nhánh Trung tâm',
+          address: address, // Dùng địa chỉ công ty
+          phone: phone, // Dùng số điện thoại công ty
+          email: email, // Dùng email công ty
+        );
+        print('✅ Đã tự động tạo chi nhánh Trung tâm cho công ty ${company.name}');
+      } catch (branchError) {
+        // Không throw error nếu tạo chi nhánh thất bại, công ty vẫn được tạo
+        print('⚠️ Không thể tạo chi nhánh Trung tâm: $branchError');
+      }
+
+      return company;
     } catch (e) {
       throw Exception('Failed to create company: $e');
     }
@@ -91,7 +125,7 @@ class CompanyService {
     try {
       // Get employee count for this company
       final employeesResponse = await _supabase
-          .from('profiles')
+          .from('users')
           .select('id')
           .eq('company_id', companyId);
 

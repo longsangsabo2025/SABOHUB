@@ -64,15 +64,53 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
   @override
   Widget build(BuildContext context) {
     print('🔍 AIAssistantTab: Building with companyId: ${widget.companyId}');
+    
     final assistantAsync = ref.watch(aiAssistantProvider(widget.companyId));
 
     return assistantAsync.when(
-      data: (assistant) => _buildChatInterface(assistant),
-      loading: () => const Center(child: CircularProgressIndicator()),
+      data: (assistant) {
+        print('✅ AIAssistant loaded: ${assistant?.id}');
+        return _buildChatInterface(assistant);
+      },
+      loading: () {
+        print('⏳ Loading AIAssistant...');
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
       error: (error, stack) {
-        print('❌ AIAssistantTab Error: $error');
-        print('❌ AIAssistantTab CompanyId: ${widget.companyId}');
-        return _buildErrorView(error);
+        print('❌ AIAssistant error: $error');
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Không thể tải AI Assistant',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error.toString(),
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ref.invalidate(aiAssistantProvider(widget.companyId));
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -398,18 +436,13 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
 
   Widget _buildFeatureItem(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.check_circle, size: 16, color: Colors.green),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 14,
+          color: Colors.grey[700],
+        ),
       ),
     );
   }

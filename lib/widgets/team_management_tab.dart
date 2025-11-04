@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../models/user.dart';
-import '../../providers/manager_provider_cached.dart';
+import '../models/user.dart' as app_user;
+import '../providers/employee_provider.dart';
+import '../providers/auth_provider.dart';
+
+// Import UserRole
+typedef UserRole = app_user.UserRole;
 
 /// Team Management Tab - Enhanced version for Manager Dashboard
 /// 🎯 Polished Team Tab with employee CRUD, search, filters, and actions
@@ -16,107 +20,82 @@ class TeamManagementTab extends ConsumerStatefulWidget {
 
 class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
   String _searchQuery = '';
-  UserRole? _selectedRoleFilter;
+  app_user.UserRole? _selectedRoleFilter;
   String _selectedStatusFilter = 'all'; // all, active, inactive
   bool _showFilters = false;
-  
-  // Mock team data for demonstration - in real app this comes from provider
-  final List<TeamMember> _mockTeamMembers = [
-    TeamMember(
-      id: 'emp1',
-      name: 'Nguyễn Thị Mai',
-      email: 'mai.nguyen@sabohub.com',
-      phone: '0912345678',
-      role: UserRole.staff,
-      shift: 'Ca sáng',
-      status: 'active',
-      avatar: null,
-      joinDate: DateTime(2024, 1, 15),
-      performance: 95,
-    ),
-    TeamMember(
-      id: 'emp2', 
-      name: 'Trần Văn Hùng',
-      email: 'hung.tran@sabohub.com',
-      phone: '0987654321',
-      role: UserRole.shiftLeader,
-      shift: 'Ca chiều',
-      status: 'active',
-      avatar: null,
-      joinDate: DateTime(2024, 2, 10),
-      performance: 88,
-    ),
-    TeamMember(
-      id: 'emp3',
-      name: 'Lê Thị Linh',
-      email: 'linh.le@sabohub.com', 
-      phone: '0934567890',
-      role: UserRole.staff,
-      shift: 'Ca tối',
-      status: 'inactive',
-      avatar: null,
-      joinDate: DateTime(2024, 3, 5),
-      performance: 78,
-    ),
-    TeamMember(
-      id: 'emp4',
-      name: 'Phạm Văn Sơn',
-      email: 'son.pham@sabohub.com',
-      phone: '0945678901',
-      role: UserRole.staff,
-      shift: 'Ca sáng',
-      status: 'active',
-      avatar: null,
-      joinDate: DateTime(2024, 1, 20),
-      performance: 92,
-    ),
-  ];
 
-  List<TeamMember> get _filteredTeamMembers {
-    return _mockTeamMembers.where((member) {
+  List<app_user.User> _getFilteredEmployees(List<app_user.User> employees) {
+    return employees.where((employee) {
       // Search filter
       if (_searchQuery.isNotEmpty) {
         final searchLower = _searchQuery.toLowerCase();
-        if (!member.name.toLowerCase().contains(searchLower) &&
-            !member.email.toLowerCase().contains(searchLower) &&
-            !member.phone.contains(searchLower)) {
+        final name = employee.name?.toLowerCase() ?? '';
+        final email = employee.email.toLowerCase();
+        final phone = employee.phone ?? '';
+        if (!name.contains(searchLower) &&
+            !email.contains(searchLower) &&
+            !phone.contains(searchLower)) {
           return false;
         }
       }
-      
+
       // Role filter
-      if (_selectedRoleFilter != null && member.role != _selectedRoleFilter) {
+      if (_selectedRoleFilter != null && employee.role != _selectedRoleFilter) {
         return false;
       }
-      
-      // Status filter
-      if (_selectedStatusFilter != 'all' && member.status != _selectedStatusFilter) {
+
+      // Status filter - check isActive from User model
+      if (_selectedStatusFilter == 'active' && employee.isActive != true) {
         return false;
       }
-      
+      if (_selectedStatusFilter == 'inactive' && employee.isActive != false) {
+        return false;
+      }
+
       return true;
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final teamAsync = ref.watch(cachedManagerTeamMembersProvider(null));
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(),
-        const SizedBox(height: 16),
-        if (_showFilters) ...[
-          _buildFiltersSection(),
-          const SizedBox(height: 16),
-        ],
-        _buildQuickStats(),
-        const SizedBox(height: 16),
-        Expanded(
-          child: _buildTeamList(),
-        ),
-      ],
+    // Get current user's companyId
+    final authState = ref.watch(authProvider);
+    final companyId = authState.user?.companyId;
+
+    if (companyId == null) {
+      return const Center(
+        child: Text('Không tìm thấy thông tin công ty'),
+      );
+    }
+
+    // Watch real employee data from provider
+    final teamAsync = ref.watch(companyEmployeesProvider(companyId));
+
+    return teamAsync.when(
+      data: (employees) {
+        final filteredEmployees = _getFilteredEmployees(employees);
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 16),
+            if (_showFilters) ...[
+              _buildFiltersSection(),
+              const SizedBox(height: 16),
+            ],
+            _buildQuickStats(employees),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _buildTeamList(filteredEmployees),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Text('Lỗi tải danh sách nhân viên: $error'),
+      ),
     );
   }
 
@@ -186,13 +165,14 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
             onChanged: (value) => setState(() => _searchQuery = value),
           ),
           const SizedBox(height: 12),
-          
+
           // Filter chips
           Row(
             children: [
-              const Text('Lọc theo: ', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text('Lọc theo: ',
+                  style: TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(width: 8),
-              
+
               // Role filter
               DropdownButton<UserRole?>(
                 value: _selectedRoleFilter,
@@ -200,23 +180,26 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
                 items: [
                   const DropdownMenuItem(value: null, child: Text('Tất cả')),
                   ...UserRole.values.map((role) => DropdownMenuItem(
-                    value: role,
-                    child: Text(_getRoleDisplayName(role)),
-                  )),
+                        value: role,
+                        child: Text(_getRoleDisplayName(role)),
+                      )),
                 ],
-                onChanged: (value) => setState(() => _selectedRoleFilter = value),
+                onChanged: (value) =>
+                    setState(() => _selectedRoleFilter = value),
               ),
               const SizedBox(width: 16),
-              
+
               // Status filter
               DropdownButton<String>(
                 value: _selectedStatusFilter,
                 items: const [
                   DropdownMenuItem(value: 'all', child: Text('Tất cả')),
-                  DropdownMenuItem(value: 'active', child: Text('Đang hoạt động')),
+                  DropdownMenuItem(
+                      value: 'active', child: Text('Đang hoạt động')),
                   DropdownMenuItem(value: 'inactive', child: Text('Tạm nghỉ')),
                 ],
-                onChanged: (value) => setState(() => _selectedStatusFilter = value!),
+                onChanged: (value) =>
+                    setState(() => _selectedStatusFilter = value!),
               ),
             ],
           ),
@@ -225,19 +208,20 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
     );
   }
 
-  Widget _buildQuickStats() {
-    final filteredMembers = _filteredTeamMembers;
-    final activeMembers = filteredMembers.where((m) => m.status == 'active').length;
-    final inactiveMembers = filteredMembers.where((m) => m.status == 'inactive').length;
-    final avgPerformance = filteredMembers.isEmpty ? 0.0 : 
-        filteredMembers.map((m) => m.performance).reduce((a, b) => a + b) / filteredMembers.length;
+  Widget _buildQuickStats(List<app_user.User> employees) {
+    final activeMembers =
+        employees.where((m) => m.isActive == true).length;
+    final inactiveMembers =
+        employees.where((m) => m.isActive != true).length;
+    // Performance is not tracked in User model, so we skip it or use default
+    const avgPerformance = 0.0;
 
     return Row(
       children: [
         Expanded(
           child: _buildStatCard(
             'Tổng nhân viên',
-            '${filteredMembers.length}',
+            '${employees.length}',
             Icons.people,
             Colors.blue.shade600,
           ),
@@ -273,7 +257,8 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -313,10 +298,8 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
     );
   }
 
-  Widget _buildTeamList() {
-    final filteredMembers = _filteredTeamMembers;
-    
-    if (filteredMembers.isEmpty) {
+  Widget _buildTeamList(List<app_user.User> employees) {
+    if (employees.isEmpty) {
       return _buildEmptyState();
     }
 
@@ -337,10 +320,13 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
           _buildListHeader(),
           Expanded(
             child: ListView.builder(
-              itemCount: filteredMembers.length,
+              itemCount: employees.length,
+              itemExtent: 80.0, // Fixed height for better performance
+              cacheExtent: 1000, // Pre-cache items for smoother scrolling
               itemBuilder: (context, index) {
-                final member = filteredMembers[index];
-                return _buildTeamMemberCard(member, index == filteredMembers.length - 1);
+                final employee = employees[index];
+                return _buildTeamMemberCard(
+                    employee, index == employees.length - 1);
               },
             ),
           ),
@@ -400,9 +386,11 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        border: isLast ? null : Border(
-          bottom: BorderSide(color: Colors.grey.shade200),
-        ),
+        border: isLast
+            ? null
+            : Border(
+                bottom: BorderSide(color: Colors.grey.shade200),
+              ),
       ),
       child: Row(
         children: [
@@ -413,9 +401,12 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: _getRoleColor(member.role).withValues(alpha: 0.1),
+                  backgroundColor:
+                      _getRoleColor(member.role).withValues(alpha: 0.1),
                   child: member.avatar != null
-                      ? ClipOval(child: Image.network(member.avatar!, fit: BoxFit.cover))
+                      ? ClipOval(
+                          child:
+                              Image.network(member.avatar!, fit: BoxFit.cover))
                       : Text(
                           member.name.substring(0, 1).toUpperCase(),
                           style: TextStyle(
@@ -452,7 +443,7 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
               ],
             ),
           ),
-          
+
           // Role
           Expanded(
             flex: 2,
@@ -473,7 +464,7 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
               ),
             ),
           ),
-          
+
           // Shift
           Expanded(
             flex: 2,
@@ -483,14 +474,15 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
               textAlign: TextAlign.center,
             ),
           ),
-          
+
           // Performance
           Expanded(
             flex: 1,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: _getPerformanceColor(member.performance).withValues(alpha: 0.1),
+                color: _getPerformanceColor(member.performance)
+                    .withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -504,7 +496,7 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
               ),
             ),
           ),
-          
+
           // Actions
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: Colors.grey.shade600, size: 18),
@@ -534,7 +526,9 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
                 child: Row(
                   children: [
                     Icon(
-                      member.status == 'active' ? Icons.pause : Icons.play_arrow,
+                      member.status == 'active'
+                          ? Icons.pause
+                          : Icons.play_arrow,
                       size: 16,
                     ),
                     const SizedBox(width: 8),
@@ -722,7 +716,8 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
                       children: [
                         CircleAvatar(
                           radius: 30,
-                          backgroundColor: _getRoleColor(member.role).withValues(alpha: 0.1),
+                          backgroundColor:
+                              _getRoleColor(member.role).withValues(alpha: 0.1),
                           child: Text(
                             member.name.substring(0, 1).toUpperCase(),
                             style: TextStyle(
@@ -757,20 +752,23 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: member.status == 'active' 
-                                ? Colors.green.shade100 
+                            color: member.status == 'active'
+                                ? Colors.green.shade100
                                 : Colors.orange.shade100,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Text(
-                            member.status == 'active' ? 'Đang hoạt động' : 'Tạm nghỉ',
+                            member.status == 'active'
+                                ? 'Đang hoạt động'
+                                : 'Tạm nghỉ',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: member.status == 'active' 
-                                  ? Colors.green.shade700 
+                              color: member.status == 'active'
+                                  ? Colors.green.shade700
                                   : Colors.orange.shade700,
                             ),
                           ),
@@ -778,14 +776,12 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    
                     _buildDetailRow('📧 Email', member.email),
                     _buildDetailRow('📱 Điện thoại', member.phone),
                     _buildDetailRow('⏰ Ca làm việc', member.shift),
-                    _buildDetailRow('📅 Ngày gia nhập', 
+                    _buildDetailRow('📅 Ngày gia nhập',
                         '${member.joinDate.day}/${member.joinDate.month}/${member.joinDate.year}'),
                     _buildDetailRow('📊 Hiệu suất', '${member.performance}%'),
-                    
                     const SizedBox(height: 24),
                     Row(
                       children: [
@@ -806,11 +802,15 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
                               Navigator.pop(context);
                               _toggleEmployeeStatus(member);
                             },
-                            icon: Icon(member.status == 'active' ? Icons.pause : Icons.play_arrow),
-                            label: Text(member.status == 'active' ? 'Tạm nghỉ' : 'Kích hoạt'),
+                            icon: Icon(member.status == 'active'
+                                ? Icons.pause
+                                : Icons.play_arrow),
+                            label: Text(member.status == 'active'
+                                ? 'Tạm nghỉ'
+                                : 'Kích hoạt'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: member.status == 'active' 
-                                  ? Colors.orange.shade600 
+                              backgroundColor: member.status == 'active'
+                                  ? Colors.orange.shade600
                                   : Colors.green.shade600,
                               foregroundColor: Colors.white,
                             ),
@@ -860,6 +860,8 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
   }
 
   void _editEmployee(TeamMember member) {
+    if (!context.mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('✏️ Chỉnh sửa thông tin ${member.name}'),
@@ -874,16 +876,20 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
   }
 
   void _toggleEmployeeStatus(TeamMember member) {
+    if (!context.mounted) return;
+
     final newStatus = member.status == 'active' ? 'inactive' : 'active';
     final statusText = newStatus == 'active' ? 'kích hoạt' : 'tạm nghỉ';
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('✅ Đã $statusText tài khoản ${member.name}'),
-        backgroundColor: newStatus == 'active' ? Colors.green.shade600 : Colors.orange.shade600,
+        backgroundColor: newStatus == 'active'
+            ? Colors.green.shade600
+            : Colors.orange.shade600,
       ),
     );
-    
+
     // Update member status in real implementation
     setState(() {
       final index = _mockTeamMembers.indexWhere((m) => m.id == member.id);
@@ -898,7 +904,8 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Xác nhận xóa'),
-        content: Text('Bạn có chắc chắn muốn xóa tài khoản "${member.name}"?\n\nHành động này không thể hoàn tác.'),
+        content: Text(
+            'Bạn có chắc chắn muốn xóa tài khoản "${member.name}"?\n\nHành động này không thể hoàn tác.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -910,12 +917,14 @@ class _TeamManagementTabState extends ConsumerState<TeamManagementTab> {
               setState(() {
                 _mockTeamMembers.removeWhere((m) => m.id == member.id);
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('🗑️ Đã xóa tài khoản ${member.name}'),
-                  backgroundColor: Colors.red.shade600,
-                ),
-              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('🗑️ Đã xóa tài khoản ${member.name}'),
+                    backgroundColor: Colors.red.shade600,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade600,

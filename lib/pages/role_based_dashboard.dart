@@ -6,6 +6,8 @@ import '../layouts/manager_main_layout.dart';
 import '../layouts/shift_leader_main_layout.dart';
 import '../pages/ceo/ceo_main_layout.dart';
 import '../pages/staff_main_layout.dart';
+import '../providers/auth_provider.dart';
+import '../models/user.dart' as app_user;
 
 /// User Role Enum
 enum UserRole {
@@ -74,10 +76,22 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    // Get current user from auth provider
+    final currentUser = ref.watch(currentUserProvider);
+
+    // If user has a role, use it (unless roleParam overrides it)
+    if (_selectedRole == null &&
+        currentUser != null &&
+        currentUser.role != null) {
+      // Auto-select based on user's actual role
+      _selectedRole = _mapUserRoleToEnum(currentUser.role);
+    }
+
     if (_selectedRole != null) {
       return _buildRoleLayout(_selectedRole!);
     }
 
+    // Only show role selection if user has no role (shouldn't happen normally)
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -401,6 +415,20 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
         ],
       ),
     );
+  }
+
+  // Map app_user.UserRole to local UserRole enum
+  UserRole _mapUserRoleToEnum(app_user.UserRole userRole) {
+    switch (userRole) {
+      case app_user.UserRole.ceo:
+        return UserRole.ceo;
+      case app_user.UserRole.manager:
+        return UserRole.manager;
+      case app_user.UserRole.shiftLeader:
+        return UserRole.shiftLeader;
+      case app_user.UserRole.staff:
+        return UserRole.staff;
+    }
   }
 
   Widget _buildRoleLayout(UserRole role) {

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/attendance.dart';
+import '../services/location_service.dart';
 
 // Simple Attendance class for staff check-in/out
 class Attendance {
@@ -90,6 +91,45 @@ class AttendanceService {
       date: now,
       checkInTime: now,
       status: AttendanceStatus.present,
+    );
+
+    _mockAttendance.add(attendance);
+
+    // Simulate API call delay
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    return attendance;
+  }
+
+  Future<Attendance> checkInWithLocation({
+    required String userId,
+    String? branchId,
+    String? companyId,
+  }) async {
+    final locationService = LocationService();
+
+    // Kiểm tra và validate location
+    final locationResult = await locationService.validateCheckInLocation(
+      companyId: companyId,
+      branchId: branchId,
+    );
+
+    if (!locationResult.isValid) {
+      throw LocationServiceException(
+          'Vị trí check-in không hợp lệ. ${locationResult.statusMessage}');
+    }
+
+    final now = DateTime.now();
+    final attendance = Attendance(
+      id: 'attendance_${now.millisecondsSinceEpoch}',
+      userId: userId,
+      branchId: branchId,
+      date: now,
+      checkInTime: now,
+      status: AttendanceStatus.present,
+      // TODO: Add location fields to Attendance model
+      notes:
+          'Location: ${locationService.formatLocationForStorage(locationResult.currentLocation)}',
     );
 
     _mockAttendance.add(attendance);

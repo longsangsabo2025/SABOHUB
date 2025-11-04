@@ -138,8 +138,7 @@ class AIUsageAnalytics {
 
   /// Get period label
   String get periodLabel {
-    final formatter =
-        (DateTime date) => '${date.day}/${date.month}/${date.year}';
+    String formatter(DateTime date) => '${date.day}/${date.month}/${date.year}';
     return '${formatter(periodStart)} - ${formatter(periodEnd)}';
   }
 

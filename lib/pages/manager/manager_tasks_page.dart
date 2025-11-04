@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/management_task.dart';
-import '../../providers/management_task_provider_cached.dart';
+import '../../utils/dummy_providers.dart';
+import '../../widgets/multi_account_switcher.dart';
 
 /// Manager Tasks Page
 /// Three main sections: Tasks from CEO, Assign to Staff, My Tasks
@@ -75,6 +76,8 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
         ),
       ),
       actions: [
+        // Multi-Account Switcher
+        const MultiAccountSwitcher(),
         IconButton(
           onPressed: () {
             // Filter tasks
@@ -144,7 +147,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
           ),
         ),
         data: (cachedTasks) {
-          final ceoTasks = cachedTasks.data;
+          final ceoTasks = cachedTasks;
 
           if (ceoTasks.isEmpty) {
             return Center(
@@ -208,7 +211,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
           ),
         ),
         data: (cachedTasks) {
-          final assignedTasks = cachedTasks.data;
+          final assignedTasks = cachedTasks;
 
           if (assignedTasks.isEmpty) {
             return Center(
@@ -282,7 +285,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
           ),
         ),
         data: (cachedTasks) {
-          final myTasks = cachedTasks.data;
+          final myTasks = cachedTasks;
 
           if (myTasks.isEmpty) {
             return Center(
@@ -540,7 +543,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
                   ),
                 ],
               ),
-              if (showAssignedBy && task.createdBy != null) ...[
+              if (showAssignedBy) ...[
                 const SizedBox(height: 8),
                 Row(
                   children: [

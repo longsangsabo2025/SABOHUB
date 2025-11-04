@@ -279,7 +279,7 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
                     decoration: const InputDecoration(labelText: 'Mô tả'),
                     maxLines: 2),
                 DropdownButtonFormField<TaskPriority>(
-                  value: p,
+                  initialValue: p,
                   items: TaskPriority.values
                       .map((e) => DropdownMenuItem(
                           value: e,
@@ -288,7 +288,7 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
                   onChanged: (v) => setState(() => p = v!),
                 ),
                 DropdownButtonFormField<TaskCategory>(
-                  value: c,
+                  initialValue: c,
                   items: TaskCategory.values
                       .map((e) => DropdownMenuItem(
                           value: e,
@@ -359,7 +359,7 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
                     decoration: const InputDecoration(labelText: 'Mô tả'),
                     maxLines: 2),
                 DropdownButtonFormField<TaskPriority>(
-                  value: p,
+                  initialValue: p,
                   items: TaskPriority.values
                       .map((e) => DropdownMenuItem(
                           value: e,
@@ -368,7 +368,7 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
                   onChanged: (v) => setState(() => p = v!),
                 ),
                 DropdownButtonFormField<TaskCategory>(
-                  value: c,
+                  initialValue: c,
                   items: TaskCategory.values
                       .map((e) => DropdownMenuItem(
                           value: e,

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/cache/cached_provider.dart';
 import '../../models/store.dart';
-import '../../providers/company_provider_cached.dart';
+import '../../utils/dummy_providers.dart';
 import '../../services/store_service.dart';
 
 /// Store Service Provider (for mutations)
@@ -51,7 +50,7 @@ class _CEOStoresPageState extends ConsumerState<CEOStoresPage>
       body: RefreshIndicator(
         // ✅ Pull-to-refresh support
         onRefresh: () async {
-          await ref.read(cachedStoresProvider.notifier).refresh();
+          ref.invalidate(cachedStoresProvider);
         },
         child: Column(
           children: [
@@ -70,7 +69,7 @@ class _CEOStoresPageState extends ConsumerState<CEOStoresPage>
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: () {
-                          ref.read(cachedStoresProvider.notifier).refresh();
+                          ref.invalidate(cachedStoresProvider);
                         },
                         icon: const Icon(Icons.refresh),
                         label: const Text('Thử lại'),

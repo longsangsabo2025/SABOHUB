@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:markdown_widget/markdown_widget.dart';
 
 import '../../models/ai_message.dart';
 
@@ -54,27 +53,37 @@ class MessageBubble extends StatelessWidget {
               ),
             )
           else
-            MarkdownBody(
+            MarkdownWidget(
               data: message.content,
-              styleSheet: MarkdownStyleSheet(
-                p: const TextStyle(fontSize: 15, height: 1.4),
-                h1: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                h2: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                h3: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                code: TextStyle(
-                  backgroundColor: Colors.grey[200],
-                  fontFamily: 'monospace',
-                ),
-                codeblockDecoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
-                ),
+              shrinkWrap: true,
+              config: MarkdownConfig(
+                configs: [
+                  const PConfig(
+                    textStyle: TextStyle(fontSize: 15, height: 1.4),
+                  ),
+                  const H1Config(
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const H2Config(
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const H3Config(
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  CodeConfig(
+                    style: TextStyle(
+                      backgroundColor: Colors.grey[200],
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  PreConfig(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ],
               ),
-              onTapLink: (text, href, title) {
-                if (href != null) {
-                  _launchUrl(href);
-                }
-              },
             ),
 
           // Attachments
@@ -182,12 +191,5 @@ class MessageBubble extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 }

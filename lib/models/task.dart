@@ -34,6 +34,20 @@ enum TaskCategory {
   const TaskCategory(this.label, this.color);
 }
 
+enum TaskRecurrence {
+  none('Không lặp lại', Icons.event_note, Color(0xFF6B7280)),
+  daily('Hằng ngày', Icons.today, Color(0xFF10B981)),
+  weekly('Hằng tuần', Icons.date_range, Color(0xFF3B82F6)),
+  monthly('Hằng tháng', Icons.calendar_month, Color(0xFF8B5CF6)),
+  adhoc('Đột xuất', Icons.flash_on, Color(0xFFF59E0B)),
+  project('Dự án', Icons.work, Color(0xFF06B6D4));
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  const TaskRecurrence(this.label, this.icon, this.color);
+}
+
 class Task {
   final String id;
   final String branchId;
@@ -42,6 +56,7 @@ class Task {
   final TaskCategory category;
   final TaskPriority priority;
   final TaskStatus status;
+  final TaskRecurrence recurrence; // NEW: Task recurrence type
   final String? assignedTo;
   final String? assignedToName;
   final String? assigneeId; // Add this field
@@ -51,6 +66,7 @@ class Task {
   final String createdByName;
   final DateTime createdAt;
   final String? notes;
+  final String? projectName; // NEW: For project-based tasks
 
   const Task({
     required this.id,
@@ -60,6 +76,7 @@ class Task {
     required this.category,
     required this.priority,
     required this.status,
+    this.recurrence = TaskRecurrence.none, // NEW: Default to none
     this.assignedTo,
     this.assignedToName,
     this.assigneeId, // Add this field to constructor
@@ -69,6 +86,7 @@ class Task {
     required this.createdByName,
     required this.createdAt,
     this.notes,
+    this.projectName, // NEW: For project-based tasks
   });
 
   bool get isOverdue =>
@@ -90,6 +108,7 @@ class Task {
     TaskCategory? category,
     TaskPriority? priority,
     TaskStatus? status,
+    TaskRecurrence? recurrence,
     String? assignedTo,
     String? assignedToName,
     String? assigneeId,
@@ -99,6 +118,7 @@ class Task {
     String? createdByName,
     DateTime? createdAt,
     String? notes,
+    String? projectName,
   }) {
     return Task(
       id: id ?? this.id,
@@ -108,6 +128,7 @@ class Task {
       category: category ?? this.category,
       priority: priority ?? this.priority,
       status: status ?? this.status,
+      recurrence: recurrence ?? this.recurrence,
       assignedTo: assignedTo ?? this.assignedTo,
       assignedToName: assignedToName ?? this.assignedToName,
       assigneeId: assigneeId ?? this.assigneeId,
@@ -117,6 +138,7 @@ class Task {
       createdByName: createdByName ?? this.createdByName,
       createdAt: createdAt ?? this.createdAt,
       notes: notes ?? this.notes,
+      projectName: projectName ?? this.projectName,
     );
   }
 }

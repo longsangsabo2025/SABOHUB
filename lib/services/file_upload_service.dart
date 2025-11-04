@@ -39,21 +39,22 @@ class FileUploadService {
             ),
           );
 
+      // Get the public URL for the uploaded file
+      final fileUrl = _supabase.storage.from('ai-files').getPublicUrl(storagePath);
+
       // Create database record
       final response = await _supabase
           .from('ai_uploaded_files')
           .insert({
             'assistant_id': assistantId,
             'company_id': companyId,
-            'uploaded_by': _supabase.auth.currentUser?.id,
+            'user_id': _supabase.auth.currentUser?.id,
             'file_name': fileName,
             'file_type': fileType,
             'mime_type': mimeType,
             'file_size': fileSize,
-            'storage_path': storagePath,
-            'processing_status': 'pending',
-            'tags': tags ?? [],
-            'metadata': metadata ?? {},
+            'file_url': fileUrl,
+            'status': 'uploaded',
           })
           .select()
           .single();

@@ -10,7 +10,7 @@ class TaskService {
   /// Get all tasks
   Future<List<Task>> getAllTasks({String? branchId}) async {
     try {
-      final query = _supabase.from('tasks').select();
+      final query = _supabase.from('tasks').select('id, branch_id, company_id, title, description, category, priority, status, assigned_to, assigned_to_name, due_date, created_by, created_by_name, notes, completed_at, created_at, updated_at');
 
       if (branchId != null) {
         query.eq('branch_id', branchId);
@@ -28,7 +28,7 @@ class TaskService {
   Future<List<Task>> getTasksByStatus(TaskStatus status,
       {String? branchId}) async {
     try {
-      final query = _supabase.from('tasks').select().eq('status', status.name);
+      final query = _supabase.from('tasks').select('id, branch_id, company_id, title, description, category, priority, status, assigned_to, assigned_to_name, due_date, created_by, created_by_name, notes, completed_at, created_at, updated_at').eq('status', status.name);
 
       if (branchId != null) {
         query.eq('branch_id', branchId);
@@ -46,7 +46,7 @@ class TaskService {
   Future<List<Task>> getTasksByAssignee(String userId,
       {String? branchId}) async {
     try {
-      final query = _supabase.from('tasks').select().eq('assigned_to', userId);
+      final query = _supabase.from('tasks').select('id, branch_id, company_id, title, description, category, priority, status, assigned_to, assigned_to_name, due_date, created_by, created_by_name, notes, completed_at, created_at, updated_at').eq('assigned_to', userId);
 
       if (branchId != null) {
         query.eq('branch_id', branchId);
@@ -79,7 +79,7 @@ class TaskService {
             'created_by_name': task.createdByName,
             'notes': task.notes,
           })
-          .select()
+          .select('id, branch_id, company_id, title, description, category, priority, status, assigned_to, assigned_to_name, due_date, created_by, created_by_name, notes, completed_at, created_at, updated_at')
           .single();
 
       return _taskFromJson(response);
@@ -95,7 +95,7 @@ class TaskService {
           .from('tasks')
           .update(updates)
           .eq('id', taskId)
-          .select()
+          .select('id, branch_id, company_id, title, description, category, priority, status, assigned_to, assigned_to_name, due_date, created_by, created_by_name, notes, completed_at, created_at, updated_at')
           .single();
 
       return _taskFromJson(response);
@@ -119,7 +119,7 @@ class TaskService {
           .from('tasks')
           .update(updates)
           .eq('id', taskId)
-          .select()
+          .select('id, branch_id, company_id, title, description, category, priority, status, assigned_to, assigned_to_name, due_date, created_by, created_by_name, notes, completed_at, created_at, updated_at')
           .single();
 
       return _taskFromJson(response);
@@ -140,7 +140,7 @@ class TaskService {
   /// Get task statistics
   Future<Map<String, int>> getTaskStats({String? branchId}) async {
     try {
-      final query = _supabase.from('tasks').select();
+      final query = _supabase.from('tasks').select('id, branch_id, company_id, title, description, category, priority, status, assigned_to, assigned_to_name, due_date, created_by, created_by_name, notes, completed_at, created_at, updated_at');
 
       if (branchId != null) {
         query.eq('branch_id', branchId);
@@ -161,6 +161,59 @@ class TaskService {
       };
     } catch (e) {
       throw Exception('Failed to fetch task stats: $e');
+    }
+  }
+
+  /// Get all tasks for a company
+  Future<List<Task>> getTasksByCompany(String companyId) async {
+    try {
+      print('🔍 Fetching tasks for company: $companyId');
+      
+      final response = await _supabase
+          .from('tasks')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('created_at', ascending: false);
+
+      print('✅ Tasks response: ${response.length} tasks found');
+      
+      return (response as List).map((json) => _taskFromJson(json)).toList();
+    } catch (e) {
+      print('❌ Failed to fetch tasks by company: $e');
+      throw Exception('Failed to fetch tasks by company: $e');
+    }
+  }
+
+  /// Get task statistics for a company
+  Future<Map<String, int>> getCompanyTaskStats(String companyId) async {
+    try {
+      print('🔍 Fetching task stats for company: $companyId');
+      
+      final response = await _supabase
+          .from('tasks')
+          .select('*')
+          .eq('company_id', companyId);
+
+      print('✅ Task stats response: ${response.length} tasks');
+      
+      final tasks =
+          (response as List).map((json) => _taskFromJson(json)).toList();
+
+      final stats = {
+        'total': tasks.length,
+        'todo': tasks.where((t) => t.status == TaskStatus.todo).length,
+        'inProgress':
+            tasks.where((t) => t.status == TaskStatus.inProgress).length,
+        'completed':
+            tasks.where((t) => t.status == TaskStatus.completed).length,
+        'overdue': tasks.where((t) => t.isOverdue).length,
+      };
+      
+      print('📊 Stats: $stats');
+      return stats;
+    } catch (e) {
+      print('❌ Failed to fetch company task stats: $e');
+      throw Exception('Failed to fetch company task stats: $e');
     }
   }
 

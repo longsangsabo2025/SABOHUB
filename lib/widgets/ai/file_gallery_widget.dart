@@ -83,7 +83,7 @@ class FileGalleryWidget extends ConsumerWidget {
           file: file,
           onTap: () => _showFileDetails(context, ref, file),
           onDelete: () => _deleteFile(context, ref, file),
-          onProcess: file.isPending || file.isFailed
+          onProcess: file.isUploaded || file.hasError
               ? () => _processFile(context, ref, file)
               : null,
         );
@@ -278,7 +278,7 @@ class FileGalleryWidget extends ConsumerWidget {
                             border: Border.all(color: Colors.blue[200]!),
                           ),
                           child: Text(
-                            file.analysis.toString(),
+                            file.analysisResults.toString(),
                             style: const TextStyle(fontSize: 14),
                           ),
                         ),
@@ -286,7 +286,7 @@ class FileGalleryWidget extends ConsumerWidget {
                     ],
 
                     // Error
-                    if (file.isFailed && file.processingError != null) ...[
+                    if (file.hasError && file.errorMessage != null) ...[
                       const SizedBox(height: 20),
                       _buildInfoSection(
                         context,
@@ -299,7 +299,7 @@ class FileGalleryWidget extends ConsumerWidget {
                             border: Border.all(color: Colors.red[200]!),
                           ),
                           child: Text(
-                            file.processingError!,
+                            file.errorMessage!,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.red[900],
@@ -314,7 +314,7 @@ class FileGalleryWidget extends ConsumerWidget {
                     // Actions
                     Row(
                       children: [
-                        if (file.isPending || file.isFailed)
+                        if (file.isUploaded || file.hasError)
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () {
@@ -325,7 +325,7 @@ class FileGalleryWidget extends ConsumerWidget {
                               label: const Text('Xử lý lại'),
                             ),
                           ),
-                        if (file.isPending || file.isFailed)
+                        if (file.isUploaded || file.hasError)
                           const SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton.icon(
@@ -408,22 +408,22 @@ class FileGalleryWidget extends ConsumerWidget {
     IconData icon;
     String label;
 
-    if (file.isPending) {
+    if (file.isUploaded) {
       color = Colors.orange;
       icon = Icons.hourglass_empty;
-      label = 'Đang chờ';
+      label = 'Đã tải lên';
     } else if (file.isProcessing) {
       color = Colors.blue;
       icon = Icons.sync;
       label = 'Đang xử lý';
-    } else if (file.isCompleted) {
+    } else if (file.isAnalyzed) {
       color = Colors.green;
       icon = Icons.check_circle;
-      label = 'Hoàn thành';
+      label = 'Đã phân tích';
     } else {
       color = Colors.red;
       icon = Icons.error;
-      label = 'Thất bại';
+      label = 'Lỗi';
     }
 
     return Container(

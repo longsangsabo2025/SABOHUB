@@ -46,4 +46,5 @@ final currentUserStoreProvider = Provider<AsyncValue<Store?>>((ref) {
 });
 
 /// Selected Store Provider (for multi-store scenarios)
-final selectedStoreProvider = StateProvider<String?>((ref) => null);
+/// Use ref.read(selectedStoreProvider.notifier).state = value to update
+final selectedStoreProvider = Provider<String?>((ref) => null);

@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../providers/manager_provider_cached.dart';
-import '../../widgets/team_management_tab.dart';
+import '../../providers/manager_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/multi_account_switcher.dart';
 
 /// Manager Dashboard Page
 /// Management overview with team metrics and operations
@@ -22,17 +23,19 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider(null));
-    final teamAsync = ref.watch(cachedManagerTeamMembersProvider(null));
-    final activitiesAsync = ref.watch(
-        cachedManagerRecentActivitiesProvider((branchId: null, limit: 10)));
+    final authState = ref.watch(authProvider);
+    final branchId = authState.user?.branchId;
+    
+    final kpisAsync = ref.watch(managerDashboardKPIsProvider(branchId));
+    final activitiesAsync = ref.watch(managerRecentActivitiesProvider((branchId: branchId, limit: 10)));
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
       body: RefreshIndicator(
         onRefresh: () async {
-          refreshAllManagerData(ref);
+          ref.invalidate(managerDashboardKPIsProvider(branchId));
+          ref.invalidate(managerRecentActivitiesProvider((branchId: branchId, limit: 10)));
         },
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -40,34 +43,22 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               kpisAsync.when(
-                data: (cachedKpis) => _buildWelcomeSection(cachedKpis.data),
+                data: (cachedKpis) => _buildWelcomeSection(cachedKpis),
                 loading: () => _buildLoadingWelcome(),
                 error: (_, __) => _buildWelcomeSection({}),
               ),
               const SizedBox(height: 24),
               kpisAsync.when(
-                data: (cachedKpis) => _buildQuickStats(cachedKpis.data),
+                data: (cachedKpis) => _buildQuickStats(cachedKpis),
                 loading: () => _buildLoadingStats(),
                 error: (_, __) => _buildQuickStats({}),
               ),
               const SizedBox(height: 24),
               _buildOperationsSection(),
               const SizedBox(height: 24),
-              teamAsync.when(
-                data: (cachedTeam) => Container(
-                  height: 600, // Fixed height for team management
-                  child: const TeamManagementTab(),
-                ),
-                loading: () => _buildLoadingTeam(),
-                error: (_, __) => Container(
-                  height: 400,
-                  child: const TeamManagementTab(),
-                ),
-              ),
-              const SizedBox(height: 24),
               activitiesAsync.when(
-                data: (cachedActivities) =>
-                    _buildRecentActivities(cachedActivities.data),
+                data: (cachedActivities) => _buildRecentActivities(
+                    List<Map<String, dynamic>>.from(cachedActivities)),
                 loading: () => _buildLoadingActivities(),
                 error: (_, __) => _buildRecentActivities([]),
               ),
@@ -91,6 +82,8 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
         ),
       ),
       actions: [
+        // Multi-Account Switcher
+        const MultiAccountSwitcher(),
         IconButton(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -527,6 +520,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildTeamSection(List<Map<String, dynamic>> team) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -575,32 +569,6 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                     ],
                   ],
                 ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoadingTeam() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Đội ngũ hôm nay',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          height: 150,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Center(
-            child: CircularProgressIndicator(),
-          ),
         ),
       ],
     );

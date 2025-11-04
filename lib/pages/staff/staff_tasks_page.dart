@@ -200,7 +200,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
               children: [
                 if (status == TaskStatus.todo) _buildTaskSummary(userTasks),
                 if (status == TaskStatus.todo) const SizedBox(height: 24),
-                ...userTasks.map((task) => _buildTaskCard(task)).toList(),
+                ...userTasks.map((task) => _buildTaskCard(task)),
                 if (userTasks.isEmpty) _buildEmptyState(status),
               ],
             ),
@@ -325,6 +325,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildPriorityTasks() {
     return Container(
       decoration: BoxDecoration(
@@ -496,6 +497,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildRegularTasks() {
     return Container(
       decoration: BoxDecoration(
@@ -648,6 +650,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildInProgressTasksTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -836,6 +839,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildCompletedTasksTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),

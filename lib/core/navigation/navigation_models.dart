@@ -91,10 +91,24 @@ class NavigationConfig {
       allowedRoles: [UserRole.manager, UserRole.ceo],
     ),
     NavigationItem(
+      route: '/manager/companies',
+      icon: Icons.business,
+      activeIcon: Icons.business,
+      label: 'Công ty',
+      allowedRoles: [UserRole.manager],
+    ),
+    NavigationItem(
       route: '/manager/tasks',
       icon: Icons.assignment,
       activeIcon: Icons.assignment_turned_in,
       label: 'Công việc',
+      allowedRoles: [UserRole.manager],
+    ),
+    NavigationItem(
+      route: '/manager/attendance',
+      icon: Icons.access_time,
+      activeIcon: Icons.access_time_filled,
+      label: 'Chấm công',
       allowedRoles: [UserRole.manager],
     ),
     NavigationItem(

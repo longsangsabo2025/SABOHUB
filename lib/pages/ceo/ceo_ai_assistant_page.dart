@@ -100,7 +100,8 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
     ),
   };
 
-  /// Available AI functions
+  /// Available AI functions (for future use)
+  // ignore: unused_field
   static final List<Map<String, dynamic>> _aiFunctions = [
     {
       "name": "analyze_company_performance",
@@ -919,7 +920,7 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

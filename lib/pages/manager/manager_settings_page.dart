@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/auth_provider.dart';
-import '../../providers/manager_provider_cached.dart';
-import '../../providers/staff_provider_cached.dart';
+import '../../widgets/multi_account_switcher.dart';
 
 /// Manager Settings Page
 /// Settings and preferences for managers
@@ -55,6 +54,8 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
         ),
       ),
       actions: [
+        // Multi-Account Switcher
+        const MultiAccountSwitcher(),
         IconButton(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -73,7 +74,8 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
 
   Widget _buildProfileSection() {
     final authState = ref.watch(authProvider);
-    final teamAsync = ref.watch(cachedManagerTeamMembersProvider(null));
+    // TODO: Replace with proper provider after Riverpod 3.x migration
+    // final teamAsync = ref.watch(cachedManagerTeamMembersProvider(null));
 
     if (authState.isLoading) {
       return Container(
@@ -195,38 +197,19 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
             ],
           ),
           const SizedBox(height: 20),
-          teamAsync.when(
-            data: (cachedTeam) {
-              final team = cachedTeam.data;
-              return Row(
-                children: [
-                  Expanded(
-                    child: _buildProfileStat('Nhân viên', '${team.length}'),
-                  ),
-                  Expanded(
-                    child: _buildProfileStat('Email', user.email.split('@')[0]),
-                  ),
-                  Expanded(
-                    child: _buildProfileStat('Vai trò', 'Manager'),
-                  ),
-                ],
-              );
-            },
-            ),
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, s) => Row(
-              children: [
-                Expanded(
-                  child: _buildProfileStat('Nhân viên', '0'),
-                ),
-                Expanded(
-                  child: _buildProfileStat('Email', user.email.split('@')[0]),
-                ),
-                Expanded(
-                  child: _buildProfileStat('Vai trò', 'Manager'),
-                ),
-              ],
-            ),
+          // TODO: Restore team stats after Riverpod 3.x migration
+          Row(
+            children: [
+              Expanded(
+                child: _buildProfileStat('Nhân viên', '0'),
+              ),
+              Expanded(
+                child: _buildProfileStat('Email', user.email.split('@')[0]),
+              ),
+              Expanded(
+                child: _buildProfileStat('Vai trò', 'Manager'),
+              ),
+            ],
           ),
         ],
       ),
@@ -257,7 +240,8 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
   }
 
   Widget _buildOperationsSection() {
-    final staffAsync = ref.watch(cachedStaffStatsProvider(null));
+    // TODO: Replace with proper provider after Riverpod 3.x migration
+    // final staffAsync = ref.watch(cachedStaffStatsProvider(null));
 
     return Container(
       decoration: BoxDecoration(
@@ -286,28 +270,22 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
                   ),
                 ),
                 const Spacer(),
-                staffAsync.when(
-                  data: (cachedStats) {
-                    final stats = cachedStats.data;
-                    return Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${stats['total'] ?? 0} NV',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF10B981),
-                        ),
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (e, s) => const SizedBox.shrink(),
+                // TODO: Restore staff stats after Riverpod 3.x migration
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    '0 NV',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF10B981),
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -857,7 +857,7 @@ class _CreateEmployeePageState extends ConsumerState<CreateEmployeePage> {
           break;
       }
 
-      final suggestedEmail = '${rolePrefix}${normalizedName}@sabohub.com';
+      final suggestedEmail = '$rolePrefix$normalizedName@sabohub.com';
       setState(() {
         _emailController.text = suggestedEmail;
       });

@@ -19,10 +19,30 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   bool _obscurePassword = true;
 
   final List<Map<String, String>> _quickLogins = [
-    {'email': 'ceo1@sabohub.com', 'password': 'demo', 'label': 'CEO - Nhà hàng Sabo', 'role': 'CEO'},
-    {'email': 'manager1@sabohub.com', 'password': 'demo', 'label': 'Manager - Chi nhánh 1', 'role': 'MANAGER'},
-    {'email': 'shift@sabohub.com', 'password': 'demo', 'label': 'Shift Leader - Trưởng ca', 'role': 'SHIFT_LEADER'},
-    {'email': 'staff1@sabohub.com', 'password': 'demo', 'label': 'Staff - Nhân viên', 'role': 'STAFF'},
+    {
+      'email': 'ceo1@sabohub.com',
+      'password': 'demo',
+      'label': 'CEO - Nhà hàng Sabo',
+      'role': 'CEO'
+    },
+    {
+      'email': 'manager1@sabohub.com',
+      'password': 'demo',
+      'label': 'Manager - Chi nhánh 1',
+      'role': 'MANAGER'
+    },
+    {
+      'email': 'shift@sabohub.com',
+      'password': 'demo',
+      'label': 'Shift Leader - Trưởng ca',
+      'role': 'SHIFT_LEADER'
+    },
+    {
+      'email': 'staff1@sabohub.com',
+      'password': 'demo',
+      'label': 'Staff - Nhân viên',
+      'role': 'STAFF'
+    },
   ];
 
   @override
@@ -44,7 +64,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(authProvider.notifier).login(_emailController.text.trim(), _passwordController.text);
+      await ref
+          .read(authProvider.notifier)
+          .login(_emailController.text.trim(), _passwordController.text);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -92,10 +114,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   child: const Column(
                     children: [
-                      Icon(Icons.business_center, size: 48, color: Colors.white),
+                      Icon(Icons.business_center,
+                          size: 48, color: Colors.white),
                       SizedBox(height: 8),
-                      Text('SABOHUB', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
-                      Text('Quản lý nhân viên chuyên nghiệp', style: TextStyle(fontSize: 14, color: Colors.white70)),
+                      Text('SABOHUB',
+                          style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white)),
+                      Text('Quản lý nhân viên chuyên nghiệp',
+                          style:
+                              TextStyle(fontSize: 14, color: Colors.white70)),
                     ],
                   ),
                 ),
@@ -108,18 +137,24 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   decoration: InputDecoration(
                     labelText: 'Email',
                     hintText: 'nhap@email.com',
-                    prefixIcon: Icon(Icons.email_outlined, color: Colors.blue.shade600),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon:
+                        Icon(Icons.email_outlined, color: Colors.blue.shade600),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                      borderSide:
+                          BorderSide(color: Colors.blue.shade600, width: 2),
                     ),
                     filled: true,
                     fillColor: Colors.white,
                   ),
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) return 'Vui lòng nhập email';
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) return 'Email không đúng định dạng';
+                    if (value == null || value.trim().isEmpty)
+                      return 'Vui lòng nhập email';
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                        .hasMatch(value.trim()))
+                      return 'Email không đúng định dạng';
                     return null;
                   },
                 ),
@@ -132,21 +167,28 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   decoration: InputDecoration(
                     labelText: 'Mật khẩu',
                     hintText: 'Nhập mật khẩu',
-                    prefixIcon: Icon(Icons.lock_outlined, color: Colors.blue.shade600),
+                    prefixIcon:
+                        Icon(Icons.lock_outlined, color: Colors.blue.shade600),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      icon: Icon(_obscurePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                      borderSide:
+                          BorderSide(color: Colors.blue.shade600, width: 2),
                     ),
                     filled: true,
                     fillColor: Colors.white,
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Vui lòng nhập mật khẩu';
+                    if (value == null || value.isEmpty)
+                      return 'Vui lòng nhập mật khẩu';
                     if (value.length < 3) return 'Mật khẩu quá ngắn';
                     return null;
                   },
@@ -162,12 +204,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade600,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       elevation: 3,
                     ),
                     child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                        : const Text('Đăng nhập', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ? const CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2)
+                        : const Text('Đăng nhập',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -177,7 +223,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
                     onTap: () => context.go('/forgot-password'),
-                    child: const Text('Quên mật khẩu?', style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline)),
+                    child: const Text('Quên mật khẩu?',
+                        style: TextStyle(
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline)),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -185,7 +234,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 // 🎯 POLISHED QUICK LOGIN DEMO
                 const Divider(),
                 const SizedBox(height: 16),
-                Text('Đăng nhập nhanh (Demo)', style: TextStyle(color: Colors.grey.shade600)),
+                Text('Đăng nhập nhanh (Demo)',
+                    style: TextStyle(color: Colors.grey.shade600)),
                 const SizedBox(height: 12),
 
                 ...List.generate(_quickLogins.length, (index) {
@@ -193,10 +243,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: OutlinedButton.icon(
-                      onPressed: _isLoading ? null : () => _quickLogin(login['email']!, login['password']!),
+                      onPressed: _isLoading
+                          ? null
+                          : () =>
+                              _quickLogin(login['email']!, login['password']!),
                       icon: Icon(_getIconForRole(login['role']!)),
                       label: Text(login['label']!),
-                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(12)),
+                      style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.all(12)),
                     ),
                   );
                 }),
@@ -207,10 +261,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Chưa có tài khoản? ', style: TextStyle(color: Colors.grey.shade600)),
+                    Text('Chưa có tài khoản? ',
+                        style: TextStyle(color: Colors.grey.shade600)),
                     GestureDetector(
                       onTap: () => context.go('/signup'),
-                      child: const Text('Đăng ký ngay', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
+                      child: const Text('Đăng ký ngay',
+                          style: TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline)),
                     ),
                   ],
                 ),
@@ -224,11 +283,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   IconData _getIconForRole(String role) {
     switch (role) {
-      case 'CEO': return Icons.business_center;
-      case 'MANAGER': return Icons.person_outline;
-      case 'SHIFT_LEADER': return Icons.access_time;
-      case 'STAFF': return Icons.people;
-      default: return Icons.person;
+      case 'CEO':
+        return Icons.business_center;
+      case 'MANAGER':
+        return Icons.person_outline;
+      case 'SHIFT_LEADER':
+        return Icons.access_time;
+      case 'STAFF':
+        return Icons.people;
+      default:
+        return Icons.person;
     }
   }
 }

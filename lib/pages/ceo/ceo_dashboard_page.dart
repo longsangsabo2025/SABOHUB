@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../providers/analytics_provider_cached.dart';
+import '../../providers/ceo_dashboard_provider.dart';
+import '../../providers/ceo_tab_provider.dart';
+import 'ceo_main_layout.dart';
 import 'ceo_notifications_page.dart';
 import 'ceo_profile_page.dart';
 
 /// CEO Dashboard Page
 /// Main overview dashboard for CEO with key metrics and KPIs
+import '../../widgets/multi_account_switcher.dart';
+
 class CEODashboardPage extends ConsumerStatefulWidget {
   const CEODashboardPage({super.key});
 
@@ -20,12 +24,19 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 🔧 TEMPORARY FIX: Use mock data to avoid RLS policy infinite recursion error
+    // � Use real data from database via provider
+    final kpisAsync = ref.watch(ceoDashboardKPIProvider);
+    final activitiesAsync = ref.watch(ceoDashboardActivitiesProvider);
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
       body: RefreshIndicator(
         onRefresh: () async {
+          // Refresh data from provider
+          ref.invalidate(ceoDashboardKPIProvider);
+          ref.invalidate(ceoDashboardActivitiesProvider);
+
           // Show refresh feedback
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -34,63 +45,77 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
             ),
           );
         },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildWelcomeSection(_getMockKPIs()),
-              const SizedBox(height: 24),
-              _buildKPISection(_getMockKPIs()),
-              const SizedBox(height: 24),
-              _buildQuickActionsSection(),
-              const SizedBox(height: 24),
-              _buildRecentActivitiesSection(_getMockActivities()),
-            ],
+        child: kpisAsync.when(
+          data: (kpis) => SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildWelcomeSection(kpis),
+                const SizedBox(height: 24),
+                _buildKPISection(kpis),
+                const SizedBox(height: 24),
+                _buildQuickActionsSection(),
+                const SizedBox(height: 24),
+                _buildRecentActivitiesSection(activitiesAsync),
+              ],
+            ),
+          ),
+          loading: () => const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Đang tải dữ liệu...'),
+              ],
+            ),
+          ),
+          error: (error, stack) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Lỗi: $error'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    ref.invalidate(ceoDashboardKPIProvider);
+                  },
+                  child: const Text('Thử lại'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // Remove old mock data methods - no longer needed
+  /*
   // 📊 Mock KPIs data to avoid database errors
+  // ✅ Default to 0 for new users - no fake data
   Map<String, dynamic> _getMockKPIs() {
     return {
-      'monthlyRevenue': 125000000.0,
-      'revenueGrowth': 12.5,
-      'totalCompanies': 2,
-      'totalEmployees': 25,
-      'totalTables': 48,
-      'activeOrders': 8,
-      'todayRevenue': 4200000.0,
-      'todayGrowth': 8.3,
+      'monthlyRevenue': 0.0,
+      'revenueGrowth': 0.0,
+      'totalCompanies': 0,
+      'totalEmployees': 0,
+      'totalTables': 0,
+      'activeOrders': 0,
+      'todayRevenue': 0.0,
+      'todayGrowth': 0.0,
     };
   }
 
-  // 📝 Mock activities data
+  // 📝 Mock activities data - empty for new users
   AsyncValue<dynamic> _getMockActivities() {
-    final mockActivities = [
-      {
-        'action': 'Tạo công ty mới',
-        'details': 'Nhà hàng Sabo HCM đã được thêm',
-        'timestamp': DateTime.now().subtract(const Duration(minutes: 30)),
-        'user': 'CEO Admin',
-      },
-      {
-        'action': 'Cập nhật menu',
-        'details': 'Menu Cafe Sabo Hà Nội được cập nhật',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 2)),
-        'user': 'Manager HN',
-      },
-      {
-        'action': 'Thêm nhân viên',
-        'details': '3 nhân viên mới được tuyển dụng',
-        'timestamp': DateTime.now().subtract(const Duration(hours: 4)),
-        'user': 'HR Manager',
-      },
-    ];
+    final mockActivities = <Map<String, dynamic>>[];
     return AsyncValue.data(mockActivities);
   }
+  */
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
@@ -105,6 +130,8 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
         ),
       ),
       actions: [
+        // Multi-Account Switcher - Google/Facebook Style
+        const MultiAccountSwitcher(),
         IconButton(
           onPressed: () {
             Navigator.push(
@@ -429,12 +456,7 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
                 const Color(0xFF1976D2),
                 () {
                   // Navigate to Reports tab
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Chuyển sang tab Báo cáo'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
+                  _navigateToTab(CEOTabs.reports);
                 },
               ),
             ),
@@ -446,12 +468,7 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
                 const Color(0xFF388E3C),
                 () {
                   // Navigate to Analytics tab
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Chuyển sang tab Phân tích'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
+                  _navigateToTab(CEOTabs.analytics);
                 },
               ),
             ),
@@ -466,12 +483,8 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
                 Icons.people,
                 const Color(0xFFD32F2F),
                 () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Quản lý nhân sự đang phát triển'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+                  // Navigate to Companies tab (where you manage employees)
+                  _navigateToTab(CEOTabs.companies);
                 },
               ),
             ),
@@ -482,12 +495,8 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
                 Icons.settings,
                 const Color(0xFF7B1FA2),
                 () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Cài đặt hệ thống đang phát triển'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
+                  // Navigate to AI Management tab (settings)
+                  _navigateToTab(CEOTabs.ai);
                 },
               ),
             ),
@@ -495,6 +504,12 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
         ),
       ],
     );
+  }
+
+  /// Navigate to a specific tab in CEO Main Layout
+  void _navigateToTab(int tabIndex) {
+    // Use GlobalKey to access CEOMainLayout state
+    ceoMainLayoutKey.currentState?.navigateToTab(tabIndex);
   }
 
   Widget _buildActionCard(

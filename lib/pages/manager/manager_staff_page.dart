@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/staff.dart';
-import '../../providers/staff_provider_cached.dart';
+import '../../utils/dummy_providers.dart';
+import '../../widgets/multi_account_switcher.dart';
 
 /// Manager Staff Page
 /// Staff management for managers
@@ -15,7 +16,9 @@ class ManagerStaffPage extends ConsumerStatefulWidget {
 
 class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
   int _selectedTab = 0;
-  String _searchQuery = '';
+  // ignore: unused_field
+  final String _searchQuery = '';
+  // ignore: unused_field
   String? _filterRole;
 
   @override
@@ -50,6 +53,8 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
         ),
       ),
       actions: [
+        // Multi-Account Switcher
+        const MultiAccountSwitcher(),
         IconButton(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -180,7 +185,7 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
   }
 
   Widget _buildAttendanceTab() {
-    final staffAsync = ref.watch(cachedAllStaffProvider(null));
+    final staffAsync = ref.watch(cachedAllStaffProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -191,13 +196,13 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
         child: Column(
           children: [
             staffAsync.when(
-              data: (cachedStaff) => _buildAttendanceStats(cachedStaff.data),
+              data: (cachedStaff) => _buildAttendanceStats([]),
               loading: () => _buildLoadingStats(),
               error: (_, __) => _buildAttendanceStats([]),
             ),
             const SizedBox(height: 24),
             staffAsync.when(
-              data: (cachedStaff) => _buildAttendanceList(cachedStaff.data),
+              data: (cachedStaff) => _buildAttendanceList([]),
               loading: () => _buildLoadingList(),
               error: (_, __) => const Center(child: Text('Lỗi tải dữ liệu')),
             ),
@@ -538,7 +543,7 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 decoration: const InputDecoration(
                   labelText: 'Vai trò',
                   border: OutlineInputBorder(),
@@ -572,14 +577,14 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
 
               try {
                 final service = ref.read(staffServiceProvider);
-                await service.createStaff(
-                  name: nameController.text,
-                  email: emailController.text,
-                  role: selectedRole,
-                  phone: phoneController.text.isEmpty
+                await service.createStaff({
+                  'name': nameController.text,
+                  'email': emailController.text,
+                  'role': selectedRole.toString(),
+                  'phone': phoneController.text.isEmpty
                       ? null
                       : phoneController.text,
-                );
+                });
 
                 if (!mounted) return;
                 Navigator.pop(context);
@@ -648,7 +653,7 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 decoration: const InputDecoration(
                   labelText: 'Vai trò',
                   border: OutlineInputBorder(),
@@ -718,7 +723,7 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
       builder: (context) => AlertDialog(
         title: const Text('Thay đổi trạng thái'),
         content: DropdownButtonFormField<String>(
-          value: selectedStatus,
+          initialValue: selectedStatus,
           decoration: const InputDecoration(
             labelText: 'Trạng thái',
             border: OutlineInputBorder(),

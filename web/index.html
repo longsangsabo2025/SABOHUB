@@ -29,8 +29,21 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>flutter_sabohub</title>
+  <title>SABOHUB - Quản lý quán bida chuyên nghiệp</title>
   <link rel="manifest" href="manifest.json">
+  
+  <script>
+    // Suppress DebugService errors in development
+    const originalWarn = console.warn;
+    console.warn = function(...args) {
+      const message = args.join(' ');
+      if (message.includes('DebugService: Error serving') || 
+          message.includes('Cannot send Null')) {
+        return; // Suppress these specific warnings
+      }
+      originalWarn.apply(console, args);
+    };
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

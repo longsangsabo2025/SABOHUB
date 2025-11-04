@@ -15,6 +15,20 @@ final allTasksProvider =
   return service.getAllTasks(branchId: branchId);
 });
 
+/// Company Tasks Provider
+final companyTasksProvider =
+    FutureProvider.family<List<Task>, String>((ref, companyId) async {
+  final service = ref.read(taskServiceProvider);
+  return service.getTasksByCompany(companyId);
+});
+
+/// Company Task Stats Provider
+final companyTaskStatsProvider =
+    FutureProvider.family<Map<String, int>, String>((ref, companyId) async {
+  final service = ref.read(taskServiceProvider);
+  return service.getCompanyTaskStats(companyId);
+});
+
 /// Tasks by Status Provider
 final tasksByStatusProvider =
     FutureProvider.family<List<Task>, ({TaskStatus status, String? branchId})>(
@@ -46,4 +60,16 @@ final taskStreamProvider =
 });
 
 /// Selected Task ID Provider
-final selectedTaskIdProvider = StateProvider<String?>((ref) => null);
+class SelectedTaskIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setTaskId(String? taskId) {
+    state = taskId;
+  }
+}
+
+final selectedTaskIdProvider =
+    NotifierProvider<SelectedTaskIdNotifier, String?>(
+  () => SelectedTaskIdNotifier(),
+);

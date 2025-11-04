@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -38,10 +39,11 @@ final aiAssistantProvider =
 });
 
 /// Update AI assistant
-class AIAssistantNotifier extends StateNotifier<AsyncValue<AIAssistant?>> {
-  AIAssistantNotifier(this.ref) : super(const AsyncValue.loading());
-
-  final Ref ref;
+class AIAssistantNotifier extends AsyncNotifier<AIAssistant?> {
+  @override
+  FutureOr<AIAssistant?> build() {
+    return null;
+  }
 
   Future<void> updateAssistant(
       String assistantId, Map<String, dynamic> updates) async {
@@ -62,8 +64,8 @@ class AIAssistantNotifier extends StateNotifier<AsyncValue<AIAssistant?>> {
 }
 
 final aiAssistantNotifierProvider =
-    StateNotifierProvider<AIAssistantNotifier, AsyncValue<AIAssistant?>>(
-  (ref) => AIAssistantNotifier(ref),
+    AsyncNotifierProvider<AIAssistantNotifier, AIAssistant?>(
+  () => AIAssistantNotifier(),
 );
 
 // ==================== MESSAGE PROVIDERS ====================
@@ -83,10 +85,11 @@ final aiMessagesProvider =
 });
 
 /// Send message notifier
-class SendMessageNotifier extends StateNotifier<AsyncValue<AIMessage?>> {
-  SendMessageNotifier(this.ref) : super(const AsyncValue.data(null));
-
-  final Ref ref;
+class SendMessageNotifier extends AsyncNotifier<AIMessage?> {
+  @override
+  FutureOr<AIMessage?> build() {
+    return null;
+  }
 
   Future<void> sendMessage({
     required String assistantId,
@@ -117,8 +120,8 @@ class SendMessageNotifier extends StateNotifier<AsyncValue<AIMessage?>> {
 }
 
 final sendMessageNotifierProvider =
-    StateNotifierProvider<SendMessageNotifier, AsyncValue<AIMessage?>>(
-  (ref) => SendMessageNotifier(ref),
+    AsyncNotifierProvider<SendMessageNotifier, AIMessage?>(
+  () => SendMessageNotifier(),
 );
 
 // ==================== FILE UPLOAD PROVIDERS ====================
@@ -132,11 +135,11 @@ final uploadedFilesProvider =
 });
 
 /// File upload notifier
-class FileUploadNotifier
-    extends StateNotifier<AsyncValue<List<AIUploadedFile>>> {
-  FileUploadNotifier(this.ref) : super(const AsyncValue.data([]));
-
-  final Ref ref;
+class FileUploadNotifier extends AsyncNotifier<List<AIUploadedFile>> {
+  @override
+  FutureOr<List<AIUploadedFile>> build() {
+    return [];
+  }
 
   Future<void> uploadFile({
     required String assistantId,
@@ -215,8 +218,8 @@ class FileUploadNotifier
 }
 
 final fileUploadNotifierProvider =
-    StateNotifierProvider<FileUploadNotifier, AsyncValue<List<AIUploadedFile>>>(
-  (ref) => FileUploadNotifier(ref),
+    AsyncNotifierProvider<FileUploadNotifier, List<AIUploadedFile>>(
+  () => FileUploadNotifier(),
 );
 
 // ==================== RECOMMENDATION PROVIDERS ====================
@@ -250,11 +253,11 @@ final recommendationsByCategoryProvider = FutureProvider.family<
 );
 
 /// Recommendation notifier
-class RecommendationNotifier
-    extends StateNotifier<AsyncValue<List<AIRecommendation>>> {
-  RecommendationNotifier(this.ref) : super(const AsyncValue.data([]));
-
-  final Ref ref;
+class RecommendationNotifier extends AsyncNotifier<List<AIRecommendation>> {
+  @override
+  FutureOr<List<AIRecommendation>> build() {
+    return [];
+  }
 
   Future<void> updateRecommendationStatus(
     String recommendationId,
@@ -284,9 +287,9 @@ class RecommendationNotifier
   }
 }
 
-final recommendationNotifierProvider = StateNotifierProvider<
-    RecommendationNotifier, AsyncValue<List<AIRecommendation>>>(
-  (ref) => RecommendationNotifier(ref),
+final recommendationNotifierProvider =
+    AsyncNotifierProvider<RecommendationNotifier, List<AIRecommendation>>(
+  () => RecommendationNotifier(),
 );
 
 // ==================== ANALYTICS PROVIDERS ====================

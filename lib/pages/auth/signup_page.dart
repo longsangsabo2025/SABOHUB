@@ -47,27 +47,52 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Implement real signup with Supabase
-      // For now, create demo user
+      // Store email before async call
+      final email = _emailController.text.trim();
+
+      print('🔵 SignUp started - Email: $email, Role: ${_selectedRole.name}');
+
       final success = await ref.read(authProvider.notifier).signUp(
-            name: _nameController.text,
-            email: _emailController.text,
+            name: _nameController.text.trim(),
+            email: email,
             password: _passwordController.text,
-            phone: _phoneController.text,
+            phone: _phoneController.text.trim(),
             role: _selectedRole,
           );
 
-      if (success && mounted) {
-        _showSuccessSnackBar('Đăng ký thành công!');
-        context.go('/login');
+      print('🟡 SignUp returned: $success');
+
+      if (success) {
+        print('🟢 Signup success! Redirecting immediately...');
+
+        // Navigate IMMEDIATELY to email verification - no dialog, no delay, no bullshit
+        final route = '/email-verification?email=${Uri.encodeComponent(email)}';
+        print('🔵 Navigating to: $route');
+
+        if (mounted) {
+          context.go(route);
+          print('� Navigation completed');
+        } else {
+          print('🔴 Widget not mounted, cannot navigate');
+        }
+      } else {
+        print('� Signup failed!');
+
+        if (!mounted) return;
+
+        setState(() => _isLoading = false);
+
+        // Get error from auth state
+        final authState = ref.read(authProvider);
+        final errorMessage = authState.error ?? 'Đăng ký không thành công';
+
+        _showErrorSnackBar(errorMessage);
       }
     } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar('Đăng ký thất bại: $e');
-      }
-    } finally {
+      print('🔴 Exception during signup: $e');
       if (mounted) {
         setState(() => _isLoading = false);
+        _showErrorSnackBar('Lỗi hệ thống: $e');
       }
     }
   }

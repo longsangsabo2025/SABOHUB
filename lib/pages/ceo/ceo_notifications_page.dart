@@ -17,7 +17,8 @@ class _CEONotificationsPageState extends ConsumerState<CEONotificationsPage> {
       {
         'id': '1',
         'title': 'Báo cáo doanh thu tháng',
-        'message': 'Doanh thu tháng 11 đạt 2.5 tỷ VND, tăng 15% so với tháng trước',
+        'message':
+            'Doanh thu tháng 11 đạt 2.5 tỷ VND, tăng 15% so với tháng trước',
         'time': DateTime.now().subtract(const Duration(minutes: 30)),
         'type': 'success',
         'isRead': false,
@@ -26,7 +27,8 @@ class _CEONotificationsPageState extends ConsumerState<CEONotificationsPage> {
       {
         'id': '2',
         'title': 'Cảnh báo nhân sự',
-        'message': 'Cần tuyển thêm 5 nhân viên cho chi nhánh Hà Nội trong tháng 12',
+        'message':
+            'Cần tuyển thêm 5 nhân viên cho chi nhánh Hà Nội trong tháng 12',
         'time': DateTime.now().subtract(const Duration(hours: 2)),
         'type': 'warning',
         'isRead': false,
@@ -264,7 +266,8 @@ class _CEONotificationsPageState extends ConsumerState<CEONotificationsPage> {
                             ),
                             child: Icon(
                               _getNotificationIcon(notification['type']),
-                              color: _getNotificationColor(notification['type']),
+                              color:
+                                  _getNotificationColor(notification['type']),
                               size: 20,
                             ),
                           ),
@@ -346,12 +349,13 @@ class _CEONotificationsPageState extends ConsumerState<CEONotificationsPage> {
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w500,
-                                        color: notification['priority'] == 'high'
-                                            ? Colors.red
-                                            : notification['priority'] ==
-                                                    'medium'
-                                                ? Colors.orange
-                                                : Colors.grey.shade600,
+                                        color:
+                                            notification['priority'] == 'high'
+                                                ? Colors.red
+                                                : notification['priority'] ==
+                                                        'medium'
+                                                    ? Colors.orange
+                                                    : Colors.grey.shade600,
                                       ),
                                     ),
                                   ),

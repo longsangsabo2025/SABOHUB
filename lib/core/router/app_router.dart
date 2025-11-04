@@ -3,14 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/user.dart' as user_model;
+import '../../pages/auth/email_verification_page.dart';
 import '../../pages/auth/employee_signup_page.dart';
 import '../../pages/auth/forgot_password_page.dart';
 import '../../pages/auth/login_page.dart';
-import '../../pages/auth/signup_page.dart';
+import '../../pages/auth/signup_page_new.dart';
 import '../../pages/company/company_settings_page.dart';
 import '../../pages/employees/create_employee_page.dart';
 import '../../pages/employees/create_invitation_page.dart';
 import '../../pages/employees/employee_list_page.dart';
+import '../../pages/onboarding/onboarding_page.dart';
 import '../../pages/role_based_dashboard.dart';
 import '../../pages/staff/staff_checkin_page.dart';
 import '../../pages/staff/staff_messages_page.dart';
@@ -18,6 +20,9 @@ import '../../pages/staff/staff_profile_page.dart';
 import '../../pages/staff/staff_tables_page.dart';
 import '../../pages/staff/staff_tasks_page.dart';
 import '../../pages/user/user_profile_page.dart';
+import '../../layouts/manager_main_layout.dart';
+import '../../layouts/shift_leader_main_layout.dart';
+import '../../pages/ceo/ceo_main_layout.dart';
 import '../../providers/auth_provider.dart';
 import '../navigation/navigation_models.dart' as nav;
 
@@ -26,7 +31,9 @@ class AppRoutes {
   static const String home = '/';
   static const String login = '/login';
   static const String signup = '/signup';
+  static const String emailVerification = '/email-verification';
   static const String forgotPassword = '/forgot-password';
+  static const String onboarding = '/onboard/:token'; // Employee onboarding
   static const String profile = '/profile';
 
   // Staff routes
@@ -63,6 +70,7 @@ class AppRoutes {
 
 /// Current user role provider (based on auth state)
 final currentUserRoleProvider = Provider<nav.UserRole>((ref) {
+  // Watch authProvider to reactively update when auth state changes
   final authState = ref.watch(authProvider);
 
   if (authState.isAuthenticated && authState.user?.role != null) {
@@ -124,18 +132,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == AppRoutes.signup ||
           state.matchedLocation == AppRoutes.forgotPassword;
 
-      // If not logged in and not on auth pages, redirect to login
-      if (!isLoggedIn && !isAuthRoute) {
+      // Email verification is accessible for both logged in and logged out users
+      // Check if path starts with email verification (to handle query parameters)
+      final isEmailVerification =
+          state.matchedLocation.startsWith(AppRoutes.emailVerification) ||
+              state.uri.path == AppRoutes.emailVerification;
+
+      // Onboarding is public - no auth required
+      final isOnboarding = state.uri.path.startsWith('/onboard/');
+
+      // If not logged in and not on auth/public pages, redirect to login
+      if (!isLoggedIn &&
+          !isAuthRoute &&
+          !isEmailVerification &&
+          !isOnboarding) {
         return AppRoutes.login;
       }
 
-      // If logged in and on auth pages, redirect to home
-      if (isLoggedIn && isAuthRoute) {
+      // If logged in and on auth pages (but not email verification), redirect to home
+      if (isLoggedIn && isAuthRoute && !isEmailVerification) {
         return AppRoutes.home;
       }
 
-      // Check role-based access for authenticated users
-      if (isLoggedIn) {
+      // Check role-based access for authenticated users (skip email verification and onboarding)
+      if (isLoggedIn && !isEmailVerification && !isOnboarding) {
         return RouteGuard.checkAccess(userRole, state.matchedLocation);
       }
 
@@ -151,13 +171,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Signup route
       GoRoute(
         path: AppRoutes.signup,
-        builder: (context, state) => const SignUpPage(),
+        builder: (context, state) => const SignUpPageNew(),
+      ),
+
+      // Email Verification route
+      GoRoute(
+        path: AppRoutes.emailVerification,
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return EmailVerificationPage(email: email);
+        },
       ),
 
       // Forgot Password route
       GoRoute(
         path: AppRoutes.forgotPassword,
         builder: (context, state) => const ForgotPasswordPage(),
+      ),
+
+      // Employee Onboarding route (public - no auth required)
+      GoRoute(
+        path: AppRoutes.onboarding,
+        builder: (context, state) {
+          final token = state.pathParameters['token'] ?? '';
+          return OnboardingPage(inviteToken: token);
+        },
       ),
 
       // Home route
@@ -200,71 +238,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Shift Leader routes
       GoRoute(
         path: AppRoutes.shiftLeaderTeam,
-        builder: (context, state) => const Scaffold(
-          body: Center(
-            child: Text('Shift Leader Team Page'),
-          ),
-        ),
+        builder: (context, state) => const ShiftLeaderMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.shiftLeaderReports,
-        builder: (context, state) => const Scaffold(
-          body: Center(
-            child: Text('Shift Leader Reports Page'),
-          ),
-        ),
+        builder: (context, state) => const ShiftLeaderMainLayout(),
       ),
 
       // Manager routes
       GoRoute(
         path: AppRoutes.managerDashboard,
-        builder: (context, state) => const Scaffold(
-          body: Center(
-            child: Text('Manager Dashboard Page'),
-          ),
-        ),
+        builder: (context, state) => const ManagerMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.managerEmployees,
-        builder: (context, state) => const Scaffold(
-          body: Center(
-            child: Text('Manager Employees Page'),
-          ),
-        ),
+        builder: (context, state) => const ManagerMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.managerFinance,
-        builder: (context, state) => const Scaffold(
-          body: Center(
-            child: Text('Manager Finance Page'),
-          ),
-        ),
+        builder: (context, state) => const ManagerMainLayout(),
       ),
 
       // CEO routes
       GoRoute(
         path: AppRoutes.ceoAnalytics,
-        builder: (context, state) => const Scaffold(
-          body: Center(
-            child: Text('CEO Analytics Page'),
-          ),
-        ),
+        builder: (context, state) => CEOMainLayout(key: ceoMainLayoutKey),
       ),
       GoRoute(
         path: AppRoutes.ceoCompanies,
-        builder: (context, state) => const Scaffold(
-          body: Center(
-            child: Text('CEO Companies Page'),
-          ),
-        ),
+        builder: (context, state) => CEOMainLayout(key: ceoMainLayoutKey),
       ),
       GoRoute(
         path: AppRoutes.ceoSettings,
-        builder: (context, state) => const Scaffold(
-          body: Center(
-            child: Text('CEO Settings Page'),
-          ),
-        ),
+        builder: (context, state) => CEOMainLayout(key: ceoMainLayoutKey),
       ),
 
       // Company routes

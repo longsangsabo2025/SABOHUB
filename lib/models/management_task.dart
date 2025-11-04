@@ -1,6 +1,7 @@
 /// Management Task Model
 /// For CEO and Manager task management system
 /// Separate from operational tasks used by staff
+library;
 
 class ManagementTask {
   final String id;

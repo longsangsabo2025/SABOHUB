@@ -57,7 +57,17 @@ final companyTaskStatisticsProvider =
 
 /// Task Refresh Notifier
 /// Used to manually refresh task lists after create/update/delete operations
-final taskRefreshProvider = StateProvider<int>((ref) => 0);
+final taskRefreshProvider =
+    NotifierProvider<_TaskRefreshNotifier, int>(() => _TaskRefreshNotifier());
+
+class _TaskRefreshNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void refresh() {
+    state = state + 1;
+  }
+}
 
 /// Helper function to refresh all task providers
 void refreshAllTasks(WidgetRef ref) {

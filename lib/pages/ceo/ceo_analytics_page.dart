@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../providers/analytics_provider.dart';
+import '../../providers/ceo_analytics_provider.dart';
 
 /// CEO Analytics Page
 /// Advanced analytics and insights for all stores
@@ -131,7 +132,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          ref.read(selectedPeriodProvider.notifier).state = periodMap[period]!;
+          ref.read(selectedPeriodProvider.notifier).set(periodMap[period]!);
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -230,6 +231,9 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
   }
 
   Widget _buildRevenueOverview() {
+    final selectedPeriod = ref.watch(selectedPeriodProvider);
+    final revenueAsync = ref.watch(ceoRevenueAnalyticsProvider(selectedPeriod));
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -240,63 +244,122 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
         ),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Tổng doanh thu tháng',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '₫2,547,320,000',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
+      child: revenueAsync.when(
+        data: (data) {
+          final totalRevenue =
+              (data['totalRevenue'] as num?)?.toDouble() ?? 0.0;
+          final growthPercentage =
+              (data['growthPercentage'] as num?)?.toDouble() ?? 0.0;
+          final isPositive = growthPercentage >= 0;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.trending_up, color: Colors.white, size: 12),
-                    SizedBox(width: 4),
-                    Text(
-                      '+12.5%',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+              Text(
+                'Tổng doanh thu ${_getPeriodLabel(selectedPeriod)}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.white,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(height: 8),
               Text(
-                'so với tháng trước',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.8),
+                currencyFormat.format(totalRevenue),
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: (isPositive ? Colors.green : Colors.red)
+                          .withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isPositive ? Icons.trending_up : Icons.trending_down,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${isPositive ? '+' : ''}${growthPercentage.toStringAsFixed(1)}%',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'so với kỳ trước',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-        ],
+          );
+        },
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+        error: (error, stack) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Tổng doanh thu',
+              style: TextStyle(fontSize: 14, color: Colors.white),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '₫0',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Không có dữ liệu',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  String _getPeriodLabel(String period) {
+    switch (period) {
+      case 'week':
+        return 'tuần';
+      case 'quarter':
+        return 'quý';
+      case 'year':
+        return 'năm';
+      case 'month':
+      default:
+        return 'tháng';
+    }
   }
 
   Widget _buildRevenueChart() {
@@ -345,6 +408,9 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
   }
 
   Widget _buildRevenueByCompany() {
+    final selectedPeriod = ref.watch(selectedPeriodProvider);
+    final revenueAsync = ref.watch(ceoRevenueAnalyticsProvider(selectedPeriod));
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -370,14 +436,83 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
             ),
           ),
           const SizedBox(height: 16),
-          ..._mockRevenueData
-              .map((company) => _buildCompanyRevenueItem(company)),
+          revenueAsync.when(
+            data: (data) {
+              final breakdown = (data['revenueBreakdown'] as List<dynamic>?)
+                      ?.cast<Map<String, dynamic>>() ??
+                  [];
+
+              if (breakdown.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.analytics_outlined,
+                          size: 48,
+                          color: Colors.grey.shade300,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Chưa có dữ liệu doanh thu',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Dữ liệu sẽ xuất hiện khi có phiên hoàn thành',
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return Column(
+                children: breakdown
+                    .map((company) => _buildCompanyRevenueItem(company))
+                    .toList(),
+              );
+            },
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (error, stack) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  'Lỗi tải dữ liệu: ${error.toString()}',
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildCompanyRevenueItem(Map<String, dynamic> company) {
+    final businessType = company['businessType'] as String? ?? 'billiards';
+    final revenue = (company['revenue'] as num?)?.toDouble() ?? 0.0;
+    final percentage = (company['percentage'] as num?)?.toDouble() ?? 0.0;
+    final name = company['name'] as String? ?? 'Công ty';
+
+    // Get color and icon based on business type
+    final typeInfo = _getBusinessTypeInfo(businessType);
+    final color = typeInfo['color'] as Color;
+    final icon = typeInfo['icon'] as IconData;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -385,12 +520,12 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: company['color'].withValues(alpha: 0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
-              company['icon'],
-              color: company['color'],
+              icon,
+              color: color,
               size: 16,
             ),
           ),
@@ -400,7 +535,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  company['name'],
+                  name,
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -415,10 +550,10 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                   ),
                   child: FractionallySizedBox(
                     alignment: Alignment.centerLeft,
-                    widthFactor: company['percentage'] / 100,
+                    widthFactor: percentage / 100,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: company['color'],
+                        color: color,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -432,14 +567,14 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                company['revenue'],
+                _formatRevenue(revenue),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                '${company['percentage']}%',
+                '${percentage.toStringAsFixed(0)}%',
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.grey.shade600,
@@ -450,6 +585,37 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
         ],
       ),
     );
+  }
+
+  Map<String, dynamic> _getBusinessTypeInfo(String type) {
+    switch (type.toLowerCase()) {
+      case 'restaurant':
+        return {'icon': Icons.restaurant, 'color': const Color(0xFF10B981)};
+      case 'cafe':
+        return {'icon': Icons.coffee, 'color': const Color(0xFF8B5CF6)};
+      case 'billiards':
+        return {'icon': Icons.sports_bar, 'color': const Color(0xFF3B82F6)};
+      case 'karaoke':
+        return {'icon': Icons.mic, 'color': const Color(0xFFEC4899)};
+      case 'hotel':
+        return {'icon': Icons.hotel, 'color': const Color(0xFFF59E0B)};
+      default:
+        return {'icon': Icons.business, 'color': const Color(0xFF6366F1)};
+    }
+  }
+
+  String _formatRevenue(double revenue) {
+    if (revenue == 0) return '₫0';
+    if (revenue >= 1000000000) {
+      return '₫${(revenue / 1000000000).toStringAsFixed(1)}B';
+    }
+    if (revenue >= 1000000) {
+      return '₫${(revenue / 1000000).toStringAsFixed(0)}M';
+    }
+    if (revenue >= 1000) {
+      return '₫${(revenue / 1000).toStringAsFixed(0)}K';
+    }
+    return currencyFormat.format(revenue);
   }
 
   Widget _buildCustomerAnalytics() {
@@ -470,35 +636,3 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
     );
   }
 }
-
-// Mock data
-final List<Map<String, dynamic>> _mockRevenueData = [
-  {
-    'name': 'Khách Sạn SaBo Plaza',
-    'revenue': '₫1,050M',
-    'percentage': 41,
-    'icon': Icons.hotel,
-    'color': const Color(0xFFF59E0B),
-  },
-  {
-    'name': 'Nhà Hàng SaBo Central',
-    'revenue': '₫850M',
-    'percentage': 33,
-    'icon': Icons.restaurant,
-    'color': const Color(0xFF10B981),
-  },
-  {
-    'name': 'Quán Bida SaBo',
-    'revenue': '₫400M',
-    'percentage': 16,
-    'icon': Icons.sports_bar,
-    'color': const Color(0xFF3B82F6),
-  },
-  {
-    'name': 'Cafe SaBo Garden',
-    'revenue': '₫247M',
-    'percentage': 10,
-    'icon': Icons.coffee,
-    'color': const Color(0xFF8B5CF6),
-  },
-];

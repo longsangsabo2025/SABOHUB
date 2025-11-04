@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../models/user.dart';
 import '../../providers/attendance_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/daily_work_report_service.dart';
+import '../../widgets/location_status_widget.dart';
+import '../../widgets/work_report_preview_dialog.dart';
 
 /// Staff Check-in Page
 /// Attendance and scheduling for staff members
@@ -171,7 +174,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user.name,
+                      user.name ?? user.email.split('@').first,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -236,6 +239,9 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                     color: Colors.white,
                   ),
                 ),
+                const SizedBox(height: 16),
+                // Location validation status
+                const LocationStatusWidget(),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
@@ -592,7 +598,8 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(attendanceServiceProvider).checkIn(
+      // Check in with location validation
+      await ref.read(attendanceServiceProvider).checkInWithLocation(
             userId: user.id,
             branchId: null, // TODO: Add branchId to User model
           );
@@ -623,28 +630,70 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(attendanceServiceProvider).checkOut(
+      // Step 1: Perform check-out
+      final attendance = await ref.read(attendanceServiceProvider).checkOut(
             userId: user.id,
             branchId: null, // TODO: Add branchId to User model
           );
 
-      ref.invalidate(userTodayAttendanceProvider);
+      // Step 2: Auto-generate daily work report
+      final reportService = ref.read(dailyWorkReportServiceProvider);
+      final report = await reportService.generateReportFromCheckout(
+        attendance: attendance,
+        userName: user.name ?? 'Nhân viên',
+      );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Đã điểm danh ra ca thành công!'),
-          backgroundColor: Color(0xFF10B981),
-        ),
-      );
+      // Step 3: Show report preview dialog
+      if (mounted) {
+        final submitted = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => WorkReportPreviewDialog(
+            report: report,
+            onSubmitted: () {
+              // Refresh providers after submission
+              ref.invalidate(todayWorkReportProvider(user.id));
+              ref.invalidate(userWorkReportsProvider(user.id));
+            },
+          ),
+        );
+
+        // Step 4: Show result
+        if (mounted) {
+          ref.invalidate(userTodayAttendanceProvider);
+
+          if (submitted == true) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Đã điểm danh ra ca và nộp báo cáo thành công!'),
+                backgroundColor: Color(0xFF10B981),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Đã điểm danh ra ca! Báo cáo đã lưu nháp.'),
+                backgroundColor: Color(0xFF3B82F6),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Lỗi điểm danh: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Lỗi điểm danh: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 }

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Signup SABOHUB</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .field {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #2196F3;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #1976D2;
+        }
+        .instructions {
+            background-color: #E3F2FD;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Đăng Ký SABOHUB</h1>
+    
+    <div class="instructions">
+        <h3>Hướng dẫn test:</h3>
+        <ol>
+            <li>Mở Chrome DevTools (F12) để xem console logs</li>
+            <li>Điền thông tin test vào form</li>
+            <li>Nhấn "Tự động điền test data" để điền nhanh</li>
+            <li>Nhấn "Đăng ký" và kiểm tra logs</li>
+            <li>Kiểm tra Network tab để xem request/response</li>
+        </ol>
+    </div>
+
+    <div class="test-form">
+        <h2>Form Test Signup</h2>
+        
+        <div class="field">
+            <label for="name">Họ và tên:</label>
+            <input type="text" id="name" placeholder="Nhập họ và tên">
+        </div>
+
+        <div class="field">
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="test@example.com">
+        </div>
+
+        <div class="field">
+            <label for="password">Mật khẩu:</label>
+            <input type="password" id="password" placeholder="Ít nhất 6 ký tự">
+        </div>
+
+        <div class="field">
+            <label for="confirmPassword">Xác nhận mật khẩu:</label>
+            <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu">
+        </div>
+
+        <div class="field">
+            <label for="phone">Số điện thoại:</label>
+            <input type="tel" id="phone" placeholder="0123456789">
+        </div>
+
+        <div class="field">
+            <label for="role">Vai trò:</label>
+            <select id="role">
+                <option value="staff">Nhân viên</option>
+                <option value="manager">Quản lý</option>
+                <option value="ceo">CEO</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>
+                <input type="checkbox" id="terms" checked> 
+                Tôi đồng ý với điều khoản sử dụng
+            </label>
+        </div>
+
+        <button onclick="fillTestData()">🚀 Tự động điền test data</button>
+        <button onclick="openSabohubSignup()">📱 Mở SABOHUB Signup</button>
+        
+        <h3>Test Data Sets:</h3>
+        <button onclick="fillTestData('user1')">User 1</button>
+        <button onclick="fillTestData('user2')">User 2</button>
+        <button onclick="fillTestData('user3')">User 3</button>
+    </div>
+
+    <div class="test-form" style="margin-top: 20px;">
+        <h3>📋 Kết quả test:</h3>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const testUsers = {
+            user1: {
+                name: "Nguyễn Test User",
+                email: "test1@sabohub.com",
+                password: "123456",
+                phone: "0123456789",
+                role: "staff"
+            },
+            user2: {
+                name: "Trần Manager Test",
+                email: "manager@sabohub.com", 
+                password: "manager123",
+                phone: "0987654321",
+                role: "manager"
+            },
+            user3: {
+                name: "CEO Test Account",
+                email: "ceo@sabohub.com",
+                password: "ceo123456",
+                phone: "0111222333",
+                role: "ceo"
+            }
+        };
+
+        function fillTestData(userType = 'user1') {
+            const user = testUsers[userType];
+            
+            document.getElementById('name').value = user.name;
+            document.getElementById('email').value = user.email;
+            document.getElementById('password').value = user.password;
+            document.getElementById('confirmPassword').value = user.password;
+            document.getElementById('phone').value = user.phone;
+            document.getElementById('role').value = user.role;
+            document.getElementById('terms').checked = true;
+
+            logResult(`✅ Đã điền test data cho ${userType}: ${user.name}`);
+        }
+
+        function openSabohubSignup() {
+            window.open('http://localhost:51089/#/signup', '_blank');
+            logResult('🌐 Đã mở SABOHUB signup trong tab mới');
+        }
+
+        function logResult(message) {
+            const results = document.getElementById('results');
+            const time = new Date().toLocaleTimeString();
+            results.innerHTML += `<p><strong>[${time}]</strong> ${message}</p>`;
+            
+            // Log to console as well
+            console.log(`[SABOHUB Test] ${message}`);
+        }
+
+        // Auto-fill first test data on load
+        window.onload = function() {
+            fillTestData('user1');
+            logResult('🚀 Test page loaded. Ready for signup testing!');
+        };
+    </script>
+</body>
+</html>

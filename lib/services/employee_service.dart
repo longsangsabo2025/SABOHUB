@@ -312,7 +312,7 @@ class EmployeeService {
       password += chars[(random + i) % chars.length];
     }
 
-    return 'Sabo${password}!';
+    return 'Sabo$password!';
   }
 
   /// Generate default name based on role
@@ -334,7 +334,7 @@ class EmployeeService {
     try {
       final response = await _supabase
           .from('users')
-          .select()
+          .select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
           .eq('company_id', companyId)
           .order('created_at', ascending: false);
 
@@ -346,6 +346,50 @@ class EmployeeService {
     }
   }
 
+  /// Update employee information
+  Future<void> updateEmployee({
+    required String employeeId,
+    String? name,
+    String? email,
+    String? phone,
+    app_models.UserRole? role,
+    String? branchId,
+  }) async {
+    try {
+      final updates = <String, dynamic>{
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      if (name != null) updates['full_name'] = name;
+      if (email != null) updates['email'] = email;
+      if (phone != null) updates['phone'] = phone;
+      if (role != null) updates['role'] = role.value;
+      if (branchId != null) updates['branch_id'] = branchId;
+
+      await _supabase.from('users').update(updates).eq('id', employeeId);
+
+      print('✅ Employee updated successfully: $employeeId');
+    } catch (e) {
+      print('❌ Failed to update employee: $e');
+      throw Exception('Failed to update employee: $e');
+    }
+  }
+
+  /// Deactivate/Activate employee account
+  Future<void> toggleEmployeeStatus(String userId, bool isActive) async {
+    try {
+      await _supabase.from('users').update({
+        'is_active': isActive,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', userId);
+
+      print('✅ Employee status updated: $userId -> $isActive');
+    } catch (e) {
+      print('❌ Failed to update employee status: $e');
+      throw Exception('Failed to update employee status: $e');
+    }
+  }
+
   /// Delete employee account
   Future<void> deleteEmployee(String userId) async {
     try {
@@ -354,7 +398,9 @@ class EmployeeService {
 
       // Note: Supabase auth user should be deleted via admin API
       // For now, we just delete from users table
+      print('✅ Employee deleted: $userId');
     } catch (e) {
+      print('❌ Failed to delete employee: $e');
       throw Exception('Failed to delete employee: $e');
     }
   }
@@ -364,7 +410,7 @@ class EmployeeService {
     try {
       // Get user info
       final response =
-          await _supabase.from('users').select().eq('id', userId).single();
+          await _supabase.from('users').select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at').eq('id', userId).single();
 
       final user = app_models.User.fromJson(response);
 

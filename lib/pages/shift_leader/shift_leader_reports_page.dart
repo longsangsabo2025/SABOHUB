@@ -533,7 +533,8 @@ class _ShiftLeaderReportsPageState
                 child: _buildMetricCard(
                     'Tỷ lệ hoàn thành',
                     totalTasks > 0
-                        ? '${((completedTasks / totalTasks) * 100).toStringAsFixed(0)}'
+                        ? ((completedTasks / totalTasks) * 100)
+                            .toStringAsFixed(0)
                         : '0',
                     '%',
                     const Color(0xFF10B981)),

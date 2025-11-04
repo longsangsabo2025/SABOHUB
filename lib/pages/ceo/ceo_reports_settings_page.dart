@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../providers/auth_provider.dart';
+import 'ceo_profile_page.dart';
 
 /// CEO Reports Page
 /// Generate and view comprehensive business reports
@@ -592,7 +596,7 @@ class CEOSettingsPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildUserProfile(context),
+            _buildUserProfile(context, ref),
             const SizedBox(height: 24),
             _buildSystemSettings(),
             const SizedBox(height: 24),
@@ -600,7 +604,7 @@ class CEOSettingsPage extends ConsumerWidget {
             const SizedBox(height: 24),
             _buildSecuritySettings(),
             const SizedBox(height: 24),
-            _buildSupportSection(),
+            _buildSupportSection(context, ref),
           ],
         ),
       ),
@@ -622,7 +626,20 @@ class CEOSettingsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildUserProfile(BuildContext context) {
+  Widget _buildUserProfile(BuildContext context, WidgetRef ref) {
+    // ✅ Get real user data from authProvider
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+
+    final displayName = user?.name ?? 'CEO';
+    final displayEmail = user?.email ?? 'ceo@sabohub.com';
+    final displayRole = user?.role.value ?? 'CEO';
+
+    // Get initials for avatar
+    final initials = displayName.isNotEmpty
+        ? displayName.split(' ').map((n) => n[0]).take(2).join().toUpperCase()
+        : 'CEO';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -647,10 +664,10 @@ class CEOSettingsPage extends ConsumerWidget {
               ),
               borderRadius: BorderRadius.circular(30),
             ),
-            child: const Center(
+            child: Center(
               child: Text(
-                'CEO',
-                style: TextStyle(
+                initials,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -659,22 +676,22 @@ class CEOSettingsPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'CEO SaBo Hub',
-                  style: TextStyle(
+                  displayName,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'ceo@sabohub.com',
-                  style: TextStyle(
+                  displayEmail,
+                  style: const TextStyle(
                     fontSize: 14,
                     color: Colors.grey,
                   ),
@@ -806,7 +823,7 @@ class CEOSettingsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSupportSection() {
+  Widget _buildSupportSection(BuildContext context, WidgetRef ref) {
     return _buildSettingsSection(
       'Hỗ trợ',
       [
@@ -832,7 +849,41 @@ class CEOSettingsPage extends ConsumerWidget {
           'Đăng xuất',
           '',
           Icons.logout,
-          () {},
+          () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Xác nhận đăng xuất'),
+                content: const Text('Bạn có chắc chắn muốn đăng xuất?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: const Text('Hủy'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    child: const Text(
+                      'Đăng xuất',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirmed == true) {
+              await ref.read(authProvider.notifier).logout();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Đã đăng xuất thành công'),
+                    backgroundColor: Color(0xFF10B981),
+                  ),
+                );
+                context.go('/login');
+              }
+            }
+          },
           isDestructive: true,
         ),
       ],

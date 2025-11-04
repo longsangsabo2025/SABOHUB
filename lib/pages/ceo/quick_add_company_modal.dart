@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../services/company_service.dart';
+
 class QuickAddCompanyModal extends StatefulWidget {
   const QuickAddCompanyModal({super.key});
 
@@ -12,6 +14,7 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   String selectedSize = 'Vừa';
+  bool _isSubmitting = false; // ✅ Add loading state
 
   final List<CompanyTemplate> templates = [
     CompanyTemplate(
@@ -80,7 +83,7 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final maxHeight = screenHeight * 0.9; // 90% of screen height
-    
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
@@ -198,7 +201,7 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
 
   Widget _buildQuickForm() {
     final template = templates.firstWhere((t) => t.id == selectedTemplate);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -218,7 +221,7 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Thông tin gợi ý
           Container(
             padding: const EdgeInsets.all(12),
@@ -236,7 +239,7 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Form nhập liệu
           TextField(
             controller: _nameController,
@@ -244,12 +247,13 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
               labelText: 'Tên ${template.name.toLowerCase()}',
               hintText: 'VD: Billiards Golden Club',
               border: const OutlineInputBorder(),
-              prefixIcon: Text(template.icon, style: const TextStyle(fontSize: 20)),
+              prefixIcon:
+                  Text(template.icon, style: const TextStyle(fontSize: 20)),
               prefixIconConstraints: const BoxConstraints(minWidth: 50),
             ),
           ),
           const SizedBox(height: 12),
-          
+
           TextField(
             controller: _addressController,
             decoration: const InputDecoration(
@@ -260,11 +264,12 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Chọn quy mô
           Row(
             children: [
-              const Text('Quy mô: ', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text('Quy mô: ',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(width: 12),
               ...['Nhỏ', 'Vừa', 'Lớn'].map((size) {
                 return Padding(
@@ -282,7 +287,7 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
                     },
                   ),
                 );
-              }).toList(),
+              }),
             ],
           ),
         ],
@@ -299,7 +304,9 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
             width: 80,
             child: Text(label, style: const TextStyle(fontSize: 12)),
           ),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(value,
+              style:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -310,16 +317,26 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: _isSubmitting ? null : () => Navigator.pop(context),
             child: const Text('Hủy'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _canSubmit() ? _submitQuickAdd : null,
-            icon: const Icon(Icons.flash_on),
-            label: const Text('Thêm nhanh'),
+            onPressed:
+                (_canSubmit() && !_isSubmitting) ? _submitQuickAdd : null,
+            icon: _isSubmitting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.flash_on),
+            label: Text(_isSubmitting ? 'Đang thêm...' : 'Thêm nhanh'),
             style: ElevatedButton.styleFrom(
               backgroundColor: _getSelectedTemplate()?.color,
               foregroundColor: Colors.white,
@@ -331,9 +348,9 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
   }
 
   bool _canSubmit() {
-    return selectedTemplate != null && 
-           _nameController.text.isNotEmpty && 
-           _addressController.text.isNotEmpty;
+    return selectedTemplate != null &&
+        _nameController.text.isNotEmpty &&
+        _addressController.text.isNotEmpty;
   }
 
   CompanyTemplate? _getSelectedTemplate() {
@@ -341,25 +358,55 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
     return templates.firstWhere((t) => t.id == selectedTemplate);
   }
 
-  void _submitQuickAdd() {
+  void _submitQuickAdd() async {
+    if (_isSubmitting) return; // Prevent double submit
+
     final template = _getSelectedTemplate()!;
-    
-    // Create company data to return
-    final companyData = {
-      'name': _nameController.text,
-      'type': template.name,
-      'icon': _getIconForTemplate(template.id),
-      'color': template.color,
-      'address': _addressController.text,
-      'employees': _getEstimatedEmployees(selectedSize),
-      'tables': _getEstimatedTables(selectedSize),
-      'status': 'Hoạt động',
-      'revenue': '0M', // New company starts with 0 revenue
-      'size': selectedSize,
-      'category': template.category,
-    };
-    
-    Navigator.pop(context, companyData);
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      // ✅ Save to database using CompanyService
+      final companyService = CompanyService();
+
+      final newCompany = await companyService.createCompany(
+        name: _nameController.text.trim(),
+        address: _addressController.text.trim(),
+        businessType: template.id, // 'billiards', 'cafe', 'restaurant', etc.
+      );
+
+      // Return success with company data
+      if (mounted) {
+        Navigator.pop(context, {
+          'success': true,
+          'name': newCompany.name,
+          'id': newCompany.id,
+        });
+      }
+    } catch (e) {
+      // Show error and keep modal open
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '❌ Lỗi khi thêm công ty: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Đóng',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    }
   }
 
   IconData _getIconForTemplate(String templateId) {

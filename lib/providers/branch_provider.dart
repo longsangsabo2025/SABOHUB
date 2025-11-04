@@ -56,4 +56,5 @@ final currentUserBranchProvider = Provider<AsyncValue<Branch?>>((ref) {
 });
 
 /// Selected Branch Provider (for multi-branch scenarios)
-final selectedBranchProvider = StateProvider<String?>((ref) => null);
+/// Use ref.read(selectedBranchProvider.notifier).state = value to update
+final selectedBranchProvider = Provider<String?>((ref) => null);

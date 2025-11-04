@@ -412,20 +412,49 @@ class ManagementTaskService {
   /// Returns list of users with role='manager'
   Future<List<Map<String, dynamic>>> getManagers() async {
     try {
-      final response = await _supabase
+      // Get all managers first
+      final usersResponse = await _supabase
           .from('users')
-          .select('id, full_name, role, company_id, companies(name)')
-          .eq('role', 'manager')
+          .select('id, full_name, role, company_id')
+          .eq('role', 'MANAGER')
           .order('full_name', ascending: true);
 
-      return (response as List).map((user) {
+      final users = usersResponse as List;
+
+      // If no managers, return empty list
+      if (users.isEmpty) {
+        return [];
+      }
+
+      // Get company names separately to avoid relationship conflicts
+      final companyIds = users
+          .where((u) => u['company_id'] != null)
+          .map((u) => u['company_id'])
+          .toSet()
+          .toList();
+
+      Map<String, String> companyNames = {};
+      if (companyIds.isNotEmpty) {
+        final companiesResponse = await _supabase
+            .from('companies')
+            .select('id, name')
+            .inFilter('id', companyIds);
+
+        for (var company in companiesResponse as List) {
+          companyNames[company['id']] = company['name'];
+        }
+      }
+
+      // Combine data
+      return users.map((user) {
         return {
           'id': user['id'],
           'full_name': user['full_name'],
           'role': user['role'],
           'company_id': user['company_id'],
-          'company_name':
-              user['companies'] != null ? user['companies']['name'] : null,
+          'company_name': user['company_id'] != null
+              ? companyNames[user['company_id']]
+              : null,
         };
       }).toList();
     } catch (e) {
@@ -433,23 +462,25 @@ class ManagementTaskService {
     }
   }
 
-  /// Get all companies for task assignment dropdown
-  /// Returns list of companies ordered by name
+  /// Get all companies for CEO task creation
+  /// CEO can create tasks for ANY company
   Future<List<Map<String, dynamic>>> getCompanies() async {
     try {
+      print('🏢 Fetching all companies for CEO...');
+
+      // CEO can see ALL companies, so no filtering by user's company_id
       final response = await _supabase
           .from('companies')
           .select('id, name')
           .order('name', ascending: true);
 
-      return (response as List).map((company) {
-        return {
-          'id': company['id'],
-          'name': company['name'],
-        };
-      }).toList();
+      print('✅ Fetched ${response.length} companies from database');
+      print('📋 Companies: $response');
+
+      return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      throw Exception('Failed to fetch companies: $e');
+      print('❌ Failed to fetch companies: $e');
+      return []; // Return empty list instead of throwing
     }
   }
 }

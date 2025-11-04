@@ -1,49 +1,43 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/store.dart';
-import '../services/store_service.dart';
+import '../models/company.dart';
+import '../services/company_service.dart';
 
-/// Store Service Provider
-final storeServiceProvider = Provider<StoreService>((ref) {
-  return StoreService();
+/// Company Service Provider
+final companyServiceProvider = Provider<CompanyService>((ref) {
+  return CompanyService();
 });
 
-/// All Stores Provider
-/// Fetches and caches all stores from Supabase
-final storesProvider = FutureProvider<List<Store>>((ref) async {
-  final service = ref.watch(storeServiceProvider);
-  return await service.getAllStores();
+/// All Companies Provider
+/// Fetches and caches all companies from Supabase
+final companiesProvider = FutureProvider<List<Company>>((ref) async {
+  final service = ref.watch(companyServiceProvider);
+  return await service.getAllCompanies();
 });
 
-/// Single Store Provider
-/// Gets a specific store by ID
-final storeProvider = FutureProvider.family<Store?, String>((ref, id) async {
-  final service = ref.watch(storeServiceProvider);
-  return await service.getStoreById(id);
+/// Single Company Provider
+/// Gets a specific company by ID
+final companyProvider =
+    FutureProvider.family<Company?, String>((ref, id) async {
+  final service = ref.watch(companyServiceProvider);
+  return await service.getCompanyById(id);
 });
 
-/// Store Stats Provider
-/// Fetches store statistics
-final storeStatsProvider =
-    FutureProvider.family<Map<String, dynamic>, String>((ref, storeId) async {
-  final service = ref.watch(storeServiceProvider);
-  return await service.getStoreStats(storeId);
+/// Company Stats Provider
+/// Fetches company statistics (employees, branches, tables, revenue)
+final companyStatsProvider =
+    FutureProvider.family<Map<String, dynamic>, String>((ref, companyId) async {
+  final service = ref.watch(companyServiceProvider);
+  return await service.getCompanyStats(companyId);
 });
 
-/// Stores Stream Provider
-/// Real-time stream of stores
-final storesStreamProvider = StreamProvider<List<Store>>((ref) {
-  final service = ref.watch(storeServiceProvider);
-  return service.subscribeToStores();
+/// Companies Stream Provider
+/// Real-time stream of companies
+final companiesStreamProvider = StreamProvider<List<Company>>((ref) {
+  final service = ref.watch(companyServiceProvider);
+  return service.subscribeToCompanies();
 });
 
-/// Current User's Store Provider
-/// Gets the store for the currently logged-in user
-final currentUserStoreProvider = Provider<AsyncValue<Store?>>((ref) {
-  // This would typically get the current user's store
-  // Implementation depends on authentication logic
-  return const AsyncValue.loading();
-});
-
-/// Selected Store Provider (for multi-store scenarios)
-final selectedStoreProvider = StateProvider<String?>((ref) => null);
+/// Selected Company Provider (for multi-company scenarios)
+/// Use ref.read(selectedCompanyProvider.notifier).state = value to update
+final selectedCompanyProvider = Provider<String?>((ref) => null);

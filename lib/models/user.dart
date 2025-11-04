@@ -21,25 +21,35 @@ enum UserRole {
 /// User model class
 class User extends Equatable {
   final String id;
-  final String name;
+  final String? name; // Made nullable to match DB schema
   final String email;
   final UserRole role;
   final String? phone;
   final String? avatarUrl;
-  final String? expoPushToken;
   final String? branchId; // Add branchId for staff/branch association
+  final String? companyId; // Add companyId for company association
+  final bool? isActive; // Active status for employee accounts
+  final String? inviteToken; // Invite token for employee onboarding
+  final DateTime? inviteExpiresAt; // When invite expires
+  final DateTime? invitedAt; // When invitation was created
+  final DateTime? onboardedAt; // When employee completed onboarding
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   const User({
     required this.id,
-    required this.name,
+    this.name, // Made optional
     required this.email,
     required this.role,
     this.phone,
     this.avatarUrl,
-    this.expoPushToken,
     this.branchId, // Add branchId to constructor
+    this.companyId, // Add companyId to constructor
+    this.isActive, // Add isActive to constructor
+    this.inviteToken,
+    this.inviteExpiresAt,
+    this.invitedAt,
+    this.onboardedAt,
     this.createdAt,
     this.updatedAt,
   });
@@ -52,8 +62,13 @@ class User extends Equatable {
         role,
         phone,
         avatarUrl,
-        expoPushToken,
         branchId,
+        companyId,
+        isActive,
+        inviteToken,
+        inviteExpiresAt,
+        invitedAt,
+        onboardedAt,
         createdAt,
         updatedAt,
       ];
@@ -62,13 +77,25 @@ class User extends Equatable {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] as String,
-      name: json['name'] as String,
+      name: json['full_name'] as String? ??
+          json['name'] as String?, // Try full_name first, fallback to name
       email: json['email'] as String,
       role: UserRole.fromString(json['role'] as String),
       phone: json['phone'] as String?,
       avatarUrl: json['avatar_url'] as String?,
-      expoPushToken: json['expo_push_token'] as String?,
       branchId: json['branch_id'] as String?, // Add branchId
+      companyId: json['company_id'] as String?, // Add companyId
+      isActive: json['is_active'] as bool?, // Add isActive
+      inviteToken: json['invite_token'] as String?,
+      inviteExpiresAt: json['invite_expires_at'] != null
+          ? DateTime.parse(json['invite_expires_at'] as String)
+          : null,
+      invitedAt: json['invited_at'] != null
+          ? DateTime.parse(json['invited_at'] as String)
+          : null,
+      onboardedAt: json['onboarded_at'] != null
+          ? DateTime.parse(json['onboarded_at'] as String)
+          : null,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -82,13 +109,19 @@ class User extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
+      'full_name': name, // Use full_name for DB
+      'name': name, // Keep for compatibility
       'email': email,
       'role': role.value,
       'phone': phone,
       'avatar_url': avatarUrl,
-      'expo_push_token': expoPushToken,
       'branch_id': branchId, // Add branchId
+      'company_id': companyId, // Add companyId
+      'is_active': isActive, // Add isActive
+      'invite_token': inviteToken,
+      'invite_expires_at': inviteExpiresAt?.toIso8601String(),
+      'invited_at': invitedAt?.toIso8601String(),
+      'onboarded_at': onboardedAt?.toIso8601String(),
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -102,8 +135,13 @@ class User extends Equatable {
     UserRole? role,
     String? phone,
     String? avatarUrl,
-    String? expoPushToken,
     String? branchId, // Add branchId
+    String? companyId, // Add companyId
+    bool? isActive, // Add isActive
+    String? inviteToken,
+    DateTime? inviteExpiresAt,
+    DateTime? invitedAt,
+    DateTime? onboardedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -114,8 +152,13 @@ class User extends Equatable {
       role: role ?? this.role,
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
-      expoPushToken: expoPushToken ?? this.expoPushToken,
       branchId: branchId ?? this.branchId, // Add branchId
+      companyId: companyId ?? this.companyId, // Add companyId
+      isActive: isActive ?? this.isActive, // Add isActive
+      inviteToken: inviteToken ?? this.inviteToken,
+      inviteExpiresAt: inviteExpiresAt ?? this.inviteExpiresAt,
+      invitedAt: invitedAt ?? this.invitedAt,
+      onboardedAt: onboardedAt ?? this.onboardedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../providers/auth_provider.dart';
 
 /// User Profile Page
 /// Display and edit user information, settings, and preferences
@@ -51,7 +52,8 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       // Fetch user data from users table
       final response = await _supabase
           .from('users')
-          .select('*, company:companies(name), branch:branches(name)')
+          .select(
+              'id, full_name, email, phone, avatar_url, role, branch_id, company_id, companies!company_id(name), branches!branch_id(name)')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -83,15 +85,32 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       final user = _supabase.auth.currentUser;
       if (user == null) throw Exception('Chưa đăng nhập');
 
-      await _supabase.from('users').update({
-        'full_name': _fullNameController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', user.id);
+      print('🔵 Updating user profile...');
+      print('   User ID: ${user.id}');
+      print('   Full Name: ${_fullNameController.text.trim()}');
+      print('   Phone: ${_phoneController.text.trim()}');
 
-      setState(() => _isEditing = false);
+      final response = await _supabase
+          .from('users')
+          .update({
+            'full_name': _fullNameController.text.trim(),
+            'phone': _phoneController.text.trim(),
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', user.id)
+          .select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at');
+
+      print('🔵 Update response: $response');
+
+      // Reload user data to update UI
+      await _loadUserData();
+
+      // Refresh auth provider to update global state - FORCE RELOAD FROM DATABASE
+      await ref.read(authProvider.notifier).reloadUserFromDatabase();
 
       if (mounted) {
+        setState(() => _isEditing = false);
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ Đã cập nhật thông tin!'),
@@ -99,9 +118,8 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
           ),
         );
       }
-
-      await _loadUserData();
     } catch (e) {
+      print('🔴 Error updating profile: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi cập nhật: $e')),
@@ -407,8 +425,13 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
   }
 
   Widget _buildCompanyInfoCard() {
-    final companyName = _userData?['company']?['name'] ?? 'Chưa có';
-    final branchName = _userData?['branch']?['name'] ?? 'Chưa có';
+    // Get company name from foreign key relation
+    final companyData = _userData?['companies'];
+    final companyName = companyData is Map ? (companyData['name'] ?? 'Chưa có') : 'Chưa có';
+    
+    // Get branch name from foreign key relation  
+    final branchData = _userData?['branches'];
+    final branchName = branchData is Map ? (branchData['name'] ?? 'Chưa có') : 'Chưa có';
 
     return Card(
       elevation: 0,

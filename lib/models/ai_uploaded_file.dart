@@ -4,42 +4,39 @@ class AIUploadedFile {
   final String id;
   final String assistantId;
   final String companyId;
-  final String? uploadedBy;
+  final String? userId;
   final String fileName;
   final String fileType; // 'image', 'pdf', 'doc', 'spreadsheet', 'text'
   final String? mimeType;
   final int fileSize; // in bytes
-  final String storagePath; // Supabase Storage path
+  final String fileUrl; // Supabase Storage URL or path
   final String? openaiFileId; // OpenAI file ID for API
-  final String
-      processingStatus; // 'pending', 'processing', 'completed', 'failed'
-  final String? processingError;
+  final String status; // 'uploaded', 'processing', 'analyzed', 'error'
+  final String? errorMessage;
   final String? extractedText;
-  final Map<String, dynamic>? analysis;
-  final List<String> tags;
-  final Map<String, dynamic> metadata;
+  final String? analysisStatus;
+  final Map<String, dynamic>? analysisResults;
   final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? analyzedAt;
 
   const AIUploadedFile({
     required this.id,
     required this.assistantId,
     required this.companyId,
-    this.uploadedBy,
+    this.userId,
     required this.fileName,
     required this.fileType,
     this.mimeType,
     required this.fileSize,
-    required this.storagePath,
+    required this.fileUrl,
     this.openaiFileId,
-    required this.processingStatus,
-    this.processingError,
+    required this.status,
+    this.errorMessage,
     this.extractedText,
-    this.analysis,
-    required this.tags,
-    required this.metadata,
+    this.analysisStatus,
+    this.analysisResults,
     required this.createdAt,
-    required this.updatedAt,
+    this.analyzedAt,
   });
 
   /// Create from Supabase JSON
@@ -48,23 +45,22 @@ class AIUploadedFile {
       id: json['id'] as String,
       assistantId: json['assistant_id'] as String,
       companyId: json['company_id'] as String,
-      uploadedBy: json['uploaded_by'] as String?,
+      userId: json['user_id'] as String?,
       fileName: json['file_name'] as String,
       fileType: json['file_type'] as String,
       mimeType: json['mime_type'] as String?,
       fileSize: json['file_size'] as int,
-      storagePath: json['storage_path'] as String,
+      fileUrl: json['file_url'] as String,
       openaiFileId: json['openai_file_id'] as String?,
-      processingStatus: json['processing_status'] as String? ?? 'pending',
-      processingError: json['processing_error'] as String?,
+      status: json['status'] as String? ?? 'uploaded',
+      errorMessage: json['error_message'] as String?,
       extractedText: json['extracted_text'] as String?,
-      analysis: json['analysis'] as Map<String, dynamic>?,
-      tags:
-          (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-              [],
-      metadata: json['metadata'] as Map<String, dynamic>? ?? {},
+      analysisStatus: json['analysis_status'] as String?,
+      analysisResults: json['analysis_results'] as Map<String, dynamic>?,
       createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      analyzedAt: json['analyzed_at'] != null
+          ? DateTime.parse(json['analyzed_at'] as String)
+          : null,
     );
   }
 
@@ -74,21 +70,20 @@ class AIUploadedFile {
       'id': id,
       'assistant_id': assistantId,
       'company_id': companyId,
-      'uploaded_by': uploadedBy,
+      'user_id': userId,
       'file_name': fileName,
       'file_type': fileType,
       'mime_type': mimeType,
       'file_size': fileSize,
-      'storage_path': storagePath,
+      'file_url': fileUrl,
       'openai_file_id': openaiFileId,
-      'processing_status': processingStatus,
-      'processing_error': processingError,
+      'status': status,
+      'error_message': errorMessage,
       'extracted_text': extractedText,
-      'analysis': analysis,
-      'tags': tags,
-      'metadata': metadata,
+      'analysis_status': analysisStatus,
+      'analysis_results': analysisResults,
       'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'analyzed_at': analyzedAt?.toIso8601String(),
     };
   }
 
@@ -112,17 +107,17 @@ class AIUploadedFile {
 
   /// Get processing status display name in Vietnamese
   String get statusLabel {
-    switch (processingStatus) {
-      case 'pending':
-        return 'Đang chờ';
+    switch (status) {
+      case 'uploaded':
+        return 'Đã tải lên';
       case 'processing':
         return 'Đang xử lý';
-      case 'completed':
-        return 'Hoàn thành';
-      case 'failed':
-        return 'Thất bại';
+      case 'analyzed':
+        return 'Đã phân tích';
+      case 'error':
+        return 'Lỗi';
       default:
-        return processingStatus;
+        return status;
     }
   }
 
@@ -160,20 +155,21 @@ class AIUploadedFile {
   /// Check if file is text
   bool get isText => fileType == 'text';
 
-  /// Check if processing is pending
-  bool get isPending => processingStatus == 'pending';
+  /// Check if uploaded
+  bool get isUploaded => status == 'uploaded';
 
   /// Check if currently processing
-  bool get isProcessing => processingStatus == 'processing';
+  bool get isProcessing => status == 'processing';
 
   /// Check if processing completed
-  bool get isCompleted => processingStatus == 'completed';
+  bool get isAnalyzed => status == 'analyzed';
 
   /// Check if processing failed
-  bool get isFailed => processingStatus == 'failed';
+  bool get hasError => status == 'error';
 
   /// Check if file has been analyzed
-  bool get hasAnalysis => analysis != null && analysis!.isNotEmpty;
+  bool get hasAnalysis =>
+      analysisResults != null && analysisResults!.isNotEmpty;
 
   /// Check if file has extracted text
   bool get hasExtractedText =>
@@ -196,60 +192,49 @@ class AIUploadedFile {
     }
   }
 
-  /// Get public URL for the file in Supabase Storage
-  String get storageUrl {
-    // Use the Supabase public URL format
-    // Format: https://[project-ref].supabase.co/storage/v1/object/public/[bucket]/[path]
-    const supabaseUrl = String.fromEnvironment('SUPABASE_URL',
-        defaultValue: 'https://your-project.supabase.co');
-    return '$supabaseUrl/storage/v1/object/public/ai-files/$storagePath';
-  }
-
   AIUploadedFile copyWith({
     String? id,
     String? assistantId,
     String? companyId,
-    String? uploadedBy,
+    String? userId,
     String? fileName,
     String? fileType,
     String? mimeType,
     int? fileSize,
-    String? storagePath,
+    String? fileUrl,
     String? openaiFileId,
-    String? processingStatus,
-    String? processingError,
+    String? status,
+    String? errorMessage,
     String? extractedText,
-    Map<String, dynamic>? analysis,
-    List<String>? tags,
-    Map<String, dynamic>? metadata,
+    String? analysisStatus,
+    Map<String, dynamic>? analysisResults,
     DateTime? createdAt,
-    DateTime? updatedAt,
+    DateTime? analyzedAt,
   }) {
     return AIUploadedFile(
       id: id ?? this.id,
       assistantId: assistantId ?? this.assistantId,
       companyId: companyId ?? this.companyId,
-      uploadedBy: uploadedBy ?? this.uploadedBy,
+      userId: userId ?? this.userId,
       fileName: fileName ?? this.fileName,
       fileType: fileType ?? this.fileType,
       mimeType: mimeType ?? this.mimeType,
       fileSize: fileSize ?? this.fileSize,
-      storagePath: storagePath ?? this.storagePath,
+      fileUrl: fileUrl ?? this.fileUrl,
       openaiFileId: openaiFileId ?? this.openaiFileId,
-      processingStatus: processingStatus ?? this.processingStatus,
-      processingError: processingError ?? this.processingError,
+      status: status ?? this.status,
+      errorMessage: errorMessage ?? this.errorMessage,
       extractedText: extractedText ?? this.extractedText,
-      analysis: analysis ?? this.analysis,
-      tags: tags ?? this.tags,
-      metadata: metadata ?? this.metadata,
+      analysisStatus: analysisStatus ?? this.analysisStatus,
+      analysisResults: analysisResults ?? this.analysisResults,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      analyzedAt: analyzedAt ?? this.analyzedAt,
     );
   }
 
   @override
   String toString() {
-    return 'AIUploadedFile(id: $id, fileName: $fileName, status: $processingStatus)';
+    return 'AIUploadedFile(id: $id, fileName: $fileName, status: $status)';
   }
 
   @override

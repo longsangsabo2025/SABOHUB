@@ -52,4 +52,15 @@ final customerAnalyticsProvider =
 
 /// Selected Period Provider
 /// State provider for selected analytics period
-final selectedPeriodProvider = StateProvider<String>((ref) => 'month');
+final selectedPeriodProvider =
+    NotifierProvider<_SelectedPeriodNotifier, String>(
+        () => _SelectedPeriodNotifier());
+
+class _SelectedPeriodNotifier extends Notifier<String> {
+  @override
+  String build() => 'month';
+
+  void set(String period) {
+    state = period;
+  }
+}

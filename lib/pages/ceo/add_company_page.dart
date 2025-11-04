@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../services/company_service.dart';
+
 /// Add Company Page
 /// Form để thêm công ty mới vào hệ thống
 class AddCompanyPage extends ConsumerStatefulWidget {
@@ -62,25 +64,76 @@ class _AddCompanyPageState extends ConsumerState<AddCompanyPage> {
       _isSubmitting = true;
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // ✅ Save to database using CompanyService
+      final companyService = CompanyService();
 
-    if (mounted) {
-      setState(() {
-        _isSubmitting = false;
-      });
+      // Map company type to business_type
+      String businessType = 'billiards'; // default
+      switch (_selectedType.toLowerCase()) {
+        case 'cafe':
+        case 'quán café':
+          businessType = 'cafe';
+          break;
+        case 'nhà hàng':
+        case 'restaurant':
+          businessType = 'restaurant';
+          break;
+        case 'bar':
+          businessType = 'bar';
+          break;
+        case 'khách sạn':
+        case 'hotel':
+          businessType = 'hotel';
+          break;
+        case 'coworking space':
+          businessType = 'coworking';
+          break;
+        default:
+          businessType = 'other';
+      }
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Đã thêm công ty "${_nameController.text}" thành công!'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-        ),
+      await companyService.createCompany(
+        name: _nameController.text,
+        address: _addressController.text,
+        phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+        email: _emailController.text.isNotEmpty ? _emailController.text : null,
+        businessType: businessType,
       );
 
-      // Return to previous page
-      Navigator.pop(context, true); // Return true to indicate success
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('✅ Đã thêm công ty "${_nameController.text}" thành công!'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Return to previous page
+        Navigator.pop(context, true); // Return true to indicate success
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Lỗi: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 
@@ -240,7 +293,8 @@ class _AddCompanyPageState extends ConsumerState<AddCompanyPage> {
                                 icon: Icons.email,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
-                                  if (value?.isNotEmpty == true && !value!.contains('@')) {
+                                  if (value?.isNotEmpty == true &&
+                                      !value!.contains('@')) {
                                     return 'Email không hợp lệ';
                                   }
                                   return null;
@@ -297,14 +351,17 @@ class _AddCompanyPageState extends ConsumerState<AddCompanyPage> {
                               child: Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.toggle_on,
-                                      color: _isActive ? Colors.green : Colors.grey,
+                                      color: _isActive
+                                          ? Colors.green
+                                          : Colors.grey,
                                     ),
                                     const SizedBox(width: 8),
                                     const Text('Trạng thái:'),
@@ -320,7 +377,9 @@ class _AddCompanyPageState extends ConsumerState<AddCompanyPage> {
                                     Text(
                                       _isActive ? 'Hoạt động' : 'Tạm dừng',
                                       style: TextStyle(
-                                        color: _isActive ? Colors.green : Colors.grey,
+                                        color: _isActive
+                                            ? Colors.green
+                                            : Colors.grey,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -348,7 +407,9 @@ class _AddCompanyPageState extends ConsumerState<AddCompanyPage> {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
@@ -392,7 +453,9 @@ class _AddCompanyPageState extends ConsumerState<AddCompanyPage> {
                                   )
                                 : const Text(
                                     'Thêm công ty',
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
                                   ),
                           ),
                         ),
@@ -489,7 +552,8 @@ class _AddCompanyPageState extends ConsumerState<AddCompanyPage> {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }
@@ -502,7 +566,7 @@ class _AddCompanyPageState extends ConsumerState<AddCompanyPage> {
     required void Function(String?) onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
@@ -519,7 +583,8 @@ class _AddCompanyPageState extends ConsumerState<AddCompanyPage> {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       items: items.map((String item) {
         return DropdownMenuItem<String>(

@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
+
+import '../../providers/auth_provider.dart';
 
 /// CEO Profile Page
 /// Displays CEO profile information, settings, and account management
@@ -11,34 +16,72 @@ class CEOProfilePage extends ConsumerStatefulWidget {
 }
 
 class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
+  final _supabase = Supabase.instance.client;
   bool _isEditingProfile = false;
+  bool _isLoading = true;
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _positionController = TextEditingController();
 
-  Map<String, dynamic> _getMockProfile() {
-    return {
-      'name': 'Nguyễn Văn CEO',
-      'email': 'ceo@sabohub.vn',
-      'phone': '+84 901 234 567',
-      'position': 'Giám đốc điều hành',
-      'avatar': null,
-      'joinDate': DateTime(2020, 1, 15),
-      'lastLogin': DateTime.now().subtract(const Duration(minutes: 5)),
-      'department': 'Ban lãnh đạo',
-      'location': 'Hà Nội, Việt Nam',
-    };
-  }
+  Map<String, dynamic>? _userData;
 
   @override
   void initState() {
     super.initState();
-    final profile = _getMockProfile();
-    _nameController.text = profile['name'];
-    _emailController.text = profile['email'];
-    _phoneController.text = profile['phone'];
-    _positionController.text = profile['position'];
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Fetch user data from users table
+      final response = await _supabase
+          .from('users')
+          .select(
+              'id, full_name, email, phone, avatar_url, role, branch_id, company_id, company:companies!company_id(name), branch:branches(name)')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (response != null) {
+        setState(() {
+          _userData = response;
+          _nameController.text = response['full_name'] ?? '';
+          _emailController.text = response['email'] ?? user.email ?? '';
+          _phoneController.text = response['phone'] ?? '';
+          _positionController.text = _getRoleLabel(response['role'] ?? 'CEO');
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải thông tin: $e')),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  String _getRoleLabel(String role) {
+    switch (role.toUpperCase()) {
+      case 'CEO':
+        return 'Giám đốc điều hành';
+      case 'MANAGER':
+        return 'Quản lý chi nhánh';
+      case 'STAFF':
+        return 'Nhân viên';
+      default:
+        return role;
+    }
   }
 
   @override
@@ -69,7 +112,17 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final profile = _getMockProfile();
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Hồ sơ cá nhân'),
+          backgroundColor: Colors.white,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final profile = _userData ?? {};
 
     return Scaffold(
       appBar: AppBar(
@@ -105,26 +158,50 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                   onPressed: () {
                     setState(() {
                       _isEditingProfile = false;
-                      // Reset form
-                      _nameController.text = profile['name'];
-                      _emailController.text = profile['email'];
-                      _phoneController.text = profile['phone'];
-                      _positionController.text = profile['position'];
+                      // Reset form to original data
+                      _loadUserData();
                     });
                   },
                   child: const Text('Hủy'),
                 ),
                 TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _isEditingProfile = false;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Đã lưu thông tin cá nhân'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                  onPressed: () async {
+                    // Save profile changes
+                    try {
+                      final user = _supabase.auth.currentUser;
+                      if (user == null) throw Exception('Chưa đăng nhập');
+
+                      await _supabase.from('users').update({
+                        'full_name': _nameController.text.trim(),
+                        'phone': _phoneController.text.trim(),
+                        'updated_at': DateTime.now().toIso8601String(),
+                      }).eq('id', user.id);
+
+                      await _loadUserData();
+
+                      setState(() {
+                        _isEditingProfile = false;
+                      });
+
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('✅ Đã lưu thông tin cá nhân'),
+                            duration: Duration(seconds: 2),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Lỗi: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
                   },
                   child: const Text(
                     'Lưu',
@@ -193,7 +270,7 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                   // Name and position
                   if (!_isEditingProfile) ...[
                     Text(
-                      profile['name'],
+                      profile['full_name'] ?? 'User',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -202,7 +279,7 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      profile['position'],
+                      _getRoleLabel(profile['role'] ?? 'STAFF'),
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey.shade600,
@@ -309,18 +386,22 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                     const SizedBox(height: 16),
                     _buildEditField('Chức vụ', _positionController),
                   ] else ...[
-                    _buildInfoRow('Họ và tên', profile['name'], Icons.person),
-                    const SizedBox(height: 16),
-                    _buildInfoRow('Email', profile['email'], Icons.email),
+                    _buildInfoRow('Họ và tên', profile['full_name'] ?? 'N/A',
+                        Icons.person),
                     const SizedBox(height: 16),
                     _buildInfoRow(
-                        'Số điện thoại', profile['phone'], Icons.phone),
+                        'Email', profile['email'] ?? 'N/A', Icons.email),
                     const SizedBox(height: 16),
-                    _buildInfoRow('Chức vụ', profile['position'], Icons.work),
+                    _buildInfoRow('Số điện thoại', profile['phone'] ?? 'N/A',
+                        Icons.phone),
                     const SizedBox(height: 16),
-                    _buildInfoRow('Phòng ban', profile['department'], Icons.business),
+                    _buildInfoRow('Chức vụ',
+                        _getRoleLabel(profile['role'] ?? 'STAFF'), Icons.work),
                     const SizedBox(height: 16),
-                    _buildInfoRow('Địa điểm', profile['location'], Icons.location_on),
+                    _buildInfoRow('Phòng ban', 'Ban lãnh đạo', Icons.business),
+                    const SizedBox(height: 16),
+                    _buildInfoRow(
+                        'Địa điểm', 'Hà Nội, Việt Nam', Icons.location_on),
                   ],
                 ],
               ),
@@ -357,13 +438,18 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                   const SizedBox(height: 20),
                   _buildInfoRow(
                     'Ngày gia nhập',
-                    '15/01/2020',
+                    profile['created_at'] != null
+                        ? DateFormat('dd/MM/yyyy')
+                            .format(DateTime.parse(profile['created_at']))
+                        : '15/01/2020',
                     Icons.calendar_today,
                   ),
                   const SizedBox(height: 16),
                   _buildInfoRow(
                     'Đăng nhập lần cuối',
-                    _getTimeAgo(profile['lastLogin']),
+                    profile['updated_at'] != null
+                        ? _getTimeAgo(DateTime.parse(profile['updated_at']))
+                        : 'N/A',
                     Icons.access_time,
                   ),
                 ],
@@ -405,7 +491,8 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                     () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Tính năng đổi mật khẩu sẽ được triển khai'),
+                          content:
+                              Text('Tính năng đổi mật khẩu sẽ được triển khai'),
                           duration: Duration(seconds: 2),
                         ),
                       );
@@ -418,7 +505,8 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                     () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Tính năng cài đặt thông báo sẽ được triển khai'),
+                          content: Text(
+                              'Tính năng cài đặt thông báo sẽ được triển khai'),
                           duration: Duration(seconds: 2),
                         ),
                       );
@@ -431,7 +519,8 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                     () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Tính năng bảo mật tài khoản sẽ được triển khai'),
+                          content: Text(
+                              'Tính năng bảo mật tài khoản sẽ được triển khai'),
                           duration: Duration(seconds: 2),
                         ),
                       );
@@ -441,27 +530,20 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                   _buildSettingOption(
                     'Đăng xuất',
                     Icons.logout,
-                    () {
-                      showDialog(
+                    () async {
+                      final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
                           title: const Text('Xác nhận đăng xuất'),
-                          content: const Text('Bạn có chắc chắn muốn đăng xuất?'),
+                          content:
+                              const Text('Bạn có chắc chắn muốn đăng xuất?'),
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: () => Navigator.pop(context, false),
                               child: const Text('Hủy'),
                             ),
                             TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Đã đăng xuất'),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                              },
+                              onPressed: () => Navigator.pop(context, true),
                               child: const Text(
                                 'Đăng xuất',
                                 style: TextStyle(color: Colors.red),
@@ -470,6 +552,25 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                           ],
                         ),
                       );
+
+                      if (confirmed == true && mounted) {
+                        // Perform logout
+                        await ref.read(authProvider.notifier).logout();
+
+                        if (mounted) {
+                          // Show success message
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✅ Đã đăng xuất thành công'),
+                              backgroundColor: Color(0xFF10B981),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+
+                          // Navigate to login page
+                          context.go('/login');
+                        }
+                      }
                     },
                     isDestructive: true,
                   ),

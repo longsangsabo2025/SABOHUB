@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../providers/manager_provider.dart';
 import '../../providers/staff_provider.dart';
+import '../../widgets/multi_account_switcher.dart';
 
 /// Shift Leader Dashboard Page
 /// Overview of current shift operations and KPIs
@@ -71,6 +72,8 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
         ),
       ),
       actions: [
+        // Multi-Account Switcher
+        const MultiAccountSwitcher(),
         IconButton(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(

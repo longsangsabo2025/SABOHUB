@@ -45,4 +45,15 @@ final staffStreamProvider =
 });
 
 /// Selected Staff ID Provider (for detail view)
-final selectedStaffIdProvider = StateProvider<String?>((ref) => null);
+final selectedStaffIdProvider =
+    NotifierProvider<_SelectedStaffIdNotifier, String?>(
+        () => _SelectedStaffIdNotifier());
+
+class _SelectedStaffIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String? id) {
+    state = id;
+  }
+}

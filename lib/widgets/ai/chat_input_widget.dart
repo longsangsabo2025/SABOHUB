@@ -70,7 +70,7 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
 
               uploadedFiles.add({
                 'type': uploadedFile.fileType,
-                'url': fileUploadService.getFileUrl(uploadedFile.storagePath),
+                'url': uploadedFile.fileUrl,
                 'file_id': uploadedFile.id,
               });
 
@@ -162,6 +162,7 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
     });
   }
 
+  // ignore: unused_element
   String _getFileType(String extension) {
     final ext = extension.toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif'].contains(ext)) {

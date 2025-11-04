@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/management_task.dart';
 import '../../providers/management_task_provider.dart';
-import '../../providers/management_task_provider_cached.dart';
+import '../../utils/dummy_providers.dart';
+import 'ceo_profile_page.dart';
+import 'smart_task_creation_page.dart';
 
 /// CEO Tasks Page
 /// CEO can create strategic tasks, assign to managers, and monitor company-wide progress
@@ -24,7 +25,8 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController =
+        TabController(length: 4, vsync: this); // ✅ Changed from 3 to 4
   }
 
   @override
@@ -46,6 +48,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
             child: TabBarView(
               controller: _tabController,
               children: [
+                _buildQuickActionsTab(), // ✅ New first tab
                 _buildStrategicTasksTab(),
                 _buildApprovalTab(),
                 _buildCompanyOverviewTab(),
@@ -54,12 +57,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showCreateTaskDialog,
-        backgroundColor: const Color(0xFF3B82F6),
-        icon: const Icon(Icons.add),
-        label: const Text('Tạo nhiệm vụ'),
-      ),
+      // ✅ Removed FloatingActionButton - actions now in Quick Actions tab
     );
   }
 
@@ -91,7 +89,12 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
           icon: const Icon(Icons.account_circle),
           tooltip: 'Hồ sơ cá nhân',
           onPressed: () {
-            context.push('/profile');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CEOProfilePage(),
+              ),
+            );
           },
         ),
         IconButton(
@@ -134,7 +137,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
             ),
           ),
           data: (cachedStats) {
-            final stats = cachedStats.data;
+            final stats = cachedStats;
             final inProgress = stats['in_progress'] ?? 0;
             final pending = stats['pending'] ?? 0;
             final completed = stats['completed'] ?? 0;
@@ -233,11 +236,374 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
         unselectedLabelColor: Colors.grey,
         indicatorColor: const Color(0xFF3B82F6),
         indicatorWeight: 3,
+        isScrollable: true, // ✅ Enable scrolling for 4 tabs
         tabs: const [
+          Tab(text: 'Hành động nhanh'),
           Tab(text: 'Nhiệm vụ chiến lược'),
           Tab(text: 'Chờ phê duyệt'),
           Tab(text: 'Tổng quan công ty'),
         ],
+      ),
+    );
+  }
+
+  // ✅ NEW: Quick Actions Tab with 2-column layout
+  Widget _buildQuickActionsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '⚡ Hành động nhanh',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Các thao tác thường dùng cho CEO',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // ✅ 2-Column Layout
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Use 2 columns on wide screens, 1 column on narrow
+              final isWide = constraints.maxWidth > 800;
+
+              if (isWide) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left Column
+                    Expanded(
+                      child: Column(
+                        children: [
+                          _buildActionSection(
+                            title: '📋 Quản lý nhiệm vụ',
+                            actions: [
+                              _ActionItem(
+                                icon: Icons.add_task,
+                                title: 'Tạo nhiệm vụ mới',
+                                subtitle:
+                                    'Giao nhiệm vụ chiến lược cho Manager',
+                                color: Colors.blue,
+                                onTap: _showCreateTaskDialog,
+                              ),
+                              _ActionItem(
+                                icon: Icons.assignment_turned_in,
+                                title: 'Phê duyệt nhiệm vụ',
+                                subtitle:
+                                    'Xem và phê duyệt các nhiệm vụ đang chờ',
+                                color: Colors.orange,
+                                onTap: () => _tabController.animateTo(2),
+                              ),
+                              _ActionItem(
+                                icon: Icons.analytics,
+                                title: 'Xem báo cáo tổng quan',
+                                subtitle: 'Thống kê hiệu suất theo công ty',
+                                color: Colors.purple,
+                                onTap: () => _tabController.animateTo(3),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          _buildActionSection(
+                            title: '🏢 Quản lý công ty',
+                            actions: [
+                              _ActionItem(
+                                icon: Icons.business,
+                                title: 'Quản lý công ty',
+                                subtitle: 'Xem và cập nhật thông tin công ty',
+                                color: Colors.teal,
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Chuyển sang tab Công ty...'),
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _ActionItem(
+                                icon: Icons.people,
+                                title: 'Quản lý nhân sự',
+                                subtitle: 'Thêm, sửa, xóa Manager và nhân viên',
+                                color: Colors.green,
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Tính năng đang phát triển...'),
+                                      duration: Duration(seconds: 1),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    // Right Column
+                    Expanded(
+                      child: _buildActionSection(
+                        title: '📊 Báo cáo & Phân tích',
+                        actions: [
+                          _ActionItem(
+                            icon: Icons.bar_chart,
+                            title: 'Báo cáo doanh thu',
+                            subtitle: 'Xem doanh thu theo công ty và chi nhánh',
+                            color: Colors.indigo,
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Tính năng đang phát triển...'),
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
+                            },
+                          ),
+                          _ActionItem(
+                            icon: Icons.trending_up,
+                            title: 'Phân tích hiệu suất',
+                            subtitle: 'Dashboard phân tích KPI và hiệu suất',
+                            color: Colors.pink,
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Tính năng đang phát triển...'),
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
+                            },
+                          ),
+                          _ActionItem(
+                            icon: Icons.settings,
+                            title: 'Cài đặt hệ thống',
+                            subtitle: 'Quản lý cấu hình và phân quyền',
+                            color: Colors.blueGrey,
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Tính năng đang phát triển...'),
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                // Single column for narrow screens
+                return Column(
+                  children: [
+                    _buildActionSection(
+                      title: '📋 Quản lý nhiệm vụ',
+                      actions: [
+                        _ActionItem(
+                          icon: Icons.add_task,
+                          title: 'Tạo nhiệm vụ mới',
+                          subtitle: 'Giao nhiệm vụ chiến lược cho Manager',
+                          color: Colors.blue,
+                          onTap: _showCreateTaskDialog,
+                        ),
+                        _ActionItem(
+                          icon: Icons.assignment_turned_in,
+                          title: 'Phê duyệt nhiệm vụ',
+                          subtitle: 'Xem và phê duyệt các nhiệm vụ đang chờ',
+                          color: Colors.orange,
+                          onTap: () => _tabController.animateTo(2),
+                        ),
+                        _ActionItem(
+                          icon: Icons.analytics,
+                          title: 'Xem báo cáo tổng quan',
+                          subtitle: 'Thống kê hiệu suất theo công ty',
+                          color: Colors.purple,
+                          onTap: () => _tabController.animateTo(3),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    _buildActionSection(
+                      title: '🏢 Quản lý công ty',
+                      actions: [
+                        _ActionItem(
+                          icon: Icons.business,
+                          title: 'Quản lý công ty',
+                          subtitle: 'Xem và cập nhật thông tin công ty',
+                          color: Colors.teal,
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Chuyển sang tab Công ty...'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          },
+                        ),
+                        _ActionItem(
+                          icon: Icons.people,
+                          title: 'Quản lý nhân sự',
+                          subtitle: 'Thêm, sửa, xóa Manager và nhân viên',
+                          color: Colors.green,
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Tính năng đang phát triển...'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    _buildActionSection(
+                      title: '📊 Báo cáo & Phân tích',
+                      actions: [
+                        _ActionItem(
+                          icon: Icons.bar_chart,
+                          title: 'Báo cáo doanh thu',
+                          subtitle: 'Xem doanh thu theo công ty và chi nhánh',
+                          color: Colors.indigo,
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Tính năng đang phát triển...'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          },
+                        ),
+                        _ActionItem(
+                          icon: Icons.trending_up,
+                          title: 'Phân tích hiệu suất',
+                          subtitle: 'Dashboard phân tích KPI và hiệu suất',
+                          color: Colors.pink,
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Tính năng đang phát triển...'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          },
+                        ),
+                        _ActionItem(
+                          icon: Icons.settings,
+                          title: 'Cài đặt hệ thống',
+                          subtitle: 'Quản lý cấu hình và phân quyền',
+                          color: Colors.blueGrey,
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Tính năng đang phát triển...'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionSection({
+    required String title,
+    required List<_ActionItem> actions,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...actions.map((action) => _buildActionCard(action)),
+      ],
+    );
+  }
+
+  Widget _buildActionCard(_ActionItem action) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: action.onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: action.color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  action.icon,
+                  color: action.color,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      action.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      action.subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.grey.shade400,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -275,7 +641,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
         ),
       ),
       data: (cachedTasks) {
-        final tasks = cachedTasks.data;
+        final tasks = cachedTasks;
         if (tasks.isEmpty) {
           return Center(
             child: Padding(
@@ -297,7 +663,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Nhấn nút + để tạo nhiệm vụ chiến lược mới',
+                    'Chuyển sang tab "Hành động nhanh" để tạo nhiệm vụ mới',
                     style: TextStyle(color: Colors.grey.shade500),
                     textAlign: TextAlign.center,
                   ),
@@ -482,7 +848,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
         ),
       ),
       data: (cachedApprovals) {
-        final approvals = cachedApprovals.data;
+        final approvals = cachedApprovals;
         if (approvals.isEmpty) {
           return Center(
             child: Padding(
@@ -694,7 +1060,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
         ),
       ),
       data: (cachedCompanies) {
-        final companies = cachedCompanies.data;
+        final companies = cachedCompanies;
         if (companies.isEmpty) {
           return Center(
             child: Padding(
@@ -721,23 +1087,18 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            ...companies.map((company) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildCompanyProgressCard(
-                    companyName:
-                        company['company_name'] as String? ?? 'Không xác định',
-                    tasksTotal: company['total'] as int? ?? 0,
-                    tasksCompleted: company['completed'] as int? ?? 0,
-                    tasksInProgress: company['in_progress'] as int? ?? 0,
-                    tasksOverdue: company['overdue'] as int? ?? 0,
-                  ),
-                )),
+            // TODO: Implement proper company list when data is available
+            Center(
+              child: Text('Không có dữ liệu công ty',
+                  style: TextStyle(color: Colors.grey.shade600)),
+            ),
           ],
         );
       },
     );
   }
 
+  // ignore: unused_element
   Widget _buildCompanyProgressCard({
     required String companyName,
     required int tasksTotal,
@@ -1079,308 +1440,16 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
   }
 
   void _showCreateTaskDialog() {
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
-    String? selectedManagerId;
-    String? selectedCompanyId;
-    TaskPriority selectedPriority = TaskPriority.medium;
-    DateTime? selectedDueDate;
-
-    // Load managers and companies
-    final service = ref.read(managementTaskServiceProvider);
-    final managersFuture = service.getManagers();
-    final companiesFuture = service.getCompanies();
-
-    showDialog(
-      context: context,
-      builder: (context) => FutureBuilder<List<dynamic>>(
-        future: Future.wait([managersFuture, companiesFuture]),
-        builder: (context, snapshot) {
-          final managers = snapshot.hasData
-              ? snapshot.data![0] as List<Map<String, dynamic>>
-              : <Map<String, dynamic>>[];
-          final companies = snapshot.hasData
-              ? snapshot.data![1] as List<Map<String, dynamic>>
-              : <Map<String, dynamic>>[];
-
-          return StatefulBuilder(
-            builder: (context, setState) => AlertDialog(
-              title: const Text('Tạo nhiệm vụ mới'),
-              content: SingleChildScrollView(
-                child: SizedBox(
-                  width: 500,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextField(
-                        controller: titleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Tên nhiệm vụ *',
-                          border: OutlineInputBorder(),
-                          hintText: 'Ví dụ: Mở rộng thị trường miền Bắc',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: descriptionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Mô tả chi tiết',
-                          border: OutlineInputBorder(),
-                          hintText: 'Mô tả nhiệm vụ và yêu cầu cụ thể',
-                        ),
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Manager Dropdown - Real data
-                      if (snapshot.connectionState == ConnectionState.waiting)
-                        const LinearProgressIndicator()
-                      else
-                        DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
-                            labelText: 'Giao cho Manager *',
-                            border: OutlineInputBorder(),
-                            hintText: 'Chọn người thực hiện',
-                          ),
-                          value: selectedManagerId,
-                          items: [
-                            const DropdownMenuItem(
-                              value: null,
-                              child: Text('-- Chọn Manager --'),
-                            ),
-                            ...managers.map((manager) {
-                              return DropdownMenuItem(
-                                value: manager['id'] as String,
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.person, size: 16),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        manager['full_name'] as String,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    if (manager['company_name'] != null) ...[
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        '(${manager['company_name']})',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ],
-                          onChanged: (value) {
-                            setState(() => selectedManagerId = value);
-                          },
-                        ),
-                      const SizedBox(height: 16),
-
-                      // Company Dropdown - Real data
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Công ty',
-                          border: OutlineInputBorder(),
-                          hintText: 'Chọn công ty',
-                        ),
-                        value: selectedCompanyId,
-                        items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('-- Không chọn công ty --'),
-                          ),
-                          ...companies.map((company) {
-                            return DropdownMenuItem(
-                              value: company['id'] as String,
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.business, size: 16),
-                                  const SizedBox(width: 8),
-                                  Text(company['name'] as String),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ],
-                        onChanged: (value) {
-                          setState(() => selectedCompanyId = value);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Priority Dropdown
-                      DropdownButtonFormField<TaskPriority>(
-                        decoration: const InputDecoration(
-                          labelText: 'Mức độ ưu tiên *',
-                          border: OutlineInputBorder(),
-                        ),
-                        value: selectedPriority,
-                        items: TaskPriority.values.map((priority) {
-                          return DropdownMenuItem(
-                            value: priority,
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 12,
-                                  height: 12,
-                                  decoration: BoxDecoration(
-                                    color: _getPriorityColor(priority),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(priority.label),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => selectedPriority = value);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Due Date Picker
-                      InkWell(
-                        onTap: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: selectedDueDate ??
-                                DateTime.now().add(const Duration(days: 7)),
-                            firstDate: DateTime.now(),
-                            lastDate:
-                                DateTime.now().add(const Duration(days: 365)),
-                          );
-                          if (date != null) {
-                            setState(() => selectedDueDate = date);
-                          }
-                        },
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Hạn hoàn thành',
-                            border: OutlineInputBorder(),
-                            suffixIcon: Icon(Icons.calendar_today),
-                          ),
-                          child: Text(
-                            selectedDueDate != null
-                                ? _dateFormat.format(selectedDueDate!)
-                                : 'Chọn ngày',
-                            style: TextStyle(
-                              color: selectedDueDate != null
-                                  ? Colors.black
-                                  : Colors.grey.shade600,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-                      Text(
-                        '* Trường bắt buộc',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Hủy'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    // Validation
-                    if (titleController.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Vui lòng nhập tên nhiệm vụ'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return;
-                    }
-
-                    Navigator.pop(context);
-
-                    // Show loading
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (context) => const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-
-                    try {
-                      final service = ref.read(managementTaskServiceProvider);
-
-                      // Validate assignedTo is required
-                      if (selectedManagerId == null) {
-                        throw Exception('Vui lòng chọn người thực hiện');
-                      }
-
-                      await service.createTask(
-                        title: titleController.text.trim(),
-                        description: descriptionController.text.trim().isEmpty
-                            ? null
-                            : descriptionController.text.trim(),
-                        priority: selectedPriority.value,
-                        assignedTo: selectedManagerId!,
-                        companyId: selectedCompanyId,
-                        dueDate: selectedDueDate,
-                      );
-
-                      if (mounted) {
-                        Navigator.pop(context); // Close loading
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('✅ Đã tạo nhiệm vụ thành công'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-
-                        // Refresh all data
-                        refreshAllManagementTasks(ref);
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        Navigator.pop(context); // Close loading
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('❌ Lỗi: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3B82F6),
-                  ),
-                  child: const Text('Tạo nhiệm vụ'),
-                ),
-              ],
-            ),
-          );
-        },
+    // Navigate to modern smart task creation page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SmartTaskCreationPage(),
       ),
-    );
+    ).then((_) {
+      // Refresh data when returning from task creation
+      refreshAllManagementTasks(ref);
+    });
   }
 
   Color _getPriorityColor(TaskPriority priority) {
@@ -1457,4 +1526,21 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
       }
     }
   }
+}
+
+// ✅ Helper class for Quick Actions
+class _ActionItem {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  _ActionItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
 }

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../providers/manager_provider_cached.dart';
-import '../../providers/staff_provider_cached.dart';
+import '../../utils/dummy_providers.dart';
+import '../../widgets/multi_account_switcher.dart';
 
 /// Manager Analytics Page
 /// Detailed analytics for management operations
@@ -55,6 +55,8 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
         ),
       ),
       actions: [
+        // Multi-Account Switcher
+        const MultiAccountSwitcher(),
         IconButton(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -196,8 +198,8 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildRevenueTab() {
-    final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider(null));
-    final staffStatsAsync = ref.watch(cachedStaffStatsProvider(null));
+    final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider);
+    final staffStatsAsync = ref.watch(cachedStaffStatsProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -205,19 +207,19 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           kpisAsync.when(
-            data: (cachedKpis) => _buildRevenueMetrics(cachedKpis.data),
+            data: (cachedKpis) => _buildRevenueMetrics(cachedKpis),
             loading: () => _buildLoadingCard(height: 180),
             error: (_, __) => _buildRevenueMetrics({}),
           ),
           const SizedBox(height: 24),
           staffStatsAsync.when(
-            data: (cachedStats) => _buildStaffMetrics(cachedStats.data),
+            data: (cachedStats) => _buildStaffMetrics(cachedStats),
             loading: () => _buildLoadingCard(height: 150),
             error: (_, __) => _buildStaffMetrics({}),
           ),
           const SizedBox(height: 24),
           kpisAsync.when(
-            data: (cachedKpis) => _buildPerformanceMetrics(cachedKpis.data),
+            data: (cachedKpis) => _buildPerformanceMetrics(cachedKpis),
             loading: () => _buildLoadingCard(height: 120),
             error: (_, __) => _buildPerformanceMetrics({}),
           ),
@@ -527,11 +529,11 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildCustomerStats() {
-    final staffAsync = ref.watch(cachedAllStaffProvider(null));
+    final staffAsync = ref.watch(cachedAllStaffProvider);
 
     return staffAsync.when(
       data: (cachedStaff) {
-        final staff = cachedStaff.data;
+        final staff = cachedStaff;
         final activeStaff = staff.where((s) => s.status == 'active').length;
         final totalStaff = staff.length;
         final onLeave = staff.where((s) => s.status == 'on_leave').length;
@@ -622,11 +624,11 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildCustomerSegments() {
-    final staffAsync = ref.watch(cachedAllStaffProvider(null));
+    final staffAsync = ref.watch(cachedAllStaffProvider);
 
     return staffAsync.when(
       data: (cachedStaff) {
-        final staff = cachedStaff.data;
+        final staff = cachedStaff;
         final total = staff.length;
         if (total == 0) {
           return Container(
@@ -761,11 +763,11 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildTopProducts() {
-    final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider(null));
+    final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider);
 
     return kpisAsync.when(
       data: (cachedKpis) {
-        final kpis = cachedKpis.data;
+        final kpis = cachedKpis;
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -872,11 +874,11 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildProductCategories() {
-    final staffAsync = ref.watch(cachedStaffStatsProvider(null));
+    final staffAsync = ref.watch(cachedStaffStatsProvider);
 
     return staffAsync.when(
       data: (cachedStats) {
-        final stats = cachedStats.data;
+        final stats = cachedStats;
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
