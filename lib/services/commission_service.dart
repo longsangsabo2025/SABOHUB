@@ -11,7 +11,7 @@ class CommissionService {
     required String billId,
     List<String>? employeeIds,
   }) async {
-    final response = await _supabase.rpc(
+    await _supabase.rpc(
       'calculate_bill_commissions',
       params: {
         'p_bill_id': billId,
@@ -44,11 +44,11 @@ class CommissionService {
     DateTime? fromDate,
     DateTime? toDate,
   }) async {
+    // Build filter query
     var query = _supabase
         .from('bill_commissions')
         .select('*, bills!inner(*)')
-        .eq('employee_id', employeeId)
-        .order('created_at', ascending: false);
+        .eq('employee_id', employeeId);
 
     if (status != null) {
       query = query.eq('status', status);
@@ -62,7 +62,7 @@ class CommissionService {
       query = query.lte('bills.bill_date', toDate.toIso8601String());
     }
 
-    final response = await query;
+    final response = await query.order('created_at', ascending: false);
     return (response as List)
         .map((json) => BillCommission.fromJson(json))
         .toList();
