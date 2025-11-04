@@ -158,6 +158,29 @@ class NavigationConfig {
       allowedRoles: [UserRole.manager, UserRole.ceo],
     ),
 
+    // Commission Navigation (NEW!)
+    NavigationItem(
+      route: '/commission/my-commission',
+      icon: Icons.account_balance_wallet,
+      activeIcon: Icons.account_balance_wallet,
+      label: 'Hoa hồng',
+      allowedRoles: [UserRole.staff, UserRole.shiftLeader, UserRole.manager, UserRole.ceo],
+    ),
+    NavigationItem(
+      route: '/commission/bills',
+      icon: Icons.receipt_long,
+      activeIcon: Icons.receipt_long,
+      label: 'Bills',
+      allowedRoles: [UserRole.manager, UserRole.ceo],
+    ),
+    NavigationItem(
+      route: '/commission/rules',
+      icon: Icons.rule,
+      activeIcon: Icons.rule,
+      label: 'Quy tắc',
+      allowedRoles: [UserRole.ceo],
+    ),
+
     // Debug Navigation (temporarily disabled)
     // if (kDebugMode)
     //   NavigationItem(

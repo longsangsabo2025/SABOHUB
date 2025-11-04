@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS bills (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-    store_id UUID REFERENCES stores(id) ON DELETE SET NULL,
+    store_name TEXT, -- Lưu tên cửa hàng dạng text thay vì FK (stores table chưa có)
     bill_number TEXT NOT NULL,
     bill_date TIMESTAMPTZ NOT NULL,
     total_amount DECIMAL(15,2) NOT NULL CHECK (total_amount >= 0),
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS commission_rule_history (
 
 -- Bills indexes
 CREATE INDEX IF NOT EXISTS idx_bills_company_id ON bills(company_id);
-CREATE INDEX IF NOT EXISTS idx_bills_store_id ON bills(store_id);
+CREATE INDEX IF NOT EXISTS idx_bills_store_name ON bills(store_name);
 CREATE INDEX IF NOT EXISTS idx_bills_status ON bills(status);
 CREATE INDEX IF NOT EXISTS idx_bills_bill_date ON bills(bill_date DESC);
 CREATE INDEX IF NOT EXISTS idx_bills_uploaded_by ON bills(uploaded_by);

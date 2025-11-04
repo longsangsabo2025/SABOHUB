@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,12 +9,20 @@ import '../../../core/services/supabase_service.dart';
 import '../../../models/accounting.dart';
 import '../../../models/company.dart';
 import '../../../services/accounting_service.dart';
+import '../../../widgets/shimmer_loading.dart';
 
 /// Accounting Summary Provider
+/// Caches summary data for 5 minutes to reduce API calls
 final accountingSummaryProvider = FutureProvider.family<
     AccountingSummary,
     ({String companyId, DateTime startDate, DateTime endDate, String? branchId})>(
   (ref, params) async {
+    // Cache for 5 minutes - balance between fresh data and performance
+    final link = ref.keepAlive();
+    Timer(const Duration(minutes: 5), () {
+      link.close();
+    });
+    
     final service = AccountingService();
     return await service.getSummary(
       companyId: params.companyId,
@@ -341,7 +351,25 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
 
   Widget _buildOverviewTab(AsyncValue<AccountingSummary> summaryAsync) {
     return summaryAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Shimmer for summary cards
+            const ShimmerSummaryCards(itemCount: 3),
+            const SizedBox(height: 16),
+            // Shimmer for revenue chart
+            const ShimmerChart(height: 200),
+            const SizedBox(height: 16),
+            // Shimmer for expense chart
+            const ShimmerChart(height: 200),
+            const SizedBox(height: 16),
+            // Shimmer for transactions
+            const ShimmerTransactionRow(itemCount: 5),
+          ],
+        ),
+      ),
       error: (error, stack) => Center(child: Text('Lỗi: $error')),
       data: (summary) => SingleChildScrollView(
         padding: const EdgeInsets.all(16),

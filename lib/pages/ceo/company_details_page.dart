@@ -5,6 +5,7 @@ import '../../models/branch.dart';
 import '../../models/company.dart';
 import '../../services/branch_service.dart';
 import '../../services/company_service.dart';
+import '../../widgets/shimmer_loading.dart';
 import 'ai_assistant_tab.dart';
 import 'company/accounting_tab.dart';
 import 'company/attendance_tab.dart';
@@ -17,8 +18,12 @@ import 'company/settings_tab.dart';
 import 'company/tasks_tab.dart';
 
 /// Company Details Page Provider
+/// Caches data to prevent unnecessary refetches when switching tabs
 final companyDetailsProvider =
     FutureProvider.family<Company?, String>((ref, id) async {
+  // Keep provider alive to cache company data across tab switches
+  ref.keepAlive();
+  
   final service = ref.watch(companyServiceProvider);
   return await service.getCompanyById(id);
 });
@@ -76,7 +81,22 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: companyAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Column(
+          children: [
+            // Shimmer for header/overview section
+            const ShimmerCompanyHeader(),
+            const SizedBox(height: 16),
+            // Bottom navigation bar shown even while loading
+            Expanded(
+              child: Container(
+                color: Colors.grey[50],
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+            ),
+          ],
+        ),
         error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

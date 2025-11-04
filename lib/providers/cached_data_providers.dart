@@ -5,6 +5,8 @@ import '../models/business_document.dart';
 import '../services/company_service.dart';
 import '../services/employee_document_service.dart';
 import '../services/business_document_service.dart';
+import '../services/employee_service.dart';
+import '../services/task_service.dart';
 import 'cache_provider.dart';
 
 /// Cached Companies Provider with auto-refresh
@@ -180,6 +182,94 @@ final cachedComplianceStatusProvider = FutureProvider.autoDispose.family<Complia
   },
 );
 
+/// Cached Company Stats Provider (Overview Tab)
+final cachedCompanyStatsProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, companyId) async {
+  final memoryCache = ref.watch(memoryCacheProvider);
+  final config = ref.watch(cacheConfigProvider);
+  final cacheKey = 'company_stats_$companyId';
+  
+  // Try memory cache
+  final cached = memoryCache.get<Map<String, dynamic>>(cacheKey);
+  if (cached != null) {
+    return cached;
+  }
+  
+  // Fetch from service
+  final service = ref.watch(companyServiceProvider);
+  final stats = await service.getCompanyStats(companyId);
+  
+  // Cache result (5 min TTL - stats don't change very often)
+  memoryCache.set(cacheKey, stats, config.defaultTTL);
+  
+  return stats;
+});
+
+/// Cached Company Employees Provider (Employees Tab)
+final cachedCompanyEmployeesProvider = FutureProvider.autoDispose.family<List, String>((ref, companyId) async {
+  final memoryCache = ref.watch(memoryCacheProvider);
+  final config = ref.watch(cacheConfigProvider);
+  final cacheKey = 'company_employees_$companyId';
+  
+  // Try memory cache
+  final cached = memoryCache.get<List<dynamic>>(cacheKey);
+  if (cached != null) {
+    return cached;
+  }
+  
+  // Fetch from service
+  final service = ref.watch(employeeServiceProvider);
+  final employees = await service.getCompanyEmployees(companyId);
+  
+  // Cache result (1 min TTL - employee list changes frequently)
+  memoryCache.set(cacheKey, employees, config.shortTTL);
+  
+  return employees;
+});
+
+/// Cached Company Tasks Provider (Tasks Tab)
+final cachedCompanyTasksProvider = FutureProvider.autoDispose.family<List, String>((ref, companyId) async {
+  final memoryCache = ref.watch(memoryCacheProvider);
+  final config = ref.watch(cacheConfigProvider);
+  final cacheKey = 'company_tasks_$companyId';
+  
+  // Try memory cache
+  final cached = memoryCache.get<List<dynamic>>(cacheKey);
+  if (cached != null) {
+    return cached;
+  }
+  
+  // Fetch from service
+  final service = ref.watch(taskServiceProvider);
+  final tasks = await service.getTasksByCompany(companyId);
+  
+  // Cache result (1 min TTL - tasks change frequently)
+  memoryCache.set(cacheKey, tasks, config.shortTTL);
+  
+  return tasks;
+});
+
+/// Cached Company Task Stats Provider
+final cachedCompanyTaskStatsProvider = FutureProvider.autoDispose.family<Map<String, int>, String>((ref, companyId) async {
+  final memoryCache = ref.watch(memoryCacheProvider);
+  final config = ref.watch(cacheConfigProvider);
+  final cacheKey = 'company_task_stats_$companyId';
+  
+  // Try memory cache
+  final cached = memoryCache.get<Map<String, int>>(cacheKey);
+  if (cached != null) {
+    return cached;
+  }
+  
+  // Fetch from service
+  final service = ref.watch(taskServiceProvider);
+  final stats = await service.getCompanyTaskStats(companyId);
+  
+  // Cache result (5 min TTL)
+  memoryCache.set(cacheKey, stats, config.defaultTTL);
+  
+  return stats;
+});
+
 /// Cache invalidation helpers
 extension CacheInvalidation on WidgetRef {
   /// Invalidate company cache
@@ -191,6 +281,26 @@ extension CacheInvalidation on WidgetRef {
     
     // Clear memory cache
     read(memoryCacheProvider).invalidatePattern('company');
+  }
+  
+  /// Invalidate company stats cache (Overview Tab)
+  void invalidateCompanyStats(String companyId) {
+    invalidate(cachedCompanyStatsProvider(companyId));
+    read(memoryCacheProvider).invalidatePattern('company_stats');
+  }
+  
+  /// Invalidate company employees cache (Employees Tab)
+  void invalidateCompanyEmployees(String companyId) {
+    invalidate(cachedCompanyEmployeesProvider(companyId));
+    read(memoryCacheProvider).invalidatePattern('company_employees');
+  }
+  
+  /// Invalidate company tasks cache (Tasks Tab)
+  void invalidateCompanyTasks(String companyId) {
+    invalidate(cachedCompanyTasksProvider(companyId));
+    invalidate(cachedCompanyTaskStatsProvider(companyId));
+    read(memoryCacheProvider).invalidatePattern('company_tasks');
+    read(memoryCacheProvider).invalidatePattern('company_task_stats');
   }
   
   /// Invalidate employee documents cache
@@ -239,6 +349,16 @@ final employeeDocumentServiceProvider = Provider<EmployeeDocumentService>((ref) 
 /// Provider for business documents service
 final businessDocumentServiceProvider = Provider<BusinessDocumentService>((ref) {
   return BusinessDocumentService();
+});
+
+/// Provider for employee service
+final employeeServiceProvider = Provider<EmployeeService>((ref) {
+  return EmployeeService();
+});
+
+/// Provider for task service
+final taskServiceProvider = Provider<TaskService>((ref) {
+  return TaskService();
 });
 
 /// Provider for company service

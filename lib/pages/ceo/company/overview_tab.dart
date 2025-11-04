@@ -3,20 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../models/company.dart';
-import '../../../../services/company_service.dart';
+import '../../../providers/cached_data_providers.dart';
 import 'widgets/stat_card.dart';
-
-/// Company Service Provider
-final companyServiceProvider = Provider<CompanyService>((ref) {
-  return CompanyService();
-});
-
-/// Company Stats Provider
-final companyStatsProvider =
-    FutureProvider.family<Map<String, dynamic>, String>((ref, companyId) async {
-  final service = ref.watch(companyServiceProvider);
-  return await service.getCompanyStats(companyId);
-});
 
 /// Overview Tab - Hiển thị thông tin tổng quan về công ty
 class OverviewTab extends ConsumerWidget {
@@ -31,7 +19,7 @@ class OverviewTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(companyStatsProvider(companyId));
+    final statsAsync = ref.watch(cachedCompanyStatsProvider(companyId));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),

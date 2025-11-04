@@ -64,6 +64,12 @@ class AppRoutes {
   static const String employeeList = '/employees/list';
   static const String joinInvitation = '/join/:code';
 
+  // Commission routes (NEW!)
+  static const String myCommission = '/commission/my-commission';
+  static const String billsManagement = '/commission/bills';
+  static const String commissionRules = '/commission/rules';
+  static const String uploadBill = '/commission/upload-bill';
+
   // Debug routes (temporarily disabled)
   // static const String debugSettings = '/debug/settings';
 }

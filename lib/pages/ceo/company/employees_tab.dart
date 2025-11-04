@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/company.dart';
 import '../../../models/user.dart' as app_user;
 import '../../../providers/employee_provider.dart';
+import '../../../providers/cached_data_providers.dart';
 import '../../../services/employee_service.dart';
 import '../create_employee_simple_dialog.dart';
 import '../edit_employee_dialog.dart';
@@ -48,7 +49,7 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final employeesAsync = ref.watch(companyEmployeesProvider(widget.companyId));
+    final employeesAsync = ref.watch(cachedCompanyEmployeesProvider(widget.companyId));
     final statsAsync = ref.watch(companyEmployeesStatsProvider(widget.companyId));
 
     return Column(
@@ -414,7 +415,7 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () {
-                      ref.invalidate(companyEmployeesProvider(widget.companyId));
+                      ref.invalidateCompanyEmployees(widget.companyId);
                       ref.invalidate(companyEmployeesStatsProvider(widget.companyId));
                     },
                     icon: const Icon(Icons.refresh),
@@ -679,7 +680,7 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
     );
 
     if (result == true && mounted) {
-      ref.invalidate(companyEmployeesProvider(widget.companyId));
+      ref.invalidateCompanyEmployees(widget.companyId);
       ref.invalidate(companyEmployeesStatsProvider(widget.companyId));
     }
   }

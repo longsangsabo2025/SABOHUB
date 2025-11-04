@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../models/company.dart';
 import '../../../models/task.dart';
 import '../../../providers/task_provider.dart';
+import '../../../providers/cached_data_providers.dart';
 import '../../../services/task_service.dart';
 import '../create_task_dialog.dart';
 import '../edit_task_dialog.dart';
@@ -61,8 +62,8 @@ class _TasksTabState extends ConsumerState<TasksTab> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    final tasksAsync = ref.watch(companyTasksProvider(widget.companyId));
-    final statsAsync = ref.watch(companyTaskStatsProvider(widget.companyId));
+    final tasksAsync = ref.watch(cachedCompanyTasksProvider(widget.companyId));
+    final statsAsync = ref.watch(cachedCompanyTaskStatsProvider(widget.companyId));
 
     return Column(
       children: [
@@ -73,7 +74,7 @@ class _TasksTabState extends ConsumerState<TasksTab> with SingleTickerProviderSt
           child: TabBarView(
             controller: _tabController,
             children: [
-              _buildTasksList(tasksAsync),
+              _buildTasksList(tasksAsync.whenData((tasks) => tasks.cast<Task>())),
               _buildTemplateLibrary(),
             ],
           ),

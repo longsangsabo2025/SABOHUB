@@ -30,7 +30,7 @@ def run_migration():
         print("✅ Connected successfully!")
         
         # Read migration SQL file
-        migration_file = 'database/migrations/008_commission_system.sql'
+        migration_file = 'database/migrations/008_commission_system_no_rls.sql'
         print(f"\n📄 Reading migration file: {migration_file}")
         
         with open(migration_file, 'r', encoding='utf-8') as f:
@@ -90,16 +90,27 @@ def create_sample_commission_rule():
         conn = psycopg2.connect(DB_CONNECTION_STRING)
         cursor = conn.cursor()
         
-        # Get first company with CEO
-        cursor.execute("SELECT id, ceo_id FROM companies WHERE ceo_id IS NOT NULL LIMIT 1")
+        # Get first company and first CEO user
+        cursor.execute("SELECT id FROM companies LIMIT 1")
         company = cursor.fetchone()
         
         if not company:
-            print("⚠️  No companies found with CEO. Please create a company first.")
+            print("⚠️  No companies found. Please create a company first.")
             return False
         
-        company_id, ceo_id = company
+        company_id = company[0]
+        
+        # Get first CEO user
+        cursor.execute("SELECT user_id FROM user_roles WHERE role = 'ceo' LIMIT 1")
+        ceo = cursor.fetchone()
+        
+        if not ceo:
+            print("⚠️  No CEO users found. Please create a CEO user first.")
+            return False
+        
+        ceo_id = ceo[0]
         print(f"✅ Found company: {company_id}")
+        print(f"✅ Found CEO: {ceo_id}")
         
         # Check if rule already exists
         cursor.execute("""
