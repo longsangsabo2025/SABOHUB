@@ -10,9 +10,8 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m1
     
-    # CRITICAL: App Store Connect Integration
-    integrations:
-      app_store_connect: codemagic  # Name of integration created in Codemagic UI
+    # Note: App Store Connect credentials are loaded from environment group 'app_store'
+    # No integration needed - using environment variables instead
     
     environment:
       ios_signing:
