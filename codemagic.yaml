@@ -1,21 +1,31 @@
+# =============================================================================
+# CODEMAGIC YAML CONFIGURATION - FORCE USE THIS INSTEAD OF WORKFLOW EDITOR
+# =============================================================================
+# This file MUST override any workflow editor configuration!
+# =============================================================================
+
 workflows:
   ios-workflow:
-    name: iOS Workflow
+    name: iOS App Store YAML Mode
     max_build_duration: 120
     instance_type: mac_mini_m1
+    
+    # CRITICAL: App Store Connect Integration
+    integrations:
+      app_store_connect: codemagic  # Name of integration created in Codemagic UI
+    
     environment:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.sabohub.app
+      flutter: stable
+      xcode: latest
+      cocoapods: default
       groups:
         - app_store # <-- (Includes APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY)
-      # Apple Developer Portal integration will automatically fetch certificates and profiles
       vars:
         BUNDLE_ID: "com.sabohub.app"
         APP_NAME: "SABOHUB"
-        # App Store Connect API credentials
-        APP_STORE_CONNECT_ISSUER_ID: "4405e7f9-8e89-495a-b535-f9e83e96a7ad"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "JL9L6RNRXB"
         # Environment variables from .env file
         SUPABASE_URL: "https://dqddxowyikefqcdiioyh.supabase.co"
         SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3OTcxMzYsImV4cCI6MjA3NzM3MzEzNn0.okmsG2R248fxOHUEFFl5OBuCtjtCIlO9q9yVSyCV25Y"
@@ -24,14 +34,26 @@ workflows:
         GOOGLE_DRIVE_CLIENT_ID_IOS: "321771498359-ocllju34h6cd4040ipoeq41j8mmg08p8.apps.googleusercontent.com"
         GOOGLE_DRIVE_CLIENT_ID_WEB: "321771498359-gcm0og29knjjmaevr7uv0aa27vam765u.apps.googleusercontent.com"
         GOOGLE_DRIVE_CLIENT_ID_ANDROID: "321771498359-tmnp2ks7n6ipjp10fsrjrefrilr6ts15.apps.googleusercontent.com"
-      flutter: stable
-      xcode: latest
-      cocoapods: default
+    
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+    
     scripts:
+      # 1. Clean iOS dependencies (avoid Podfile.lock conflicts)
+      - name: Clean iOS dependencies
+        script: |
+          echo "🧹 Cleaning iOS artifacts..."
+          cd ios
+          rm -rf Pods
+          rm -rf Podfile.lock
+          cd ..
+      
+      # 2. Set up environment file
       - name: Set up .env file
         script: |
-          #!/usr/bin/env bash
-          
+          echo "📝 Creating .env file with environment variables..."
           cat <<EOF > .env
           SUPABASE_URL=$SUPABASE_URL
           SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
@@ -40,30 +62,69 @@ workflows:
           GOOGLE_DRIVE_CLIENT_ID_WEB=$GOOGLE_DRIVE_CLIENT_ID_WEB
           GOOGLE_DRIVE_CLIENT_ID_ANDROID=$GOOGLE_DRIVE_CLIENT_ID_ANDROID
           EOF
+          echo "✅ .env file created"
+      
+      # 3. Get Flutter packages
       - name: Get Flutter packages
         script: |
+          echo "📦 Getting Flutter packages..."
           flutter packages pub get
+      
+      # 4. Install CocoaPods
       - name: Install pods
         script: |
+          echo "☕ Installing CocoaPods dependencies..."
           find . -name "Podfile" -execdir pod install \;
+          echo "✅ Pods installed"
+      
+      # 5. Auto-increment build number (avoid duplicate version errors)
+      - name: Auto-increment build number
+        script: |
+          echo "🔢 Auto-incrementing build number to avoid duplicates..."
+          CURRENT_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Split version into name and build number
+          VERSION_NAME=$(echo $CURRENT_VERSION | cut -d'+' -f1)  # e.g., 1.0.8
+          BUILD_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f2)  # e.g., 30
+          
+          # Increment build number
+          NEW_BUILD_NUMBER=$((BUILD_NUMBER + 1))
+          NEW_VERSION="${VERSION_NAME}+${NEW_BUILD_NUMBER}"
+          
+          echo "📱 Updating version to: $NEW_VERSION"
+          sed -i.bak "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+          
+          echo "✅ Version updated successfully"
+          grep "^version:" pubspec.yaml
+      
       # Code signing is handled automatically by ios_signing configuration above
-      # No manual steps needed - CodeMagic will:
-      # 1. Fetch certificates from Apple using App Store Connect API
-      # 2. Install them in keychain automatically
+      # CodeMagic will automatically:
+      # 1. Fetch certificates from Apple using App Store Connect API integration
+      # 2. Install them in keychain
       # 3. Configure Xcode project with correct provisioning profiles
       
+      # 6. Flutter analyze
       - name: Flutter analyze
         script: |
+          echo "🔍 Running Flutter analyze..."
           flutter analyze
+      
+      # 7. Flutter test (optional)
       # - name: Flutter test
       #   script: |
       #     flutter test
       #   ignore_failure: true
+      
+      # 8. Build iOS IPA
       - name: Flutter build ipa
         script: |
+          echo "🏗️  Building iOS IPA for App Store..."
           flutter build ipa --release \
-            --build-name=1.0.0 \
-            --build-number=$BUILD_NUMBER
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+            --dart-define=SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
+          echo "✅ IPA build completed"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
