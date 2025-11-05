@@ -110,7 +110,7 @@ class _CEOStoresPageState extends ConsumerState<CEOStoresPage>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -140,7 +140,7 @@ class _CEOStoresPageState extends ConsumerState<CEOStoresPage>
                       'Quản lý tất cả cửa hàng trong hệ thống',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -164,7 +164,7 @@ class _CEOStoresPageState extends ConsumerState<CEOStoresPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -184,7 +184,7 @@ class _CEOStoresPageState extends ConsumerState<CEOStoresPage>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -378,6 +378,8 @@ class _CEOStoresPageState extends ConsumerState<CEOStoresPage>
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              
               try {
                 final service = ref.read(storeServiceProvider);
                 await service.deleteStore(store.id);
@@ -386,12 +388,12 @@ class _CEOStoresPageState extends ConsumerState<CEOStoresPage>
                 refreshStores(ref);
 
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(content: Text('Đã xóa cửa hàng thành công')),
                 );
               } catch (e) {
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   SnackBar(content: Text('Lỗi: $e')),
                 );
               }

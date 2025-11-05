@@ -25,8 +25,9 @@ class DailyWorkReportService {
     final totalHours = checkOut.difference(checkIn).inMinutes / 60.0;
 
     // Auto-collect task data
-    final tasks = completedTasks ?? await _collectTodayCompletedTasks(attendance.userId);
-    
+    final tasks =
+        completedTasks ?? await _collectTodayCompletedTasks(attendance.userId);
+
     // Generate summary based on work data
     final autoSummary = _generateWorkSummary(
       totalHours: totalHours,
@@ -89,16 +90,17 @@ class DailyWorkReportService {
     required List<TaskSummary> tasks,
   }) {
     final buffer = StringBuffer();
-    
+
     // Summary header
     buffer.writeln('📊 Tóm tắt ca làm việc:');
     buffer.writeln('');
-    
+
     // Work hours
-    buffer.writeln('⏰ Thời gian làm việc: ${totalHours.toStringAsFixed(1)} giờ');
+    buffer
+        .writeln('⏰ Thời gian làm việc: ${totalHours.toStringAsFixed(1)} giờ');
     buffer.writeln('✅ Hoàn thành: $tasksCompleted công việc');
     buffer.writeln('');
-    
+
     // Task details
     if (tasks.isNotEmpty) {
       buffer.writeln('📝 Chi tiết công việc:');
@@ -111,11 +113,11 @@ class DailyWorkReportService {
       }
       buffer.writeln('');
     }
-    
+
     // Performance evaluation
     final performance = _evaluatePerformance(totalHours, tasksCompleted);
     buffer.writeln('🎯 Đánh giá: $performance');
-    
+
     return buffer.toString();
   }
 
@@ -197,10 +199,10 @@ class DailyWorkReportService {
   /// Get today's report for user (if exists)
   Future<DailyWorkReport?> getTodayReport(String userId) async {
     await Future.delayed(const Duration(milliseconds: 200));
-    
+
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
-    
+
     try {
       return _mockReports.firstWhere((r) =>
           r.userId == userId &&
@@ -218,23 +220,25 @@ class DailyWorkReportService {
     required DateTime endDate,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
-    
-    return _mockReports.where((r) =>
-        r.userId == userId &&
-        r.date.isAfter(startDate.subtract(const Duration(days: 1))) &&
-        r.date.isBefore(endDate.add(const Duration(days: 1)))).toList()
+
+    return _mockReports
+        .where((r) =>
+            r.userId == userId &&
+            r.date.isAfter(startDate.subtract(const Duration(days: 1))) &&
+            r.date.isBefore(endDate.add(const Duration(days: 1))))
+        .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
   }
 
   /// Delete draft report
   Future<void> deleteDraftReport(String reportId) async {
     await Future.delayed(const Duration(milliseconds: 200));
-    
+
     final report = _mockReports.firstWhere((r) => r.id == reportId);
     if (report.status != ReportStatus.draft) {
       throw Exception('Can only delete draft reports');
     }
-    
+
     _mockReports.removeWhere((r) => r.id == reportId);
   }
 
@@ -254,11 +258,15 @@ class DailyWorkReportService {
     }).toList();
 
     final totalReports = dayReports.length;
-    final submittedReports = dayReports.where((r) => r.status == ReportStatus.submitted).length;
+    final submittedReports =
+        dayReports.where((r) => r.status == ReportStatus.submitted).length;
     final avgHours = dayReports.isEmpty
         ? 0.0
-        : dayReports.map((r) => r.totalHours).reduce((a, b) => a + b) / totalReports;
-    final totalTasks = dayReports.map((r) => r.tasksCompleted).fold(0, (sum, count) => sum + count);
+        : dayReports.map((r) => r.totalHours).reduce((a, b) => a + b) /
+            totalReports;
+    final totalTasks = dayReports
+        .map((r) => r.tasksCompleted)
+        .fold(0, (sum, count) => sum + count);
 
     return {
       'total_reports': totalReports,
@@ -266,7 +274,8 @@ class DailyWorkReportService {
       'pending_reports': totalReports - submittedReports,
       'average_hours': avgHours,
       'total_tasks_completed': totalTasks,
-      'submission_rate': totalReports > 0 ? (submittedReports / totalReports * 100) : 0,
+      'submission_rate':
+          totalReports > 0 ? (submittedReports / totalReports * 100) : 0,
     };
   }
 }
@@ -277,19 +286,23 @@ final dailyWorkReportServiceProvider = Provider<DailyWorkReportService>((ref) {
 });
 
 /// Today's report for current user
-final todayWorkReportProvider = FutureProvider.family<DailyWorkReport?, String>((ref, userId) async {
+final todayWorkReportProvider =
+    FutureProvider.family<DailyWorkReport?, String>((ref, userId) async {
   final service = ref.watch(dailyWorkReportServiceProvider);
   return await service.getTodayReport(userId);
 });
 
 /// All reports for user
-final userWorkReportsProvider = FutureProvider.family<List<DailyWorkReport>, String>((ref, userId) async {
+final userWorkReportsProvider =
+    FutureProvider.family<List<DailyWorkReport>, String>((ref, userId) async {
   final service = ref.watch(dailyWorkReportServiceProvider);
   return await service.getUserReports(userId);
 });
 
 /// Report statistics for manager
-final reportStatisticsProvider = FutureProvider.family<Map<String, dynamic>, Map<String, dynamic>>((ref, params) async {
+final reportStatisticsProvider =
+    FutureProvider.family<Map<String, dynamic>, Map<String, dynamic>>(
+        (ref, params) async {
   final service = ref.watch(dailyWorkReportServiceProvider);
   return await service.getReportStatistics(
     companyId: params['companyId'] as String,

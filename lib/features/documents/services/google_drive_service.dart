@@ -55,7 +55,7 @@ class GoogleDriveService {
       final account = await _googleSignIn!.signIn();
       if (account != null) {
         _currentUser = account;
-        
+
         // Get authenticated HTTP client
         final authClient = await _googleSignIn!.authenticatedClient();
         if (authClient != null) {
@@ -134,7 +134,8 @@ class GoogleDriveService {
       final uploadedFile = await _driveApi!.files.create(
         driveFile,
         uploadMedia: media,
-        $fields: 'id, name, mimeType, size, webViewLink, webContentLink, createdTime, modifiedTime',
+        $fields:
+            'id, name, mimeType, size, webViewLink, webContentLink, createdTime, modifiedTime',
       );
 
       debugPrint('✅ File uploaded successfully!');
@@ -190,7 +191,8 @@ class GoogleDriveService {
 
       final file = await _driveApi!.files.get(
         fileId,
-        $fields: 'id, name, mimeType, size, webViewLink, webContentLink, createdTime, modifiedTime, description',
+        $fields:
+            'id, name, mimeType, size, webViewLink, webContentLink, createdTime, modifiedTime, description',
       ) as drive.File;
 
       return file;
@@ -242,7 +244,8 @@ class GoogleDriveService {
         q: query,
         pageSize: maxResults,
         orderBy: 'modifiedTime desc',
-        $fields: 'files(id, name, mimeType, size, webViewLink, webContentLink, createdTime, modifiedTime)',
+        $fields:
+            'files(id, name, mimeType, size, webViewLink, webContentLink, createdTime, modifiedTime)',
       );
 
       return fileList.files ?? [];
@@ -253,7 +256,8 @@ class GoogleDriveService {
   }
 
   /// Create folder in Google Drive
-  Future<drive.File?> createFolder(String folderName, {String? parentFolderId}) async {
+  Future<drive.File?> createFolder(String folderName,
+      {String? parentFolderId}) async {
     try {
       if (!isSignedIn) {
         final signedIn = await signIn();
@@ -275,7 +279,8 @@ class GoogleDriveService {
         $fields: 'id, name, mimeType',
       );
 
-      debugPrint('✅ Folder created: ${createdFolder.name} (${createdFolder.id})');
+      debugPrint(
+          '✅ Folder created: ${createdFolder.name} (${createdFolder.id})');
       return createdFolder;
     } catch (e) {
       debugPrint('❌ Error creating folder: $e');
@@ -299,7 +304,8 @@ class GoogleDriveService {
         q: query,
         pageSize: 50,
         orderBy: 'modifiedTime desc',
-        $fields: 'files(id, name, mimeType, size, webViewLink, createdTime, modifiedTime)',
+        $fields:
+            'files(id, name, mimeType, size, webViewLink, createdTime, modifiedTime)',
       );
 
       return fileList.files ?? [];

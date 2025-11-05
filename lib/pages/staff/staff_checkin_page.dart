@@ -241,7 +241,9 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                 ),
                 const SizedBox(height: 16),
                 // Location validation status
-                const LocationStatusWidget(),
+                LocationStatusWidget(
+                  companyId: user.companyId,
+                ),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
@@ -596,6 +598,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     try {
       // Check in with location validation
@@ -606,14 +609,14 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
 
       ref.invalidate(userTodayAttendanceProvider);
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('✅ Đã điểm danh vào ca thành công!'),
           backgroundColor: Color(0xFF10B981),
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('❌ Lỗi điểm danh: $e'),
           backgroundColor: Colors.red,
@@ -665,7 +668,8 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
           if (submitted == true) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Đã điểm danh ra ca và nộp báo cáo thành công!'),
+                content:
+                    Text('✅ Đã điểm danh ra ca và nộp báo cáo thành công!'),
                 backgroundColor: Color(0xFF10B981),
                 duration: Duration(seconds: 3),
               ),

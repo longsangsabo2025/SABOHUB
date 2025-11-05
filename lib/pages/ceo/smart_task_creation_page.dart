@@ -63,15 +63,10 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
   Future<void> _loadData() async {
     final service = ref.read(managementTaskServiceProvider);
     try {
-      print('🔄 Loading managers and companies...');
       final results = await Future.wait([
         service.getManagers(),
         service.getCompanies(),
       ]);
-
-      print('✅ Loaded ${results[0].length} managers');
-      print('✅ Loaded ${results[1].length} companies');
-      print('📋 Companies data: ${results[1]}');
 
       if (mounted) {
         setState(() {
@@ -81,7 +76,6 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
         });
       }
     } catch (e) {
-      print('❌ Error loading data: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -193,7 +187,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
               boxShadow: isActive
                   ? [
                       BoxShadow(
-                        color: const Color(0xFF3B82F6).withOpacity(0.3),
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -333,7 +327,8 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF3B82F6).withOpacity(0.1),
+                                color: const Color(0xFF3B82F6)
+                                    .withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -511,7 +506,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: _selectedPriority == priority
-                      ? _getPriorityColor(priority).withOpacity(0.1)
+                      ? _getPriorityColor(priority).withValues(alpha: 0.1)
                       : Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
@@ -721,7 +716,8 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF3B82F6).withOpacity(0.1),
+                                color: const Color(0xFF3B82F6)
+                                    .withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -960,7 +956,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/navigation/navigation_models.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/dev_role_switcher.dart';
 import '../widgets/unified_bottom_navigation.dart';
+import 'common/company_info_page.dart';
 import 'staff/staff_checkin_page.dart';
 import 'staff/staff_messages_page.dart';
 import 'staff/staff_tables_page.dart';
@@ -55,6 +57,9 @@ class _StaffMainLayoutState extends ConsumerState<StaffMainLayout>
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(currentUserProvider);
+    final companyId = currentUser?.companyId;
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: Stack(
@@ -71,11 +76,18 @@ class _StaffMainLayoutState extends ConsumerState<StaffMainLayout>
                         _currentIndex = index;
                       });
                     },
-                    children: const [
-                      StaffTablesPage(),
-                      StaffCheckinPage(),
-                      StaffTasksPage(),
-                      StaffMessagesPage(),
+                    children: [
+                      const StaffTablesPage(),
+                      const StaffCheckinPage(),
+                      const StaffTasksPage(),
+                      const StaffMessagesPage(),
+                      // Company Info Page (new)
+                      if (companyId != null)
+                        CompanyInfoPage(companyId: companyId)
+                      else
+                        const Center(
+                          child: Text('Bạn chưa được gán vào công ty nào'),
+                        ),
                     ],
                   ),
                 ),

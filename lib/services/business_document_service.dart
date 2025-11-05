@@ -29,8 +29,9 @@ class BusinessDocumentService {
         query = query.eq('is_verified', isVerified) as dynamic;
       }
 
-      final response = await (query as dynamic).order('created_at', ascending: false);
-      
+      final response =
+          await (query as dynamic).order('created_at', ascending: false);
+
       return (response as List)
           .map((json) => BusinessDocument.fromJson(json))
           .toList();
@@ -97,26 +98,23 @@ class BusinessDocumentService {
         throw Exception('User not authenticated');
       }
 
-      await _supabase
-          .from('business_documents')
-          .update({
-            'is_verified': true,
-            'verified_date': DateTime.now().toIso8601String(),
-            'verified_by': currentUser.id,
-          })
-          .eq('id', documentId);
+      await _supabase.from('business_documents').update({
+        'is_verified': true,
+        'verified_date': DateTime.now().toIso8601String(),
+        'verified_by': currentUser.id,
+      }).eq('id', documentId);
     } catch (e) {
       throw Exception('Failed to verify document: $e');
     }
   }
 
   /// Cập nhật trạng thái tài liệu
-  Future<void> updateDocumentStatus(String documentId, BusinessDocStatus status) async {
+  Future<void> updateDocumentStatus(
+      String documentId, BusinessDocStatus status) async {
     try {
       await _supabase
           .from('business_documents')
-          .update({'status': status.name})
-          .eq('id', documentId);
+          .update({'status': status.name}).eq('id', documentId);
     } catch (e) {
       throw Exception('Failed to update document status: $e');
     }
@@ -125,10 +123,7 @@ class BusinessDocumentService {
   /// Xóa tài liệu
   Future<void> deleteDocument(String documentId) async {
     try {
-      await _supabase
-          .from('business_documents')
-          .delete()
-          .eq('id', documentId);
+      await _supabase.from('business_documents').delete().eq('id', documentId);
     } catch (e) {
       throw Exception('Failed to delete document: $e');
     }
@@ -166,43 +161,42 @@ class BusinessDocumentService {
     try {
       // Lấy tất cả tài liệu
       final allDocuments = await getCompanyDocuments(companyId: companyId);
-      
+
       // Các loại tài liệu bắt buộc
-      final requiredTypes = BusinessDocumentType.values
-          .where((type) => type.isRequired)
-          .toList();
-      
+      final requiredTypes =
+          BusinessDocumentType.values.where((type) => type.isRequired).toList();
+
       // Đếm số tài liệu theo tiêu chí
       final totalDocuments = allDocuments.length;
       final requiredDocuments = requiredTypes.length;
-      
+
       // Tài liệu tuân thủ: có, còn hiệu lực, đã xác minh
       final compliantDocuments = allDocuments.where((doc) {
         final isRequired = requiredTypes.any((type) => type == doc.type);
         if (!isRequired) return false;
-        
-        return doc.status == BusinessDocStatus.active && 
-               doc.isVerified && 
-               !doc.isExpired;
+
+        return doc.status == BusinessDocStatus.active &&
+            doc.isVerified &&
+            !doc.isExpired;
       }).length;
-      
+
       // Tài liệu hết hạn
-      final expiredDocuments = allDocuments
-          .where((doc) => doc.isExpired)
-          .length;
-      
+      final expiredDocuments =
+          allDocuments.where((doc) => doc.isExpired).length;
+
       // Tài liệu sắp hết hạn
       final expiringSoonDocuments = allDocuments
           .where((doc) => doc.isExpiringSoon && !doc.isExpired)
           .length;
-      
+
       // Tài liệu bắt buộc còn thiếu
       final existingRequiredTypes = allDocuments
           .where((doc) => requiredTypes.contains(doc.type))
           .map((doc) => doc.type)
           .toSet();
-      final missingDocuments = requiredTypes.length - existingRequiredTypes.length;
-      
+      final missingDocuments =
+          requiredTypes.length - existingRequiredTypes.length;
+
       return ComplianceStatus(
         totalDocuments: totalDocuments,
         requiredDocuments: requiredDocuments,
@@ -224,15 +218,12 @@ class BusinessDocumentService {
     String? renewalNotes,
   }) async {
     try {
-      await _supabase
-          .from('business_documents')
-          .update({
-            'renewal_date': renewalDate.toIso8601String().split('T')[0],
-            'expiry_date': newExpiryDate?.toIso8601String().split('T')[0],
-            'renewal_notes': renewalNotes,
-            'status': 'active',
-          })
-          .eq('id', documentId);
+      await _supabase.from('business_documents').update({
+        'renewal_date': renewalDate.toIso8601String().split('T')[0],
+        'expiry_date': newExpiryDate?.toIso8601String().split('T')[0],
+        'renewal_notes': renewalNotes,
+        'status': 'active',
+      }).eq('id', documentId);
     } catch (e) {
       throw Exception('Failed to renew document: $e');
     }

@@ -15,14 +15,19 @@ import '../../../widgets/shimmer_loading.dart';
 /// Caches summary data for 5 minutes to reduce API calls
 final accountingSummaryProvider = FutureProvider.family<
     AccountingSummary,
-    ({String companyId, DateTime startDate, DateTime endDate, String? branchId})>(
+    ({
+      String companyId,
+      DateTime startDate,
+      DateTime endDate,
+      String? branchId
+    })>(
   (ref, params) async {
     // Cache for 5 minutes - balance between fresh data and performance
     final link = ref.keepAlive();
     Timer(const Duration(minutes: 5), () {
       link.close();
     });
-    
+
     final service = AccountingService();
     return await service.getSummary(
       companyId: params.companyId,
@@ -148,7 +153,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                           label: 'Xem hướng dẫn sử dụng kế toán',
                           button: true,
                           child: IconButton(
-                            icon: const Icon(Icons.help_outline, color: Colors.orange),
+                            icon: const Icon(Icons.help_outline,
+                                color: Colors.orange),
                             tooltip: 'Hướng dẫn sử dụng',
                             onPressed: () => _showAccountingGuide(),
                           ),
@@ -158,7 +164,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                           label: 'Thêm giao dịch kế toán mới',
                           button: true,
                           child: IconButton(
-                            icon: const Icon(Icons.add_circle, color: Colors.blue),
+                            icon: const Icon(Icons.add_circle,
+                                color: Colors.blue),
                             tooltip: 'Thêm giao dịch',
                             onPressed: () => _showAddTransactionDialog(),
                           ),
@@ -312,9 +319,9 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,7 +409,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
           ),
         ],
@@ -468,10 +475,10 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= 0 &&
-                        value.toInt() < revenues.length) {
+                    if (value.toInt() >= 0 && value.toInt() < revenues.length) {
                       return Text(
-                        DateFormat('dd/MM').format(revenues[value.toInt()].date),
+                        DateFormat('dd/MM')
+                            .format(revenues[value.toInt()].date),
                         style: const TextStyle(fontSize: 10),
                       );
                     }
@@ -479,7 +486,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                   },
                 ),
               ),
-              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
               topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: true),
@@ -497,7 +505,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                 dotData: FlDotData(show: true),
                 belowBarData: BarAreaData(
                   show: true,
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withValues(alpha: 0.1),
                 ),
               ),
             ],
@@ -515,7 +523,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
           ),
         ],
@@ -593,7 +601,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
           ),
         ],
@@ -641,7 +649,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
-        backgroundColor: color.withOpacity(0.1),
+        backgroundColor: color.withValues(alpha: 0.1),
         child: Icon(
           isExpense ? Icons.arrow_downward : Icons.arrow_upward,
           color: color,
@@ -722,10 +730,11 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<TransactionType>(
-                    value: selectedType,
+                    initialValue: selectedType,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                     items: TransactionType.values.map((type) {
                       final icons = {
@@ -740,7 +749,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                         value: type,
                         child: Row(
                           children: [
-                            Icon(icons[type], size: 20, color: Colors.blue[700]),
+                            Icon(icons[type],
+                                size: 20, color: Colors.blue[700]),
                             const SizedBox(width: 8),
                             Text(type.label),
                           ],
@@ -784,10 +794,11 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<PaymentMethod>(
-                    value: selectedPayment,
+                    initialValue: selectedPayment,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                     items: PaymentMethod.values.map((method) {
                       final icons = {
@@ -801,7 +812,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                         value: method,
                         child: Row(
                           children: [
-                            Icon(icons[method], size: 20, color: Colors.green[700]),
+                            Icon(icons[method],
+                                size: 20, color: Colors.green[700]),
                             const SizedBox(width: 8),
                             Text(method.label),
                           ],
@@ -888,7 +900,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
 
                     final service = AccountingService();
                     final userId = supabase.client.auth.currentUser?.id;
-                    
+
                     if (userId == null) {
                       throw Exception('User not authenticated');
                     }
@@ -959,7 +971,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.help_outline, color: Colors.white, size: 32),
+                    const Icon(Icons.help_outline,
+                        color: Colors.white, size: 32),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
@@ -1289,7 +1302,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
     );
   }
 
-  Widget _buildGuideSection(String title, String description, List<String> points) {
+  Widget _buildGuideSection(
+      String title, String description, List<String> points) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1330,9 +1344,9 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

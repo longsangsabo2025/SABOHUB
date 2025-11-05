@@ -161,7 +161,7 @@ class _CompaniesTabState extends ConsumerState<CompaniesTab> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -174,7 +174,7 @@ class _CompaniesTabState extends ConsumerState<CompaniesTab> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 24),
@@ -265,7 +265,7 @@ class _CompaniesTabState extends ConsumerState<CompaniesTab> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -280,7 +280,7 @@ class _CompaniesTabState extends ConsumerState<CompaniesTab> {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: businessTypeInfo['color'].withOpacity(0.1),
+                  color: businessTypeInfo['color'].withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -499,7 +499,7 @@ class _CompaniesTabState extends ConsumerState<CompaniesTab> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.flash_on, color: Colors.orange),
@@ -509,6 +509,8 @@ class _CompaniesTabState extends ConsumerState<CompaniesTab> {
                   const Text('Chọn template có sẵn (Billiards, Café, v.v.)'),
               onTap: () async {
                 Navigator.pop(context);
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                
                 final result = await showDialog<Map<String, dynamic>>(
                   context: context,
                   builder: (context) => const QuickAddCompanyModal(),
@@ -517,7 +519,7 @@ class _CompaniesTabState extends ConsumerState<CompaniesTab> {
                   // ✅ Refresh provider to reload companies from database
                   ref.invalidate(companiesProvider);
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    scaffoldMessenger.showSnackBar(
                       SnackBar(
                         content:
                             Text('✅ Đã thêm ${result['name']} thành công!'),
@@ -536,7 +538,7 @@ class _CompaniesTabState extends ConsumerState<CompaniesTab> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.edit, color: Colors.blue),
@@ -545,6 +547,8 @@ class _CompaniesTabState extends ConsumerState<CompaniesTab> {
               subtitle: const Text('Nhập đầy đủ thông tin công ty'),
               onTap: () async {
                 Navigator.pop(context);
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -555,7 +559,7 @@ class _CompaniesTabState extends ConsumerState<CompaniesTab> {
                   // ✅ Refresh provider to reload companies from database
                   ref.invalidate(companiesProvider);
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    scaffoldMessenger.showSnackBar(
                       const SnackBar(
                         content: Text('✅ Đã thêm công ty thành công!'),
                         backgroundColor: Colors.green,
@@ -610,9 +614,11 @@ class _CompaniesTabState extends ConsumerState<CompaniesTab> {
   /// Format revenue to display string
   String _formatRevenue(double revenue) {
     if (revenue == 0) return '0₫';
-    if (revenue >= 1000000)
+    if (revenue >= 1000000) {
       return '${(revenue / 1000000).toStringAsFixed(0)}M';
-    else if (revenue >= 1000) return '${(revenue / 1000).toStringAsFixed(0)}K';
+    } else if (revenue >= 1000) {
+      return '${(revenue / 1000).toStringAsFixed(0)}K';
+    }
     return _currencyFormat.format(revenue);
   }
 }

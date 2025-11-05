@@ -16,11 +16,13 @@ class AccountStorageService {
       List<SavedAccount> accounts = [];
       if (accountsJson != null) {
         final List<dynamic> accountsList = json.decode(accountsJson);
-        accounts = accountsList.map((json) => SavedAccount.fromJson(json)).toList();
+        accounts =
+            accountsList.map((json) => SavedAccount.fromJson(json)).toList();
       }
 
       // Check if account already exists
-      final existingIndex = accounts.indexWhere((acc) => acc.email == user.email);
+      final existingIndex =
+          accounts.indexWhere((acc) => acc.email == user.email);
 
       if (existingIndex >= 0) {
         // Update existing account
@@ -41,12 +43,11 @@ class AccountStorageService {
       }
 
       // Save to SharedPreferences
-      final updatedJson = json.encode(accounts.map((acc) => acc.toJson()).toList());
+      final updatedJson =
+          json.encode(accounts.map((acc) => acc.toJson()).toList());
       await prefs.setString(_accountsKey, updatedJson);
-
-      print('✅ Account saved: ${user.email}');
     } catch (e) {
-      print('❌ Error saving account: $e');
+      // Ignore storage errors
     }
   }
 
@@ -63,7 +64,6 @@ class AccountStorageService {
 
       return [];
     } catch (e) {
-      print('❌ Error loading saved accounts: $e');
       return [];
     }
   }
@@ -76,17 +76,17 @@ class AccountStorageService {
 
       if (accountsJson != null) {
         final List<dynamic> accountsList = json.decode(accountsJson);
-        List<SavedAccount> accounts = accountsList.map((json) => SavedAccount.fromJson(json)).toList();
+        List<SavedAccount> accounts =
+            accountsList.map((json) => SavedAccount.fromJson(json)).toList();
 
         accounts.removeWhere((acc) => acc.email == email);
 
-        final updatedJson = json.encode(accounts.map((acc) => acc.toJson()).toList());
+        final updatedJson =
+            json.encode(accounts.map((acc) => acc.toJson()).toList());
         await prefs.setString(_accountsKey, updatedJson);
-
-        print('✅ Account removed: $email');
       }
     } catch (e) {
-      print('❌ Error removing account: $e');
+      // Ignore storage errors
     }
   }
 
@@ -95,9 +95,8 @@ class AccountStorageService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_accountsKey);
-      print('✅ All accounts cleared');
     } catch (e) {
-      print('❌ Error clearing accounts: $e');
+      // Ignore storage errors
     }
   }
 }

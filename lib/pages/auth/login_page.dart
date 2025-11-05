@@ -66,8 +66,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      print('🟡 Quick Login: Attempting to login with $email');
-
       final success =
           await ref.read(authProvider.notifier).login(email, password);
 
@@ -75,8 +73,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         // Get detailed error from auth state
         final authState = ref.read(authProvider);
         final errorMessage = authState.error ?? 'Đăng nhập thất bại';
-
-        print('🔴 Quick Login Failed: $errorMessage');
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -106,11 +102,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             duration: const Duration(seconds: 5),
           ),
         );
-      } else if (success) {
-        print('🟢 Quick Login Success: $email');
       }
     } catch (e) {
-      print('🔴 Quick Login Exception: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -454,11 +447,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       fillColor: Colors.white,
                     ),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty)
+                      if (value == null || value.trim().isEmpty) {
                         return 'Vui lòng nhập email';
+                      }
                       if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                          .hasMatch(value.trim()))
+                          .hasMatch(value.trim())) {
                         return 'Email không đúng định dạng';
+                      }
                       return null;
                     },
                   ),
@@ -491,8 +486,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       fillColor: Colors.white,
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return 'Vui lòng nhập mật khẩu';
+                      }
                       if (value.length < 3) return 'Mật khẩu quá ngắn';
                       return null;
                     },
@@ -602,8 +598,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             child: ElevatedButton.icon(
                               onPressed: _isLoading
                                   ? null
-                                  : () => _quickLogin('ngocdiem1112@gmail.com',
-                                      '123456'),
+                                  : () => _quickLogin(
+                                      'ngocdiem1112@gmail.com', '123456'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green.shade600,
                                 foregroundColor: Colors.white,

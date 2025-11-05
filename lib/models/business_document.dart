@@ -3,36 +3,49 @@ import 'package:flutter/material.dart';
 /// Enum cho các loại giấy tờ doanh nghiệp theo luật Việt Nam
 enum BusinessDocumentType {
   // Giấy tờ thành lập
-  businessLicense('Giấy phép kinh doanh', Icons.business_center, 'Giấy chứng nhận đăng ký kinh doanh', true),
-  taxCode('Mã số thuế', Icons.receipt_long, 'Giấy chứng nhận đăng ký thuế', true),
+  businessLicense('Giấy phép kinh doanh', Icons.business_center,
+      'Giấy chứng nhận đăng ký kinh doanh', true),
+  taxCode(
+      'Mã số thuế', Icons.receipt_long, 'Giấy chứng nhận đăng ký thuế', true),
   companyCharter('Điều lệ công ty', Icons.gavel, 'Điều lệ công ty', true),
-  
+
   // Giấy phép hoạt động
-  operatingLicense('Giấy phép hoạt động', Icons.verified, 'Giấy phép hoạt động ngành nghề', false),
-  foodSafety('ATTP', Icons.restaurant, 'Giấy chứng nhận vệ sinh an toàn thực phẩm', false),
-  fireSafety('PCCC', Icons.local_fire_department, 'Giấy chứng nhận phòng cháy chữa cháy', true),
+  operatingLicense('Giấy phép hoạt động', Icons.verified,
+      'Giấy phép hoạt động ngành nghề', false),
+  foodSafety('ATTP', Icons.restaurant,
+      'Giấy chứng nhận vệ sinh an toàn thực phẩm', false),
+  fireSafety('PCCC', Icons.local_fire_department,
+      'Giấy chứng nhận phòng cháy chữa cháy', true),
   environmentalLicense('Môi trường', Icons.eco, 'Giấy phép môi trường', false),
-  
+
   // Hợp đồng
-  leaseContract('Hợp đồng thuê', Icons.home_work, 'Hợp đồng thuê mặt bằng', true),
-  partnershipAgreement('Hợp đồng hợp tác', Icons.handshake, 'Hợp đồng hợp tác kinh doanh', false),
-  supplierContract('Hợp đồng nhà cung cấp', Icons.local_shipping, 'Hợp đồng với nhà cung cấp', false),
-  
+  leaseContract(
+      'Hợp đồng thuê', Icons.home_work, 'Hợp đồng thuê mặt bằng', true),
+  partnershipAgreement('Hợp đồng hợp tác', Icons.handshake,
+      'Hợp đồng hợp tác kinh doanh', false),
+  supplierContract('Hợp đồng nhà cung cấp', Icons.local_shipping,
+      'Hợp đồng với nhà cung cấp', false),
+
   // Quy chế nội bộ
   laborRegulation('Quy chế lao động', Icons.rule, 'Nội quy lao động', true),
   salaryRegulation('Quy chế lương', Icons.payments, 'Quy chế trả lương', true),
-  securityRegulation('Quy chế bảo mật', Icons.security, 'Quy chế bảo mật thông tin', false),
-  
+  securityRegulation(
+      'Quy chế bảo mật', Icons.security, 'Quy chế bảo mật thông tin', false),
+
   // Giấy phép lao động
-  workPermit('Giấy phép lao động', Icons.work, 'Giấy phép lao động (người nước ngoài)', false),
-  socialInsuranceRegistration('Đăng ký BHXH', Icons.health_and_safety, 'Giấy đăng ký tham gia bảo hiểm', true),
-  
+  workPermit('Giấy phép lao động', Icons.work,
+      'Giấy phép lao động (người nước ngoài)', false),
+  socialInsuranceRegistration('Đăng ký BHXH', Icons.health_and_safety,
+      'Giấy đăng ký tham gia bảo hiểm', true),
+
   // Báo cáo và khai báo
-  annualReport('Báo cáo thường niên', Icons.assessment, 'Báo cáo tài chính năm', true),
+  annualReport(
+      'Báo cáo thường niên', Icons.assessment, 'Báo cáo tài chính năm', true),
   taxDeclaration('Tờ khai thuế', Icons.description, 'Tờ khai thuế', true),
-  
+
   // Khác
-  intellectualProperty('Sở hữu trí tuệ', Icons.copyright, 'Bằng sáng chế, nhãn hiệu', false),
+  intellectualProperty(
+      'Sở hữu trí tuệ', Icons.copyright, 'Bằng sáng chế, nhãn hiệu', false),
   insurance('Bảo hiểm', Icons.shield, 'Hợp đồng bảo hiểm', false),
   other('Khác', Icons.insert_drive_file, 'Tài liệu khác', false);
 
@@ -41,7 +54,8 @@ enum BusinessDocumentType {
   final String description;
   final bool isRequired;
 
-  const BusinessDocumentType(this.label, this.icon, this.description, this.isRequired);
+  const BusinessDocumentType(
+      this.label, this.icon, this.description, this.isRequired);
 }
 
 /// Model cho tài liệu doanh nghiệp
@@ -100,7 +114,8 @@ class BusinessDocument {
   bool get isExpiringSoon {
     if (expiryDate == null) return false;
     final daysUntilExpiry = expiryDate!.difference(DateTime.now()).inDays;
-    return daysUntilExpiry > 0 && daysUntilExpiry <= 90; // Cảnh báo trước 90 ngày
+    return daysUntilExpiry > 0 &&
+        daysUntilExpiry <= 90; // Cảnh báo trước 90 ngày
   }
 
   int? get daysUntilExpiry {

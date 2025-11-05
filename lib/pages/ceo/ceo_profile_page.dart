@@ -167,6 +167,8 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                 TextButton(
                   onPressed: () async {
                     // Save profile changes
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
                     try {
                       final user = _supabase.auth.currentUser;
                       if (user == null) throw Exception('Chưa đăng nhập');
@@ -184,7 +186,7 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                       });
 
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        scaffoldMessenger.showSnackBar(
                           const SnackBar(
                             content: Text('✅ Đã lưu thông tin cá nhân'),
                             duration: Duration(seconds: 2),
@@ -194,7 +196,7 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                       }
                     } catch (e) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        scaffoldMessenger.showSnackBar(
                           SnackBar(
                             content: Text('Lỗi: $e'),
                             backgroundColor: Colors.red,
@@ -531,6 +533,9 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                     'Đăng xuất',
                     Icons.logout,
                     () async {
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      final goRouter = GoRouter.of(context);
+                      
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
@@ -559,7 +564,7 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
 
                         if (mounted) {
                           // Show success message
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          scaffoldMessenger.showSnackBar(
                             const SnackBar(
                               content: Text('✅ Đã đăng xuất thành công'),
                               backgroundColor: Color(0xFF10B981),
@@ -568,7 +573,7 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                           );
 
                           // Navigate to login page
-                          context.go('/login');
+                          goRouter.go('/login');
                         }
                       }
                     },

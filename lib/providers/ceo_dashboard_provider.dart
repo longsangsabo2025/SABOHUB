@@ -62,7 +62,7 @@ final ceoDashboardKPIProvider =
       };
     } catch (e) {
       // If orders table doesn't exist or has errors, skip it
-      print('⚠️ Could not fetch orders: $e');
+
       return {
         'totalCompanies': totalCompanies,
         'totalEmployees': totalEmployees,
@@ -76,7 +76,6 @@ final ceoDashboardKPIProvider =
       };
     }
   } catch (e) {
-    print('❌ Error fetching CEO dashboard KPIs: $e');
     return _getEmptyKPIs();
   }
 });
@@ -110,7 +109,6 @@ final ceoDashboardActivitiesProvider =
     // For now, return empty list - activities will be tracked later
     return [];
   } catch (e) {
-    print('❌ Error fetching CEO dashboard activities: $e');
     return [];
   }
 });

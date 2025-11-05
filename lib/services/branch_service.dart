@@ -9,7 +9,8 @@ class BranchService {
   /// Get all branches
   Future<List<Branch>> getAllBranches({String? companyId}) async {
     try {
-      var query = _supabase.from('branches').select('id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at');
+      var query = _supabase.from('branches').select(
+          'id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at');
 
       if (companyId != null) {
         query = query.eq('company_id', companyId);
@@ -25,7 +26,11 @@ class BranchService {
   /// Get active branches only
   Future<List<Branch>> getActiveBranches({String? companyId}) async {
     try {
-      var query = _supabase.from('branches').select('id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at').eq('is_active', true);
+      var query = _supabase
+          .from('branches')
+          .select(
+              'id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at')
+          .eq('is_active', true);
 
       if (companyId != null) {
         query = query.eq('company_id', companyId);
@@ -41,8 +46,12 @@ class BranchService {
   /// Get branch by ID
   Future<Branch?> getBranchById(String id) async {
     try {
-      final response =
-          await _supabase.from('branches').select('id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at').eq('id', id).single();
+      final response = await _supabase
+          .from('branches')
+          .select(
+              'id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at')
+          .eq('id', id)
+          .single();
 
       return Branch.fromJson(response);
     } catch (e) {
@@ -69,7 +78,8 @@ class BranchService {
             'email': email,
             'is_active': true,
           })
-          .select('id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at')
+          .select(
+              'id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at')
           .single();
 
       return Branch.fromJson(response);
@@ -85,7 +95,8 @@ class BranchService {
           .from('branches')
           .update(updates)
           .eq('id', id)
-          .select('id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at')
+          .select(
+              'id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at')
           .single();
 
       return Branch.fromJson(response);
@@ -101,7 +112,8 @@ class BranchService {
           .from('branches')
           .update({'is_active': false})
           .eq('id', id)
-          .select('id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at')
+          .select(
+              'id, company_id, name, address, phone, email, manager_id, is_active, created_at, updated_at')
           .single();
 
       return Branch.fromJson(response);

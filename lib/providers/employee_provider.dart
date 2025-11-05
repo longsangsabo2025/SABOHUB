@@ -25,7 +25,6 @@ final companyEmployeesProvider =
         .map((json) => app_user.User.fromJson(json as Map<String, dynamic>))
         .toList();
   } catch (e) {
-    print('Error fetching company employees: $e');
     return [];
   }
 });
@@ -66,7 +65,6 @@ final companyEmployeesStatsProvider =
       'staff': staffCount,
     };
   } catch (e) {
-    print('Error fetching employee stats: $e');
     return {
       'total': 0,
       'manager': 0,
@@ -94,7 +92,6 @@ final activeCompanyEmployeesProvider =
         .map((json) => app_user.User.fromJson(json as Map<String, dynamic>))
         .toList();
   } catch (e) {
-    print('Error fetching active employees: $e');
     return [];
   }
 });
@@ -133,7 +130,6 @@ final employeesByRoleProvider = FutureProvider.family<List<app_user.User>,
         .map((json) => app_user.User.fromJson(json as Map<String, dynamic>))
         .toList();
   } catch (e) {
-    print('Error fetching employees by role: $e');
     return [];
   }
 });

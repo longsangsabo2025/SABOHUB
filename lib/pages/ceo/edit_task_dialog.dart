@@ -5,16 +5,17 @@ import 'package:intl/intl.dart';
 import '../../models/task.dart';
 import '../../models/user.dart';
 import '../../providers/employee_provider.dart';
-import '../../providers/task_provider.dart';
 import '../../services/task_service.dart';
 
 /// Dialog for editing an existing task
 class EditTaskDialog extends ConsumerStatefulWidget {
   final Task task;
+  final String companyId; // Added companyId to get employees list
 
   const EditTaskDialog({
     super.key,
     required this.task,
+    required this.companyId,
   });
 
   @override
@@ -25,19 +26,20 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
-  
+
   late TaskPriority _selectedPriority;
   late TaskStatus _selectedStatus;
   late DateTime _selectedDueDate;
   String? _selectedAssigneeId;
-  
+
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.task.title);
-    _descriptionController = TextEditingController(text: widget.task.description);
+    _descriptionController =
+        TextEditingController(text: widget.task.description);
     _selectedPriority = widget.task.priority;
     _selectedStatus = widget.task.status;
     _selectedDueDate = widget.task.dueDate;
@@ -89,7 +91,8 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
       // Get assignee name if selected
       String? assigneeName;
       if (_selectedAssigneeId != null) {
-        final employeesAsync = ref.read(companyEmployeesProvider(widget.task.branchId));
+        final employeesAsync =
+            ref.read(companyEmployeesProvider(widget.companyId));
         final employees = employeesAsync.when(
           data: (data) => data,
           loading: () => <User>[],
@@ -97,7 +100,8 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
         );
         if (employees.isNotEmpty) {
           try {
-            final assignee = employees.firstWhere((e) => e.id == _selectedAssigneeId);
+            final assignee =
+                employees.firstWhere((e) => e.id == _selectedAssigneeId);
             assigneeName = assignee.name ?? assignee.email;
           } catch (_) {}
         }
@@ -143,7 +147,8 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final employeesAsync = ref.watch(companyEmployeesProvider(widget.task.branchId));
+    final employeesAsync =
+        ref.watch(companyEmployeesProvider(widget.companyId));
     final dateFormat = DateFormat('dd/MM/yyyy');
 
     return Dialog(
@@ -226,7 +231,7 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
 
                       // Priority
                       DropdownButtonFormField<TaskPriority>(
-                        value: _selectedPriority,
+                        initialValue: _selectedPriority,
                         decoration: InputDecoration(
                           labelText: 'Độ ưu tiên',
                           prefixIcon: const Icon(Icons.flag),
@@ -262,7 +267,7 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
 
                       // Status
                       DropdownButtonFormField<TaskStatus>(
-                        value: _selectedStatus,
+                        initialValue: _selectedStatus,
                         decoration: InputDecoration(
                           labelText: 'Trạng thái',
                           prefixIcon: const Icon(Icons.info),
@@ -325,7 +330,7 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
                       employeesAsync.when(
                         data: (employees) {
                           return DropdownButtonFormField<String>(
-                            value: _selectedAssigneeId,
+                            initialValue: _selectedAssigneeId,
                             decoration: InputDecoration(
                               labelText: 'Giao cho',
                               prefixIcon: const Icon(Icons.person),
@@ -371,9 +376,8 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () => Navigator.of(context).pop(),
+                    onPressed:
+                        _isLoading ? null : () => Navigator.of(context).pop(),
                     child: const Text('Hủy'),
                   ),
                   const SizedBox(width: 12),

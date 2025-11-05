@@ -13,63 +13,49 @@ class CachedData<T> {
 
 // Dummy service classes
 class DummyStaffService {
-  Future<void> updateStaff(String staffId, Map<String, dynamic> updates) async {
-    print('DummyStaffService.updateStaff called - TODO: implement');
-  }
+  Future<void> updateStaff(
+      String staffId, Map<String, dynamic> updates) async {}
 
-  Future<void> deleteStaff(String staffId) async {
-    print('DummyStaffService.deleteStaff called - TODO: implement');
-  }
+  Future<void> deleteStaff(String staffId) async {}
 
-  Future<void> createStaff(Map<String, dynamic> staffData) async {
-    print('DummyStaffService.createStaff called - TODO: implement');
-  }
+  Future<void> createStaff(Map<String, dynamic> staffData) async {}
 }
 
 // Dummy refresh functions
 void refreshStaffList(WidgetRef ref) {
   // TODO: Implement proper refresh logic
-  print('refreshStaffList called - TODO: implement');
 }
 
 void refreshManagerAssignedTasks(WidgetRef ref) {
   // TODO: Implement proper refresh logic
-  print('refreshManagerAssignedTasks called - TODO: implement');
 }
 
 void refreshManagerCreatedTasks(WidgetRef ref) {
   // TODO: Implement proper refresh logic
-  print('refreshManagerCreatedTasks called - TODO: implement');
 }
 
 void refreshAllManagementTasks(WidgetRef ref) {
   // TODO: Implement proper refresh logic
-  print('refreshAllManagementTasks called - TODO: implement');
 }
 
 void refreshAllManagerData(WidgetRef ref) {
   // TODO: Implement proper refresh logic
-  print('refreshAllManagerData called - TODO: implement');
 }
 
 void refreshAllTasksCache(WidgetRef ref, String? branchId) {
   // TODO: Implement proper refresh logic
-  print('refreshAllTasksCache called - TODO: implement');
 }
 
 void invalidateAllTasksCache(WidgetRef ref, String? branchId) {
   // TODO: Implement proper refresh logic
-  print('invalidateAllTasksCache called - TODO: implement');
 }
 
 void refreshStores(WidgetRef ref) {
   // TODO: Implement proper refresh logic
-  print('refreshStores called - TODO: implement');
 }
 
 void refreshAllStaffData(WidgetRef ref) {
   // TODO: Implement proper refresh logic
-  print('refreshAllStaffData called - TODO: implement');
 }
 
 // Dummy providers - return empty data

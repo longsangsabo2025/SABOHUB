@@ -71,11 +71,8 @@ class TaskTemplateService {
       data['created_at'] = DateTime.now().toIso8601String();
       data['updated_at'] = DateTime.now().toIso8601String();
 
-      final response = await _supabase
-          .from('task_templates')
-          .insert(data)
-          .select()
-          .single();
+      final response =
+          await _supabase.from('task_templates').insert(data).select().single();
 
       return TaskTemplate.fromJson(response);
     } catch (e) {
@@ -139,7 +136,8 @@ class TaskTemplateService {
   }) async {
     try {
       // Parse priority from suggestion
-      final priorityStr = (suggestion['priority'] as String?)?.toLowerCase() ?? 'medium';
+      final priorityStr =
+          (suggestion['priority'] as String?)?.toLowerCase() ?? 'medium';
       String priority = 'medium';
       if (priorityStr.contains('high') || priorityStr.contains('cao')) {
         priority = 'high';
@@ -148,7 +146,8 @@ class TaskTemplateService {
       }
 
       // Parse category
-      final categoryStr = (suggestion['category'] as String?)?.toLowerCase() ?? 'operations';
+      final categoryStr =
+          (suggestion['category'] as String?)?.toLowerCase() ?? 'operations';
       String category = 'operations';
       if (categoryStr.contains('checklist')) {
         category = 'checklist';
@@ -164,16 +163,23 @@ class TaskTemplateService {
       final text = '$title $description'.toLowerCase();
 
       String recurrencePattern = 'daily'; // Default
-      if (text.contains('hằng ngày') || text.contains('mỗi ngày') || text.contains('daily')) {
+      if (text.contains('hằng ngày') ||
+          text.contains('mỗi ngày') ||
+          text.contains('daily')) {
         recurrencePattern = 'daily';
-      } else if (text.contains('hằng tuần') || text.contains('mỗi tuần') || text.contains('weekly')) {
+      } else if (text.contains('hằng tuần') ||
+          text.contains('mỗi tuần') ||
+          text.contains('weekly')) {
         recurrencePattern = 'weekly';
-      } else if (text.contains('hằng tháng') || text.contains('mỗi tháng') || text.contains('monthly')) {
+      } else if (text.contains('hằng tháng') ||
+          text.contains('mỗi tháng') ||
+          text.contains('monthly')) {
         recurrencePattern = 'monthly';
       }
 
       // Default scheduled time based on task type
-      final hour = categoryStr.contains('checklist') || text.contains('vệ sinh') ? 8 : 9;
+      final hour =
+          categoryStr.contains('checklist') || text.contains('vệ sinh') ? 8 : 9;
 
       final template = TaskTemplate(
         id: '',
@@ -185,7 +191,8 @@ class TaskTemplateService {
         priority: priority,
         recurrencePattern: RecurrencePattern.fromString(recurrencePattern),
         scheduledTime: TimeOfDay(hour: hour, minute: 0),
-        assignedRole: priority == 'high' ? AssignedRole.staff : AssignedRole.any,
+        assignedRole:
+            priority == 'high' ? AssignedRole.staff : AssignedRole.any,
         isActive: true,
         createdBy: createdBy,
         createdAt: DateTime.now(),

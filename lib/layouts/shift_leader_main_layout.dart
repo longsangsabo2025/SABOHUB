@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/navigation/navigation_models.dart';
+import '../pages/common/company_info_page.dart';
 import '../pages/shift_leader/shift_leader_reports_page.dart';
 import '../pages/shift_leader/shift_leader_tasks_page.dart';
 import '../pages/shift_leader/shift_leader_team_page.dart';
+import '../pages/staff/staff_checkin_page.dart';
+import '../pages/staff/staff_messages_page.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/dev_role_switcher.dart';
 import '../widgets/unified_bottom_navigation.dart';
 
@@ -48,6 +52,9 @@ class _ShiftLeaderMainLayoutState extends ConsumerState<ShiftLeaderMainLayout>
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(currentUserProvider);
+    final companyId = currentUser?.companyId;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -59,9 +66,22 @@ class _ShiftLeaderMainLayoutState extends ConsumerState<ShiftLeaderMainLayout>
               });
             },
             children: [
+              // 1. Tasks Page
               ShiftLeaderTasksPage(),
+              // 2. Check-in Page (reuse from Staff)
+              const StaffCheckinPage(),
+              // 3. Messages Page (reuse from Staff)
+              const StaffMessagesPage(),
+              // 4. Team Management Page
               ShiftLeaderTeamPage(),
+              // 5. Reports Page
               ShiftLeaderReportsPage(),
+              // 6. Company Info Page
+              companyId != null
+                  ? CompanyInfoPage(companyId: companyId)
+                  : const Center(
+                      child: Text('Bạn chưa được gán vào công ty nào'),
+                    ),
             ],
           ),
           // DEV: Role Switcher Button

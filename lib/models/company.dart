@@ -14,6 +14,11 @@ class Company {
   final String status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  
+  // Check-in location settings
+  final double? checkInLatitude;
+  final double? checkInLongitude;
+  final double? checkInRadius; // in meters
 
   const Company({
     required this.id,
@@ -29,6 +34,9 @@ class Company {
     this.status = 'active',
     this.createdAt,
     this.updatedAt,
+    this.checkInLatitude,
+    this.checkInLongitude,
+    this.checkInRadius,
   });
 
   // Getter alias for businessType
@@ -68,6 +76,9 @@ class Company {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
+      checkInLatitude: json['check_in_latitude'] as double?,
+      checkInLongitude: json['check_in_longitude'] as double?,
+      checkInRadius: json['check_in_radius'] as double?,
     );
   }
 
@@ -105,6 +116,9 @@ class Company {
     String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? checkInLatitude,
+    double? checkInLongitude,
+    double? checkInRadius,
   }) {
     return Company(
       id: id ?? this.id,
@@ -120,6 +134,9 @@ class Company {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      checkInLatitude: checkInLatitude ?? this.checkInLatitude,
+      checkInLongitude: checkInLongitude ?? this.checkInLongitude,
+      checkInRadius: checkInRadius ?? this.checkInRadius,
     );
   }
 }

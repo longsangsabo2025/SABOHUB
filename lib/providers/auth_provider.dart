@@ -49,7 +49,7 @@ class AuthNotifier extends Notifier<AuthState> {
   // Phase 3.1: Session Timeout Implementation
   static const Duration _sessionTimeout = Duration(minutes: 30);
   DateTime? _lastActivityTime;
-  bool _sessionTimeoutEnabled = true;
+  final bool _sessionTimeoutEnabled = true;
 
   @override
   AuthState build() {
@@ -58,24 +58,18 @@ class AuthNotifier extends Notifier<AuthState> {
       _supabaseClient.auth.onAuthStateChange.listen((data) {
         final event = data.event;
 
-        print('🔵 Auth state changed: $event');
-
         switch (event) {
           case AuthChangeEvent.signedIn:
-            print('🟢 User signed in via state change');
             // Session restored automatically
             _resetSessionTimer(); // Phase 3.1: Reset timer on sign in
             break;
           case AuthChangeEvent.signedOut:
-            print('🔴 User signed out from server');
             _handleSignOut();
             break;
           case AuthChangeEvent.tokenRefreshed:
-            print('🔄 Token refreshed automatically');
             _resetSessionTimer(); // Phase 3.1: Reset timer on token refresh
             break;
           case AuthChangeEvent.userUpdated:
-            print('🔵 User profile updated');
             break;
           default:
             break;
@@ -99,10 +93,8 @@ class AuthNotifier extends Notifier<AuthState> {
       await prefs.clear();
 
       state = const AuthState();
-
-      print('🟢 Signed out successfully (server-initiated)');
     } catch (e) {
-      print('🔴 Error during server-initiated sign out: $e');
+      // Ignore errors during sign out cleanup
     }
   }
 
@@ -114,17 +106,12 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(isLoading: true);
 
     try {
-      print('🔵 Attempting to restore session...');
-
       // 1. Check Supabase session first (takes priority)
       final session = _supabaseClient.auth.currentSession;
 
       if (session != null) {
-        print('🔵 Found active Supabase session: ${session.user.id}');
-
         // Check if email is verified
         if (session.user.emailConfirmedAt == null) {
-          print('⚠️ Email not verified, clearing session');
           await _supabaseClient.auth.signOut();
           state = state.copyWith(isLoading: false);
           return;
@@ -146,6 +133,7 @@ class AuthNotifier extends Notifier<AuthState> {
               email: response['email'] as String,
               role: _parseRole(response['role'] as String),
               phone: response['phone'] as String? ?? '',
+              companyId: response['company_id'] as String?,
             );
 
             await _saveUser(user, isDemoMode: false);
@@ -159,31 +147,21 @@ class AuthNotifier extends Notifier<AuthState> {
             // Phase 3.1: Reset session timer on successful restore
             _resetSessionTimer();
 
-            print('🟢 Session restored successfully: ${user.email}');
             return;
           } else {
-            print('⚠️ User profile not found, clearing session');
             await _supabaseClient.auth.signOut();
           }
         } catch (e) {
-          print('🔴 Error fetching user profile: $e');
           await _supabaseClient.auth.signOut();
         }
       }
-
-      print('🔵 No active Supabase session, checking local storage...');
 
       // 3. Fallback to demo user from local storage
       await loadUser();
 
       if (state.user != null) {
-        print(
-            '🟢 Loaded ${state.isDemoMode ? "demo" : "cached"} user from storage: ${state.user!.email}');
-      } else {
-        print('ℹ️ No saved session found');
-      }
+      } else {}
     } catch (e) {
-      print('🔴 Failed to restore session: $e');
       state = state.copyWith(isLoading: false);
     }
   }
@@ -236,11 +214,8 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       final currentUser = _supabaseClient.auth.currentUser;
       if (currentUser == null) {
-        print('🔴 No authenticated user to reload');
         return;
       }
-
-      print('🔵 Reloading user from database: ${currentUser.id}');
 
       // Fetch fresh data from database - specify columns to avoid relationship ambiguity
       final response = await _supabaseClient
@@ -251,11 +226,8 @@ class AuthNotifier extends Notifier<AuthState> {
           .maybeSingle();
 
       if (response == null) {
-        print('🔴 User not found in database');
         return;
       }
-
-      print('🔵 User data fetched from database');
 
       // Convert to User object
       final updatedUser = app_user.User.fromJson(response);
@@ -268,11 +240,8 @@ class AuthNotifier extends Notifier<AuthState> {
         user: updatedUser,
         isLoading: false,
       );
-
-      print(
-          '🟢 User reloaded successfully: ${updatedUser.name ?? updatedUser.email}');
     } catch (e) {
-      print('🔴 Error reloading user from database: $e');
+      // Ignore errors during user reload
     }
   }
 
@@ -292,12 +261,10 @@ class AuthNotifier extends Notifier<AuthState> {
           isLoading: false,
         );
 
-        print('🟢 Demo login successful: ${demoUser.email}');
         return true;
       }
 
       // 2. Real Supabase authentication
-      print('🔵 Attempting Supabase login for: $email');
 
       final authResponse = await _supabaseClient.auth.signInWithPassword(
         email: email,
@@ -305,7 +272,6 @@ class AuthNotifier extends Notifier<AuthState> {
       );
 
       if (authResponse.user == null) {
-        print('🔴 No user returned from Supabase');
         state = state.copyWith(
           isLoading: false,
           error: 'Đăng nhập thất bại',
@@ -313,11 +279,8 @@ class AuthNotifier extends Notifier<AuthState> {
         return false;
       }
 
-      print('🔵 Supabase login successful: ${authResponse.user!.id}');
-
       // 3. Check if email is verified
       if (authResponse.user!.emailConfirmedAt == null) {
-        print('⚠️ Email not verified yet');
         state = state.copyWith(
           isLoading: false,
           error:
@@ -325,8 +288,6 @@ class AuthNotifier extends Notifier<AuthState> {
         );
         return false;
       }
-
-      print('🔵 Email verified, fetching user profile...');
 
       // 4. Fetch user profile from database - specify columns to avoid relationship ambiguity
       final response = await _supabaseClient
@@ -337,7 +298,6 @@ class AuthNotifier extends Notifier<AuthState> {
           .maybeSingle();
 
       if (response == null) {
-        print('🔴 User profile not found in database');
         state = state.copyWith(
           isLoading: false,
           error:
@@ -346,8 +306,6 @@ class AuthNotifier extends Notifier<AuthState> {
         return false;
       }
 
-      print('🟢 User profile fetched successfully');
-
       // 5. Create User object from database
       final user = app_user.User(
         id: response['id'] as String,
@@ -355,6 +313,7 @@ class AuthNotifier extends Notifier<AuthState> {
         email: response['email'] as String,
         role: _parseRole(response['role'] as String),
         phone: response['phone'] as String? ?? '',
+        companyId: response['company_id'] as String?,
       );
 
       // 6. Save to state and storage
@@ -368,17 +327,12 @@ class AuthNotifier extends Notifier<AuthState> {
 
       // ✨ Auto-save account for 1-click switching
       await AccountStorageService.saveAccount(user);
-      print('💾 Account auto-saved for quick switching');
 
       // Phase 3.1: Reset session timer on successful login
       _resetSessionTimer();
 
-      print(
-          '🟢 Login completed successfully for: ${user.email} (${user.role.name})');
       return true;
     } on AuthException catch (e) {
-      print('🔴 Auth Exception: ${e.message}');
-
       String errorMessage = 'Đăng nhập thất bại';
 
       if (e.message.contains('Invalid login credentials') ||
@@ -398,7 +352,6 @@ class AuthNotifier extends Notifier<AuthState> {
       );
       return false;
     } catch (e) {
-      print('🔴 General Exception: $e');
       state = state.copyWith(
         isLoading: false,
         error: 'Lỗi hệ thống: $e',
@@ -419,7 +372,6 @@ class AuthNotifier extends Notifier<AuthState> {
       case 'STAFF':
         return app_user.UserRole.staff;
       default:
-        print('⚠️ Unknown role: $roleString, defaulting to STAFF');
         return app_user.UserRole.staff;
     }
   }
@@ -435,10 +387,8 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     // Debug logging
-    print('🔵 SignUp started - Email: $email, Role: ${role.name}');
 
     try {
-      print('🔵 Calling Supabase signUp...');
       final authResponse = await _supabaseClient.auth.signUp(
         email: email,
         password: password,
@@ -449,10 +399,7 @@ class AuthNotifier extends Notifier<AuthState> {
         },
       );
 
-      print('🔵 Supabase response: ${authResponse.user?.id}');
-
       if (authResponse.user == null) {
-        print('🔴 No user returned from Supabase');
         state = state.copyWith(
           isLoading: false,
           error: 'Không thể tạo tài khoản. Vui lòng thử lại.',
@@ -460,26 +407,18 @@ class AuthNotifier extends Notifier<AuthState> {
         return false;
       }
 
-      print('🟢 User created successfully: ${authResponse.user!.id}');
-
       // 2. Create user profile in database (will be handled by trigger)
       // The database trigger should automatically create user profile
 
       // 3. DON'T save user to state yet - wait for email verification
       // User needs to verify email before they can login
 
-      print('🟢 SignUp completed - waiting for email verification');
-
       state = state.copyWith(
         isLoading: false,
       );
 
-      print('🟢 Returning true from signUp()');
       return true;
     } on AuthException catch (e) {
-      print('🔴 Auth Exception: ${e.message}');
-      print('🔴 Auth Exception statusCode: ${e.statusCode}');
-
       String errorMessage = 'Đăng ký thất bại';
 
       // Check for user already exists error
@@ -503,7 +442,6 @@ class AuthNotifier extends Notifier<AuthState> {
       );
       return false;
     } catch (e) {
-      print('🔴 General Exception: $e');
       state = state.copyWith(
         isLoading: false,
         error: 'Lỗi hệ thống: $e',
@@ -538,19 +476,13 @@ class AuthNotifier extends Notifier<AuthState> {
   /// Resend verification email
   Future<void> resendVerificationEmail(String email) async {
     try {
-      print('🔵 Resending verification email to: $email');
-
       await _supabaseClient.auth.resend(
         type: OtpType.signup,
         email: email,
       );
-
-      print('✅ Verification email resent successfully');
     } on AuthException catch (e) {
-      print('🔴 Failed to resend email: ${e.message}');
       throw Exception('Không thể gửi lại email: ${e.message}');
     } catch (e) {
-      print('🔴 Error resending email: $e');
       throw Exception('Lỗi hệ thống: $e');
     }
   }
@@ -558,19 +490,13 @@ class AuthNotifier extends Notifier<AuthState> {
   /// Reset password - send reset email
   Future<void> resetPassword(String email) async {
     try {
-      print('🔵 Sending password reset email to: $email');
-
       await _supabaseClient.auth.resetPasswordForEmail(
         email,
         redirectTo: 'sabohub://reset-password', // Deep link for mobile app
       );
-
-      print('✅ Password reset email sent successfully');
     } on AuthException catch (e) {
-      print('🔴 Failed to send reset email: ${e.message}');
       throw Exception('Không thể gửi email đặt lại mật khẩu: ${e.message}');
     } catch (e) {
-      print('🔴 Error sending reset email: $e');
       throw Exception('Lỗi hệ thống: $e');
     }
   }
@@ -580,40 +506,29 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      print('🔵 Starting logout process...');
-
       // 1. Clear local storage
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_authStorageKey);
       await prefs.remove(_demoModeKey);
-
-      print('🔵 Local storage cleared');
 
       // 2. Clear remember me credentials for security
       await prefs.remove('saved_email');
       await prefs.remove('saved_password');
       await prefs.setBool('remember_me', false);
 
-      print('🔵 Remember me credentials cleared');
-
       // 3. Sign out from Supabase (CRITICAL!)
       try {
         await _supabaseClient.auth.signOut();
-        print('🟢 Supabase session signed out');
       } catch (e) {
         // Don't fail logout if Supabase signOut fails
         // (user might be in demo mode or offline)
-        print('⚠️ Supabase signOut warning: $e');
       }
-
-      print('🟢 Logout completed successfully');
 
       // Phase 3.1: Clear session timer on logout
       _lastActivityTime = null;
 
       state = const AuthState();
     } catch (e) {
-      print('🔴 Logout error: $e');
       state = state.copyWith(
         isLoading: false,
         error: 'Logout failed: $e',
@@ -624,7 +539,6 @@ class AuthNotifier extends Notifier<AuthState> {
   /// Phase 3.1: Reset session activity timer
   void _resetSessionTimer() {
     _lastActivityTime = DateTime.now();
-    print('🔵 Session timer reset at: $_lastActivityTime');
   }
 
   /// Phase 3.1: Start periodic session timeout checker
@@ -648,16 +562,11 @@ class AuthNotifier extends Notifier<AuthState> {
     final timeSinceActivity = now.difference(_lastActivityTime!);
 
     if (timeSinceActivity >= _sessionTimeout) {
-      print('⏰ Session timeout! Last activity: $_lastActivityTime');
-      print('⏰ Time since activity: ${timeSinceActivity.inMinutes} minutes');
-
       // Auto-logout due to inactivity
       await logout();
 
       // Clear the timeout flag so we don't repeatedly logout
       _lastActivityTime = null;
-
-      print('🔴 User logged out due to session timeout');
     }
   }
 

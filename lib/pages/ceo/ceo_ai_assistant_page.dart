@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
 
 /// Message model
 class AIMessage {
@@ -255,17 +254,12 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
 
     // Mock mode for testing
     if (apiKey == null || apiKey.isEmpty) {
-      if (kDebugMode) {
-        print('⚠️ Using MOCK AI mode - No API key');
-      }
       await Future.delayed(const Duration(seconds: 1));
       return _mockAIResponse(userInput);
     }
 
     // Real AI API call would go here
     // For now, return mock response
-    print(
-        '🤖 Using GitHub Models API with token: ${apiKey.substring(0, 8)}...');
     await Future.delayed(const Duration(seconds: 1));
     return _mockAIResponse(userInput);
   }
@@ -273,10 +267,6 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
   /// Execute AI function
   Future<Map<String, dynamic>> _executeFunction(
       String functionName, Map<String, dynamic> args) async {
-    if (kDebugMode) {
-      print('🚀 Executing function: $functionName with args: $args');
-    }
-
     // Simulate API delay
     await Future.delayed(const Duration(seconds: 2));
 
@@ -710,7 +700,7 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -879,7 +869,7 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF3B82F6).withOpacity(0.1)
+                      ? const Color(0xFF3B82F6).withValues(alpha: 0.1)
                       : null,
                   border: Border.all(
                     color: isSelected
@@ -992,7 +982,7 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
                     style: TextStyle(
                       fontSize: 11,
                       color: isUser || isFunction
-                          ? Colors.white.withOpacity(0.7)
+                          ? Colors.white.withValues(alpha: 0.7)
                           : const Color(0xFF9CA3AF),
                     ),
                   ),

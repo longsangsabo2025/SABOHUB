@@ -88,7 +88,7 @@ class _CEODocumentsPageState extends ConsumerState<CEODocumentsPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -109,7 +109,7 @@ class _CEODocumentsPageState extends ConsumerState<CEODocumentsPage> {
           const SizedBox(width: 12),
           Expanded(
             child: DropdownButtonFormField<Company>(
-              value: _selectedCompany,
+              initialValue: _selectedCompany,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../providers/ceo_dashboard_provider.dart';
+import '../../providers/cached_data_providers.dart'; // PHASE 3A - Cached providers
 import '../../providers/ceo_tab_provider.dart';
 import 'ceo_main_layout.dart';
 import 'ceo_notifications_page.dart';
@@ -24,18 +24,17 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    // � Use real data from database via provider
-    final kpisAsync = ref.watch(ceoDashboardKPIProvider);
-    final activitiesAsync = ref.watch(ceoDashboardActivitiesProvider);
+    // 📊 PHASE 3A: Use CACHED data for instant loads (5min TTL)
+    final kpisAsync = ref.watch(cachedCEODashboardKPIsProvider);
+    final activitiesAsync = ref.watch(cachedCEODashboardActivitiesProvider);
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
       body: RefreshIndicator(
         onRefresh: () async {
-          // Refresh data from provider
-          ref.invalidate(ceoDashboardKPIProvider);
-          ref.invalidate(ceoDashboardActivitiesProvider);
+          // Invalidate cache to force refresh
+          ref.invalidateCEODashboard();
 
           // Show refresh feedback
           ScaffoldMessenger.of(context).showSnackBar(
@@ -81,7 +80,7 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    ref.invalidate(ceoDashboardKPIProvider);
+                    ref.invalidateCEODashboard(); // PHASE 3A: Clear cache
                   },
                   child: const Text('Thử lại'),
                 ),

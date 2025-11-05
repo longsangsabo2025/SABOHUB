@@ -49,8 +49,10 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final employeesAsync = ref.watch(cachedCompanyEmployeesProvider(widget.companyId));
-    final statsAsync = ref.watch(companyEmployeesStatsProvider(widget.companyId));
+    final employeesAsync =
+        ref.watch(cachedCompanyEmployeesProvider(widget.companyId));
+    final statsAsync =
+        ref.watch(companyEmployeesStatsProvider(widget.companyId));
 
     return Column(
       children: [
@@ -61,7 +63,7 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -332,7 +334,8 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
                       ),
                       const SizedBox(height: 8),
                       TextButton.icon(
-                        onPressed: () => _showCreateEmployeeDialog(widget.company),
+                        onPressed: () =>
+                            _showCreateEmployeeDialog(widget.company),
                         icon: const Icon(Icons.add),
                         label: const Text('Thêm nhân viên đầu tiên'),
                       ),
@@ -416,7 +419,8 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
                   ElevatedButton.icon(
                     onPressed: () {
                       ref.invalidateCompanyEmployees(widget.companyId);
-                      ref.invalidate(companyEmployeesStatsProvider(widget.companyId));
+                      ref.invalidate(
+                          companyEmployeesStatsProvider(widget.companyId));
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('Thử lại'),
@@ -439,9 +443,9 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -506,7 +510,7 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
             // Avatar
             CircleAvatar(
               radius: 24,
-              backgroundColor: roleColor.withOpacity(0.2),
+              backgroundColor: roleColor.withValues(alpha: 0.2),
               child: Text(
                 (employee.name != null && employee.name!.isNotEmpty)
                     ? employee.name![0].toUpperCase()
@@ -543,7 +547,7 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: roleColor.withOpacity(0.1),
+                          color: roleColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(

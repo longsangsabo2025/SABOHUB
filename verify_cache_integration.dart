@@ -48,7 +48,7 @@ void main() async {
   }
   
   // Summary
-  print('\n' + '='*50);
+  print('\n${'='*50}');
   print('📊 CACHE INTEGRATION SUMMARY:');
   print('='*50);
   print('✅ Employee Documents table: ${empDocs.isNotEmpty ? 'HAS DATA' : 'EMPTY'}');

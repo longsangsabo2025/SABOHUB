@@ -86,7 +86,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
         children: [
           // Search & Filter Bar
           _buildSearchAndFilter(),
-          
+
           // Documents List
           Expanded(
             child: documentsState.isLoading
@@ -125,7 +125,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       onPressed: () {
                         _searchController.clear();
                         setState(() => _searchQuery = '');
-                        ref.read(documentsProvider.notifier).loadDocuments(widget.companyId);
+                        ref
+                            .read(documentsProvider.notifier)
+                            .loadDocuments(widget.companyId);
                       },
                     )
                   : null,
@@ -139,22 +141,26 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
             onChanged: (value) {
               setState(() => _searchQuery = value);
               if (value.isEmpty) {
-                ref.read(documentsProvider.notifier).loadDocuments(widget.companyId);
+                ref
+                    .read(documentsProvider.notifier)
+                    .loadDocuments(widget.companyId);
               } else {
-                ref.read(documentsProvider.notifier).searchDocuments(widget.companyId, value);
+                ref
+                    .read(documentsProvider.notifier)
+                    .searchDocuments(widget.companyId, value);
               }
             },
           ),
           const SizedBox(height: 12),
-          
+
           // Type filter chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 _buildFilterChip('Tất cả', 'all'),
-                ...DocumentType.values.map((type) => 
-                  _buildFilterChip(type.label, type.value),
+                ...DocumentType.values.map(
+                  (type) => _buildFilterChip(type.label, type.value),
                 ),
               ],
             ),
@@ -175,9 +181,13 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
         onSelected: (selected) {
           setState(() => _selectedType = value);
           if (value == 'all') {
-            ref.read(documentsProvider.notifier).loadDocuments(widget.companyId);
+            ref
+                .read(documentsProvider.notifier)
+                .loadDocuments(widget.companyId);
           } else {
-            ref.read(documentsProvider.notifier).loadDocumentsByType(widget.companyId, value);
+            ref
+                .read(documentsProvider.notifier)
+                .loadDocumentsByType(widget.companyId, value);
           }
         },
         backgroundColor: Colors.grey[100],
@@ -261,7 +271,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  
+
                   // File info
                   Expanded(
                     child: Column(
@@ -297,7 +307,8 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                DocumentType.fromValue(document.documentType).label,
+                                DocumentType.fromValue(document.documentType)
+                                    .label,
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.purple[700],
@@ -310,7 +321,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // Actions
                   PopupMenuButton<String>(
                     onSelected: (value) {
@@ -374,9 +385,10 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                   ),
                 ],
               ),
-              
+
               // Description if available
-              if (document.description != null && document.description!.isNotEmpty) ...[
+              if (document.description != null &&
+                  document.description!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
                   document.description!,
@@ -388,7 +400,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              
+
               // Footer: Date & Uploader
               const SizedBox(height: 12),
               Row(
@@ -442,7 +454,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              ref.read(documentsProvider.notifier).loadDocuments(widget.companyId);
+              ref
+                  .read(documentsProvider.notifier)
+                  .loadDocuments(widget.companyId);
             },
             icon: const Icon(Icons.refresh),
             label: const Text('Thử lại'),
@@ -476,7 +490,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
   void _showDriveAccountDialog() {
     final driveService = ref.read(googleDriveServiceProvider);
     final account = driveService.currentUser;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -495,10 +509,13 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
         actions: [
           TextButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              final navigator = Navigator.of(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              
+              navigator.pop();
               await ref.read(documentsProvider.notifier).signOutFromDrive();
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(
                     content: Text('Đã ngắt kết nối Google Drive'),
                   ),
@@ -534,7 +551,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     // Show upload dialog with options
     String? description;
     String selectedType = 'general';
-    
+
     await showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -550,15 +567,16 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Document type
                 const Text('Loại tài liệu:'),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: selectedType,
+                  initialValue: selectedType,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   items: DocumentType.values.map((type) {
                     return DropdownMenuItem(
@@ -573,7 +591,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Description
                 const Text('Mô tả (tùy chọn):'),
                 const SizedBox(height: 8),
@@ -596,7 +614,8 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _performUpload(file, fileName, userId, selectedType, description);
+                _performUpload(
+                    file, fileName, userId, selectedType, description);
               },
               child: const Text('Tải lên'),
             ),
@@ -637,13 +656,13 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
 
     // Upload
     final document = await ref.read(documentsProvider.notifier).uploadFile(
-      file: file,
-      fileName: fileName,
-      companyId: widget.companyId,
-      uploadedBy: userId,
-      description: description,
-      documentType: documentType,
-    );
+          file: file,
+          fileName: fileName,
+          companyId: widget.companyId,
+          uploadedBy: userId,
+          description: description,
+          documentType: documentType,
+        );
 
     if (!mounted) return;
 
@@ -689,9 +708,12 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildDetailRow('Kích thước', document.fileSizeFormatted),
-              _buildDetailRow('Loại', DocumentType.fromValue(document.documentType).label),
-              _buildDetailRow('Ngày tạo', DateFormat('dd/MM/yyyy HH:mm').format(document.createdAt)),
-              if (document.description != null && document.description!.isNotEmpty) ...[
+              _buildDetailRow(
+                  'Loại', DocumentType.fromValue(document.documentType).label),
+              _buildDetailRow('Ngày tạo',
+                  DateFormat('dd/MM/yyyy HH:mm').format(document.createdAt)),
+              if (document.description != null &&
+                  document.description!.isNotEmpty) ...[
                 const Divider(height: 24),
                 const Text(
                   'Mô tả:',
@@ -812,9 +834,8 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
 
     if (confirmed != true) return;
 
-    final success = await ref
-        .read(documentsProvider.notifier)
-        .deleteDocument(document);
+    final success =
+        await ref.read(documentsProvider.notifier).deleteDocument(document);
 
     if (!mounted) return;
 

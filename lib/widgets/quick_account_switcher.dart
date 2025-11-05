@@ -1,3 +1,4 @@
+// ignore_for_file: empty_catches
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,9 +40,7 @@ class _QuickAccountSwitcherState extends ConsumerState<QuickAccountSwitcher> {
               accountsList.map((json) => SavedAccount.fromJson(json)).toList();
         });
       }
-    } catch (e) {
-      print('🔴 Error loading saved accounts: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _saveAccounts() async {
@@ -51,9 +50,7 @@ class _QuickAccountSwitcherState extends ConsumerState<QuickAccountSwitcher> {
         _savedAccounts.map((acc) => acc.toJson()).toList(),
       );
       await prefs.setString(_savedAccountsKey, accountsJson);
-    } catch (e) {
-      print('🔴 Error saving accounts: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _switchAccount(SavedAccount account) async {
@@ -135,7 +132,7 @@ class _QuickAccountSwitcherState extends ConsumerState<QuickAccountSwitcher> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 decoration: const InputDecoration(
                   labelText: 'Role',
                 ),
@@ -406,9 +403,7 @@ class _QuickAccountSwitcherHeaderState
               accountsList.map((json) => SavedAccount.fromJson(json)).toList();
         });
       }
-    } catch (e) {
-      print('🔴 Error loading saved accounts: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _saveAccounts() async {
@@ -418,9 +413,7 @@ class _QuickAccountSwitcherHeaderState
         _savedAccounts.map((acc) => acc.toJson()).toList(),
       );
       await prefs.setString(_savedAccountsKey, accountsJson);
-    } catch (e) {
-      print('🔴 Error saving accounts: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _switchAccount(SavedAccount account) async {
@@ -502,7 +495,7 @@ class _QuickAccountSwitcherHeaderState
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 decoration: const InputDecoration(
                   labelText: 'Role',
                 ),
@@ -626,7 +619,7 @@ class _QuickAccountSwitcherHeaderState
                 decoration: BoxDecoration(
                   color: isCurrentAccount
                       ? Colors.green.shade50
-                      : _getRoleColor(account.role).withOpacity(0.1),
+                      : _getRoleColor(account.role).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isCurrentAccount

@@ -172,11 +172,15 @@ class CommissionService {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
 
-    await _supabase.from('bill_commissions').update({
-      'status': 'approved',
-      'approved_by': userId,
-      'approved_at': DateTime.now().toIso8601String(),
-    }).eq('bill_id', billId).eq('status', 'pending');
+    await _supabase
+        .from('bill_commissions')
+        .update({
+          'status': 'approved',
+          'approved_by': userId,
+          'approved_at': DateTime.now().toIso8601String(),
+        })
+        .eq('bill_id', billId)
+        .eq('status', 'pending');
   }
 
   /// Bulk mark commissions as paid for a bill
@@ -187,12 +191,16 @@ class CommissionService {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('User not authenticated');
 
-    await _supabase.from('bill_commissions').update({
-      'status': 'paid',
-      'paid_by': userId,
-      'paid_at': DateTime.now().toIso8601String(),
-      'payment_reference': paymentReference,
-    }).eq('bill_id', billId).eq('status', 'approved');
+    await _supabase
+        .from('bill_commissions')
+        .update({
+          'status': 'paid',
+          'paid_by': userId,
+          'paid_at': DateTime.now().toIso8601String(),
+          'payment_reference': paymentReference,
+        })
+        .eq('bill_id', billId)
+        .eq('status', 'approved');
   }
 
   /// Stream employee commissions real-time
@@ -202,8 +210,9 @@ class CommissionService {
         .stream(primaryKey: ['id'])
         .eq('employee_id', employeeId)
         .order('created_at', ascending: false)
-        .map((data) =>
-            (data as List).map((json) => BillCommission.fromJson(json)).toList());
+        .map((data) => (data as List)
+            .map((json) => BillCommission.fromJson(json))
+            .toList());
   }
 
   /// Get commission statistics for company
@@ -227,8 +236,9 @@ class CommissionService {
     }
 
     final response = await query;
-    final commissions =
-        (response as List).map((json) => BillCommission.fromJson(json)).toList();
+    final commissions = (response as List)
+        .map((json) => BillCommission.fromJson(json))
+        .toList();
 
     // Calculate stats
     double totalCommission = 0;

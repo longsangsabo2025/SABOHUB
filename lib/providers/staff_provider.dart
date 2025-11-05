@@ -15,6 +15,13 @@ final allStaffProvider =
   return service.getAllStaff(branchId: branchId);
 });
 
+/// Company Staff Provider - Get all staff in a specific company
+final companyStaffProvider =
+    FutureProvider.family<List<Staff>, String?>((ref, companyId) async {
+  final service = ref.read(staffServiceProvider);
+  return service.getAllStaff(companyId: companyId);
+});
+
 /// Single Staff Provider
 final staffProvider =
     FutureProvider.family<Staff?, String>((ref, staffId) async {

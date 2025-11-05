@@ -17,9 +17,6 @@ class AIService {
   /// Get or create AI assistant for a company
   Future<AIAssistant> getOrCreateAssistant(String companyId) async {
     try {
-      print(
-          '🔍 AIService: Attempting to get/create assistant for companyId: $companyId');
-
       // First try to get existing assistant
       final existingResponse = await _supabase
           .from('ai_assistants')
@@ -27,14 +24,9 @@ class AIService {
           .eq('company_id', companyId)
           .maybeSingle();
 
-      print('🔍 AIService: Existing assistant query result: $existingResponse');
-
       if (existingResponse != null) {
-        print('✅ AIService: Found existing assistant');
         return AIAssistant.fromJson(existingResponse);
       }
-
-      print('🔍 AIService: No existing assistant, creating new one...');
 
       // Try creating with RLS bypassed for demo mode
       try {
@@ -50,12 +42,8 @@ class AIService {
             .select()
             .single();
 
-        print('✅ AIService: Created new assistant: ${createResponse['id']}');
         return AIAssistant.fromJson(createResponse);
       } catch (rlsError) {
-        print(
-            '⚠️ AIService: RLS policy blocked insert, creating simple demo assistant...');
-
         // Simple demo fallback - create minimal assistant object
         try {
           final now = DateTime.now();
@@ -70,16 +58,12 @@ class AIService {
             updatedAt: now,
           );
 
-          print('✅ AIService: Created demo assistant successfully');
           return demoAssistant;
         } catch (demoError) {
-          print('❌ AIService: Demo assistant creation failed: $demoError');
           rethrow;
         }
       }
     } catch (e) {
-      print('❌ AIService Error: $e');
-      print('❌ AIService CompanyID: $companyId');
       throw Exception('Failed to get/create AI assistant: $e');
     }
   }

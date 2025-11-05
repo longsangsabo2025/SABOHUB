@@ -197,9 +197,9 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -564,7 +564,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: action.color.withOpacity(0.1),
+                  color: action.color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -900,7 +900,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getApprovalTypeColor(type).withOpacity(0.1),
+                    color: _getApprovalTypeColor(type).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -917,7 +917,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -1226,7 +1226,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color),
       ),
@@ -1271,7 +1271,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -1452,18 +1452,18 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
     });
   }
 
-  Color _getPriorityColor(TaskPriority priority) {
-    switch (priority) {
-      case TaskPriority.critical:
-        return Colors.red;
-      case TaskPriority.high:
-        return Colors.orange;
-      case TaskPriority.medium:
-        return Colors.blue;
-      case TaskPriority.low:
-        return Colors.green;
-    }
-  }
+  // Color _getPriorityColor(TaskPriority priority) {
+  //   switch (priority) {
+  //     case TaskPriority.critical:
+  //       return Colors.red;
+  //     case TaskPriority.high:
+  //       return Colors.orange;
+  //     case TaskPriority.medium:
+  //       return Colors.blue;
+  //     case TaskPriority.low:
+  //       return Colors.green;
+  //   }
+  // }
 
   Future<void> _handleApproval(TaskApproval item, bool isApproved) async {
     final confirmed = await showDialog<bool>(

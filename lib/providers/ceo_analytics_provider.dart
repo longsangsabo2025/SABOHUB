@@ -127,7 +127,6 @@ final ceoRevenueAnalyticsProvider =
       'period': period,
     };
   } catch (e) {
-    print('❌ Error fetching CEO revenue analytics: $e');
     return {
       'totalRevenue': 0.0,
       'previousRevenue': 0.0,
@@ -199,7 +198,6 @@ final ceoCustomerAnalyticsProvider =
       'totalSpent': totalSpent,
     };
   } catch (e) {
-    print('❌ Error fetching CEO customer analytics: $e');
     return {
       'totalCustomers': 0,
       'totalOrders': 0,
@@ -280,7 +278,6 @@ final ceoPerformanceAnalyticsProvider =
 
     return performance;
   } catch (e) {
-    print('❌ Error fetching CEO performance analytics: $e');
     return [];
   }
 });

@@ -147,7 +147,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: AppConstants.primaryColor.withOpacity(0.1),
+                    color: AppConstants.primaryColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

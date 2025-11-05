@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../widgets/dev_role_switcher.dart';
-import '../../widgets/quick_account_switcher.dart';
 import 'ai_management/ai_management_dashboard.dart';
 import 'ceo_analytics_page.dart';
 import 'ceo_companies_page.dart';
@@ -13,8 +12,7 @@ import 'ceo_tasks_page.dart';
 import 'ceo_documents_page.dart';
 
 /// Global key for CEO Main Layout to access navigation from anywhere
-final GlobalKey<_CEOMainLayoutState> ceoMainLayoutKey =
-    GlobalKey<_CEOMainLayoutState>();
+final ceoMainLayoutKey = GlobalKey<_CEOMainLayoutState>();
 
 /// CEO Main Layout with Bottom Navigation
 class CEOMainLayout extends ConsumerStatefulWidget {

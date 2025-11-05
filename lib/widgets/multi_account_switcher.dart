@@ -50,6 +50,9 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
 
   /// Chuyển sang tài khoản khác
   Future<void> _switchToAccount(SavedAccount account) async {
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     // Show loading
     showDialog(
       context: context,
@@ -65,13 +68,13 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
 
       // Đăng nhập bằng tài khoản đã lưu
       // Lưu ý: Cần password, nên sẽ yêu cầu nhập lại password
-      Navigator.of(context).pop(); // Close loading
+      navigator.pop(); // Close loading
 
       _showPasswordDialog(account);
     } catch (e) {
-      Navigator.of(context).pop(); // Close loading
+      navigator.pop(); // Close loading
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('Lỗi chuyển tài khoản: $e'),
             backgroundColor: Colors.red,
@@ -131,7 +134,8 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.lock),
               ),
-              onSubmitted: (_) => _performSwitch(account, passwordController.text),
+              onSubmitted: (_) =>
+                  _performSwitch(account, passwordController.text),
             ),
           ],
         ),
@@ -160,6 +164,9 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
 
     Navigator.of(context).pop(); // Close password dialog
 
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     // Show loading
     showDialog(
       context: context,
@@ -173,7 +180,7 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
       final success =
           await ref.read(authProvider.notifier).login(account.email, password);
 
-      Navigator.of(context).pop(); // Close loading
+      navigator.pop(); // Close loading
 
       if (success) {
         // Update last used
@@ -181,7 +188,7 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
         await _saveCurrentAccount();
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(
               content: Text('✅ Đã chuyển sang ${account.name}'),
               backgroundColor: Colors.green,
@@ -190,18 +197,19 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             const SnackBar(
-              content: Text('❌ Đăng nhập thất bại. Vui lòng kiểm tra mật khẩu.'),
+              content:
+                  Text('❌ Đăng nhập thất bại. Vui lòng kiểm tra mật khẩu.'),
               backgroundColor: Colors.red,
             ),
           );
         }
       }
     } catch (e) {
-      Navigator.of(context).pop(); // Close loading
+      navigator.pop(); // Close loading
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text('Lỗi: $e'),
             backgroundColor: Colors.red,
@@ -450,7 +458,8 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
           ref.read(authProvider.notifier).logout();
         } else if (value.startsWith('switch_')) {
           final email = value.substring(7);
-          final account = _savedAccounts.firstWhere((acc) => acc.email == email);
+          final account =
+              _savedAccounts.firstWhere((acc) => acc.email == email);
           _switchToAccount(account);
         }
       },

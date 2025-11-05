@@ -122,15 +122,15 @@ class _BranchDetailsPageState extends ConsumerState<BranchDetailsPage>
           colors: [
             branch.isActive ? Colors.blue[700]! : Colors.grey[700]!,
             branch.isActive
-                ? Colors.blue[500]!.withOpacity(0.7)
-                : Colors.grey[500]!.withOpacity(0.7),
+                ? Colors.blue[500]!.withValues(alpha: 0.7)
+                : Colors.grey[500]!.withValues(alpha: 0.7),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -174,7 +174,7 @@ class _BranchDetailsPageState extends ConsumerState<BranchDetailsPage>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                         ),
                       ],
@@ -203,8 +203,8 @@ class _BranchDetailsPageState extends ConsumerState<BranchDetailsPage>
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: branch.isActive
-                          ? Colors.green.withOpacity(0.3)
-                          : Colors.red.withOpacity(0.3),
+                          ? Colors.green.withValues(alpha: 0.3)
+                          : Colors.red.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: branch.isActive ? Colors.green : Colors.red,
@@ -235,7 +235,7 @@ class _BranchDetailsPageState extends ConsumerState<BranchDetailsPage>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -351,7 +351,7 @@ class _BranchDetailsPageState extends ConsumerState<BranchDetailsPage>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -636,7 +636,7 @@ class _BranchDetailsPageState extends ConsumerState<BranchDetailsPage>
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: (item.color ?? Colors.blue).withOpacity(0.1),
+          color: (item.color ?? Colors.blue).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -730,6 +730,9 @@ class _BranchDetailsPageState extends ConsumerState<BranchDetailsPage>
           ElevatedButton(
             onPressed: () async {
               if (formKey.currentState!.validate()) {
+                final navigator = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+
                 try {
                   final branchService = BranchService();
                   await branchService.updateBranch(branch.id, {
@@ -747,10 +750,10 @@ class _BranchDetailsPageState extends ConsumerState<BranchDetailsPage>
 
                   ref.invalidate(branchDetailsProvider(widget.branchId));
                   ref.invalidate(branchStatsProvider(widget.branchId));
-                  Navigator.pop(context);
+                  navigator.pop();
 
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Cập nhật chi nhánh thành công!'),
                       backgroundColor: Colors.green,
@@ -758,7 +761,7 @@ class _BranchDetailsPageState extends ConsumerState<BranchDetailsPage>
                   );
                 } catch (e) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text('Lỗi: $e'),
                       backgroundColor: Colors.red,

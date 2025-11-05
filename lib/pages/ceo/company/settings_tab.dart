@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../models/business_type.dart';
 import '../../../models/company.dart';
 import '../../../services/company_service.dart';
 import '../create_employee_simple_dialog.dart';
+import '../company_details_page.dart' show companyDetailsProvider;
 
 /// Settings Tab for Company Details
 /// Shows company settings, edit options, and dangerous actions
@@ -67,6 +69,24 @@ class SettingsTab extends ConsumerWidget {
                 subtitle: 'Chọn loại hình kinh doanh',
                 onTap: () =>
                     _showChangeBusinessTypeDialog(context, ref, company),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          _buildSettingSection(
+            title: 'Vị trí Check-in',
+            items: [
+              _SettingItem(
+                icon: Icons.location_on,
+                title: 'Cấu hình vị trí check-in',
+                subtitle: company.checkInLatitude != null
+                    ? 'Đã cấu hình: ${company.checkInLatitude!.toStringAsFixed(6)}, ${company.checkInLongitude!.toStringAsFixed(6)} (Bán kính: ${company.checkInRadius?.toInt() ?? 100}m)'
+                    : 'Chưa cấu hình vị trí check-in',
+                onTap: () => _showCheckInLocationDialog(context, ref, company),
+                color: company.checkInLatitude != null
+                    ? Colors.green
+                    : Colors.orange,
               ),
             ],
           ),
@@ -149,7 +169,7 @@ class SettingsTab extends ConsumerWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: (item.color ?? Colors.blue).withOpacity(0.1),
+          color: (item.color ?? Colors.blue).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -174,8 +194,7 @@ class SettingsTab extends ConsumerWidget {
   }
 
   // Dialog Methods
-  void _showEditDialog(
-      BuildContext context, WidgetRef ref, Company company) {
+  void _showEditDialog(BuildContext context, WidgetRef ref, Company company) {
     final nameController = TextEditingController(text: company.name);
     final addressController = TextEditingController(text: company.address);
     final phoneController = TextEditingController(text: company.phone ?? '');
@@ -325,8 +344,7 @@ class SettingsTab extends ConsumerWidget {
     );
   }
 
-  void _showDeleteDialog(
-      BuildContext context, WidgetRef ref, Company company) {
+  void _showDeleteDialog(BuildContext context, WidgetRef ref, Company company) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -360,7 +378,7 @@ class SettingsTab extends ConsumerWidget {
       await service.updateCompany(company.id, {
         'business_type': newType.toString().split('.').last,
       });
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đã cập nhật loại hình')),
@@ -383,7 +401,7 @@ class SettingsTab extends ConsumerWidget {
       await service.updateCompany(company.id, {
         'is_active': newStatus == 'active',
       });
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -407,7 +425,7 @@ class SettingsTab extends ConsumerWidget {
     try {
       final service = CompanyService();
       await service.deleteCompany(company.id);
-      
+
       if (context.mounted) {
         Navigator.of(context).pop(); // Return to companies list
         ScaffoldMessenger.of(context).showSnackBar(
@@ -439,6 +457,221 @@ class SettingsTab extends ConsumerWidget {
       const SnackBar(
         content: Text('Chức năng đang được phát triển'),
       ),
+    );
+  }
+
+  // Check-in Location Configuration
+  Future<void> _showCheckInLocationDialog(
+      BuildContext context, WidgetRef ref, Company company) async {
+    await showDialog(
+      context: context,
+      builder: (context) => _CheckInLocationDialog(
+        company: company,
+        onSave: (lat, lng, radius) async {
+          try {
+            final service = CompanyService();
+            await service.updateCompany(company.id, {
+              'check_in_latitude': lat,
+              'check_in_longitude': lng,
+              'check_in_radius': radius,
+            });
+
+            if (context.mounted) {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Đã cập nhật vị trí check-in')),
+              );
+              // Refresh company data
+              ref.invalidate(companyDetailsProvider(company.id));
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Lỗi: $e')),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+}
+
+// Check-in Location Configuration Dialog
+class _CheckInLocationDialog extends StatefulWidget {
+  final Company company;
+  final Function(double lat, double lng, double radius) onSave;
+
+  const _CheckInLocationDialog({
+    required this.company,
+    required this.onSave,
+  });
+
+  @override
+  State<_CheckInLocationDialog> createState() => _CheckInLocationDialogState();
+}
+
+class _CheckInLocationDialogState extends State<_CheckInLocationDialog> {
+  late TextEditingController _latController;
+  late TextEditingController _lngController;
+  late TextEditingController _radiusController;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _latController = TextEditingController(
+      text: widget.company.checkInLatitude?.toString() ?? '',
+    );
+    _lngController = TextEditingController(
+      text: widget.company.checkInLongitude?.toString() ?? '',
+    );
+    _radiusController = TextEditingController(
+      text: (widget.company.checkInRadius ?? 100.0).toString(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _latController.dispose();
+    _lngController.dispose();
+    _radiusController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      
+      setState(() {
+        _latController.text = position.latitude.toString();
+        _lngController.text = position.longitude.toString();
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã lấy vị trí hiện tại')),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi lấy vị trí: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Cấu hình vị trí Check-in'),
+      content: SizedBox(
+        width: 500,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Nhân viên chỉ có thể check-in khi ở trong bán kính được thiết lập.',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            
+            // Latitude
+            TextField(
+              controller: _latController,
+              decoration: const InputDecoration(
+                labelText: 'Latitude (Vĩ độ)',
+                hintText: 'Ví dụ: 10.762622',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+            const SizedBox(height: 12),
+            
+            // Longitude
+            TextField(
+              controller: _lngController,
+              decoration: const InputDecoration(
+                labelText: 'Longitude (Kinh độ)',
+                hintText: 'Ví dụ: 106.660172',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+            const SizedBox(height: 12),
+            
+            // Radius
+            TextField(
+              controller: _radiusController,
+              decoration: const InputDecoration(
+                labelText: 'Bán kính cho phép (mét)',
+                hintText: 'Ví dụ: 100',
+                border: OutlineInputBorder(),
+                suffixText: 'm',
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+            const SizedBox(height: 16),
+            
+            // Get Current Location Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isLoading ? null : _getCurrentLocation,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location),
+                label: Text(_isLoading
+                    ? 'Đang lấy vị trí...'
+                    : 'Lấy vị trí hiện tại'),
+              ),
+            ),
+            
+            const SizedBox(height: 8),
+            const Text(
+              '💡 Mẹo: Đến đúng vị trí công ty và bấm "Lấy vị trí hiện tại"',
+              style: TextStyle(fontSize: 12, color: Colors.blue),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Hủy'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final lat = double.tryParse(_latController.text);
+            final lng = double.tryParse(_lngController.text);
+            final radius = double.tryParse(_radiusController.text) ?? 100.0;
+            
+            if (lat == null || lng == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Vui lòng nhập tọa độ hợp lệ')),
+              );
+              return;
+            }
+            
+            widget.onSave(lat, lng, radius);
+          },
+          child: const Text('Lưu'),
+        ),
+      ],
     );
   }
 }

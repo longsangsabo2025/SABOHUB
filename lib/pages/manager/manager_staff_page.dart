@@ -575,6 +575,9 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
                 return;
               }
 
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
                 final service = ref.read(staffServiceProvider);
                 await service.createStaff({
@@ -587,9 +590,9 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
                 });
 
                 if (!mounted) return;
-                Navigator.pop(context);
+                navigator.pop();
                 refreshStaffList(ref);
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(
                     content: Text('✅ Thêm nhân viên thành công'),
                     backgroundColor: Color(0xFF10B981),
@@ -597,7 +600,7 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
                 );
               } catch (e) {
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(content: Text('❌ Lỗi: $e')),
                 );
               }
@@ -677,6 +680,9 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
                 final service = ref.read(staffServiceProvider);
                 await service.updateStaff(staff.id, {
@@ -690,9 +696,9 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
                 });
 
                 if (!mounted) return;
-                Navigator.pop(context);
+                navigator.pop();
                 refreshStaffList(ref);
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(
                     content: Text('✅ Cập nhật thành công'),
                     backgroundColor: Color(0xFF10B981),
@@ -700,7 +706,7 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
                 );
               } catch (e) {
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(content: Text('❌ Lỗi: $e')),
                 );
               }
@@ -744,14 +750,17 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
                 final service = ref.read(staffServiceProvider);
                 await service.updateStaff(staff.id, {'status': selectedStatus});
 
                 if (!mounted) return;
-                Navigator.pop(context);
+                navigator.pop();
                 refreshStaffList(ref);
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(
                     content: Text('✅ Cập nhật trạng thái thành công'),
                     backgroundColor: Color(0xFF10B981),
@@ -759,7 +768,7 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
                 );
               } catch (e) {
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(content: Text('❌ Lỗi: $e')),
                 );
               }
@@ -787,23 +796,25 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
                 final service = ref.read(staffServiceProvider);
                 await service.deleteStaff(staff.id);
 
-                if (mounted) {
-                  Navigator.pop(context);
-                  refreshStaffList(ref);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('✅ Xóa nhân viên thành công'),
-                      backgroundColor: Color(0xFF10B981),
-                    ),
-                  );
-                }
+                if (!mounted) return;
+                navigator.pop();
+                refreshStaffList(ref);
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Xóa nhân viên thành công'),
+                    backgroundColor: Color(0xFF10B981),
+                  ),
+                );
               } catch (e) {
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(content: Text('❌ Lỗi: $e')),
                 );
               }

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../providers/auth_provider.dart';
-import 'ceo_profile_page.dart';
 
 /// CEO Reports Page
 /// Generate and view comprehensive business reports
@@ -633,7 +632,7 @@ class CEOSettingsPage extends ConsumerWidget {
 
     final displayName = user?.name ?? 'CEO';
     final displayEmail = user?.email ?? 'ceo@sabohub.com';
-    final displayRole = user?.role.value ?? 'CEO';
+    // final displayRole = user?.role.value ?? 'CEO';
 
     // Get initials for avatar
     final initials = displayName.isNotEmpty

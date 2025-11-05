@@ -173,7 +173,8 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
                     width: isSelected ? 2 : 1,
                   ),
                   borderRadius: BorderRadius.circular(12),
-                  color: isSelected ? template.color.withOpacity(0.1) : null,
+                  color:
+                      isSelected ? template.color.withValues(alpha: 0.1) : null,
                 ),
                 child: Column(
                   children: [
@@ -205,9 +206,9 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: template.color.withOpacity(0.05),
+        color: template.color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: template.color.withOpacity(0.3)),
+        border: Border.all(color: template.color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,7 +278,7 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
                   child: ChoiceChip(
                     label: Text(size),
                     selected: selectedSize == size,
-                    selectedColor: template.color.withOpacity(0.3),
+                    selectedColor: template.color.withValues(alpha: 0.3),
                     onSelected: (selected) {
                       if (selected) {
                         setState(() {
@@ -409,7 +410,7 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
     }
   }
 
-  IconData _getIconForTemplate(String templateId) {
+  /* IconData _getIconForTemplate(String templateId) {
     switch (templateId) {
       case 'billiards':
         return Icons.sports_bar;
@@ -452,7 +453,7 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
       default:
         return 15;
     }
-  }
+  } */
 
   @override
   void dispose() {

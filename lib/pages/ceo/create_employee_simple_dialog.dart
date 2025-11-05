@@ -73,7 +73,7 @@ class _CreateEmployeeSimpleDialogState
 
       // BƯỚC 1: Insert vào DB - KHÔNG TẠO AUTH ACCOUNT
       // Nhân viên sẽ tự tạo auth khi click invite link
-      final response = await supabase
+      /*final response = */await supabase
           .from('users')
           .insert({
             'full_name': _nameController.text.trim(),
@@ -88,10 +88,11 @@ class _CreateEmployeeSimpleDialogState
             'invite_expires_at': inviteExpiresAt.toIso8601String(),
             'invited_at': DateTime.now().toIso8601String(),
           })
-          .select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
+          .select(
+              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
           .single();
 
-      final userId = response['id'] as String;
+      // final userId = response['id'] as String;
 
       // BƯỚC 2: Generate invite link
       // TODO: Replace with your actual domain
@@ -101,7 +102,9 @@ class _CreateEmployeeSimpleDialogState
 
       if (!mounted) return;
 
-      Navigator.of(context).pop();
+      final navigator = Navigator.of(context);
+      
+      navigator.pop();
 
       // Refresh employee list and company stats AFTER closing dialog
       // This ensures the parent widget rebuilds properly
@@ -111,10 +114,12 @@ class _CreateEmployeeSimpleDialogState
       ref.invalidate(companyStatsProvider(widget.company.id));
 
       // Show success dialog with invite link
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
+      if (!mounted) return;
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
           title: Row(
             children: [
               Icon(Icons.check_circle, color: Colors.green[700], size: 32),
@@ -210,6 +215,7 @@ class _CreateEmployeeSimpleDialogState
           ],
         ),
       );
+      }
     } catch (e) {
       if (!mounted) return;
 
@@ -456,7 +462,7 @@ class _CreateEmployeeSimpleDialogState
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.grey[100],
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.grey[100],
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? color : Colors.grey[300]!,

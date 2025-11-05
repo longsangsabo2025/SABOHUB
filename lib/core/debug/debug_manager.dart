@@ -10,14 +10,14 @@ class DebugManager {
   static final Map<String, dynamic> _context = {};
 
   // Debug levels
-  static const int LEVEL_VERBOSE = 0;
-  static const int LEVEL_DEBUG = 1;
-  static const int LEVEL_INFO = 2;
-  static const int LEVEL_WARNING = 3;
-  static const int LEVEL_ERROR = 4;
-  static const int LEVEL_CRITICAL = 5;
+  static const int levelVerbose = 0;
+  static const int levelDebug = 1;
+  static const int levelInfo = 2;
+  static const int levelWarning = 3;
+  static const int levelError = 4;
+  static const int levelCritical = 5;
 
-  static int _currentLevel = kDebugMode ? LEVEL_DEBUG : LEVEL_WARNING;
+  static int _currentLevel = kDebugMode ? levelDebug : levelWarning;
 
   /// Initialize the debug manager
   static void initialize() {
@@ -52,23 +52,23 @@ class DebugManager {
   /// Verbose logging (most detailed)
   static void verbose(String message,
       {String? tag, Map<String, dynamic>? data}) {
-    _log(LEVEL_VERBOSE, message, tag: tag, data: data);
+    _log(levelVerbose, message, tag: tag, data: data);
   }
 
   /// Debug logging
   static void debug(String message, {String? tag, Map<String, dynamic>? data}) {
-    _log(LEVEL_DEBUG, message, tag: tag, data: data);
+    _log(levelDebug, message, tag: tag, data: data);
   }
 
   /// Info logging
   static void info(String message, {String? tag, Map<String, dynamic>? data}) {
-    _log(LEVEL_INFO, message, tag: tag, data: data);
+    _log(levelInfo, message, tag: tag, data: data);
   }
 
   /// Warning logging
   static void warning(String message,
       {String? tag, Map<String, dynamic>? data}) {
-    _log(LEVEL_WARNING, message, tag: tag, data: data);
+    _log(levelWarning, message, tag: tag, data: data);
   }
 
   /// Error logging
@@ -77,7 +77,7 @@ class DebugManager {
       Map<String, dynamic>? data,
       dynamic error,
       StackTrace? stackTrace}) {
-    _log(LEVEL_ERROR, message,
+    _log(levelError, message,
         tag: tag, data: data, error: error, stackTrace: stackTrace);
   }
 
@@ -87,7 +87,7 @@ class DebugManager {
       Map<String, dynamic>? data,
       dynamic error,
       StackTrace? stackTrace}) {
-    _log(LEVEL_CRITICAL, message,
+    _log(levelCritical, message,
         tag: tag, data: data, error: error, stackTrace: stackTrace);
   }
 
@@ -193,18 +193,18 @@ class DebugManager {
 
     // Choose console method based on level
     switch (log.level) {
-      case LEVEL_VERBOSE:
-      case LEVEL_DEBUG:
+      case levelVerbose:
+      case levelDebug:
         html.window.console.debug(mainMessage);
         break;
-      case LEVEL_INFO:
+      case levelInfo:
         html.window.console.info(mainMessage);
         break;
-      case LEVEL_WARNING:
+      case levelWarning:
         html.window.console.warn(mainMessage);
         break;
-      case LEVEL_ERROR:
-      case LEVEL_CRITICAL:
+      case levelError:
+      case levelCritical:
         html.window.console.error(mainMessage);
         break;
     }
@@ -303,17 +303,17 @@ class DebugManager {
 
   static String _getLevelName(int level) {
     switch (level) {
-      case LEVEL_VERBOSE:
+      case levelVerbose:
         return 'VERBOSE';
-      case LEVEL_DEBUG:
+      case levelDebug:
         return 'DEBUG';
-      case LEVEL_INFO:
+      case levelInfo:
         return 'INFO';
-      case LEVEL_WARNING:
+      case levelWarning:
         return 'WARNING';
-      case LEVEL_ERROR:
+      case levelError:
         return 'ERROR';
-      case LEVEL_CRITICAL:
+      case levelCritical:
         return 'CRITICAL';
       default:
         return 'UNKNOWN';
@@ -322,17 +322,17 @@ class DebugManager {
 
   static String _getLevelIcon(int level) {
     switch (level) {
-      case LEVEL_VERBOSE:
+      case levelVerbose:
         return '🔍';
-      case LEVEL_DEBUG:
+      case levelDebug:
         return '🐛';
-      case LEVEL_INFO:
+      case levelInfo:
         return 'ℹ️';
-      case LEVEL_WARNING:
+      case levelWarning:
         return '⚠️';
-      case LEVEL_ERROR:
+      case levelError:
         return '❌';
-      case LEVEL_CRITICAL:
+      case levelCritical:
         return '🚨';
       default:
         return '📝';

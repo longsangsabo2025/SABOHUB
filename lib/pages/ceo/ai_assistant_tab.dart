@@ -63,23 +63,18 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
 
   @override
   Widget build(BuildContext context) {
-    print('🔍 AIAssistantTab: Building with companyId: ${widget.companyId}');
-    
     final assistantAsync = ref.watch(aiAssistantProvider(widget.companyId));
 
     return assistantAsync.when(
       data: (assistant) {
-        print('✅ AIAssistant loaded: ${assistant?.id}');
         return _buildChatInterface(assistant);
       },
       loading: () {
-        print('⏳ Loading AIAssistant...');
         return const Center(
           child: CircularProgressIndicator(),
         );
       },
       error: (error, stack) {
-        print('❌ AIAssistant error: $error');
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

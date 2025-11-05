@@ -80,9 +80,7 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
     final currentUser = ref.watch(currentUserProvider);
 
     // If user has a role, use it (unless roleParam overrides it)
-    if (_selectedRole == null &&
-        currentUser != null &&
-        currentUser.role != null) {
+    if (_selectedRole == null && currentUser != null) {
       // Auto-select based on user's actual role
       _selectedRole = _mapUserRoleToEnum(currentUser.role);
     }

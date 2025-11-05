@@ -10,7 +10,8 @@ class ManagerCompaniesPage extends ConsumerStatefulWidget {
   const ManagerCompaniesPage({super.key});
 
   @override
-  ConsumerState<ManagerCompaniesPage> createState() => _ManagerCompaniesPageState();
+  ConsumerState<ManagerCompaniesPage> createState() =>
+      _ManagerCompaniesPageState();
 }
 
 class _ManagerCompaniesPageState extends ConsumerState<ManagerCompaniesPage> {

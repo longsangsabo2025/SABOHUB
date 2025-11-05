@@ -110,7 +110,8 @@ class TaskTemplate {
       description: json['description'] as String? ?? '',
       category: json['category'] as String,
       priority: json['priority'] as String,
-      recurrencePattern: RecurrencePattern.fromString(json['recurrence_pattern'] as String),
+      recurrencePattern:
+          RecurrencePattern.fromString(json['recurrence_pattern'] as String),
       scheduledTime: json['scheduled_time'] != null
           ? _parseTime(json['scheduled_time'] as String)
           : null,

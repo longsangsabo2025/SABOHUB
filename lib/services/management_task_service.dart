@@ -466,20 +466,14 @@ class ManagementTaskService {
   /// CEO can create tasks for ANY company
   Future<List<Map<String, dynamic>>> getCompanies() async {
     try {
-      print('🏢 Fetching all companies for CEO...');
-
       // CEO can see ALL companies, so no filtering by user's company_id
       final response = await _supabase
           .from('companies')
           .select('id, name')
           .order('name', ascending: true);
 
-      print('✅ Fetched ${response.length} companies from database');
-      print('📋 Companies: $response');
-
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('❌ Failed to fetch companies: $e');
       return []; // Return empty list instead of throwing
     }
   }

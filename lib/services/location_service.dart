@@ -1,11 +1,13 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Service quản lý location và kiểm tra vị trí check-in
 class LocationService {
-  static const double _allowedRadiusMeters = 100.0; // Bán kính cho phép 100m
+  static const double _allowedRadiusMeters = 100.0; // Bán kính mặc định 100m
+  final _supabase = Supabase.instance.client;
 
-  // Vị trí công ty mặc định (có thể config từ database)
+  // Vị trí công ty mặc định (nếu chưa cấu hình trong database)
   static final Map<String, Position> _companyLocations = {
     'default': Position(
       latitude: 10.762622, // TP.HCM center
@@ -71,7 +73,51 @@ class LocationService {
   }) async {
     try {
       Position currentLocation = await getCurrentLocation();
-      Position companyLocation = _getCompanyLocation(companyId ?? 'default');
+      
+      // Lấy thông tin vị trí công ty từ database
+      double allowedRadius = _allowedRadiusMeters;
+      Position companyLocation;
+      
+      if (companyId != null) {
+        try {
+          final companyData = await _supabase
+              .from('companies')
+              .select('check_in_latitude, check_in_longitude, check_in_radius')
+              .eq('id', companyId)
+              .single();
+          
+          final lat = companyData['check_in_latitude'] as double?;
+          final lng = companyData['check_in_longitude'] as double?;
+          final radius = companyData['check_in_radius'] as double?;
+          
+          if (lat != null && lng != null) {
+            companyLocation = Position(
+              latitude: lat,
+              longitude: lng,
+              timestamp: DateTime.now(),
+              accuracy: 0,
+              altitude: 0,
+              heading: 0,
+              speed: 0,
+              speedAccuracy: 0,
+              altitudeAccuracy: 0,
+              headingAccuracy: 0,
+            );
+            
+            if (radius != null) {
+              allowedRadius = radius;
+            }
+          } else {
+            // Nếu chưa cấu hình, dùng mặc định
+            companyLocation = _getCompanyLocation(companyId);
+          }
+        } catch (e) {
+          // Nếu có lỗi, dùng vị trí mặc định
+          companyLocation = _getCompanyLocation(companyId);
+        }
+      } else {
+        companyLocation = _getCompanyLocation('default');
+      }
 
       double distance = Geolocator.distanceBetween(
         currentLocation.latitude,
@@ -80,14 +126,14 @@ class LocationService {
         companyLocation.longitude,
       );
 
-      bool isValid = distance <= _allowedRadiusMeters;
+      bool isValid = distance <= allowedRadius;
 
       return LocationValidationResult(
         isValid: isValid,
         currentLocation: currentLocation,
         companyLocation: companyLocation,
         distance: distance,
-        allowedRadius: _allowedRadiusMeters,
+        allowedRadius: allowedRadius,
         accuracy: currentLocation.accuracy,
       );
     } catch (e) {

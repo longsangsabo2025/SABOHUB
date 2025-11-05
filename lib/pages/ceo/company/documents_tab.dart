@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/ai_uploaded_file.dart';
 import '../../../models/business_document.dart';
 import '../../../models/company.dart';
-import '../../../providers/document_provider.dart';
+import '../../../providers/cached_data_providers.dart';
 import '../../../services/business_document_service.dart';
 
 /// Documents Tab for Company Details
@@ -24,7 +24,7 @@ class DocumentsTab extends ConsumerStatefulWidget {
 
 class _DocumentsTabState extends ConsumerState<DocumentsTab> {
   final _documentService = BusinessDocumentService();
-  bool _isUploading = false;
+  // bool _isUploading = false; // Unused in this state class
 
   void _showUploadDialog(BuildContext context, WidgetRef ref) {
     showDialog(
@@ -122,16 +122,17 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
 
       // Show form dialog to enter document details
       if (!mounted) return;
-      
-      final shouldUpload = await showDialog<bool>(
+
+      /*final shouldUpload = */await showDialog<bool>(
         context: context,
         builder: (context) => _DocumentUploadDialog(
           fileName: file.name,
           docType: docType,
           docTitle: docTitle,
           onUpload: (details) async {
-            setState(() => _isUploading = true);
-            
+            final scaffoldMessenger = ScaffoldMessenger.of(context);
+            // setState(() => _isUploading = true); // Removed unused state
+
             try {
               // Here you would upload to storage first, then create document record
               // For now, we'll create a simple document record
@@ -152,10 +153,9 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
 
               if (mounted) {
                 // Refresh documents list
-                ref.invalidate(companyDocumentsProvider(widget.company.id));
-                ref.invalidate(documentInsightsProvider(widget.company.id));
+                ref.invalidateCompanyDocuments(widget.company.id);
 
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Row(
                       children: [
@@ -174,7 +174,7 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
               return true;
             } catch (e) {
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Text('Lỗi upload: $e'),
                     backgroundColor: Colors.red,
@@ -184,9 +184,10 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
               }
               return false;
             } finally {
-              if (mounted) {
-                setState(() => _isUploading = false);
-              }
+              // No state to update - dialog handles its own state
+              // if (mounted) {
+              //   setState(() => _isUploading = false);
+              // }
             }
           },
         ),
@@ -206,8 +207,10 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final documentsAsync = ref.watch(companyDocumentsProvider(widget.company.id));
-    final insightsAsync = ref.watch(documentInsightsProvider(widget.company.id));
+    final documentsAsync =
+        ref.watch(cachedCompanyDocumentsProvider(widget.company.id));
+    final insightsAsync =
+        ref.watch(cachedDocumentInsightsProvider(widget.company.id));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -243,7 +246,8 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue[700],
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
               ),
             ],
@@ -302,8 +306,9 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
               }
 
               return Column(
-                children:
-                    documents.map((doc) => _buildDocumentCard(context, doc)).toList(),
+                children: documents
+                    .map((doc) => _buildDocumentCard(context, doc))
+                    .toList(),
               );
             },
           ),
@@ -390,8 +395,9 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
                         ? Icons.check_circle
                         : Icons.circle_outlined,
                     size: 16,
-                    color:
-                        pos['status'] == 'filled' ? Colors.green : Colors.orange,
+                    color: pos['status'] == 'filled'
+                        ? Colors.green
+                        : Colors.orange,
                   ),
                   const SizedBox(width: 8),
                   Expanded(child: Text(pos['title'] ?? '')),
@@ -477,8 +483,8 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
                     children: [
                       Expanded(
                           child: Text(kpi['name'] ?? '',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w500))),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w500))),
                       Text('${kpi['weight']}%',
                           style: TextStyle(color: Colors.grey[600])),
                     ],
@@ -615,14 +621,14 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,
-        style: TextStyle(
-            color: color, fontSize: 12, fontWeight: FontWeight.w500),
+        style:
+            TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w500),
       ),
     );
   }
@@ -652,13 +658,13 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         label,
-        style: TextStyle(
-            color: color, fontSize: 11, fontWeight: FontWeight.w500),
+        style:
+            TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w500),
       ),
     );
   }
@@ -704,8 +710,7 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.description,
-                        color: Colors.blue[700], size: 32),
+                    Icon(Icons.description, color: Colors.blue[700], size: 32),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -852,9 +857,8 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                   border: OutlineInputBorder(),
                   hintText: 'VD: 0123456789',
                 ),
-                validator: (value) => value?.isEmpty ?? true
-                    ? 'Vui lòng nhập số giấy tờ'
-                    : null,
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Vui lòng nhập số giấy tờ' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -864,9 +868,8 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                   border: OutlineInputBorder(),
                   hintText: 'VD: Sở Kế hoạch và Đầu tư TP.HCM',
                 ),
-                validator: (value) => value?.isEmpty ?? true
-                    ? 'Vui lòng nhập nơi cấp'
-                    : null,
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Vui lòng nhập nơi cấp' : null,
               ),
               const SizedBox(height: 16),
               ListTile(
@@ -903,7 +906,8 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                 onTap: () async {
                   final date = await showDatePicker(
                     context: context,
-                    initialDate: _expiryDate ?? DateTime.now().add(const Duration(days: 365)),
+                    initialDate: _expiryDate ??
+                        DateTime.now().add(const Duration(days: 365)),
                     firstDate: DateTime.now(),
                     lastDate: DateTime(2100),
                   );

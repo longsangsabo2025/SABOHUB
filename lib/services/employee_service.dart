@@ -112,9 +112,6 @@ class EmployeeService {
         throw Exception('Only CEO can create employee accounts');
       }
 
-      print('🔍 Creating employee account...');
-      print('CEO: ${currentUser?.email ?? _supabase.auth.currentUser?.email}');
-
       // Generate unique email
       String email = customEmail ??
           generateEmployeeEmail(companyName: companyName, role: role);
@@ -140,9 +137,6 @@ class EmployeeService {
 
       // Generate secure password
       final tempPassword = _generateTempPassword();
-
-      print('📧 Employee email: $email');
-      print('🔑 Temp password: $tempPassword');
 
       // Retry mechanism for auth creation
       int retryCount = 0;
@@ -176,7 +170,6 @@ class EmployeeService {
           }
         } catch (e) {
           retryCount++;
-          print('⚠️ Auth creation attempt $retryCount failed: $e');
           if (retryCount >= maxRetries) {
             throw Exception(
                 'Failed to create auth user after $maxRetries attempts: $e');
@@ -191,7 +184,6 @@ class EmployeeService {
       }
 
       final newUserId = authResponse!.user!.id;
-      print('✅ Auth user created: $newUserId');
 
       // Database insertion with retry and duplicate handling
       retryCount = 0;
@@ -205,7 +197,6 @@ class EmployeeService {
               .maybeSingle();
 
           if (existingUser != null) {
-            print('⚠️ User already exists in database, updating instead...');
             // Update existing record
             await _supabase.from('users').update({
               'email': email,
@@ -227,16 +218,13 @@ class EmployeeService {
             });
           }
 
-          print('✅ Database record created/updated');
           break; // Success, exit retry loop
         } catch (e) {
           retryCount++;
-          print('⚠️ Database insertion attempt $retryCount failed: $e');
 
           if (e.toString().contains('23505') &&
               e.toString().contains('users_pkey')) {
             // If it's a duplicate key error, try to handle it gracefully
-            print('🔄 Handling duplicate key, attempting to update record...');
             try {
               await _supabase.from('users').update({
                 'email': email,
@@ -246,10 +234,9 @@ class EmployeeService {
                 'is_active': true,
                 'updated_at': DateTime.now().toIso8601String(),
               }).eq('id', newUserId);
-              print('✅ Successfully updated existing record');
               break;
             } catch (updateError) {
-              print('❌ Update also failed: $updateError');
+              // Retry on error
             }
           }
 
@@ -281,7 +268,6 @@ class EmployeeService {
         'message': 'Employee can login immediately with these credentials',
       };
     } catch (e) {
-      print('❌ Error: $e');
       throw Exception('Failed to create employee: $e');
     }
   }
@@ -334,7 +320,8 @@ class EmployeeService {
     try {
       final response = await _supabase
           .from('users')
-          .select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
+          .select(
+              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
           .eq('company_id', companyId)
           .order('created_at', ascending: false);
 
@@ -367,10 +354,7 @@ class EmployeeService {
       if (branchId != null) updates['branch_id'] = branchId;
 
       await _supabase.from('users').update(updates).eq('id', employeeId);
-
-      print('✅ Employee updated successfully: $employeeId');
     } catch (e) {
-      print('❌ Failed to update employee: $e');
       throw Exception('Failed to update employee: $e');
     }
   }
@@ -382,10 +366,7 @@ class EmployeeService {
         'is_active': isActive,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', userId);
-
-      print('✅ Employee status updated: $userId -> $isActive');
     } catch (e) {
-      print('❌ Failed to update employee status: $e');
       throw Exception('Failed to update employee status: $e');
     }
   }
@@ -398,9 +379,7 @@ class EmployeeService {
 
       // Note: Supabase auth user should be deleted via admin API
       // For now, we just delete from users table
-      print('✅ Employee deleted: $userId');
     } catch (e) {
-      print('❌ Failed to delete employee: $e');
       throw Exception('Failed to delete employee: $e');
     }
   }
@@ -409,8 +388,12 @@ class EmployeeService {
   Future<Map<String, String>> resendCredentials(String userId) async {
     try {
       // Get user info
-      final response =
-          await _supabase.from('users').select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at').eq('id', userId).single();
+      final response = await _supabase
+          .from('users')
+          .select(
+              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
+          .eq('id', userId)
+          .single();
 
       final user = app_models.User.fromJson(response);
 

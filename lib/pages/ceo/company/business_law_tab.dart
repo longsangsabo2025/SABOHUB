@@ -19,8 +19,10 @@ class BusinessLawTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final documentsAsync = ref.watch(cachedBusinessDocumentsProvider(companyId));
-    final complianceAsync = ref.watch(cachedComplianceStatusProvider(companyId));
+    final documentsAsync =
+        ref.watch(cachedBusinessDocumentsProvider(companyId));
+    final complianceAsync =
+        ref.watch(cachedComplianceStatusProvider(companyId));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -38,7 +40,8 @@ class BusinessLawTab extends ConsumerWidget {
                   children: [
                     Text(
                       'Luật doanh nghiệp',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     Text(
                       'Quản lý giấy tờ pháp lý và tuân thủ',
@@ -50,7 +53,7 @@ class BusinessLawTab extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Compliance Status
           complianceAsync.when(
             loading: () => const Card(
@@ -62,25 +65,27 @@ class BusinessLawTab extends ConsumerWidget {
             error: (error, stack) => Card(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Lỗi: $error', style: const TextStyle(color: Colors.red)),
+                child: Text('Lỗi: $error',
+                    style: const TextStyle(color: Colors.red)),
               ),
             ),
             data: (compliance) => _buildComplianceCard(context, compliance),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Documents List
           const Text(
             'Danh sách tài liệu',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          
+
           documentsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => Center(
-              child: Text('Lỗi: $error', style: const TextStyle(color: Colors.red)),
+              child: Text('Lỗi: $error',
+                  style: const TextStyle(color: Colors.red)),
             ),
             data: (documents) {
               if (documents.isEmpty) {
@@ -88,16 +93,20 @@ class BusinessLawTab extends ConsumerWidget {
                   child: Column(
                     children: [
                       const SizedBox(height: 40),
-                      Icon(Icons.folder_open, size: 64, color: Colors.grey[300]),
+                      Icon(Icons.folder_open,
+                          size: 64, color: Colors.grey[300]),
                       const SizedBox(height: 16),
-                      const Text('Chưa có tài liệu pháp lý nào', style: TextStyle(fontSize: 16)),
+                      const Text('Chưa có tài liệu pháp lý nào',
+                          style: TextStyle(fontSize: 16)),
                     ],
                   ),
                 );
               }
-              
+
               return Column(
-                children: documents.map((doc) => _buildDocumentCard(context, ref, doc)).toList(),
+                children: documents
+                    .map((doc) => _buildDocumentCard(context, ref, doc))
+                    .toList(),
               );
             },
           ),
@@ -106,9 +115,10 @@ class BusinessLawTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildComplianceCard(BuildContext context, ComplianceStatus compliance) {
+  Widget _buildComplianceCard(
+      BuildContext context, ComplianceStatus compliance) {
     final level = compliance.level;
-    
+
     return Card(
       elevation: 4,
       child: Padding(
@@ -206,7 +216,8 @@ class BusinessLawTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+  Widget _buildStatItem(
+      String label, String value, IconData icon, Color color) {
     return Column(
       children: [
         Icon(icon, color: color, size: 32),
@@ -228,15 +239,17 @@ class BusinessLawTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildDocumentCard(BuildContext context, WidgetRef ref, BusinessDocument doc) {
+  Widget _buildDocumentCard(
+      BuildContext context, WidgetRef ref, BusinessDocument doc) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: doc.status.color.withOpacity(0.1),
+          backgroundColor: doc.status.color.withValues(alpha: 0.1),
           child: Icon(doc.type.icon, color: doc.status.color),
         ),
-        title: Text(doc.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(doc.title,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -273,8 +286,9 @@ class BusinessLawTab extends ConsumerWidget {
               Icon(Icons.pending, color: Colors.orange[600], size: 20),
             const SizedBox(width: 8),
             Chip(
-              label: Text(doc.status.label, style: const TextStyle(fontSize: 12)),
-              backgroundColor: doc.status.color.withOpacity(0.1),
+              label:
+                  Text(doc.status.label, style: const TextStyle(fontSize: 12)),
+              backgroundColor: doc.status.color.withValues(alpha: 0.1),
               labelStyle: TextStyle(color: doc.status.color),
             ),
           ],

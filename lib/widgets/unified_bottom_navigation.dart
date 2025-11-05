@@ -77,7 +77,30 @@ class _UnifiedBottomNavigationState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Chia navigation items thành 2 hàng
+    // Use standard BottomNavigationBar for single row (max 6 items)
+    if (_navigationItems.length <= 6) {
+      return BottomNavigationBar(
+        currentIndex: widget.currentIndex,
+        onTap: _handleTap,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: colorScheme.primary,
+        unselectedItemColor: colorScheme.onSurfaceVariant,
+        selectedFontSize: 11,
+        unselectedFontSize: 10,
+        iconSize: 22,
+        elevation: 8,
+        items: _navigationItems.map((item) {
+          return BottomNavigationBarItem(
+            icon: Icon(item.icon),
+            activeIcon: Icon(item.activeIcon ?? item.icon),
+            label: item.label,
+            tooltip: item.label,
+          );
+        }).toList(),
+      );
+    }
+
+    // Fallback to 2-row layout for more than 5 items
     final itemsPerRow = (_navigationItems.length / 2).ceil();
     final firstRowItems = _navigationItems.take(itemsPerRow).toList();
     final secondRowItems = _navigationItems.skip(itemsPerRow).toList();

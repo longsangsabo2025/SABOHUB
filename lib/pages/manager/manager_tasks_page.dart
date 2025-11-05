@@ -441,7 +441,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: Colors.white.withOpacity(0.3),
+              backgroundColor: Colors.white.withValues(alpha: 0.3),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ),
@@ -472,7 +472,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: _getPriorityColor(priority).withOpacity(0.3),
+          color: _getPriorityColor(priority).withValues(alpha: 0.3),
           width: 2,
         ),
       ),
@@ -574,7 +574,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color),
       ),
@@ -603,7 +603,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(

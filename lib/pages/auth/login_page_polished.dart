@@ -150,11 +150,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     fillColor: Colors.white,
                   ),
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty)
+                    if (value == null || value.trim().isEmpty) {
                       return 'Vui lòng nhập email';
+                    }
                     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                        .hasMatch(value.trim()))
+                        .hasMatch(value.trim())) {
                       return 'Email không đúng định dạng';
+                    }
                     return null;
                   },
                 ),
@@ -187,8 +189,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     fillColor: Colors.white,
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Vui lòng nhập mật khẩu';
+                    }
                     if (value.length < 3) return 'Mật khẩu quá ngắn';
                     return null;
                   },

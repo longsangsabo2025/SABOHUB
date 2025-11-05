@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../providers/manager_provider.dart';
+import '../../providers/cached_data_providers.dart'; // PHASE 3B: Manager cache
 import '../../providers/auth_provider.dart';
 import '../../widgets/multi_account_switcher.dart';
 
@@ -25,17 +25,19 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final branchId = authState.user?.branchId;
-    
-    final kpisAsync = ref.watch(managerDashboardKPIsProvider(branchId));
-    final activitiesAsync = ref.watch(managerRecentActivitiesProvider((branchId: branchId, limit: 10)));
+
+    // PHASE 3B: Use CACHED providers for instant loads (5min TTL)
+    final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider(branchId));
+    final activitiesAsync = ref.watch(
+        cachedManagerRecentActivitiesProvider((branchId: branchId, limit: 10)));
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(managerDashboardKPIsProvider(branchId));
-          ref.invalidate(managerRecentActivitiesProvider((branchId: branchId, limit: 10)));
+          // Invalidate cache to force fresh data
+          ref.invalidateManagerDashboard(branchId);
         },
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

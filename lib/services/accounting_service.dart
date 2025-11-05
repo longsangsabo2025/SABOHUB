@@ -52,14 +52,15 @@ class AccountingService {
       for (var record in transactionData) {
         final type = record['type'] as String;
         final amount = (record['amount'] as num?)?.toDouble() ?? 0.0;
-        
+
         if (type != 'revenue') {
           totalExpense += amount;
         }
       }
 
       final netProfit = totalRevenue - totalExpense;
-      final profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue * 100) : 0.0;
+      final profitMargin =
+          totalRevenue > 0 ? (netProfit / totalRevenue * 100) : 0.0;
 
       return AccountingSummary(
         totalRevenue: totalRevenue,
@@ -79,7 +80,7 @@ class AccountingService {
         'end_date': endDate.toIso8601String(),
         'error': e.toString(),
       });
-      
+
       // Return empty data with zeros
       return AccountingSummary(
         totalRevenue: 0,
@@ -128,7 +129,6 @@ class AccountingService {
           .map((json) => AccountingTransaction.fromJson(json))
           .toList();
     } catch (e) {
-      print('Error getting transactions: $e');
       return [];
     }
   }
@@ -141,10 +141,8 @@ class AccountingService {
     DateTime? endDate,
   }) async {
     try {
-      var query = _supabase
-          .from('daily_revenue')
-          .select()
-          .eq('company_id', companyId);
+      var query =
+          _supabase.from('daily_revenue').select().eq('company_id', companyId);
 
       if (branchId != null) {
         query = query.eq('branch_id', branchId);
@@ -163,7 +161,6 @@ class AccountingService {
           .map((json) => DailyRevenue.fromJson(json))
           .toList();
     } catch (e) {
-      print('Error getting daily revenue: $e');
       return [];
     }
   }
@@ -288,7 +285,7 @@ class AccountingService {
       }
 
       final response = await query;
-      
+
       Map<String, double> breakdown = {};
       for (var record in response) {
         final type = record['type'] as String;
@@ -298,7 +295,6 @@ class AccountingService {
 
       return breakdown;
     } catch (e) {
-      print('Error getting expense breakdown: $e');
       return {};
     }
   }
@@ -325,7 +321,6 @@ class AccountingService {
       final response = await query.order('date', ascending: true);
       return (response as List).map((e) => e as Map<String, dynamic>).toList();
     } catch (e) {
-      print('Error getting revenue trend: $e');
       return [];
     }
   }

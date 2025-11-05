@@ -23,7 +23,7 @@ final companyDetailsProvider =
     FutureProvider.family<Company?, String>((ref, id) async {
   // Keep provider alive to cache company data across tab switches
   ref.keepAlive();
-  
+
   final service = ref.watch(companyServiceProvider);
   return await service.getCompanyById(id);
 });
@@ -178,7 +178,8 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
       case 6:
         return AccountingTab(company: company, companyId: widget.companyId);
       case 7:
-        return EmployeeDocumentsTab(company: company, companyId: widget.companyId);
+        return EmployeeDocumentsTab(
+            company: company, companyId: widget.companyId);
       case 8:
         return BusinessLawTab(company: company, companyId: widget.companyId);
       case 9:
@@ -207,7 +208,7 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
         color: company.type.color,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -241,7 +242,7 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
                     Text(
                       tabNames[_currentIndex],
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 12,
                       ),
                     ),
@@ -264,13 +265,16 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [company.type.color, company.type.color.withOpacity(0.7)],
+          colors: [
+            company.type.color,
+            company.type.color.withValues(alpha: 0.7)
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -317,7 +321,7 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                         ),
                       ],
@@ -345,7 +349,7 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -363,8 +367,8 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: company.status == 'active'
-                          ? Colors.green.withOpacity(0.3)
-                          : Colors.red.withOpacity(0.3),
+                          ? Colors.green.withValues(alpha: 0.3)
+                          : Colors.red.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: company.status == 'active'

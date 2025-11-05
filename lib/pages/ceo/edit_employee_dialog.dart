@@ -209,7 +209,7 @@ class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
                       const SizedBox(height: 16),
                       // Role Dropdown
                       DropdownButtonFormField<app_user.UserRole>(
-                        value: _selectedRole,
+                        initialValue: _selectedRole,
                         decoration: InputDecoration(
                           labelText: 'Vai trò *',
                           prefixIcon: const Icon(Icons.badge_outlined),

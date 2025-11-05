@@ -20,6 +20,36 @@ enum TaskStatus {
   final String label;
   final Color color;
   const TaskStatus(this.label, this.color);
+
+  /// Convert to database value
+  String toDbValue() {
+    switch (this) {
+      case TaskStatus.todo:
+        return 'pending';
+      case TaskStatus.inProgress:
+        return 'in_progress';
+      case TaskStatus.completed:
+        return 'completed';
+      case TaskStatus.cancelled:
+        return 'cancelled';
+    }
+  }
+
+  /// Parse from database value
+  static TaskStatus fromDbValue(String dbValue) {
+    switch (dbValue) {
+      case 'pending':
+        return TaskStatus.todo;
+      case 'in_progress':
+        return TaskStatus.inProgress;
+      case 'completed':
+        return TaskStatus.completed;
+      case 'cancelled':
+        return TaskStatus.cancelled;
+      default:
+        return TaskStatus.todo;
+    }
+  }
 }
 
 enum TaskCategory {
@@ -50,7 +80,9 @@ enum TaskRecurrence {
 
 class Task {
   final String id;
-  final String branchId;
+  final String?
+      branchId; // Made nullable since branch_id is nullable in database
+  final String? companyId; // Add company_id field
   final String title;
   final String description;
   final TaskCategory category;
@@ -70,7 +102,8 @@ class Task {
 
   const Task({
     required this.id,
-    required this.branchId,
+    this.branchId, // Now optional
+    this.companyId, // Add to constructor
     required this.title,
     required this.description,
     required this.category,
@@ -103,6 +136,7 @@ class Task {
   Task copyWith({
     String? id,
     String? branchId,
+    String? companyId,
     String? title,
     String? description,
     TaskCategory? category,
@@ -123,6 +157,7 @@ class Task {
     return Task(
       id: id ?? this.id,
       branchId: branchId ?? this.branchId,
+      companyId: companyId ?? this.companyId,
       title: title ?? this.title,
       description: description ?? this.description,
       category: category ?? this.category,

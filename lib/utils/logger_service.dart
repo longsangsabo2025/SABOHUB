@@ -17,7 +17,8 @@ class LoggerService {
   static const String _levelCritical = '🔥 CRITICAL';
 
   /// Internal logging function
-  void _log(String level, String message, [Object? error, StackTrace? stackTrace]) {
+  void _log(String level, String message,
+      [Object? error, StackTrace? stackTrace]) {
     final timestamp = DateTime.now().toIso8601String();
     final logMessage = '[$timestamp] $level: $message';
 
@@ -66,7 +67,7 @@ class LoggerService {
   void logUserAction(String action, [Map<String, dynamic>? properties]) {
     final props = properties != null ? ' | Props: $properties' : '';
     _log(_levelInfo, 'User Action: $action$props');
-    
+
     // TODO: Send to analytics
     // Example: FirebaseAnalytics.instance.logEvent(name: action, parameters: properties);
   }
@@ -75,23 +76,27 @@ class LoggerService {
   void logScreenView(String screenName, [Map<String, dynamic>? properties]) {
     final props = properties != null ? ' | Props: $properties' : '';
     _log(_levelInfo, 'Screen View: $screenName$props');
-    
+
     // TODO: Send to analytics
     // Example: FirebaseAnalytics.instance.setCurrentScreen(screenName: screenName);
   }
 
   /// Log API call
-  void logApiCall(String endpoint, String method, [int? statusCode, Duration? duration]) {
+  void logApiCall(String endpoint, String method,
+      [int? statusCode, Duration? duration]) {
     final status = statusCode != null ? ' | Status: $statusCode' : '';
-    final time = duration != null ? ' | Duration: ${duration.inMilliseconds}ms' : '';
+    final time =
+        duration != null ? ' | Duration: ${duration.inMilliseconds}ms' : '';
     _log(_levelDebug, 'API Call: $method $endpoint$status$time');
   }
 
   /// Log performance metric
-  void logPerformance(String metric, Duration duration, [Map<String, dynamic>? metadata]) {
+  void logPerformance(String metric, Duration duration,
+      [Map<String, dynamic>? metadata]) {
     final meta = metadata != null ? ' | Metadata: $metadata' : '';
-    _log(_levelInfo, 'Performance: $metric took ${duration.inMilliseconds}ms$meta');
-    
+    _log(_levelInfo,
+        'Performance: $metric took ${duration.inMilliseconds}ms$meta');
+
     // TODO: Send to performance monitoring
     // Example: FirebasePerformance
   }

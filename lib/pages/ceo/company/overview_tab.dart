@@ -38,7 +38,7 @@ class OverviewTab extends ConsumerWidget {
             data: (stats) => _buildStatsCards(stats),
           ),
           const SizedBox(height: 32),
-          
+
           // Company Information
           const Text(
             'Thông tin công ty',
@@ -47,7 +47,7 @@ class OverviewTab extends ConsumerWidget {
           const SizedBox(height: 16),
           _buildInfoCard(company),
           const SizedBox(height: 32),
-          
+
           // Contact Information
           const Text(
             'Thông tin liên hệ',
@@ -56,7 +56,7 @@ class OverviewTab extends ConsumerWidget {
           const SizedBox(height: 16),
           _buildContactCard(context, company),
           const SizedBox(height: 32),
-          
+
           // Timeline
           const Text(
             'Thời gian',
@@ -143,7 +143,9 @@ class OverviewTab extends ConsumerWidget {
             _buildInfoRow(
               icon: Icons.location_on,
               label: 'Địa chỉ',
-              value: company.address.isNotEmpty ? company.address : 'Chưa cập nhật',
+              value: company.address.isNotEmpty
+                  ? company.address
+                  : 'Chưa cập nhật',
             ),
             if (company.phone != null) ...[
               const Divider(height: 32),

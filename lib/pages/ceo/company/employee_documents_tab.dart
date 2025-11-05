@@ -18,10 +18,11 @@ class EmployeeDocumentsTab extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<EmployeeDocumentsTab> createState() => _EmployeeDocumentsTabState();
+  ConsumerState<EmployeeDocumentsTab> createState() =>
+      _EmployeeDocumentsTabState();
 }
 
-class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab> 
+class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   EmployeeDocumentType? _selectedDocType;
@@ -60,7 +61,8 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
                       children: [
                         Text(
                           'Hồ sơ nhân viên',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.bold),
                         ),
                         Text(
                           'Quản lý giấy tờ và hợp đồng lao động',
@@ -101,7 +103,8 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
   }
 
   Widget _buildDocumentsTab() {
-    final documentsAsync = ref.watch(cachedEmployeeDocumentsProvider(widget.companyId));
+    final documentsAsync =
+        ref.watch(cachedEmployeeDocumentsProvider(widget.companyId));
 
     return documentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -114,7 +117,8 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
             Text('Lỗi: $error'),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: () => ref.invalidateEmployeeDocuments(widget.companyId),
+              onPressed: () =>
+                  ref.invalidateEmployeeDocuments(widget.companyId),
               icon: const Icon(Icons.refresh),
               label: const Text('Thử lại'),
             ),
@@ -129,7 +133,8 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
               children: [
                 Icon(Icons.folder_open, size: 64, color: Colors.grey[300]),
                 const SizedBox(height: 16),
-                const Text('Chưa có giấy tờ nào', style: TextStyle(fontSize: 16)),
+                const Text('Chưa có giấy tờ nào',
+                    style: TextStyle(fontSize: 16)),
                 const SizedBox(height: 8),
                 ElevatedButton.icon(
                   onPressed: _showUploadDialog,
@@ -150,34 +155,40 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<EmployeeDocumentType>(
-                      value: _selectedDocType,
+                      initialValue: _selectedDocType,
                       decoration: const InputDecoration(
                         labelText: 'Loại giấy tờ',
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       items: [
-                        const DropdownMenuItem(value: null, child: Text('Tất cả')),
-                        ...EmployeeDocumentType.values.map((type) =>
-                          DropdownMenuItem(value: type, child: Text(type.label)),
+                        const DropdownMenuItem(
+                            value: null, child: Text('Tất cả')),
+                        ...EmployeeDocumentType.values.map(
+                          (type) => DropdownMenuItem(
+                              value: type, child: Text(type.label)),
                         ),
                       ],
-                      onChanged: (value) => setState(() => _selectedDocType = value),
+                      onChanged: (value) =>
+                          setState(() => _selectedDocType = value),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<DocumentStatus>(
-                      value: _selectedStatus,
+                      initialValue: _selectedStatus,
                       decoration: const InputDecoration(
                         labelText: 'Trạng thái',
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       items: [
-                        const DropdownMenuItem(value: null, child: Text('Tất cả')),
-                        ...DocumentStatus.values.map((status) =>
-                          DropdownMenuItem(
+                        const DropdownMenuItem(
+                            value: null, child: Text('Tất cả')),
+                        ...DocumentStatus.values.map(
+                          (status) => DropdownMenuItem(
                             value: status,
                             child: Row(
                               children: [
@@ -196,7 +207,8 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
                           ),
                         ),
                       ],
-                      onChanged: (value) => setState(() => _selectedStatus = value),
+                      onChanged: (value) =>
+                          setState(() => _selectedStatus = value),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -226,7 +238,8 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
   }
 
   Widget _buildContractsTab() {
-    final contractsAsync = ref.watch(cachedLaborContractsProvider(widget.companyId));
+    final contractsAsync =
+        ref.watch(cachedLaborContractsProvider(widget.companyId));
 
     return contractsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -246,9 +259,11 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.description_outlined, size: 64, color: Colors.grey[300]),
+                Icon(Icons.description_outlined,
+                    size: 64, color: Colors.grey[300]),
                 const SizedBox(height: 16),
-                const Text('Chưa có hợp đồng nào', style: TextStyle(fontSize: 16)),
+                const Text('Chưa có hợp đồng nào',
+                    style: TextStyle(fontSize: 16)),
               ],
             ),
           );
@@ -271,10 +286,11 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: doc.status.color.withOpacity(0.1),
+          backgroundColor: doc.status.color.withValues(alpha: 0.1),
           child: Icon(doc.type.icon, color: doc.status.color),
         ),
-        title: Text(doc.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(doc.title,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -315,7 +331,7 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
                 const PopupMenuItem(value: 'verify', child: Text('Xác minh')),
                 const PopupMenuItem(value: 'delete', child: Text('Xóa')),
               ],
-              onSelected: (value) => _handleDocumentAction(value as String, doc),
+              onSelected: (value) => _handleDocumentAction(value, doc),
             ),
           ],
         ),
@@ -329,7 +345,7 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: contract.status.color.withOpacity(0.1),
+          backgroundColor: contract.status.color.withValues(alpha: 0.1),
           child: Icon(Icons.description, color: contract.status.color),
         ),
         title: Text(
@@ -342,22 +358,26 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
             const SizedBox(height: 4),
             Text('Số HĐ: ${contract.contractNumber}'),
             Text('Loại: ${contract.type.label}'),
-            Text('Từ ${_formatDate(contract.startDate)}${contract.endDate != null ? " đến ${_formatDate(contract.endDate!)}" : " (Không xác định)"}'),
+            Text(
+                'Từ ${_formatDate(contract.startDate)}${contract.endDate != null ? " đến ${_formatDate(contract.endDate!)}" : " (Không xác định)"}'),
             if (contract.isExpiringSoon && !contract.isExpired)
               Text(
                 'Sắp hết hạn (còn ${contract.daysRemaining} ngày)',
-                style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.orange, fontWeight: FontWeight.bold),
               ),
             if (contract.isExpired)
               const Text(
                 'Đã hết hạn',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
               ),
           ],
         ),
         trailing: Chip(
-          label: Text(contract.status.label, style: const TextStyle(fontSize: 12)),
-          backgroundColor: contract.status.color.withOpacity(0.1),
+          label:
+              Text(contract.status.label, style: const TextStyle(fontSize: 12)),
+          backgroundColor: contract.status.color.withValues(alpha: 0.1),
           labelStyle: TextStyle(color: contract.status.color),
         ),
         isThreeLine: true,
@@ -396,8 +416,9 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
               _buildDetailRow('Nhân viên:', doc.employeeName),
               _buildDetailRow('Loại:', doc.type.label),
               _buildDetailRow('Trạng thái:', doc.status.label),
-              if (doc.description != null) _buildDetailRow('Mô tả:', doc.description!),
-              if (doc.expiryDate != null) 
+              if (doc.description != null)
+                _buildDetailRow('Mô tả:', doc.description!),
+              if (doc.expiryDate != null)
                 _buildDetailRow('Ngày hết hạn:', _formatDate(doc.expiryDate!)),
               _buildDetailRow('Ngày upload:', _formatDate(doc.uploadDate)),
               _buildDetailRow('Đã xác minh:', doc.isVerified ? 'Có' : 'Chưa'),
@@ -423,7 +444,8 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
         children: [
           SizedBox(
             width: 120,
-            child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(label,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
           Expanded(child: Text(value)),
         ],
@@ -438,7 +460,9 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
       ref.invalidateEmployeeDocuments(widget.companyId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã xác minh tài liệu'), backgroundColor: Colors.green),
+          const SnackBar(
+              content: Text('Đã xác minh tài liệu'),
+              backgroundColor: Colors.green),
         );
       }
     } catch (e) {
@@ -477,7 +501,9 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
         ref.invalidateEmployeeDocuments(widget.companyId);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã xóa tài liệu'), backgroundColor: Colors.green),
+            const SnackBar(
+                content: Text('Đã xóa tài liệu'),
+                backgroundColor: Colors.green),
           );
         }
       } catch (e) {

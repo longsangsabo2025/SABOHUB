@@ -50,8 +50,6 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
       // Store email before async call
       final email = _emailController.text.trim();
 
-      print('🔵 SignUp started - Email: $email, Role: ${_selectedRole.name}');
-
       final success = await ref.read(authProvider.notifier).signUp(
             name: _nameController.text.trim(),
             email: email,
@@ -60,24 +58,14 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
             role: _selectedRole,
           );
 
-      print('🟡 SignUp returned: $success');
-
       if (success) {
-        print('🟢 Signup success! Redirecting immediately...');
-
         // Navigate IMMEDIATELY to email verification - no dialog, no delay, no bullshit
         final route = '/email-verification?email=${Uri.encodeComponent(email)}';
-        print('🔵 Navigating to: $route');
 
         if (mounted) {
           context.go(route);
-          print('� Navigation completed');
-        } else {
-          print('🔴 Widget not mounted, cannot navigate');
         }
       } else {
-        print('� Signup failed!');
-
         if (!mounted) return;
 
         setState(() => _isLoading = false);
@@ -89,7 +77,6 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
         _showErrorSnackBar(errorMessage);
       }
     } catch (e) {
-      print('🔴 Exception during signup: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         _showErrorSnackBar('Lỗi hệ thống: $e');
@@ -106,14 +93,14 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
     );
   }
 
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
+  // void _showSuccessSnackBar(String message) {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Text(message),
+  //       backgroundColor: Colors.green,
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +202,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
 
                 // Role selection
                 DropdownButtonFormField<UserRole>(
-                  value: _selectedRole,
+                  initialValue: _selectedRole,
                   decoration: const InputDecoration(
                     labelText: 'Vai trò *',
                     prefixIcon: Icon(Icons.work_outline),
@@ -396,8 +383,6 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
       case UserRole.shiftLeader:
         return 'Shift Leader - Trưởng ca';
       case UserRole.staff:
-        return 'Staff - Nhân viên';
-      default:
         return 'Staff - Nhân viên';
     }
   }

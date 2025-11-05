@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/bill.dart';
 
@@ -45,11 +46,7 @@ class BillService {
     DateTime? fromDate,
     DateTime? toDate,
   }) async {
-    var query = _supabase
-        .from('bills')
-        .select()
-        .eq('company_id', companyId)
-        .order('bill_date', ascending: false);
+    var query = _supabase.from('bills').select().eq('company_id', companyId);
 
     if (status != null) {
       query = query.eq('status', status);
@@ -63,7 +60,7 @@ class BillService {
       query = query.lte('bill_date', toDate.toIso8601String());
     }
 
-    final response = await query;
+    final response = await query.order('bill_date', ascending: false);
     return (response as List).map((json) => Bill.fromJson(json)).toList();
   }
 
@@ -139,15 +136,14 @@ class BillService {
     String fileExtension,
   ) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final fileName = '$companyId/$billNumber\_$timestamp.$fileExtension';
+    final fileName = '$companyId/${billNumber}_$timestamp.$fileExtension';
 
     await _supabase.storage.from('bills').uploadBinary(
           fileName,
-          imageBytes,
+          Uint8List.fromList(imageBytes),
         );
 
-    final publicUrl =
-        _supabase.storage.from('bills').getPublicUrl(fileName);
+    final publicUrl = _supabase.storage.from('bills').getPublicUrl(fileName);
 
     return publicUrl;
   }
@@ -176,6 +172,7 @@ class BillService {
         .stream(primaryKey: ['id'])
         .eq('company_id', companyId)
         .order('bill_date', ascending: false)
-        .map((data) => (data as List).map((json) => Bill.fromJson(json)).toList());
+        .map((data) =>
+            (data as List).map((json) => Bill.fromJson(json)).toList());
   }
 }

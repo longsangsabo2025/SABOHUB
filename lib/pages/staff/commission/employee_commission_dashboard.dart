@@ -56,7 +56,8 @@ class _EmployeeCommissionDashboardState
 
   @override
   Widget build(BuildContext context) {
-    final userId = ref.watch(authProvider).value?.id;
+    final authState = ref.watch(authProvider);
+    final userId = authState.user?.id;
 
     if (userId == null) {
       return const Center(child: Text('Vui lòng đăng nhập'));
@@ -120,8 +121,7 @@ class _EmployeeCommissionDashboardState
                     );
                   }
 
-                  final summary =
-                      snapshot.data ?? CommissionSummary.empty();
+                  final summary = snapshot.data ?? CommissionSummary.empty();
 
                   return _buildSummaryCards(summary);
                 },
@@ -299,7 +299,7 @@ class _EmployeeCommissionDashboardState
       elevation: 1,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: statusColor.withOpacity(0.2),
+          backgroundColor: statusColor.withValues(alpha: 0.2),
           child: Text(
             status.emoji,
             style: const TextStyle(fontSize: 24),
@@ -329,7 +329,7 @@ class _EmployeeCommissionDashboardState
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
+            color: statusColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(

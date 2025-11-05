@@ -9,6 +9,17 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  errors:
+    # Suppress specific lint rules
+    deprecated_member_use: ignore
+    avoid_web_libraries_in_flutter: ignore
+    avoid_print: ignore
+  exclude:
+    # Ignore certain files
+    - '**/*.g.dart'
+    - '**/*.freezed.dart'
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

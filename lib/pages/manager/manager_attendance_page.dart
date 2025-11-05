@@ -224,7 +224,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: Colors.blue.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -247,7 +247,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
             formattedDate,
             style: TextStyle(
               fontSize: 16,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
             ),
           ),
           const SizedBox(height: 24),
@@ -264,7 +264,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -293,7 +293,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
           Container(
             width: 1,
             height: 40,
-            color: Colors.white.withOpacity(0.3),
+            color: Colors.white.withValues(alpha: 0.3),
           ),
           Column(
             children: [
@@ -370,8 +370,9 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
           const SizedBox(width: 16),
           Expanded(
             child: ElevatedButton.icon(
-              onPressed:
-                  !hasCheckedIn || hasCheckedOut || _isLoading ? null : _checkOut,
+              onPressed: !hasCheckedIn || hasCheckedOut || _isLoading
+                  ? null
+                  : _checkOut,
               icon: const Icon(Icons.logout),
               label: const Text('Chấm công ra'),
               style: ElevatedButton.styleFrom(

@@ -341,7 +341,7 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
                     !isUser ? Border.all(color: const Color(0xFFE5E7EB)) : null,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -375,7 +375,7 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
                     style: TextStyle(
                       fontSize: 11,
                       color: isUser
-                          ? Colors.white.withOpacity(0.7)
+                          ? Colors.white.withValues(alpha: 0.7)
                           : const Color(0xFF9CA3AF),
                     ),
                   ),

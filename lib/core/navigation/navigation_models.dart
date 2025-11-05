@@ -65,6 +65,14 @@ class NavigationConfig {
       label: 'Tin nhắn',
       allowedRoles: [UserRole.staff, UserRole.shiftLeader, UserRole.manager],
     ),
+    // Company Info (for Staff and Shift Leader)
+    NavigationItem(
+      route: '/common/company-info',
+      icon: Icons.business,
+      activeIcon: Icons.business,
+      label: 'Công ty',
+      allowedRoles: [UserRole.staff, UserRole.shiftLeader],
+    ),
 
     // Shift Leader Navigation
     NavigationItem(
@@ -164,7 +172,12 @@ class NavigationConfig {
       icon: Icons.account_balance_wallet,
       activeIcon: Icons.account_balance_wallet,
       label: 'Hoa hồng',
-      allowedRoles: [UserRole.staff, UserRole.shiftLeader, UserRole.manager, UserRole.ceo],
+      allowedRoles: [
+        UserRole.staff,
+        UserRole.shiftLeader,
+        UserRole.manager,
+        UserRole.ceo
+      ],
     ),
     NavigationItem(
       route: '/commission/bills',
@@ -201,16 +214,26 @@ class NavigationConfig {
   static List<NavigationItem> getNavigationForRole(UserRole role) {
     switch (role) {
       case UserRole.staff:
-        return getItemsForRole(role)
-            .take(4)
-            .toList(); // First 4 items (removed Profile tab)
+        // Staff has 5 pages: Tables, Check-in, Tasks, Messages, Company Info
+        return getItemsForRole(role).take(5).toList();
       case UserRole.shiftLeader:
-        // ShiftLeader has only 3 pages: Tasks, Team, Reports
+        // ShiftLeader has 6 pages: Tasks, Check-in, Messages, Team, Reports, Company Info
         return [
+          // Page 1: Tasks (from staff)
           getItemsForRole(UserRole.staff)
               .firstWhere((item) => item.route == '/staff/tasks'),
+          // Page 2: Check-in (from staff)
+          getItemsForRole(UserRole.staff)
+              .firstWhere((item) => item.route == '/staff/checkin'),
+          // Page 3: Messages (from staff)
+          getItemsForRole(UserRole.staff)
+              .firstWhere((item) => item.route == '/staff/messages'),
+          // Page 4-5: Team & Reports (shift leader specific)
           ...getItemsForRole(role)
               .where((item) => item.route.startsWith('/shift-leader')),
+          // Page 6: Company Info (common route)
+          getItemsForRole(UserRole.shiftLeader)
+              .firstWhere((item) => item.route == '/common/company-info'),
         ];
       case UserRole.manager:
         return getItemsForRole(role)

@@ -57,14 +57,13 @@ class Document extends Equatable {
       uploadedBy: json['uploaded_by'] as String,
       documentType: json['document_type'] as String? ?? 'general',
       category: json['category'] as String?,
-      tags: json['tags'] != null 
-          ? List<String>.from(json['tags'] as List) 
-          : null,
+      tags:
+          json['tags'] != null ? List<String>.from(json['tags'] as List) : null,
       description: json['description'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      deletedAt: json['deleted_at'] != null 
-          ? DateTime.parse(json['deleted_at'] as String) 
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
           : null,
       isDeleted: json['is_deleted'] as bool? ?? false,
     );
@@ -118,8 +117,10 @@ class Document extends Equatable {
     return Document(
       id: id ?? this.id,
       googleDriveFileId: googleDriveFileId ?? this.googleDriveFileId,
-      googleDriveWebViewLink: googleDriveWebViewLink ?? this.googleDriveWebViewLink,
-      googleDriveDownloadLink: googleDriveDownloadLink ?? this.googleDriveDownloadLink,
+      googleDriveWebViewLink:
+          googleDriveWebViewLink ?? this.googleDriveWebViewLink,
+      googleDriveDownloadLink:
+          googleDriveDownloadLink ?? this.googleDriveDownloadLink,
       fileName: fileName ?? this.fileName,
       fileType: fileType ?? this.fileType,
       fileSize: fileSize ?? this.fileSize,
@@ -140,16 +141,16 @@ class Document extends Equatable {
   /// Get file size in human readable format
   String get fileSizeFormatted {
     if (fileSize == null) return 'Unknown';
-    
+
     const units = ['B', 'KB', 'MB', 'GB'];
     var size = fileSize!.toDouble();
     var unitIndex = 0;
-    
+
     while (size >= 1024 && unitIndex < units.length - 1) {
       size /= 1024;
       unitIndex++;
     }
-    
+
     return '${size.toStringAsFixed(2)} ${units[unitIndex]}';
   }
 
@@ -160,8 +161,12 @@ class Document extends Equatable {
     if (fileType.contains('video')) return '🎥';
     if (fileType.contains('audio')) return '🎵';
     if (fileType.contains('word') || fileType.contains('document')) return '📝';
-    if (fileType.contains('excel') || fileType.contains('spreadsheet')) return '📊';
-    if (fileType.contains('powerpoint') || fileType.contains('presentation')) return '📊';
+    if (fileType.contains('excel') || fileType.contains('spreadsheet')) {
+      return '📊';
+    }
+    if (fileType.contains('powerpoint') || fileType.contains('presentation')) {
+      return '📊';
+    }
     if (fileType.contains('zip') || fileType.contains('rar')) return '🗜️';
     return '📎';
   }

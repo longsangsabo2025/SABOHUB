@@ -33,7 +33,7 @@ class SimpleAccountSwitcher extends ConsumerWidget {
     }
 
     final authState = ref.watch(authProvider);
-    final currentEmail = authState.user?.email;
+    /*final currentEmail = */authState.user?.email;
 
     return PopupMenuButton<String>(
       icon: Container(
@@ -103,7 +103,7 @@ class SimpleAccountSwitcher extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 20, color: color),
@@ -279,9 +279,6 @@ class SimpleAccountSwitcher extends ConsumerWidget {
       );
     }
 
-    print('🔄 Switching to $accountName account...');
-    print('📧 Email: $email');
-
     try {
       final success = await authNotifier.login(email, password);
 
@@ -307,7 +304,6 @@ class SimpleAccountSwitcher extends ConsumerWidget {
         }
       }
     } catch (e) {
-      print('🔴 Login error: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

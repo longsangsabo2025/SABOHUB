@@ -36,8 +36,9 @@ class EmployeeDocumentService {
         query = query.eq('status', status.name) as dynamic;
       }
 
-      final response = await (query as dynamic).order('upload_date', ascending: false);
-      
+      final response =
+          await (query as dynamic).order('upload_date', ascending: false);
+
       return (response as List)
           .map((json) => EmployeeDocument.fromJson(json))
           .toList();
@@ -71,8 +72,9 @@ class EmployeeDocumentService {
         query = query.eq('status', status.name) as dynamic;
       }
 
-      final response = await (query as dynamic).order('created_at', ascending: false);
-      
+      final response =
+          await (query as dynamic).order('created_at', ascending: false);
+
       return (response as List)
           .map((json) => LaborContract.fromJson(json))
           .toList();
@@ -201,26 +203,23 @@ class EmployeeDocumentService {
         throw Exception('User not authenticated');
       }
 
-      await _supabase
-          .from('employee_documents')
-          .update({
-            'is_verified': true,
-            'verified_date': DateTime.now().toIso8601String(),
-            'verified_by': currentUser.id,
-          })
-          .eq('id', documentId);
+      await _supabase.from('employee_documents').update({
+        'is_verified': true,
+        'verified_date': DateTime.now().toIso8601String(),
+        'verified_by': currentUser.id,
+      }).eq('id', documentId);
     } catch (e) {
       throw Exception('Failed to verify document: $e');
     }
   }
 
   /// Cập nhật trạng thái tài liệu
-  Future<void> updateDocumentStatus(String documentId, DocumentStatus status) async {
+  Future<void> updateDocumentStatus(
+      String documentId, DocumentStatus status) async {
     try {
       await _supabase
           .from('employee_documents')
-          .update({'status': status.name})
-          .eq('id', documentId);
+          .update({'status': status.name}).eq('id', documentId);
     } catch (e) {
       throw Exception('Failed to update document status: $e');
     }
@@ -229,10 +228,7 @@ class EmployeeDocumentService {
   /// Xóa tài liệu
   Future<void> deleteDocument(String documentId) async {
     try {
-      await _supabase
-          .from('employee_documents')
-          .delete()
-          .eq('id', documentId);
+      await _supabase.from('employee_documents').delete().eq('id', documentId);
     } catch (e) {
       throw Exception('Failed to delete document: $e');
     }
@@ -311,8 +307,7 @@ class EmployeeDocumentService {
       // Cập nhật trạng thái hợp đồng cũ
       await _supabase
           .from('labor_contracts')
-          .update({'status': 'expired'})
-          .eq('id', oldContractId);
+          .update({'status': 'expired'}).eq('id', oldContractId);
 
       // Tạo hợp đồng mới
       final currentUser = _supabase.auth.currentUser;

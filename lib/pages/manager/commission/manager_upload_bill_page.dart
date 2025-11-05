@@ -14,8 +14,7 @@ class ManagerUploadBillPage extends ConsumerStatefulWidget {
       _ManagerUploadBillPageState();
 }
 
-class _ManagerUploadBillPageState
-    extends ConsumerState<ManagerUploadBillPage> {
+class _ManagerUploadBillPageState extends ConsumerState<ManagerUploadBillPage> {
   final _formKey = GlobalKey<FormState>();
   final _billService = BillService();
 

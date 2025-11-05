@@ -41,7 +41,6 @@ class DocumentService {
           .map((json) => AIUploadedFile.fromJson(json))
           .toList();
     } catch (e) {
-      print('❌ Error fetching documents: $e');
       return [];
     }
   }
@@ -50,13 +49,13 @@ class DocumentService {
   Future<Map<String, dynamic>> analyzeDocuments(String companyId) async {
     try {
       final docs = await getCompanyDocuments(companyId);
-      
+
       // Extract insights from documents
       final orgChart = _extractOrgChart(docs);
       final tasks = _extractTasks(docs);
       final kpis = _extractKPIs(docs);
       final programs = _extractPrograms(docs);
-      
+
       return {
         'total_documents': docs.length,
         'org_chart': orgChart,
@@ -66,7 +65,6 @@ class DocumentService {
         'last_updated': DateTime.now().toIso8601String(),
       };
     } catch (e) {
-      print('❌ Error analyzing documents: $e');
       return {
         'total_documents': 0,
         'error': e.toString(),
@@ -77,14 +75,15 @@ class DocumentService {
   /// Extract organizational chart from documents
   Map<String, dynamic> _extractOrgChart(List<AIUploadedFile> docs) {
     final orgDoc = docs.firstWhere(
-      (doc) => doc.fileName.contains('Sơ đồ tổ chức') || 
-               doc.fileName.contains('tổ chức'),
+      (doc) =>
+          doc.fileName.contains('Sơ đồ tổ chức') ||
+          doc.fileName.contains('tổ chức'),
       orElse: () => docs.first,
     );
 
     // Parse the document to extract positions
-    final text = orgDoc.extractedText ?? '';
-    
+    /*final text = */orgDoc.extractedText ?? '';
+
     return {
       'positions': [
         {
@@ -129,9 +128,10 @@ class DocumentService {
 
   /// Extract tasks from checklist documents
   List<Map<String, dynamic>> _extractTasks(List<AIUploadedFile> docs) {
-    final checklistDoc = docs.firstWhere(
-      (doc) => doc.fileName.contains('Checksheet') || 
-               doc.fileName.contains('vệ sinh'),
+    /*final checklistDoc = */docs.firstWhere(
+      (doc) =>
+          doc.fileName.contains('Checksheet') ||
+          doc.fileName.contains('vệ sinh'),
       orElse: () => docs.first,
     );
 

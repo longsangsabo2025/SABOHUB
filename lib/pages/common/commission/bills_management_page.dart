@@ -5,7 +5,7 @@ import '../../../models/bill.dart';
 import '../../../services/bill_service.dart';
 import '../../../services/commission_service.dart';
 import '../../../providers/auth_provider.dart';
-import './manager_upload_bill_page.dart';
+import '../../manager/commission/manager_upload_bill_page.dart';
 
 /// Bills Management Page - CEO/Manager xem và quản lý bills
 class BillsManagementPage extends ConsumerStatefulWidget {
@@ -190,13 +190,13 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final bill = bills[index];
-                return _buildBillCard(bill, userRole);
+                return _buildBillCard(bill, userRole?.name);
               },
             ),
           );
         },
       ),
-      floatingActionButton: userRole == 'manager' || userRole == 'ceo'
+      floatingActionButton: userRole?.name == 'manager' || userRole?.name == 'ceo'
           ? FloatingActionButton.extended(
               onPressed: () async {
                 final result = await Navigator.push(
@@ -240,7 +240,7 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
       elevation: 2,
       child: ExpansionTile(
         leading: CircleAvatar(
-          backgroundColor: statusColor.withOpacity(0.2),
+          backgroundColor: statusColor.withValues(alpha: 0.2),
           child: Text(
             status.emoji,
             style: const TextStyle(fontSize: 24),
@@ -275,7 +275,7 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
+            color: statusColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(

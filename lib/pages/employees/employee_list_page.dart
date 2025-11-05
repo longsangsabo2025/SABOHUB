@@ -297,9 +297,9 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -317,7 +317,7 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
             title,
             style: TextStyle(
               fontSize: 12,
-              color: color.withOpacity(0.8),
+              color: color.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -382,7 +382,8 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
             // Avatar
             CircleAvatar(
               radius: 28,
-              backgroundColor: _getRoleColor(employee.role).withOpacity(0.1),
+              backgroundColor:
+                  _getRoleColor(employee.role).withValues(alpha: 0.1),
               child: employee.avatar != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(28),
@@ -522,8 +523,8 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isActive
-            ? Colors.green.withOpacity(0.1)
-            : Colors.red.withOpacity(0.1),
+            ? Colors.green.withValues(alpha: 0.1)
+            : Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
@@ -542,7 +543,7 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: roleInfo['color'].withOpacity(0.1),
+        color: roleInfo['color'].withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -631,13 +632,18 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
   }
 
   Widget _buildRoleFilterOption(UserRole? role, String title) {
-    return RadioListTile<UserRole?>(
+    final isSelected = _filterRole == role;
+    return ListTile(
       title: Text(title),
-      value: role,
-      groupValue: _filterRole,
-      onChanged: (value) {
+      leading: Radio<UserRole?>(
+        value: role,
+        groupValue: _filterRole,
+        onChanged: null,
+      ),
+      selected: isSelected,
+      onTap: () {
         setState(() {
-          _filterRole = value;
+          _filterRole = role;
         });
         Navigator.pop(context);
       },
@@ -662,13 +668,18 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
   }
 
   Widget _buildSortOption(String value, String title) {
-    return RadioListTile<String>(
+    final isSelected = _sortBy == value;
+    return ListTile(
       title: Text(title),
-      value: value,
-      groupValue: _sortBy,
-      onChanged: (newValue) {
+      leading: Radio<String>(
+        value: value,
+        groupValue: _sortBy,
+        onChanged: null,
+      ),
+      selected: isSelected,
+      onTap: () {
         setState(() {
-          _sortBy = newValue!;
+          _sortBy = value;
         });
         Navigator.pop(context);
       },

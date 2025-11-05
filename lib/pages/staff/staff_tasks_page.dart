@@ -187,7 +187,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
       data: (tasks) {
         // Filter tasks assigned to current user
         final userTasks =
-            tasks.where((task) => task.assigneeId == user.id).toList();
+            tasks.where((task) => task.assignedTo == user.id).toList();
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -1097,6 +1097,8 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
   }
 
   Future<void> _updateTaskStatus(Task task) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
     try {
       final nextStatus = task.status == TaskStatus.todo
           ? TaskStatus.inProgress
@@ -1110,7 +1112,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
       // Invalidate providers to refresh data
       ref.invalidate(tasksByStatusProvider);
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text(nextStatus == TaskStatus.inProgress
               ? '✅ Đã bắt đầu nhiệm vụ'
@@ -1119,7 +1121,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('❌ Lỗi: $e'),
           backgroundColor: Colors.red,

@@ -9,7 +9,6 @@ import '../pages/manager/manager_dashboard_page.dart';
 import '../pages/manager/manager_staff_page.dart';
 import '../pages/manager/manager_tasks_page.dart';
 import '../widgets/dev_role_switcher.dart';
-import '../widgets/quick_account_switcher.dart';
 import '../widgets/unified_bottom_navigation.dart';
 
 /// Manager Main Layout

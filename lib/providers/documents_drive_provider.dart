@@ -155,9 +155,8 @@ class DocumentsNotifier extends Notifier<DocumentsState> {
       }
 
       // Extract file info
-      final fileExtension = fileName.contains('.')
-          ? fileName.split('.').last
-          : null;
+      final fileExtension =
+          fileName.contains('.') ? fileName.split('.').last : null;
 
       // Save metadata to Supabase
       final document = await _repository.createDocument(
@@ -234,9 +233,8 @@ class DocumentsNotifier extends Notifier<DocumentsState> {
 
       // Update state
       state = state.copyWith(
-        documents: state.documents
-            .where((doc) => doc.id != document.id)
-            .toList(),
+        documents:
+            state.documents.where((doc) => doc.id != document.id).toList(),
         isLoading: false,
       );
 
@@ -312,7 +310,8 @@ class DocumentsNotifier extends Notifier<DocumentsState> {
   }
 
   /// Get documents by type
-  Future<void> loadDocumentsByType(String companyId, String documentType) async {
+  Future<void> loadDocumentsByType(
+      String companyId, String documentType) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
       final documents = await _repository.getDocumentsByType(

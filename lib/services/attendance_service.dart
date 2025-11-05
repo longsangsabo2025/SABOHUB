@@ -14,7 +14,7 @@ class AttendanceService {
   final _supabase = Supabase.instance.client;
 
   /// Get all attendance records for a company on a specific date
-  /// 
+  ///
   /// [companyId] - Company ID to filter by
   /// [date] - Date to filter by (optional, defaults to today)
   Future<List<AttendanceRecord>> getCompanyAttendance({
@@ -23,7 +23,8 @@ class AttendanceService {
   }) async {
     try {
       final targetDate = date ?? DateTime.now();
-      final startOfDay = DateTime(targetDate.year, targetDate.month, targetDate.day);
+      final startOfDay =
+          DateTime(targetDate.year, targetDate.month, targetDate.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
 
       // Query attendance with user information
@@ -68,13 +69,12 @@ class AttendanceService {
 
       return records;
     } catch (e) {
-      print('Error fetching company attendance: $e');
       rethrow;
     }
   }
 
   /// Get attendance records for a specific user
-  /// 
+  ///
   /// [userId] - User ID to filter by
   /// [startDate] - Start date for the range
   /// [endDate] - End date for the range
@@ -84,7 +84,8 @@ class AttendanceService {
     DateTime? endDate,
   }) async {
     try {
-      final start = startDate ?? DateTime.now().subtract(const Duration(days: 30));
+      final start =
+          startDate ?? DateTime.now().subtract(const Duration(days: 30));
       final end = endDate ?? DateTime.now().add(const Duration(days: 1));
 
       final response = await _supabase
@@ -126,13 +127,12 @@ class AttendanceService {
 
       return records;
     } catch (e) {
-      print('Error fetching user attendance: $e');
       rethrow;
     }
   }
 
   /// Check in for a user
-  /// 
+  ///
   /// [userId] - User ID
   /// [storeId] - Store ID
   /// [shiftId] - Shift ID (optional)
@@ -147,7 +147,7 @@ class AttendanceService {
   }) async {
     try {
       final now = DateTime.now();
-      
+
       final response = await _supabase.from('attendance').insert({
         'user_id': userId,
         'store_id': storeId,
@@ -185,13 +185,12 @@ class AttendanceService {
 
       return AttendanceRecord.fromSupabase(response);
     } catch (e) {
-      print('Error checking in: $e');
       rethrow;
     }
   }
 
   /// Check out for a user
-  /// 
+  ///
   /// [attendanceId] - Attendance record ID
   /// [location] - Check-out location (optional)
   Future<AttendanceRecord> checkOut({
@@ -200,7 +199,7 @@ class AttendanceService {
   }) async {
     try {
       final now = DateTime.now();
-      
+
       // Get current attendance record to calculate total hours
       final current = await _supabase
           .from('attendance')
@@ -212,12 +211,16 @@ class AttendanceService {
       final duration = now.difference(checkInTime);
       final totalHours = duration.inMinutes / 60.0;
 
-      final response = await _supabase.from('attendance').update({
-        'check_out': now.toIso8601String(),
-        'check_out_location': location,
-        'total_hours': totalHours,
-        'is_early_leave': false, // TODO: Calculate based on shift end time
-      }).eq('id', attendanceId).select('''
+      final response = await _supabase
+          .from('attendance')
+          .update({
+            'check_out': now.toIso8601String(),
+            'check_out_location': location,
+            'total_hours': totalHours,
+            'is_early_leave': false, // TODO: Calculate based on shift end time
+          })
+          .eq('id', attendanceId)
+          .select('''
         id,
         user_id,
         store_id,
@@ -242,11 +245,11 @@ class AttendanceService {
           id,
           name
         )
-      ''').single();
+      ''')
+          .single();
 
       return AttendanceRecord.fromSupabase(response);
     } catch (e) {
-      print('Error checking out: $e');
       rethrow;
     }
   }
@@ -297,7 +300,6 @@ class AttendanceService {
 
       return AttendanceRecord.fromSupabase(response);
     } catch (e) {
-      print('Error fetching today attendance: $e');
       return null;
     }
   }
@@ -313,7 +315,7 @@ class AttendanceService {
   }) async {
     try {
       final updates = <String, dynamic>{};
-      
+
       if (checkIn != null) updates['check_in'] = checkIn.toIso8601String();
       if (checkOut != null) updates['check_out'] = checkOut.toIso8601String();
       if (isLate != null) updates['is_late'] = isLate;
@@ -355,12 +357,10 @@ class AttendanceService {
               id,
               name
             )
-          ''')
-          .single();
+          ''').single();
 
       return AttendanceRecord.fromSupabase(response);
     } catch (e) {
-      print('Error updating attendance: $e');
       rethrow;
     }
   }
@@ -368,12 +368,8 @@ class AttendanceService {
   /// Delete attendance record
   Future<void> deleteAttendance(String attendanceId) async {
     try {
-      await _supabase
-          .from('attendance')
-          .delete()
-          .eq('id', attendanceId);
+      await _supabase.from('attendance').delete().eq('id', attendanceId);
     } catch (e) {
-      print('Error deleting attendance: $e');
       rethrow;
     }
   }
@@ -467,7 +463,8 @@ class AttendanceRecord {
     if (!isLate) return 0;
     // TODO: Calculate based on shift start time
     // For now, assume 8:00 AM is the standard start time
-    final standardStart = DateTime(checkIn.year, checkIn.month, checkIn.day, 8, 0);
+    final standardStart =
+        DateTime(checkIn.year, checkIn.month, checkIn.day, 8, 0);
     if (checkIn.isAfter(standardStart)) {
       return checkIn.difference(standardStart).inMinutes;
     }

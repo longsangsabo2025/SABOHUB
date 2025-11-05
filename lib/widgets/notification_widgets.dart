@@ -39,7 +39,7 @@ class NotificationBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -71,7 +71,7 @@ class NotificationBanner extends StatelessWidget {
                   message,
                   style: TextStyle(
                     fontSize: 14,
-                    color: config.textColor.withOpacity(0.8),
+                    color: config.textColor.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -87,7 +87,7 @@ class NotificationBanner extends StatelessWidget {
               onPressed: onDismiss,
               icon: Icon(
                 Icons.close,
-                color: config.textColor.withOpacity(0.7),
+                color: config.textColor.withValues(alpha: 0.7),
                 size: 20,
               ),
               padding: EdgeInsets.zero,
@@ -185,7 +185,7 @@ class LoadingOverlay extends StatelessWidget {
     if (!isVisible) return const SizedBox.shrink();
 
     return Container(
-      color: Colors.black.withOpacity(0.3),
+      color: Colors.black.withValues(alpha: 0.3),
       child: Center(
         child: Container(
           padding: const EdgeInsets.all(24),
@@ -194,7 +194,7 @@ class LoadingOverlay extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),
@@ -257,7 +257,7 @@ class NotificationFloatingButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(50),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),

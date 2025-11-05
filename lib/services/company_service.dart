@@ -83,10 +83,8 @@ class CompanyService {
           phone: phone, // Dùng số điện thoại công ty
           email: email, // Dùng email công ty
         );
-        print('✅ Đã tự động tạo chi nhánh Trung tâm cho công ty ${company.name}');
       } catch (branchError) {
         // Không throw error nếu tạo chi nhánh thất bại, công ty vẫn được tạo
-        print('⚠️ Không thể tạo chi nhánh Trung tâm: $branchError');
       }
 
       return company;

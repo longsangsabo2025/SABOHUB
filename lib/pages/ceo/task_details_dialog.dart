@@ -27,7 +27,7 @@ class TaskDetailsDialog extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 border: Border(
                   bottom: BorderSide(
                     color: Colors.grey.shade300,
@@ -48,16 +48,20 @@ class TaskDetailsDialog extends ConsumerWidget {
                       children: [
                         Text(
                           'Chi tiết công việc',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Xem thông tin chi tiết',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey.shade600,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey.shade600,
+                                  ),
                         ),
                       ],
                     ),
@@ -94,19 +98,18 @@ class TaskDetailsDialog extends ConsumerWidget {
                     const SizedBox(height: 24),
 
                     // Description Section
-                    if (task.description != null && task.description!.isNotEmpty)
+                    if (task.description.isNotEmpty)
                       _buildSection(
                         context,
                         'Mô tả',
                         Icons.description,
                         Text(
-                          task.description!,
+                          task.description,
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ),
 
-                    if (task.description != null && task.description!.isNotEmpty)
-                      const SizedBox(height: 24),
+                    if (task.description.isNotEmpty) const SizedBox(height: 24),
 
                     // Status & Priority Row
                     Row(
@@ -144,7 +147,8 @@ class TaskDetailsDialog extends ConsumerWidget {
                     const SizedBox(height: 24),
 
                     // Assigned To Section
-                    if (task.assignedToName != null && task.assignedToName!.isNotEmpty)
+                    if (task.assignedToName != null &&
+                        task.assignedToName!.isNotEmpty)
                       _buildSection(
                         context,
                         'Người được giao',
@@ -167,53 +171,56 @@ class TaskDetailsDialog extends ConsumerWidget {
                         ),
                       ),
 
-                    if (task.assignedToName != null && task.assignedToName!.isNotEmpty)
+                    if (task.assignedToName != null &&
+                        task.assignedToName!.isNotEmpty)
                       const SizedBox(height: 24),
 
                     // Due Date Section
-                    if (task.dueDate != null)
-                      _buildSection(
-                        context,
-                        'Hạn hoàn thành',
-                        Icons.calendar_today,
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.event,
-                              color: _isDueDateOverdue(task.dueDate!)
-                                  ? Colors.red
-                                  : Theme.of(context).primaryColor,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              DateFormat('dd/MM/yyyy HH:mm').format(task.dueDate!),
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: _isDueDateOverdue(task.dueDate!)
-                                        ? Colors.red
-                                        : null,
-                                    fontWeight: _isDueDateOverdue(task.dueDate!)
-                                        ? FontWeight.bold
-                                        : null,
-                                  ),
-                            ),
-                            if (_isDueDateOverdue(task.dueDate!)) ...[
-                              const SizedBox(width: 8),
-                              const Text(
-                                '(Quá hạn)',
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.bold,
+                    _buildSection(
+                      context,
+                      'Hạn hoàn thành',
+                      Icons.calendar_today,
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.event,
+                            color: _isDueDateOverdue(task.dueDate)
+                                ? Colors.red
+                                : Theme.of(context).primaryColor,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            DateFormat('dd/MM/yyyy HH:mm').format(task.dueDate),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyLarge
+                                ?.copyWith(
+                                  color: _isDueDateOverdue(task.dueDate)
+                                      ? Colors.red
+                                      : null,
+                                  fontWeight: _isDueDateOverdue(task.dueDate)
+                                      ? FontWeight.bold
+                                      : null,
                                 ),
+                          ),
+                          if (_isDueDateOverdue(task.dueDate)) ...[
+                            const SizedBox(width: 8),
+                            const Text(
+                              '(Quá hạn)',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
                               ),
-                            ],
+                            ),
                           ],
-                        ),
+                        ],
                       ),
+                    ),
 
-                    if (task.dueDate != null) const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
                     // Created By Section
-                    if (task.createdByName != null && task.createdByName!.isNotEmpty)
+                    if (task.createdByName.isNotEmpty)
                       _buildSection(
                         context,
                         'Người tạo',
@@ -223,20 +230,20 @@ class TaskDetailsDialog extends ConsumerWidget {
                             CircleAvatar(
                               backgroundColor: Colors.grey.shade300,
                               child: Text(
-                                task.createdByName![0].toUpperCase(),
+                                task.createdByName[0].toUpperCase(),
                                 style: TextStyle(color: Colors.grey.shade700),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              task.createdByName!,
+                              task.createdByName,
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
                           ],
                         ),
                       ),
 
-                    if (task.createdByName != null && task.createdByName!.isNotEmpty)
+                    if (task.createdByName.isNotEmpty)
                       const SizedBox(height: 24),
 
                     // Created At Section
@@ -307,15 +314,16 @@ class TaskDetailsDialog extends ConsumerWidget {
                     onPressed: () async {
                       // Close this dialog first
                       Navigator.of(context).pop(false);
-                      
+
                       // Open edit dialog
                       final result = await showDialog<bool>(
                         context: context,
                         builder: (context) => EditTaskDialog(
                           task: task,
+                          companyId: task.companyId ?? '', // Use companyId from task
                         ),
                       );
-                      
+
                       // If edit was successful, notify parent to refresh
                       if (result == true && context.mounted) {
                         // Return true to indicate data changed
@@ -395,7 +403,7 @@ class TaskDetailsDialog extends ConsumerWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
-      backgroundColor: color.withOpacity(0.1),
+      backgroundColor: color.withValues(alpha: 0.1),
       side: BorderSide(color: color),
     );
   }
@@ -437,7 +445,7 @@ class TaskDetailsDialog extends ConsumerWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
-      backgroundColor: color.withOpacity(0.1),
+      backgroundColor: color.withValues(alpha: 0.1),
       side: BorderSide(color: color),
     );
   }
@@ -465,7 +473,7 @@ class TaskDetailsDialog extends ConsumerWidget {
 
     return Chip(
       label: Text(label),
-      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+      backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
       side: BorderSide(color: Theme.of(context).primaryColor),
     );
   }

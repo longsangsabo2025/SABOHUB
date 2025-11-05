@@ -93,12 +93,11 @@ class _CeoCommissionRulesPageState
         actions: [
           IconButton(
             icon: Icon(
-              _showInactiveRules
-                  ? Icons.visibility_off
-                  : Icons.visibility,
+              _showInactiveRules ? Icons.visibility_off : Icons.visibility,
             ),
-            tooltip:
-                _showInactiveRules ? 'Ẩn quy tắc đã tắt' : 'Hiện quy tắc đã tắt',
+            tooltip: _showInactiveRules
+                ? 'Ẩn quy tắc đã tắt'
+                : 'Hiện quy tắc đã tắt',
             onPressed: () {
               setState(() {
                 _showInactiveRules = !_showInactiveRules;
@@ -149,7 +148,7 @@ class _CeoCommissionRulesPageState
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: rule.isActive
-              ? Theme.of(context).primaryColor.withOpacity(0.2)
+              ? Theme.of(context).primaryColor.withValues(alpha: 0.2)
               : Colors.grey[300],
           child: Text(
             appliesTo.emoji,
@@ -186,7 +185,7 @@ class _CeoCommissionRulesPageState
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: priorityColor.withOpacity(0.2),
+                  color: priorityColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -233,10 +232,7 @@ class _CeoCommissionRulesPageState
                   ),
                 _buildInfoRow(
                   'Hiệu lực',
-                  '${rule.effectiveFrom.day}/${rule.effectiveFrom.month}/${rule.effectiveFrom.year}' +
-                      (rule.effectiveTo != null
-                          ? ' - ${rule.effectiveTo!.day}/${rule.effectiveTo!.month}/${rule.effectiveTo!.year}'
-                          : ' - Vô thời hạn'),
+                  '${rule.effectiveFrom.day}/${rule.effectiveFrom.month}/${rule.effectiveFrom.year}${rule.effectiveTo != null ? ' - ${rule.effectiveTo!.day}/${rule.effectiveTo!.month}/${rule.effectiveTo!.year}' : ' - Vô thời hạn'}',
                 ),
               ],
             ),
@@ -392,13 +388,14 @@ class _CreateRuleDialogState extends ConsumerState<_CreateRuleDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _appliesTo,
+                initialValue: _appliesTo,
                 decoration: const InputDecoration(
                   labelText: 'Áp Dụng Cho',
                 ),
                 items: const [
                   DropdownMenuItem(value: 'all', child: Text('👥 Tất cả')),
-                  DropdownMenuItem(value: 'role', child: Text('🎭 Theo vai trò')),
+                  DropdownMenuItem(
+                      value: 'role', child: Text('🎭 Theo vai trò')),
                   DropdownMenuItem(
                       value: 'individual', child: Text('👤 Cá nhân')),
                 ],

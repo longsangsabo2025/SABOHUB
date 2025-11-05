@@ -13,12 +13,13 @@ workflows:
         BUNDLE_ID: "com.sabohub.app"
         APP_NAME: "SABOHUB"
         # Environment variables from .env file
-        SUPABASE_URL: $SUPABASE_URL
-        SUPABASE_ANON_KEY: $SUPABASE_ANON_KEY
-        SUPABASE_SERVICE_ROLE_KEY: $SUPABASE_SERVICE_ROLE_KEY
+        SUPABASE_URL: "https://dqddxowyikefqcdiioyh.supabase.co"
+        SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3OTcxMzYsImV4cCI6MjA3NzM3MzEzNn0.okmsG2R248fxOHUEFFl5OBuCtjtCIlO9q9yVSyCV25Y"
+        SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTc5NzEzNiwiZXhwIjoyMDc3MzczMTM2fQ.kPmlYlVd7wi_Luzp3MHjXmR8gUqrqDHy9PSzwFDq3XI"
         # Google Drive credentials (for documents feature)
-        GOOGLE_DRIVE_CLIENT_ID_IOS: $GOOGLE_DRIVE_CLIENT_ID_IOS
-        GOOGLE_DRIVE_CLIENT_ID_WEB: $GOOGLE_DRIVE_CLIENT_ID_WEB
+        GOOGLE_DRIVE_CLIENT_ID_IOS: "321771498359-ocllju34h6cd4040ipoeq41j8mmg08p8.apps.googleusercontent.com"
+        GOOGLE_DRIVE_CLIENT_ID_WEB: "321771498359-gcm0og29knjjmaevr7uv0aa27vam765u.apps.googleusercontent.com"
+        GOOGLE_DRIVE_CLIENT_ID_ANDROID: "321771498359-tmnp2ks7n6ipjp10fsrjrefrilr6ts15.apps.googleusercontent.com"
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -51,9 +52,8 @@ workflows:
       - name: Flutter build ipa
         script: |
           flutter build ipa --release \
-            --build-name=1.0.$BUILD_NUMBER \
-            --build-number=$BUILD_NUMBER \
-            --export-options-plist=/Users/builder/export_options.plist
+            --build-name=1.0.0 \
+            --build-number=$BUILD_NUMBER
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
@@ -61,7 +61,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your-email@example.com
+          - longsangsabo2025@gmail.com # ⚠️ THAY ĐỔI EMAIL CỦA BẠN Ở ĐÂY
         notify:
           success: true
           failure: true
@@ -70,7 +70,7 @@ workflows:
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
-        # submit_to_app_store: true # Uncomment to submit to App Store
+        submit_to_app_store: false # Set to true when ready for App Store submission
 
   android-workflow:
     name: Android Workflow
@@ -82,12 +82,12 @@ workflows:
       vars:
         PACKAGE_NAME: "com.sabohub.app"
         # Environment variables from .env file
-        SUPABASE_URL: $SUPABASE_URL
-        SUPABASE_ANON_KEY: $SUPABASE_ANON_KEY
-        SUPABASE_SERVICE_ROLE_KEY: $SUPABASE_SERVICE_ROLE_KEY
+        SUPABASE_URL: "https://dqddxowyikefqcdiioyh.supabase.co"
+        SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3OTcxMzYsImV4cCI6MjA3NzM3MzEzNn0.okmsG2R248fxOHUEFFl5OBuCtjtCIlO9q9yVSyCV25Y"
+        SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTc5NzEzNiwiZXhwIjoyMDc3MzczMTM2fQ.kPmlYlVd7wi_Luzp3MHjXmR8gUqrqDHy9PSzwFDq3XI"
         # Google Drive credentials
-        GOOGLE_DRIVE_CLIENT_ID_ANDROID: $GOOGLE_DRIVE_CLIENT_ID_ANDROID
-        GOOGLE_DRIVE_CLIENT_ID_WEB: $GOOGLE_DRIVE_CLIENT_ID_WEB
+        GOOGLE_DRIVE_CLIENT_ID_ANDROID: "321771498359-tmnp2ks7n6ipjp10fsrjrefrilr6ts15.apps.googleusercontent.com"
+        GOOGLE_DRIVE_CLIENT_ID_WEB: "321771498359-gcm0og29knjjmaevr7uv0aa27vam765u.apps.googleusercontent.com"
       flutter: stable
       java: 17
     scripts:
@@ -123,7 +123,7 @@ workflows:
       - name: Build Android release
         script: |
           flutter build appbundle --release \
-            --build-name=1.0.$BUILD_NUMBER \
+            --build-name=1.0.0 \
             --build-number=$BUILD_NUMBER
     artifacts:
       - build/**/outputs/**/*.aab
@@ -132,7 +132,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your-email@example.com
+          - longsangsabo2025@gmail.com # ⚠️ THAY ĐỔI EMAIL CỦA BẠN Ở ĐÂY
         notify:
           success: true
           failure: true

@@ -310,6 +310,8 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
                 onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
             ElevatedButton(
               onPressed: () async {
+                final navigator = Navigator.of(context);
+                
                 final task = Task(
                   id: '',
                   branchId: '',
@@ -325,7 +327,7 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
                 );
                 await ref.read(taskServiceProvider).createTask(task);
                 if (!mounted) return;
-                Navigator.pop(ctx);
+                navigator.pop();
                 ref.invalidate(tasksByStatusProvider);
                 ref.invalidate(taskStatsProvider);
               },
@@ -390,6 +392,8 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
                 onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
             ElevatedButton(
               onPressed: () async {
+                final navigator = Navigator.of(context);
+                
                 final updates = <String, dynamic>{
                   'title': tc.text,
                   'description': dc.text.isEmpty ? null : dc.text,
@@ -398,7 +402,7 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
                 };
                 await ref.read(taskServiceProvider).updateTask(t.id, updates);
                 if (!mounted) return;
-                Navigator.pop(ctx);
+                navigator.pop();
                 ref.invalidate(tasksByStatusProvider);
               },
               child: const Text('Lưu'),

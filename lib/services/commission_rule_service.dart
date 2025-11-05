@@ -50,18 +50,16 @@ class CommissionRuleService {
   /// Lấy tất cả quy tắc của company
   Future<List<CommissionRule>> getRulesByCompany(String companyId,
       {bool? isActive}) async {
-    var query = _supabase
-        .from('commission_rules')
-        .select()
-        .eq('company_id', companyId)
-        .order('priority', ascending: false)
-        .order('created_at', ascending: false);
+    var query =
+        _supabase.from('commission_rules').select().eq('company_id', companyId);
 
     if (isActive != null) {
       query = query.eq('is_active', isActive);
     }
 
-    final response = await query;
+    final response = await query
+        .order('priority', ascending: false)
+        .order('created_at', ascending: false);
     return (response as List)
         .map((json) => CommissionRule.fromJson(json))
         .toList();
@@ -151,8 +149,7 @@ class CommissionRuleService {
         .or('effective_to.is.null,effective_to.gte.$dateStr')
         .lte('min_bill_amount', billAmount)
         .or('max_bill_amount.is.null,max_bill_amount.gte.$billAmount')
-        .or(
-            'applies_to.eq.all,and(applies_to.eq.role,role.eq.$employeeRole),and(applies_to.eq.individual,user_id.eq.$employeeId)')
+        .or('applies_to.eq.all,and(applies_to.eq.role,role.eq.$employeeRole),and(applies_to.eq.individual,user_id.eq.$employeeId)')
         .order('priority', ascending: false)
         .order('created_at', ascending: false)
         .limit(1)
@@ -168,7 +165,8 @@ class CommissionRuleService {
         .stream(primaryKey: ['id'])
         .eq('company_id', companyId)
         .order('priority', ascending: false)
-        .map((data) =>
-            (data as List).map((json) => CommissionRule.fromJson(json)).toList());
+        .map((data) => (data as List)
+            .map((json) => CommissionRule.fromJson(json))
+            .toList());
   }
 }

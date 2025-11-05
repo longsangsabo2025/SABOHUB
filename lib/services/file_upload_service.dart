@@ -40,7 +40,8 @@ class FileUploadService {
           );
 
       // Get the public URL for the uploaded file
-      final fileUrl = _supabase.storage.from('ai-files').getPublicUrl(storagePath);
+      final fileUrl =
+          _supabase.storage.from('ai-files').getPublicUrl(storagePath);
 
       // Create database record
       final response = await _supabase

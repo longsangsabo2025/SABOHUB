@@ -85,12 +85,7 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       final user = _supabase.auth.currentUser;
       if (user == null) throw Exception('Chưa đăng nhập');
 
-      print('🔵 Updating user profile...');
-      print('   User ID: ${user.id}');
-      print('   Full Name: ${_fullNameController.text.trim()}');
-      print('   Phone: ${_phoneController.text.trim()}');
-
-      final response = await _supabase
+      /*final response = */await _supabase
           .from('users')
           .update({
             'full_name': _fullNameController.text.trim(),
@@ -98,9 +93,8 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', user.id)
-          .select('id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at');
-
-      print('🔵 Update response: $response');
+          .select(
+              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at');
 
       // Reload user data to update UI
       await _loadUserData();
@@ -119,7 +113,6 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
         );
       }
     } catch (e) {
-      print('🔴 Error updating profile: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi cập nhật: $e')),
@@ -174,14 +167,17 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
                 return;
               }
 
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
                 await _supabase.auth.updateUser(
                   UserAttributes(password: passwordController.text),
                 );
 
                 if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  navigator.pop();
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('✅ Đã đổi mật khẩu!'),
                       backgroundColor: Colors.green,
@@ -190,7 +186,7 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(content: Text('Lỗi: $e')),
                   );
                 }
@@ -346,7 +342,7 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: _getRoleColor(role).withOpacity(0.1),
+            color: _getRoleColor(role).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: _getRoleColor(role)),
           ),
@@ -427,11 +423,13 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
   Widget _buildCompanyInfoCard() {
     // Get company name from foreign key relation
     final companyData = _userData?['companies'];
-    final companyName = companyData is Map ? (companyData['name'] ?? 'Chưa có') : 'Chưa có';
-    
-    // Get branch name from foreign key relation  
+    final companyName =
+        companyData is Map ? (companyData['name'] ?? 'Chưa có') : 'Chưa có';
+
+    // Get branch name from foreign key relation
     final branchData = _userData?['branches'];
-    final branchName = branchData is Map ? (branchData['name'] ?? 'Chưa có') : 'Chưa có';
+    final branchName =
+        branchData is Map ? (branchData['name'] ?? 'Chưa có') : 'Chưa có';
 
     return Card(
       elevation: 0,

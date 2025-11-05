@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/notification_widgets.dart';
 
 /// Service quản lý hệ thống thông báo toàn app
@@ -347,5 +348,141 @@ mixin NotificationMixin<T extends StatefulWidget> on State<T> {
   /// Ẩn loading
   void hideLoadingNotification() {
     notifications.hideNotification();
+  }
+
+  // ============================================
+  // DATABASE NOTIFICATION METHODS
+  // ============================================
+
+  final _supabase = Supabase.instance.client;
+
+  /// Send notification when a task is assigned
+  Future<void> sendTaskAssignedNotification({
+    required String userId,
+    required String taskTitle,
+    required DateTime dueDate,
+    String? createdByName,
+  }) async {
+    try {
+      await _supabase.from('notifications').insert({
+        'user_id': userId,
+        'type': 'task_assigned',
+        'title': 'Công việc mới được giao',
+        'message':
+            '${createdByName ?? "Quản lý"} đã giao cho bạn công việc: $taskTitle',
+        'data': {
+          'task_title': taskTitle,
+          'due_date': dueDate.toIso8601String(),
+        },
+        'is_read': false,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      // Silent fail - notification is not critical
+    }
+  }
+
+  /// Send notification when a task status changes
+  Future<void> sendTaskStatusChangedNotification({
+    required String userId,
+    required String taskTitle,
+    required String newStatus,
+    String? changedByName,
+  }) async {
+    try {
+      await _supabase.from('notifications').insert({
+        'user_id': userId,
+        'type': 'task_status_changed',
+        'title': 'Cập nhật công việc',
+        'message':
+            '${changedByName ?? "Quản lý"} đã cập nhật trạng thái công việc "$taskTitle" thành: $newStatus',
+        'data': {
+          'task_title': taskTitle,
+          'new_status': newStatus,
+        },
+        'is_read': false,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  /// Send notification when a task is completed
+  Future<void> sendTaskCompletedNotification({
+    required String userId,
+    required String taskTitle,
+    String? completedByName,
+  }) async {
+    try {
+      await _supabase.from('notifications').insert({
+        'user_id': userId,
+        'type': 'task_completed',
+        'title': 'Công việc hoàn thành',
+        'message':
+            '${completedByName ?? "Nhân viên"} đã hoàn thành công việc: $taskTitle',
+        'data': {
+          'task_title': taskTitle,
+        },
+        'is_read': false,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  /// Mark notification as read
+  Future<void> markNotificationAsRead(String notificationId) async {
+    try {
+      await _supabase
+          .from('notifications')
+          .update({'is_read': true}).eq('id', notificationId);
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  /// Mark all notifications as read for a user
+  Future<void> markAllNotificationsAsRead(String userId) async {
+    try {
+      await _supabase
+          .from('notifications')
+          .update({'is_read': true}).eq('user_id', userId);
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  /// Get unread notifications count
+  Future<int> getUnreadNotificationsCount(String userId) async {
+    try {
+      final response = await _supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('is_read', false);
+
+      return (response as List).length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /// Get recent notifications
+  Future<List<Map<String, dynamic>>> getRecentNotifications(
+      String userId) async {
+    try {
+      final response = await _supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false)
+          .limit(20);
+
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (e) {
+      return [];
+    }
   }
 }

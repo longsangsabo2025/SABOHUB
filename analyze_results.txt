@@ -1,0 +1,876 @@
+Analyzing SABOHUB...                                            
+
+   info - 'dart:html' is deprecated and shouldn't be used. Use package:web and dart:js_interop instead - lib\core\debug\debug_manager.dart:2:1 - deprecated_member_use
+   info - Don't use web-only libraries outside Flutter web plugins - lib\core\debug\debug_manager.dart:2:1 - avoid_web_libraries_in_flutter
+   info - The constant name 'LEVEL_VERBOSE' isn't a lowerCamelCase identifier - lib\core\debug\debug_manager.dart:13:20 - constant_identifier_names
+   info - The constant name 'LEVEL_DEBUG' isn't a lowerCamelCase identifier - lib\core\debug\debug_manager.dart:14:20 - constant_identifier_names
+   info - The constant name 'LEVEL_INFO' isn't a lowerCamelCase identifier - lib\core\debug\debug_manager.dart:15:20 - constant_identifier_names
+   info - The constant name 'LEVEL_WARNING' isn't a lowerCamelCase identifier - lib\core\debug\debug_manager.dart:16:20 - constant_identifier_names
+   info - The constant name 'LEVEL_ERROR' isn't a lowerCamelCase identifier - lib\core\debug\debug_manager.dart:17:20 - constant_identifier_names
+   info - The constant name 'LEVEL_CRITICAL' isn't a lowerCamelCase identifier - lib\core\debug\debug_manager.dart:18:20 - constant_identifier_names
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ceo\widgets\companies_tab_simple.dart:164:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ceo\widgets\companies_tab_simple.dart:177:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ceo\widgets\companies_tab_simple.dart:268:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ceo\widgets\companies_tab_simple.dart:502:40 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\ceo\widgets\companies_tab_simple.dart:520:42 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\ceo\widgets\companies_tab_simple.dart:539:38 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\ceo\widgets\companies_tab_simple.dart:558:42 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block - lib\features\ceo\widgets\companies_tab_simple.dart:614:7 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\ceo\widgets\companies_tab_simple.dart:615:31 - curly_braces_in_flow_control_structures
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\documents\screens\documents_screen.dart:501:38 - use_build_context_synchronously
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\documents\screens\documents_screen.dart:558:19 - deprecated_member_use
+warning - Unused import: '../widgets/quick_account_switcher.dart' - lib\layouts\manager_main_layout.dart:12:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\auth\email_verification_page.dart:138:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\auth\employee_signup_page.dart:201:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\auth\employee_signup_page.dart:276:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\auth\employee_signup_page.dart:302:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\auth\forgot_password_page.dart:150:54 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\pages\auth\login_page.dart:69:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\auth\login_page.dart:79:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\auth\login_page.dart:110:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\auth\login_page.dart:113:7 - avoid_print
+   info - Statements in an if should be enclosed in a block - lib\pages\auth\login_page.dart:458:25 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\auth\login_page.dart:461:25 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\auth\login_page.dart:495:25 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\auth\login_page_polished.dart:154:23 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\auth\login_page_polished.dart:157:23 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\auth\login_page_polished.dart:191:23 - curly_braces_in_flow_control_structures
+   info - Don't invoke 'print' in production code - lib\pages\auth\signup_page.dart:53:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\auth\signup_page.dart:63:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\auth\signup_page.dart:66:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\auth\signup_page.dart:70:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\auth\signup_page.dart:74:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\auth\signup_page.dart:76:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\auth\signup_page.dart:79:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\auth\signup_page.dart:92:7 - avoid_print
+warning - The declaration '_showSuccessSnackBar' isn't referenced - lib\pages\auth\signup_page.dart:109:8 - unused_element
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\auth\signup_page.dart:218:19 - deprecated_member_use
+warning - This default clause is covered by the previous cases - lib\pages\auth\signup_page.dart:400:7 - unreachable_switch_default
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\auth\signup_page_new.dart:201:23 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\pages\ceo\ai_assistant_tab.dart:66:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\ceo\ai_assistant_tab.dart:72:9 - avoid_print
+warning - The receiver can't be null, so the null-aware operator '?.' is unnecessary - lib\pages\ceo\ai_assistant_tab.dart:72:49 - invalid_null_aware_operator
+   info - Don't invoke 'print' in production code - lib\pages\ceo\ai_assistant_tab.dart:76:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\ceo\ai_assistant_tab.dart:82:9 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_chat_interface.dart:344:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_chat_interface.dart:378:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_management_dashboard.dart:240:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_management_dashboard.dart:288:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_management_dashboard.dart:331:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_management_dashboard.dart:333:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_models_page.dart:79:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_models_page.dart:196:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_models_page.dart:242:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_models_page.dart:243:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_models_page.dart:247:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_models_page.dart:286:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ai_management\ai_models_page.dart:351:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\branch_details_page.dart:125:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\branch_details_page.dart:126:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\branch_details_page.dart:133:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\branch_details_page.dart:177:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\branch_details_page.dart:206:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\branch_details_page.dart:207:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\branch_details_page.dart:238:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\branch_details_page.dart:354:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\branch_details_page.dart:639:46 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\pages\ceo\branch_details_page.dart:750:33 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\ceo\branch_details_page.dart:753:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\ceo\branch_details_page.dart:761:40 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code - lib\pages\ceo\ceo_ai_assistant_page.dart:267:5 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_ai_assistant_page.dart:713:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_ai_assistant_page.dart:882:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_ai_assistant_page.dart:995:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_documents_page.dart:91:32 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\ceo_documents_page.dart:112:15 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_employees_page.dart:161:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_employees_page.dart:217:26 - deprecated_member_use
+warning - Unused import: '../../widgets/quick_account_switcher.dart' - lib\pages\ceo\ceo_main_layout.dart:6:8 - unused_import
+   info - Invalid use of a private type in a public API - lib\pages\ceo\ceo_main_layout.dart:16:17 - library_private_types_in_public_api
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\ceo\ceo_profile_page.dart:187:46 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\ceo\ceo_profile_page.dart:197:46 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\ceo\ceo_profile_page.dart:562:48 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\ceo\ceo_profile_page.dart:571:27 - use_build_context_synchronously
+warning - Unused import: 'ceo_profile_page.dart' - lib\pages\ceo\ceo_reports_settings_page.dart:6:8 - unused_import
+warning - The value of the local variable 'displayRole' isn't used - lib\pages\ceo\ceo_reports_settings_page.dart:636:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_stores_page.dart:113:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_stores_page.dart:143:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_stores_page.dart:167:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_stores_page.dart:187:33 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\ceo\ceo_stores_page.dart:389:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\ceo\ceo_stores_page.dart:394:38 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_tasks_page.dart:200:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_tasks_page.dart:202:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_tasks_page.dart:567:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_tasks_page.dart:903:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_tasks_page.dart:920:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_tasks_page.dart:1229:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\ceo_tasks_page.dart:1274:22 - deprecated_member_use
+warning - The declaration '_getPriorityColor' isn't referenced - lib\pages\ceo\ceo_tasks_page.dart:1455:9 - unused_element
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\commission\ceo_commission_rules_page.dart:152:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\commission\ceo_commission_rules_page.dart:189:40 - deprecated_member_use
+   info - Use interpolation to compose strings and values - lib\pages\ceo\commission\ceo_commission_rules_page.dart:236:19 - prefer_interpolation_to_compose_strings
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\commission\ceo_commission_rules_page.dart:395:17 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\accounting_tab.dart:315:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\accounting_tab.dart:317:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\accounting_tab.dart:405:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\accounting_tab.dart:500:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\accounting_tab.dart:518:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\accounting_tab.dart:596:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\accounting_tab.dart:644:32 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\company\accounting_tab.dart:725:21 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\company\accounting_tab.dart:787:21 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\accounting_tab.dart:1333:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\accounting_tab.dart:1335:41 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\pages\ceo\company\attendance_tab.dart:38:5 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\attendance_tab.dart:295:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\attendance_tab.dart:297:41 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\company\attendance_tab.dart:366:15 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\pages\ceo\company\attendance_tab.dart:520:14 - unnecessary_to_list_in_spreads
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\attendance_tab.dart:617:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\attendance_tab.dart:619:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\business_law_tab.dart:236:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\business_law_tab.dart:277:49 - deprecated_member_use
+warning - The value of the field '_isUploading' isn't used - lib\pages\ceo\company\documents_tab.dart:27:8 - unused_field
+warning - The value of the local variable 'shouldUpload' isn't used - lib\pages\ceo\company\documents_tab.dart:126:13 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\ceo\company\documents_tab.dart:158:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\ceo\company\documents_tab.dart:177:38 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\documents_tab.dart:618:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\documents_tab.dart:620:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\documents_tab.dart:655:22 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\company\employee_documents_tab.dart:153:23 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\company\employee_documents_tab.dart:171:23 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\employee_documents_tab.dart:274:45 - deprecated_member_use
+warning - Unnecessary cast - lib\pages\ceo\company\employee_documents_tab.dart:318:60 - unnecessary_cast
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\employee_documents_tab.dart:332:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\employee_documents_tab.dart:360:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\employees_tab.dart:64:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\employees_tab.dart:442:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\employees_tab.dart:444:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\employees_tab.dart:509:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\employees_tab.dart:546:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\settings_tab.dart:152:46 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\ceo\company\settings_tab.dart:305:15 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\ceo\company\settings_tab.dart:307:15 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\tasks_tab.dart:198:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\tasks_tab.dart:200:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\tasks_tab.dart:392:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\widgets\company_header.dart:21:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\widgets\company_header.dart:27:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\widgets\company_header.dart:78:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\widgets\company_header.dart:114:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\widgets\company_header.dart:117:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\widgets\company_header.dart:149:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\widgets\company_header.dart:150:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company\widgets\stat_card.dart:26:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page.dart:210:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page.dart:244:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page.dart:267:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page.dart:273:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page.dart:320:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page.dart:348:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page.dart:366:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page.dart:367:40 - deprecated_member_use
+  error - The named parameter 'mainAxisAlignment' isn't defined - lib\pages\ceo\company_details_page_clean.dart:111:13 - undefined_named_parameter
+  error - The named parameter 'mainAxisAlignment' isn't defined - lib\pages\ceo\company_details_page_clean.dart:130:17 - undefined_named_parameter
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:176:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:182:33 - deprecated_member_use
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:193:30 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:214:30 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:226:47 - deprecated_member_use
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:252:31 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:254:43 - deprecated_member_use
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:269:31 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:272:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:273:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:310:33 - deprecated_member_use
+   info - An uninitialized variable should have an explicit type annotation - lib\pages\ceo\company_details_page_clean.dart:335:7 - prefer_typing_uninitialized_variables
+   info - Missing type annotation - lib\pages\ceo\company_details_page_clean.dart:335:7 - strict_top_level_inference
+  error - Expected to find ';' - lib\pages\ceo\company_details_page_clean.dart:335:7 - expected_token
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\pages\ceo\company_details_page_clean.dart:335:7 - missing_const_final_var_or_type
+  error - Expected a method, getter, setter or operator declaration - lib\pages\ceo\company_details_page_clean.dart:335:14 - expected_executable
+  error - Can't have modifier 'const' here - lib\pages\ceo\company_details_page_clean.dart:335:16 - extraneous_modifier
+   info - Missing type annotation - lib\pages\ceo\company_details_page_clean.dart:335:22 - strict_top_level_inference
+   info - The variable name 'EdgeInsets' isn't a lowerCamelCase identifier - lib\pages\ceo\company_details_page_clean.dart:335:22 - non_constant_identifier_names
+  error - Functions must have an explicit list of parameters - lib\pages\ceo\company_details_page_clean.dart:335:22 - missing_function_parameters
+  error - A function body must be provided - lib\pages\ceo\company_details_page_clean.dart:335:32 - missing_function_body
+  error - Expected a method, getter, setter or operator declaration - lib\pages\ceo\company_details_page_clean.dart:335:32 - expected_executable
+   info - Missing type annotation - lib\pages\ceo\company_details_page_clean.dart:335:33 - strict_top_level_inference
+  error - Expected an identifier - lib\pages\ceo\company_details_page_clean.dart:335:37 - missing_identifier
+  error - A function body must be provided - lib\pages\ceo\company_details_page_clean.dart:335:40 - missing_function_body
+  error - Expected a method, getter, setter or operator declaration - lib\pages\ceo\company_details_page_clean.dart:335:40 - expected_executable
+   info - An uninitialized variable should have an explicit type annotation - lib\pages\ceo\company_details_page_clean.dart:336:7 - prefer_typing_uninitialized_variables
+   info - Missing type annotation - lib\pages\ceo\company_details_page_clean.dart:336:7 - strict_top_level_inference
+  error - Expected to find ';' - lib\pages\ceo\company_details_page_clean.dart:336:7 - expected_token
+  error - Variables must be declared using the keywords 'const', 'final', 'var' or a type name - lib\pages\ceo\company_details_page_clean.dart:336:7 - missing_const_final_var_or_type
+  error - Expected a method, getter, setter or operator declaration - lib\pages\ceo\company_details_page_clean.dart:336:12 - expected_executable
+   info - Missing type annotation - lib\pages\ceo\company_details_page_clean.dart:336:14 - strict_top_level_inference
+   info - The variable name 'Column' isn't a lowerCamelCase identifier - lib\pages\ceo\company_details_page_clean.dart:336:14 - non_constant_identifier_names
+   info - Missing type annotation - lib\pages\ceo\company_details_page_clean.dart:337:9 - strict_top_level_inference
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\pages\ceo\company_details_page_clean.dart:337:27 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\pages\ceo\company_details_page_clean.dart:337:27 - obsolete_colon_for_default_value
+   info - Missing type annotation - lib\pages\ceo\company_details_page_clean.dart:338:9 - strict_top_level_inference
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\pages\ceo\company_details_page_clean.dart:338:17 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\pages\ceo\company_details_page_clean.dart:338:17 - obsolete_colon_for_default_value
+  error - The default value of an optional parameter must be constant - lib\pages\ceo\company_details_page_clean.dart:338:19 - non_constant_default_value
+  error - Undefined name 'statsAsync' - lib\pages\ceo\company_details_page_clean.dart:345:11 - undefined_identifier
+  error - Undefined name 'company' - lib\pages\ceo\company_details_page_clean.dart:357:26 - undefined_identifier
+  error - Undefined name 'company' - lib\pages\ceo\company_details_page_clean.dart:365:29 - undefined_identifier
+  error - Undefined name 'company' - lib\pages\ceo\company_details_page_clean.dart:373:30 - undefined_identifier
+  error - A function body must be provided - lib\pages\ceo\company_details_page_clean.dart:375:8 - missing_function_body
+  error - Expected a method, getter, setter or operator declaration - lib\pages\ceo\company_details_page_clean.dart:375:8 - expected_executable
+  error - Expected a method, getter, setter or operator declaration - lib\pages\ceo\company_details_page_clean.dart:376:5 - expected_executable
+  error - Unexpected text ';' - lib\pages\ceo\company_details_page_clean.dart:376:6 - unexpected_token
+  error - Expected a method, getter, setter or operator declaration - lib\pages\ceo\company_details_page_clean.dart:377:3 - expected_executable
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:436:22 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:442:33 - deprecated_member_use
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:480:24 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:530:24 - prefix_shadowed_by_local_declaration
+  error - The getter 'zero' isn't defined for the type 'dynamic Function()' - lib\pages\ceo\company_details_page_clean.dart:535:44 - undefined_getter
+  error - The getter 'zero' isn't defined for the type 'dynamic Function()' - lib\pages\ceo\company_details_page_clean.dart:551:44 - undefined_getter
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:577:24 - prefix_shadowed_by_local_declaration
+warning - The declaration '_buildBranchesTab' isn't referenced - lib\pages\ceo\company_details_page_clean.dart:637:10 - unused_element
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:638:27 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:638:61 - undefined_identifier
+  error - The named parameter 'mainAxisAlignment' isn't defined - lib\pages\ceo\company_details_page_clean.dart:644:11 - undefined_named_parameter
+  error - The named parameter 'mainAxisAlignment' isn't defined - lib\pages\ceo\company_details_page_clean.dart:656:15 - undefined_named_parameter
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:679:30 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:705:32 - prefix_shadowed_by_local_declaration
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:731:24 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:735:28 - undefined_identifier
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:742:26 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:773:42 - prefix_shadowed_by_local_declaration
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:838:32 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:842:36 - undefined_identifier
+warning - The declaration '_buildEmployeesTab' isn't referenced - lib\pages\ceo\company_details_page_clean.dart:855:10 - unused_element
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:857:28 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:858:24 - undefined_identifier
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:864:26 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:869:37 - deprecated_member_use
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:987:26 - prefix_shadowed_by_local_declaration
+  error - Undefined name '_searchController' - lib\pages\ceo\company_details_page_clean.dart:998:29 - undefined_identifier
+  error - Undefined name '_searchQuery' - lib\pages\ceo\company_details_page_clean.dart:1002:31 - undefined_identifier
+  error - Undefined name '_searchController' - lib\pages\ceo\company_details_page_clean.dart:1006:29 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1007:29 - undefined_function
+  error - Undefined name '_searchQuery' - lib\pages\ceo\company_details_page_clean.dart:1007:44 - undefined_identifier
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1017:41 - prefix_shadowed_by_local_declaration
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1031:33 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1033:25 - undefined_function
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1033:40 - undefined_identifier
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1050:27 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1052:25 - undefined_function
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1052:40 - undefined_identifier
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1069:27 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1071:25 - undefined_function
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1071:40 - undefined_identifier
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1087:33 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1089:25 - undefined_function
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1089:40 - undefined_identifier
+  error - Undefined name '_searchQuery' - lib\pages\ceo\company_details_page_clean.dart:1108:39 - undefined_identifier
+  error - Undefined name '_searchQuery' - lib\pages\ceo\company_details_page_clean.dart:1109:59 - undefined_identifier
+  error - Undefined name '_searchQuery' - lib\pages\ceo\company_details_page_clean.dart:1111:59 - undefined_identifier
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1114:37 - undefined_identifier
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1115:38 - undefined_identifier
+  error - The named parameter 'mainAxisAlignment' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1123:21 - undefined_named_parameter
+  error - The named parameter 'mainAxisAlignment' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1152:21 - undefined_named_parameter
+  error - Undefined name '_searchQuery' - lib\pages\ceo\company_details_page_clean.dart:1177:27 - undefined_identifier
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1178:27 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1181:29 - undefined_function
+  error - Undefined name '_searchController' - lib\pages\ceo\company_details_page_clean.dart:1182:31 - undefined_identifier
+  error - Undefined name '_searchQuery' - lib\pages\ceo\company_details_page_clean.dart:1183:31 - undefined_identifier
+  error - Undefined name '_selectedRoleFilter' - lib\pages\ceo\company_details_page_clean.dart:1184:31 - undefined_identifier
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1196:32 - prefix_shadowed_by_local_declaration
+  error - The named parameter 'mainAxisAlignment' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1206:17 - undefined_named_parameter
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1223:23 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1224:23 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1225:23 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:1225:59 - undefined_identifier
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1246:22 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:1248:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:1250:41 - deprecated_member_use
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1301:21 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1309:24 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:1315:42 - deprecated_member_use
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1347:40 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:1352:44 - deprecated_member_use
+warning - The declaration '_buildTasksTab' isn't referenced - lib\pages\ceo\company_details_page_clean.dart:1473:10 - unused_element
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1474:24 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:1474:55 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1475:24 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:1475:59 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1476:27 - undefined_identifier
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1485:28 - prefix_shadowed_by_local_declaration
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:1510:74 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:1520:75 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:1536:66 - undefined_identifier
+  error - Invalid constant value - lib\pages\ceo\company_details_page_clean.dart:1592:32 - invalid_constant
+  error - The method 'all' isn't defined for the type 'Function' - lib\pages\ceo\company_details_page_clean.dart:1592:43 - undefined_method
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:1606:48 - undefined_identifier
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1610:34 - prefix_shadowed_by_local_declaration
+  error - The named parameter 'mainAxisAlignment' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1623:19 - undefined_named_parameter
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1641:25 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:1641:61 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1642:25 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:1642:65 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1657:27 - undefined_identifier
+  error - The named parameter 'mainAxisAlignment' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1666:15 - undefined_named_parameter
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1696:28 - prefix_shadowed_by_local_declaration
+  error - The named parameter 'mainAxisAlignment' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1698:15 - undefined_named_parameter
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1701:34 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1747:40 - prefix_shadowed_by_local_declaration
+  error - The named parameter 'mainAxisAlignment' isn't defined - lib\pages\ceo\company_details_page_clean.dart:1760:11 - undefined_named_parameter
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1788:22 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:1790:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:1792:41 - deprecated_member_use
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1823:21 - prefix_shadowed_by_local_declaration
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:1832:22 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:1839:33 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1840:13 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:1840:49 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1841:13 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:1841:53 - undefined_identifier
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1846:26 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1854:36 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:1859:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:1862:52 - deprecated_member_use
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:1877:36 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:1882:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:1885:50 - deprecated_member_use
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:1927:36 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:1934:47 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1935:27 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:1935:63 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1936:27 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:1936:67 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:1941:36 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:1962:50 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1964:35 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:1966:33 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1967:31 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:1967:67 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:1968:31 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:1968:71 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:1970:52 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:1978:33 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:1979:52 - undefined_identifier
+warning - The declaration '_buildDocumentsTab' isn't referenced - lib\pages\ceo\company_details_page_clean.dart:2057:10 - unused_element
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:2058:28 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:2059:27 - undefined_identifier
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2062:22 - prefix_shadowed_by_local_declaration
+  error - Methods can't be invoked in constant expressions - lib\pages\ceo\company_details_page_clean.dart:2072:24 - const_eval_method_invocation
+  error - Invalid constant value - lib\pages\ceo\company_details_page_clean.dart:2094:26 - invalid_constant
+  error - The method 'all' isn't defined for the type 'Function' - lib\pages\ceo\company_details_page_clean.dart:2094:37 - undefined_method
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2115:32 - prefix_shadowed_by_local_declaration
+  error - Invalid constant value - lib\pages\ceo\company_details_page_clean.dart:2123:30 - invalid_constant
+  error - The method 'all' isn't defined for the type 'Function' - lib\pages\ceo\company_details_page_clean.dart:2123:41 - undefined_method
+  error - Methods can't be invoked in constant expressions - lib\pages\ceo\company_details_page_clean.dart:2125:30 - const_eval_method_invocation
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2153:24 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2219:26 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2255:26 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2262:32 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2297:26 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2338:26 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2342:32 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2378:21 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2429:22 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:2431:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:2433:41 - deprecated_member_use
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2465:22 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:2467:22 - deprecated_member_use
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:2503:16 - undefined_identifier
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2511:32 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2536:34 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2561:32 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2571:38 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2611:34 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2622:32 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2663:21 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2665:24 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2745:32 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2777:22 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:2779:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:2781:41 - deprecated_member_use
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2820:22 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:2822:22 - deprecated_member_use
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:2843:27 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:2881:7 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:2881:43 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:2882:7 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:2882:47 - undefined_identifier
+   info - Don't use 'BuildContext's across async gaps - lib\pages\ceo\company_details_page_clean.dart:2914:9 - use_build_context_synchronously
+  error - The named parameter 'mainAxisSize' isn't defined - lib\pages\ceo\company_details_page_clean.dart:2924:13 - undefined_named_parameter
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2933:32 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:2944:32 - prefix_shadowed_by_local_declaration
+  error - The name 'Column' isn't a class - lib\pages\ceo\company_details_page_clean.dart:2949:30 - creation_with_non_type
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3001:31 - undefined_identifier
+   info - Don't invoke 'print' in production code - lib\pages\ceo\company_details_page_clean.dart:3014:11 - avoid_print
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3020:7 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3021:7 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3073:25 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3126:5 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3126:41 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3127:5 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3127:45 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3148:9 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3148:45 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3149:9 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3149:49 - undefined_identifier
+warning - The declaration '_buildSettingsTab' isn't referenced - lib\pages\ceo\company_details_page_clean.dart:3154:10 - unused_element
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:3156:22 - prefix_shadowed_by_local_declaration
+  error - The prefix 'EdgeInsets' can't be used here because it's shadowed by a local declaration - lib\pages\ceo\company_details_page_clean.dart:3281:24 - prefix_shadowed_by_local_declaration
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\company_details_page_clean.dart:3283:46 - deprecated_member_use
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3316:16 - undefined_identifier
+  error - The named parameter 'mainAxisSize' isn't defined - lib\pages\ceo\company_details_page_clean.dart:3323:15 - undefined_named_parameter
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3384:35 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3396:19 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3396:57 - undefined_identifier
+   info - Don't use 'BuildContext's across async gaps - lib\pages\ceo\company_details_page_clean.dart:3397:33 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\pages\ceo\company_details_page_clean.dart:3399:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\pages\ceo\company_details_page_clean.dart:3406:40 - use_build_context_synchronously
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3424:16 - undefined_identifier
+  error - The named parameter 'mainAxisSize' isn't defined - lib\pages\ceo\company_details_page_clean.dart:3428:11 - undefined_named_parameter
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\ceo\company_details_page_clean.dart:3432:15 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\ceo\company_details_page_clean.dart:3434:15 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\pages\ceo\company_details_page_clean.dart:3437:33 - use_build_context_synchronously
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3461:16 - undefined_identifier
+  error - The named parameter 'mainAxisSize' isn't defined - lib\pages\ceo\company_details_page_clean.dart:3468:15 - undefined_named_parameter
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3538:19 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3538:58 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3539:19 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3539:55 - undefined_identifier
+   info - Don't use 'BuildContext's across async gaps - lib\pages\ceo\company_details_page_clean.dart:3540:33 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\pages\ceo\company_details_page_clean.dart:3542:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\pages\ceo\company_details_page_clean.dart:3549:40 - use_build_context_synchronously
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3567:16 - undefined_identifier
+  error - The named parameter 'mainAxisSize' isn't defined - lib\pages\ceo\company_details_page_clean.dart:3570:11 - undefined_named_parameter
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3587:17 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3587:55 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3588:17 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3588:53 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3589:17 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3589:56 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3600:16 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3628:23 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3632:7 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3632:45 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3633:28 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3637:28 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3646:23 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3650:7 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3650:45 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3651:28 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3659:28 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3667:23 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3669:20 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3670:28 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3674:28 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3688:16 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3699:26 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3709:16 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3712:20 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:3716:27 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3718:7 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3718:47 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3719:7 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3719:52 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3720:7 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3720:43 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3729:16 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:3751:30 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:3756:13 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3757:32 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3767:11 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3767:51 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3768:11 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3768:56 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3769:11 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3769:47 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:3772:13 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3773:32 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3786:16 - undefined_identifier
+  error - The named parameter 'mainAxisSize' isn't defined - lib\pages\ceo\company_details_page_clean.dart:3790:11 - undefined_named_parameter
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:3820:30 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:3825:13 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3826:32 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3836:11 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3836:51 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3837:11 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3837:56 - undefined_identifier
+  error - Undefined name 'ref' - lib\pages\ceo\company_details_page_clean.dart:3838:11 - undefined_identifier
+  error - Undefined name 'widget' - lib\pages\ceo\company_details_page_clean.dart:3838:47 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:3841:13 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3842:32 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:3859:12 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3860:28 - undefined_identifier
+  error - Undefined name 'mounted' - lib\pages\ceo\company_details_page_clean.dart:3871:12 - undefined_identifier
+  error - Undefined name 'context' - lib\pages\ceo\company_details_page_clean.dart:3872:28 - undefined_identifier
+  error - Expected a method, getter, setter or operator declaration - lib\pages\ceo\company_details_page_clean.dart:3877:1 - expected_executable
+warning - The value of the local variable 'userId' isn't used - lib\pages\ceo\create_employee_simple_dialog.dart:94:13 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps - lib\pages\ceo\create_employee_simple_dialog.dart:115:9 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\create_employee_simple_dialog.dart:459:37 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\create_task_dialog.dart:234:25 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\create_task_dialog.dart:270:25 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\create_task_dialog.dart:333:29 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\edit_employee_dialog.dart:212:25 - deprecated_member_use
+warning - Unused import: '../../providers/task_provider.dart' - lib\pages\ceo\edit_task_dialog.dart:8:8 - unused_import
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\edit_task_dialog.dart:229:25 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\edit_task_dialog.dart:265:25 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\ceo\edit_task_dialog.dart:328:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\quick_add_company_modal.dart:176:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\quick_add_company_modal.dart:208:31 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\quick_add_company_modal.dart:210:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\quick_add_company_modal.dart:280:51 - deprecated_member_use
+warning - The declaration '_getIconForTemplate' isn't referenced - lib\pages\ceo\quick_add_company_modal.dart:412:12 - unused_element
+warning - The declaration '_getEstimatedEmployees' isn't referenced - lib\pages\ceo\quick_add_company_modal.dart:431:7 - unused_element
+warning - The declaration '_getEstimatedTables' isn't referenced - lib\pages\ceo\quick_add_company_modal.dart:444:7 - unused_element
+   info - Don't invoke 'print' in production code - lib\pages\ceo\smart_task_creation_page.dart:66:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\ceo\smart_task_creation_page.dart:72:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\ceo\smart_task_creation_page.dart:73:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\ceo\smart_task_creation_page.dart:74:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\ceo\smart_task_creation_page.dart:84:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\smart_task_creation_page.dart:196:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\smart_task_creation_page.dart:336:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\smart_task_creation_page.dart:514:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\smart_task_creation_page.dart:724:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\smart_task_creation_page.dart:963:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\task_details_dialog.dart:30:55 - deprecated_member_use
+warning - The operand can't be 'null', so the condition is always 'true' - lib\pages\ceo\task_details_dialog.dart:97:42 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:97:69 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:103:43 - unnecessary_non_null_assertion
+warning - The operand can't be 'null', so the condition is always 'true' - lib\pages\ceo\task_details_dialog.dart:108:42 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:108:69 - unnecessary_non_null_assertion
+warning - The operand can't be 'null', so the condition is always 'true' - lib\pages\ceo\task_details_dialog.dart:174:38 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:183:68 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:189:81 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:191:74 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:194:79 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:199:63 - unnecessary_non_null_assertion
+warning - The operand can't be 'null', so the condition is always 'true' - lib\pages\ceo\task_details_dialog.dart:213:38 - unnecessary_null_comparison
+warning - The operand can't be 'null', so the condition is always 'true' - lib\pages\ceo\task_details_dialog.dart:216:44 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:216:73 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:226:51 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:232:49 - unnecessary_non_null_assertion
+warning - The operand can't be 'null', so the condition is always 'true' - lib\pages\ceo\task_details_dialog.dart:239:44 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - lib\pages\ceo\task_details_dialog.dart:239:73 - unnecessary_non_null_assertion
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\task_details_dialog.dart:398:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\task_details_dialog.dart:440:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\ceo\task_details_dialog.dart:468:55 - deprecated_member_use
+  error - Target of URI doesn't exist: './manager_upload_bill_page.dart' - lib\pages\common\commission\bills_management_page.dart:8:8 - uri_does_not_exist
+  error - The argument type 'UserRole?' can't be assigned to the parameter type 'String?'.  - lib\pages\common\commission\bills_management_page.dart:193:45 - argument_type_not_assignable
+   info - The type of the right operand ('String') isn't a subtype or a supertype of the left operand ('UserRole?') - lib\pages\common\commission\bills_management_page.dart:199:38 - unrelated_type_equality_checks
+   info - The type of the right operand ('String') isn't a subtype or a supertype of the left operand ('UserRole?') - lib\pages\common\commission\bills_management_page.dart:199:63 - unrelated_type_equality_checks
+  error - The name 'ManagerUploadBillPage' isn't a class - lib\pages\common\commission\bills_management_page.dart:205:49 - creation_with_non_type
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\common\commission\bills_management_page.dart:243:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\common\commission\bills_management_page.dart:278:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\company\company_settings_page.dart:153:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\employees\create_employee_page.dart:106:35 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\employees\create_employee_page.dart:411:9 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\employees\create_employee_page.dart:413:9 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\employees\create_invitation_page.dart:103:35 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\employees\create_invitation_page.dart:235:15 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\employees\create_invitation_page.dart:237:15 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\employees\create_invitation_page.dart:468:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\employees\employee_list_page.dart:300:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\employees\employee_list_page.dart:302:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\employees\employee_list_page.dart:320:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\employees\employee_list_page.dart:385:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\employees\employee_list_page.dart:525:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\employees\employee_list_page.dart:526:26 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\employees\employee_list_page.dart:637:7 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\employees\employee_list_page.dart:638:7 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\employees\employee_list_page.dart:668:7 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\pages\employees\employee_list_page.dart:669:7 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\manager\manager_attendance_page.dart:227:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\manager\manager_attendance_page.dart:250:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\manager\manager_attendance_page.dart:267:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\manager\manager_attendance_page.dart:296:33 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:590:31 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:592:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:600:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:693:31 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:695:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:703:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:752:31 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:754:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:762:38 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:795:33 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:797:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\manager\manager_staff_page.dart:806:38 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\manager\manager_tasks_page.dart:444:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\manager\manager_tasks_page.dart:475:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\manager\manager_tasks_page.dart:577:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\manager\manager_tasks_page.dart:606:22 - deprecated_member_use
+warning - The operand can't be 'null', so the condition is always 'true' - lib\pages\role_based_dashboard.dart:85:26 - unnecessary_null_comparison
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\shift_leader\shift_leader_tasks_page.dart:328:31 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\shift_leader\shift_leader_tasks_page.dart:401:31 - use_build_context_synchronously
+  error - The getter 'value' isn't defined for the type 'AuthState' - lib\pages\staff\commission\employee_commission_dashboard.dart:59:44 - undefined_getter
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\staff\commission\employee_commission_dashboard.dart:302:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\staff\commission\employee_commission_dashboard.dart:332:32 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\pages\staff\staff_checkin_page.dart:609:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\pages\staff\staff_checkin_page.dart:616:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\pages\staff\staff_tasks_page.dart:1113:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\pages\staff\staff_tasks_page.dart:1122:28 - use_build_context_synchronously
+   info - Don't invoke 'print' in production code - lib\pages\user\user_profile_page.dart:88:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\user\user_profile_page.dart:89:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\user\user_profile_page.dart:90:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\user\user_profile_page.dart:91:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\user\user_profile_page.dart:103:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\pages\user\user_profile_page.dart:122:7 - avoid_print
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\user\user_profile_page.dart:183:33 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\user\user_profile_page.dart:184:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\pages\user\user_profile_page.dart:193:40 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\pages\user\user_profile_page.dart:349:40 - deprecated_member_use
+   info - The private field _sessionTimeoutEnabled could be 'final' - lib\providers\auth_provider.dart:52:8 - prefer_final_fields
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:61:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:65:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:70:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:74:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:78:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:103:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:105:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:117:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:123:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:127:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:162:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:165:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:169:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:174:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:180:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:183:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:186:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:239:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:243:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:254:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:258:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:272:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:275:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:295:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:300:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:308:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:316:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:320:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:329:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:340:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:349:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:371:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:376:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:380:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:401:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:422:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:438:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:441:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:452:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:455:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:463:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:471:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:477:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:480:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:481:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:506:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:541:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:548:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:550:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:553:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:561:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:568:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:570:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:573:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:583:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:590:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:597:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:602:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:606:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:609:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:616:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:627:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:651:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:652:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\auth_provider.dart:660:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\ceo_analytics_provider.dart:130:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\ceo_analytics_provider.dart:202:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\ceo_analytics_provider.dart:283:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\ceo_dashboard_provider.dart:65:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\ceo_dashboard_provider.dart:79:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\ceo_dashboard_provider.dart:113:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\document_provider.dart:44:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\document_provider.dart:69:7 - avoid_print
+warning - The value of the local variable 'text' isn't used - lib\providers\document_provider.dart:86:11 - unused_local_variable
+warning - The value of the local variable 'checklistDoc' isn't used - lib\providers\document_provider.dart:132:11 - unused_local_variable
+   info - Don't invoke 'print' in production code - lib\providers\employee_provider.dart:28:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\employee_provider.dart:69:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\employee_provider.dart:97:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\providers\employee_provider.dart:136:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\account_storage_service.dart:47:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\account_storage_service.dart:49:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\account_storage_service.dart:66:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\account_storage_service.dart:86:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\account_storage_service.dart:89:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\account_storage_service.dart:98:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\account_storage_service.dart:100:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\accounting_service.dart:131:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\accounting_service.dart:166:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\accounting_service.dart:301:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\accounting_service.dart:328:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\ai_service.dart:20:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\ai_service.dart:30:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\ai_service.dart:33:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\ai_service.dart:37:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\ai_service.dart:53:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\ai_service.dart:56:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\ai_service.dart:73:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\ai_service.dart:76:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\ai_service.dart:81:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\ai_service.dart:82:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\attendance_service.dart:71:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\attendance_service.dart:129:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\attendance_service.dart:188:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\attendance_service.dart:249:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\attendance_service.dart:300:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\attendance_service.dart:363:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\attendance_service.dart:376:7 - avoid_print
+   info - Unnecessary escape in string literal - lib\services\bill_service.dart:142:45 - unnecessary_string_escapes
+   info - Don't invoke 'print' in production code - lib\services\company_service.dart:86:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\company_service.dart:89:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:115:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:116:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:144:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:145:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:179:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:194:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:208:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:230:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:234:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:239:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:249:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:252:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:284:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:371:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:373:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:386:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:388:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:401:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\employee_service.dart:403:7 - avoid_print
+   info - 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings - lib\services\location_service.dart:58:9 - deprecated_member_use
+   info - 'timeLimit' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings - lib\services\location_service.dart:59:9 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\services\management_task_service.dart:469:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\management_task_service.dart:477:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\management_task_service.dart:478:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\management_task_service.dart:482:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\task_service.dart:170:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\task_service.dart:178:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\task_service.dart:182:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\task_service.dart:190:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\task_service.dart:197:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\task_service.dart:212:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\task_service.dart:215:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:17:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:21:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:25:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:32:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:37:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:42:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:47:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:52:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:57:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:62:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:67:3 - avoid_print
+   info - Don't invoke 'print' in production code - lib\utils\dummy_providers.dart:72:3 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\chat_input_widget.dart:191:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\file_card.dart:38:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\file_card.dart:150:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\file_card.dart:152:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\file_gallery_widget.dart:432:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\file_gallery_widget.dart:434:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\message_bubble.dart:36:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\message_bubble.dart:145:38 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\message_bubble.dart:148:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\recommendations_list_widget.dart:154:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\recommendations_list_widget.dart:277:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\recommendations_list_widget.dart:279:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\recommendations_list_widget.dart:325:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\recommendations_list_widget.dart:465:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\usage_stats_card.dart:28:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\usage_stats_card.dart:53:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\usage_stats_card.dart:140:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\usage_stats_card.dart:159:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\usage_stats_card.dart:177:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\ai\usage_stats_card.dart:191:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\dev_role_switcher.dart:40:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\dev_role_switcher.dart:163:24 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\dev_role_switcher.dart:165:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\dev_role_switcher.dart:187:36 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\widgets\multi_account_switcher.dart:68:20 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\widgets\multi_account_switcher.dart:72:20 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\widgets\multi_account_switcher.dart:176:20 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\widgets\multi_account_switcher.dart:202:20 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\notification_widgets.dart:42:33 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\notification_widgets.dart:74:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\notification_widgets.dart:90:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\notification_widgets.dart:188:27 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\notification_widgets.dart:197:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\notification_widgets.dart:260:35 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\widgets\quick_account_switcher.dart:43:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\widgets\quick_account_switcher.dart:55:7 - avoid_print
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\widgets\quick_account_switcher.dart:138:17 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\widgets\quick_account_switcher.dart:410:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\widgets\quick_account_switcher.dart:422:7 - avoid_print
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\widgets\quick_account_switcher.dart:505:17 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\quick_account_switcher.dart:629:53 - deprecated_member_use
+warning - The value of the local variable 'currentEmail' isn't used - lib\widgets\simple_account_switcher.dart:36:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\widgets\simple_account_switcher.dart:106:26 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\widgets\simple_account_switcher.dart:282:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\widgets\simple_account_switcher.dart:283:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\widgets\simple_account_switcher.dart:310:7 - avoid_print
+   info - Can't use a relative path to import a library in 'lib' - test\integration_test\signup_flow_test.dart:4:8 - avoid_relative_lib_imports
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:16:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:21:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:31:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:39:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:40:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:41:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:77:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:84:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:89:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:95:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:102:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:113:11 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:120:11 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:124:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:129:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:130:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:137:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:138:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:140:11 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:148:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:202:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration_test\signup_flow_test.dart:226:7 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:12:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:15:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:21:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:23:5 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:27:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:33:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:35:5 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:39:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:45:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:47:5 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:51:3 - avoid_print
+   info - Use interpolation to compose strings and values - verify_cache_integration.dart:51:9 - prefer_interpolation_to_compose_strings
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:52:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:53:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:54:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:55:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:56:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:57:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:58:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:59:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:60:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:61:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:62:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:63:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:64:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:65:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:66:3 - avoid_print
+   info - Don't invoke 'print' in production code - verify_cache_integration.dart:68:3 - avoid_print
+
+872 issues found. (ran in 1.8s)

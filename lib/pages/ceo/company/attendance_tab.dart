@@ -3,142 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../models/attendance.dart';
+import '../../../models/attendance_stats.dart';
 import '../../../models/company.dart';
-import '../../../services/attendance_service.dart';
-
-/// Company Attendance Provider - Get all attendance records for a company
-/// Now uses real Supabase data instead of mock data
-final companyAttendanceProvider =
-    FutureProvider.family<List<EmployeeAttendanceRecord>, AttendanceQueryParams>(
-        (ref, params) async {
-  final service = ref.read(attendanceServiceProvider);
-  
-  try {
-    // Fetch real data from Supabase
-    final records = await service.getCompanyAttendance(
-      companyId: params.companyId,
-      date: params.date,
-    );
-
-    // Convert to EmployeeAttendanceRecord format
-    return records.map((record) => EmployeeAttendanceRecord(
-      id: record.id,
-      employeeId: record.userId,
-      employeeName: record.userName,
-      employeeAvatar: record.userAvatar,
-      date: record.checkIn,
-      checkIn: record.checkIn,
-      checkOut: record.checkOut,
-      status: record.status,
-      lateMinutes: record.lateMinutes,
-      hoursWorked: record.hoursWorked,
-      notes: record.notes,
-    )).toList();
-  } catch (e) {
-    print('Error loading attendance: $e');
-    // Return empty list on error
-    return [];
-  }
-});
-
-/// Parameters for attendance query
-class AttendanceQueryParams {
-  final String companyId;
-  final DateTime date;
-
-  AttendanceQueryParams({
-    required this.companyId,
-    required this.date,
-  });
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is AttendanceQueryParams &&
-          runtimeType == other.runtimeType &&
-          companyId == other.companyId &&
-          date.year == other.date.year &&
-          date.month == other.date.month &&
-          date.day == other.date.day;
-
-  @override
-  int get hashCode => companyId.hashCode ^ date.year ^ date.month ^ date.day;
-}
-
-/// Attendance Stats Provider
-final attendanceStatsProvider =
-    FutureProvider.family<AttendanceStats, AttendanceQueryParams>((ref, params) async {
-  final attendanceRecords = await ref.watch(companyAttendanceProvider(params).future);
-  
-  final today = DateTime.now();
-  final todayStart = DateTime(today.year, today.month, today.day);
-  
-  final todayRecords = attendanceRecords.where((record) {
-    return record.date.isAfter(todayStart) &&
-        record.date.isBefore(todayStart.add(const Duration(days: 1)));
-  }).toList();
-
-  final totalToday = todayRecords.length;
-  final presentToday = todayRecords.where((r) => r.status == AttendanceStatus.present).length;
-  final lateToday = todayRecords.where((r) => r.status == AttendanceStatus.late).length;
-  final absentToday = todayRecords.where((r) => r.status == AttendanceStatus.absent).length;
-
-  return AttendanceStats(
-    totalEmployees: totalToday,
-    presentCount: presentToday,
-    lateCount: lateToday,
-    absentCount: absentToday,
-    onLeaveCount: todayRecords.where((r) => r.status == AttendanceStatus.onLeave).length,
-    attendanceRate: totalToday > 0 ? (presentToday / totalToday * 100) : 0,
-  );
-});
-
-// Helper Models
-class EmployeeAttendanceRecord {
-  final String id;
-  final String employeeId;
-  final String employeeName;
-  final String? employeeAvatar;
-  final DateTime date;
-  final DateTime? checkIn;
-  final DateTime? checkOut;
-  final AttendanceStatus status;
-  final int lateMinutes;
-  final double hoursWorked;
-  final String? notes;
-
-  const EmployeeAttendanceRecord({
-    required this.id,
-    required this.employeeId,
-    required this.employeeName,
-    this.employeeAvatar,
-    required this.date,
-    this.checkIn,
-    this.checkOut,
-    required this.status,
-    this.lateMinutes = 0,
-    this.hoursWorked = 0,
-    this.notes,
-  });
-}
-
-class AttendanceStats {
-  final int totalEmployees;
-  final int presentCount;
-  final int lateCount;
-  final int absentCount;
-  final int onLeaveCount;
-  final double attendanceRate;
-
-  const AttendanceStats({
-    required this.totalEmployees,
-    required this.presentCount,
-    required this.lateCount,
-    required this.absentCount,
-    required this.onLeaveCount,
-    required this.attendanceRate,
-  });
-}
+import '../../../providers/cached_data_providers.dart';
 
 /// Attendance Tab for Company Details
 /// Displays attendance management interface for CEO/Manager
@@ -167,8 +34,8 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
       companyId: widget.companyId,
       date: _selectedDate,
     );
-    final statsAsync = ref.watch(attendanceStatsProvider(params));
-    final attendanceAsync = ref.watch(companyAttendanceProvider(params));
+    final statsAsync = ref.watch(cachedAttendanceStatsProvider(params));
+    final attendanceAsync = ref.watch(cachedCompanyAttendanceProvider(params));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -292,9 +159,9 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -335,7 +202,8 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
             child: InkWell(
               onTap: () => _selectDate(context),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
@@ -363,7 +231,7 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
           Expanded(
             flex: 2,
             child: DropdownButtonFormField<AttendanceStatus?>(
-              value: _filterStatus,
+              initialValue: _filterStatus,
               decoration: InputDecoration(
                 labelText: 'Trạng thái',
                 filled: true,
@@ -515,9 +383,7 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
         ),
 
         // Table Body
-        ...filteredRecords
-            .map((record) => _buildAttendanceRow(record))
-            .toList(),
+        ...filteredRecords.map((record) => _buildAttendanceRow(record)),
       ],
     );
   }
@@ -579,9 +445,7 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
           Expanded(
             flex: 2,
             child: Text(
-              record.checkIn != null
-                  ? DateFormat('HH:mm').format(record.checkIn!)
-                  : '-',
+              DateFormat('HH:mm').format(record.checkIn),
               style: const TextStyle(fontSize: 14),
             ),
           ),
@@ -614,9 +478,10 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: record.status.color.withOpacity(0.1),
+                color: record.status.color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: record.status.color.withOpacity(0.3)),
+                border: Border.all(
+                    color: record.status.color.withValues(alpha: 0.3)),
               ),
               child: Text(
                 record.status.label,
@@ -713,10 +578,17 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDetailRow('Ngày', DateFormat('dd/MM/yyyy').format(record.date)),
-              _buildDetailRow('Giờ vào', record.checkIn != null ? DateFormat('HH:mm:ss').format(record.checkIn!) : 'Chưa chấm công'),
-              _buildDetailRow('Giờ ra', record.checkOut != null ? DateFormat('HH:mm:ss').format(record.checkOut!) : 'Chưa ra ca'),
-              _buildDetailRow('Tổng giờ làm', '${record.hoursWorked.toStringAsFixed(2)} giờ'),
+              _buildDetailRow(
+                  'Ngày', DateFormat('dd/MM/yyyy').format(record.date)),
+              _buildDetailRow(
+                  'Giờ vào', DateFormat('HH:mm:ss').format(record.checkIn)),
+              _buildDetailRow(
+                  'Giờ ra',
+                  record.checkOut != null
+                      ? DateFormat('HH:mm:ss').format(record.checkOut!)
+                      : 'Chưa ra ca'),
+              _buildDetailRow('Tổng giờ làm',
+                  '${record.hoursWorked.toStringAsFixed(2)} giờ'),
               _buildDetailRow('Trạng thái', record.status.label),
               if (record.lateMinutes > 0)
                 _buildDetailRow('Đi muộn', '${record.lateMinutes} phút'),
@@ -767,7 +639,8 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
 
   void _showAttendanceHistory(EmployeeAttendanceRecord record) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Xem lịch sử chấm công của ${record.employeeName}')),
+      SnackBar(
+          content: Text('Xem lịch sử chấm công của ${record.employeeName}')),
     );
   }
 

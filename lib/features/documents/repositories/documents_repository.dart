@@ -107,7 +107,8 @@ class DocumentsRepository {
           .map((json) => Document.fromJson(json as Map<String, dynamic>))
           .toList();
 
-      debugPrint('✅ Found ${documents.length} documents matching "$searchQuery"');
+      debugPrint(
+          '✅ Found ${documents.length} documents matching "$searchQuery"');
       return documents;
     } catch (e) {
       debugPrint('❌ Error searching documents: $e');
@@ -194,11 +195,8 @@ class DocumentsRepository {
         'description': description,
       };
 
-      final response = await _supabase
-          .from(_tableName)
-          .insert(data)
-          .select()
-          .single();
+      final response =
+          await _supabase.from(_tableName).insert(data).select().single();
 
       final document = Document.fromJson(response);
       debugPrint('✅ Document created: ${document.id}');
@@ -249,13 +247,10 @@ class DocumentsRepository {
     try {
       debugPrint('🗑️ Soft deleting document: $documentId');
 
-      await _supabase
-          .from(_tableName)
-          .update({
-            'is_deleted': true,
-            'deleted_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', documentId);
+      await _supabase.from(_tableName).update({
+        'is_deleted': true,
+        'deleted_at': DateTime.now().toIso8601String(),
+      }).eq('id', documentId);
 
       debugPrint('✅ Document soft deleted');
       return true;
@@ -270,10 +265,7 @@ class DocumentsRepository {
     try {
       debugPrint('🗑️ Hard deleting document: $documentId');
 
-      await _supabase
-          .from(_tableName)
-          .delete()
-          .eq('id', documentId);
+      await _supabase.from(_tableName).delete().eq('id', documentId);
 
       debugPrint('✅ Document permanently deleted');
       return true;
@@ -321,9 +313,8 @@ class DocumentsRepository {
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
         .map((data) => data
-            .where((json) => 
-                json['company_id'] == companyId && 
-                json['is_deleted'] == false)
+            .where((json) =>
+                json['company_id'] == companyId && json['is_deleted'] == false)
             .map((json) => Document.fromJson(json))
             .toList());
   }
