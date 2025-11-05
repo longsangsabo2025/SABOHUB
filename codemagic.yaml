@@ -13,6 +13,9 @@ workflows:
       vars:
         BUNDLE_ID: "com.sabohub.app"
         APP_NAME: "SABOHUB"
+        # App Store Connect API credentials
+        APP_STORE_CONNECT_ISSUER_ID: "4405e7f9-8e89-495a-b535-f9e83e96a7ad"
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "JL9L6RNRXB"
         # Environment variables from .env file
         SUPABASE_URL: "https://dqddxowyikefqcdiioyh.supabase.co"
         SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3OTcxMzYsImV4cCI6MjA3NzM3MzEzNn0.okmsG2R248fxOHUEFFl5OBuCtjtCIlO9q9yVSyCV25Y"
