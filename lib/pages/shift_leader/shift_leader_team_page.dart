@@ -702,9 +702,7 @@ class _ShiftLeaderTeamPageState extends ConsumerState<ShiftLeaderTeamPage> {
 
   Widget _buildShiftHistory(List<Staff> staffList) {
     // Generate history for last 5 days based on staff count
-    final now = DateTime.now();
     final historyDays = List.generate(5, (index) {
-      final date = now.subtract(Duration(days: index));
       final activeStaff = staffList.where((s) => s.status == 'active').length;
       final totalStaff = staffList.length;
       
@@ -713,7 +711,7 @@ class _ShiftLeaderTeamPageState extends ConsumerState<ShiftLeaderTeamPage> {
             ? 'Hôm nay'
             : index == 1
                 ? 'Hôm qua'
-                : '${index} ngày trước',
+                : '$index ngày trước',
         'shift': index % 3 == 0 ? 'Ca chiều' : index % 3 == 1 ? 'Ca sáng' : 'Ca tối',
         'duration': '8 giờ',
         'staffCount': '$activeStaff/$totalStaff',
@@ -917,7 +915,7 @@ class _ShiftLeaderTeamPageState extends ConsumerState<ShiftLeaderTeamPage> {
     // Calculate performance based on real staff and task data
     final activeStaff = staffList.where((s) => s.status == 'active').toList();
     final totalCompleted = taskStats['completed'] ?? 0;
-    final totalTasks = taskStats['total'] ?? 1;
+    // final totalTasks = taskStats['total'] ?? 1; // Unused variable removed
     
     // Distribute tasks among active staff for estimation
     final performanceData = activeStaff.asMap().entries.map((entry) {
@@ -926,7 +924,7 @@ class _ShiftLeaderTeamPageState extends ConsumerState<ShiftLeaderTeamPage> {
       
       // Estimate individual performance based on team stats
       final baseScore = 75 + (index * 3) % 20; // Vary between 75-95
-      final estimatedTasks = (totalCompleted / (activeStaff.length > 0 ? activeStaff.length : 1)).round();
+      final estimatedTasks = (totalCompleted / (activeStaff.isNotEmpty ? activeStaff.length : 1)).round();
       final score = baseScore + (estimatedTasks > 10 ? 5 : 0);
       
       return {
@@ -967,7 +965,7 @@ class _ShiftLeaderTeamPageState extends ConsumerState<ShiftLeaderTeamPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Dựa trên ${totalCompleted} nhiệm vụ hoàn thành',
+                  'Dựa trên $totalCompleted nhiệm vụ hoàn thành',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
