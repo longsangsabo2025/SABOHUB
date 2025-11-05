@@ -19,7 +19,7 @@
 	<key>provisioningProfiles</key>
 	<dict>
 		<key>com.sabohub.app</key>
-		<string>sabohub_appstore_profile</string>
+		<string>b8ab8492-fe21-40f1-a7d0-eceff4574c22</string>
 	</dict>
 </dict>
 </plist>
