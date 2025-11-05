@@ -14,8 +14,8 @@ workflows:
     # No integration needed - using environment variables instead
     
     environment:
-      # Note: Environment variables are set in App Settings → Environment variables
-      # Personal accounts don't support groups - variables must be added directly to app
+      groups:
+        - app_store # Group contains: APP_STORE_CONNECT_PRIVATE_KEY, BUNDLE_ID, ISSUER_ID, KEY_IDENTIFIER
       flutter: stable
       xcode: latest
       cocoapods: default
