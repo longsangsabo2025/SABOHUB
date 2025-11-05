@@ -13,8 +13,13 @@
 	<key>compileBitcode</key>
 	<false/>
 	<key>signingStyle</key>
-	<string>automatic</string>
+	<string>manual</string>
 	<key>signingCertificate</key>
 	<string>Apple Distribution</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.sabohub.app</key>
+		<string>sabohub_appstore_profile</string>
+	</dict>
 </dict>
 </plist>
