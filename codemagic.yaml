@@ -126,16 +126,37 @@ workflows:
       #     flutter test
       #   ignore_failure: true
       
-      # 9. Build iOS IPA (flutter build ipa uses xcode-project settings automatically)
-      - name: Build iOS IPA for App Store
+      # 9. Build iOS Archive
+      - name: Build iOS Archive
         script: |
-          echo "🏗️  Building iOS IPA for App Store..."
-          flutter build ipa --release \
-            --export-options-plist=ios/ExportOptions.plist \
+          echo "🏗️  Building iOS Archive for App Store..."
+          flutter build ios --release --no-codesign \
             --dart-define=SUPABASE_URL=$SUPABASE_URL \
             --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
-            --dart-define=SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
-          echo "✅ IPA build completed successfully"
+            --dart-define=SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY \
+            --dart-define=ENABLE_QUICK_LOGIN=true
+          echo "✅ iOS build completed"
+      
+      # 10. Create Xcode Archive
+      - name: Create Xcode Archive
+        script: |
+          echo "📦 Creating Xcode archive..."
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath build/ios/Runner.xcarchive \
+            archive
+          echo "✅ Archive created"
+      
+      # 11. Export IPA with provisioning profile
+      - name: Export IPA for App Store
+        script: |
+          echo "📤 Exporting IPA for App Store distribution..."
+          xcodebuild -exportArchive \
+            -archivePath build/ios/Runner.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist ios/ExportOptions.plist
+          echo "✅ IPA exported successfully"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log

@@ -538,8 +538,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Quick Login Button (Dev Only)
-                  if (!const bool.fromEnvironment('dart.vm.product'))
+                  // Quick Login Button (Dev & TestFlight)
+                  if (const bool.fromEnvironment('ENABLE_QUICK_LOGIN', defaultValue: true))
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
