@@ -107,25 +107,26 @@ workflows:
           echo "✅ Version updated successfully"
           grep "^version:" pubspec.yaml
       
-      # Code signing is handled automatically by ios_signing configuration above
-      # CodeMagic will automatically:
-      # 1. Fetch certificates from Apple using App Store Connect API integration
-      # 2. Install them in keychain
-      # 3. Configure Xcode project with correct provisioning profiles
+      # 6. Configure Xcode project with provisioning profiles
+      - name: Set up code signing in Xcode
+        script: |
+          echo "🔧 Configuring Xcode project with provisioning profiles..."
+          xcode-project use-profiles
+          echo "✅ Xcode code signing configured"
       
-      # 6. Flutter analyze
+      # 7. Flutter analyze
       - name: Flutter analyze
         script: |
           echo "🔍 Running Flutter analyze..."
           flutter analyze
       
-      # 7. Flutter test (optional)
+      # 8. Flutter test (optional)
       # - name: Flutter test
       #   script: |
       #     flutter test
       #   ignore_failure: true
       
-      # 8. Build iOS IPA
+      # 9. Build iOS IPA
       - name: Flutter build ipa
         script: |
           echo "🏗️  Building iOS IPA for App Store..."
