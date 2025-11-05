@@ -113,6 +113,7 @@ upload-keystore.jks
 
 # App Store Connect API Keys (SENSITIVE!)
 APP_STORE_CONNECT_CREDENTIALS.md
+CODEMAGIC-COMPLETE-SETUP-GUIDE.md
 AuthKey_*.p8
 *.p8
 
