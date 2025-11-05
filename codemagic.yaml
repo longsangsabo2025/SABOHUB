@@ -9,6 +9,7 @@ workflows:
         bundle_identifier: com.sabohub.app
       groups:
         - app_store # <-- (Includes APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY)
+      # Apple Developer Portal integration will automatically fetch certificates and profiles
       vars:
         BUNDLE_ID: "com.sabohub.app"
         APP_NAME: "SABOHUB"
@@ -42,6 +43,22 @@ workflows:
       - name: Install pods
         script: |
           find . -name "Podfile" -execdir pod install \;
+      - name: Set up code signing
+        script: |
+          # Keychain setup for code signing
+          keychain initialize
+      - name: Fetch signing files
+        script: |
+          # This automatically fetches certificates and profiles from Apple Developer Portal
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Use signing certificate
+        script: |
+          keychain add-certificates
+      - name: Set up code signing settings in Xcode
+        script: |
+          xcode-project use-profiles
       - name: Flutter analyze
         script: |
           flutter analyze
