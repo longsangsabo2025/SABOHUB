@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/ai_uploaded_file.dart';
+import '../utils/logger_service.dart';
 import 'package:flutter/foundation.dart';
 
 /// Service for handling file uploads for AI Assistant
@@ -90,7 +91,7 @@ class FileUploadService {
         uploadedFiles.add(uploadedFile);
       } catch (e) {
         if (kDebugMode) {
-          print('Failed to upload file ${file.path}: $e');
+          logger.debug('Failed to upload file ${file.path}: $e');
         }
         // Continue with other files
       }

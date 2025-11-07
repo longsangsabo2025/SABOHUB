@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../../providers/cached_data_providers.dart'; // PHASE 3A - Cached providers
 import '../../providers/ceo_tab_provider.dart';
+import '../attendance/attendance_list_page.dart';
+import '../schedules/schedule_list_page.dart';
 import 'ceo_main_layout.dart';
 import 'ceo_notifications_page.dart';
 import 'ceo_profile_page.dart';
@@ -496,6 +498,44 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
                 () {
                   // Navigate to AI Management tab (settings)
                   _navigateToTab(CEOTabs.ai);
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionCard(
+                'Lịch làm việc',
+                Icons.schedule,
+                const Color(0xFFFF9800),
+                () {
+                  // Navigate to Schedule management
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ScheduleListPage(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildActionCard(
+                'Chấm công',
+                Icons.access_time,
+                const Color(0xFF4CAF50),
+                () {
+                  // Navigate to Attendance management
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AttendanceListPage(),
+                    ),
+                  );
                 },
               ),
             ),

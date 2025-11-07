@@ -3,9 +3,13 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:crypto/crypto.dart';
+import 'dart:math';
 
 import '../models/user.dart' as app_user;
 import '../services/account_storage_service.dart';
+import '../utils/logger_service.dart';
 
 // Get the Supabase client instance
 final _supabaseClient = Supabase.instance.client;
@@ -83,7 +87,9 @@ class AuthNotifier extends Notifier<AuthState> {
     // Auto-restore session on app start (async, doesn't block)
     Future.microtask(() => _restoreSession());
 
-    return const AuthState();
+    // ✅ FIX: Return loading state initially to prevent race condition
+    // Router will wait for session restore before redirecting
+    return const AuthState(isLoading: true);
   }
 
   /// Handle sign out from server or token expiration
@@ -485,6 +491,143 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (e) {
       throw Exception('Lỗi hệ thống: $e');
     }
+  }
+
+  /// Sign in with Apple
+  Future<bool> signInWithApple() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      // Generate random nonce for security
+      final rawNonce = _generateNonce();
+      final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+      // Request Apple credentials
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+
+      // Sign in to Supabase with Apple token
+      final authResponse = await _supabaseClient.auth.signInWithIdToken(
+        provider: OAuthProvider.apple,
+        idToken: credential.identityToken!,
+        nonce: rawNonce,
+      );
+
+      if (authResponse.user == null) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Đăng nhập Apple thất bại',
+        );
+        return false;
+      }
+
+      // Check if user exists in database
+      final response = await _supabaseClient
+          .from('users')
+          .select()
+          .eq('id', authResponse.user!.id)
+          .maybeSingle();
+
+      app_user.User user;
+      if (response == null) {
+        // New user - create profile in database
+        final newUser = {
+          'id': authResponse.user!.id,
+          'email': authResponse.user!.email ?? credential.email,
+          'full_name': credential.givenName != null && credential.familyName != null
+              ? '${credential.givenName} ${credential.familyName}'
+              : authResponse.user!.userMetadata?['full_name'] ?? 'Apple User',
+          'role': 'STAFF', // Default role
+          'is_active': true,
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+
+        final insertResponse = await _supabaseClient
+            .from('users')
+            .insert(newUser)
+            .select()
+            .single();
+
+        user = app_user.User.fromJson(insertResponse);
+      } else {
+        // Existing user
+        user = app_user.User.fromJson(response);
+      }
+
+      // Check if user is active
+      if (user.isActive == false) {
+        await _supabaseClient.auth.signOut();
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.',
+        );
+        return false;
+      }
+
+      // Save user and update state
+      await _saveUser(user);
+      _resetSessionTimer();
+
+      state = state.copyWith(
+        user: user,
+        isLoading: false,
+        error: null,
+      );
+
+      return true;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      String errorMessage;
+      switch (e.code) {
+        case AuthorizationErrorCode.canceled:
+          errorMessage = 'Đăng nhập bị hủy';
+          break;
+        case AuthorizationErrorCode.failed:
+          errorMessage = 'Đăng nhập thất bại';
+          break;
+        case AuthorizationErrorCode.invalidResponse:
+          errorMessage = 'Phản hồi không hợp lệ từ Apple';
+          break;
+        case AuthorizationErrorCode.notHandled:
+          errorMessage = 'Yêu cầu không được xử lý';
+          break;
+        case AuthorizationErrorCode.unknown:
+          errorMessage = 'Lỗi không xác định';
+          break;
+        default:
+          errorMessage = 'Đăng nhập Apple thất bại: ${e.code}';
+      }
+
+      state = state.copyWith(
+        isLoading: false,
+        error: errorMessage,
+      );
+      return false;
+    } on AuthException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Đăng nhập Apple thất bại: ${e.message}',
+      );
+      return false;
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Lỗi hệ thống: $e',
+      );
+      return false;
+    }
+  }
+
+  /// Generate secure random nonce for Apple Sign In
+  String _generateNonce([int length = 32]) {
+    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
   }
 
   /// Reset password - send reset email

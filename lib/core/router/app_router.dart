@@ -134,9 +134,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.login,
     redirect: (context, state) {
       final isLoggedIn = authState.isAuthenticated;
+      final isLoading = authState.isLoading;
       final isAuthRoute = state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.signup ||
           state.matchedLocation == AppRoutes.forgotPassword;
+
+      // ✅ FIX: Wait for session restore to complete before redirecting
+      // This prevents the race condition where user sees login page briefly
+      if (isLoading) {
+        return null; // Stay on current route while loading
+      }
 
       // Email verification is accessible for both logged in and logged out users
       // Check if path starts with email verification (to handle query parameters)

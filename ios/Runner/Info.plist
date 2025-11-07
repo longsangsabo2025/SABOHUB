@@ -52,12 +52,8 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>SABOHUB cần truy cập thư viện ảnh để bạn có thể chọn và tải lên hình ảnh tài liệu, hồ sơ nhân viên và các file đính kèm.</string>
 	
-	<!-- Privacy - Location Always and When In Use -->
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>SABOHUB sử dụng vị trí của bạn để theo dõi check-in/check-out nhân viên và xác thực vị trí làm việc.</string>
-	
 	<!-- Privacy - Location When In Use -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>SABOHUB cần truy cập vị trí để ghi nhận điểm check-in/check-out và xác minh nhân viên đang ở đúng địa điểm làm việc.</string>
+	<string>SABOHUB cần truy cập vị trí của bạn để xác minh địa điểm làm việc khi check-in. Vị trí chỉ được sử dụng trong thời gian bạn mở ứng dụng và không được lưu trữ hay chia sẻ với bên thứ ba.</string>
 </dict>
 </plist>

@@ -24,12 +24,12 @@ class LoggerService {
 
     if (kDebugMode) {
       // Print to console in debug mode
-      print(logMessage);
+      if (kDebugMode) { print(logMessage); }
       if (error != null) {
-        print('Error: $error');
+        if (kDebugMode) { print('Error: $error'); }
       }
       if (stackTrace != null) {
-        print('Stack trace:\n$stackTrace');
+        if (kDebugMode) { print('Stack trace:\n$stackTrace'); }
       }
     }
 

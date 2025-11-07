@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/supabase_config.dart';
 import 'core/router/app_router.dart';
 import 'providers/auth_provider.dart';
+import 'utils/error_tracker.dart' as tracker;
 import 'widgets/error_boundary.dart';
 // import 'utils/debug_utils.dart' if (dart.library.html) 'utils/debug_utils.dart';
 
@@ -20,6 +21,9 @@ void main() async {
   //   DebugProvider().initialize();
   // }
 
+  // Initialize Performance & Error Tracking
+  await tracker.ErrorTracker().initialize();
+  
   // Initialize Supabase with persistent session
   await Supabase.initialize(
     url: SupabaseConfig.supabaseUrl,

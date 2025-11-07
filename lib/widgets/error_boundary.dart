@@ -23,18 +23,21 @@ class ErrorBoundary extends ConsumerStatefulWidget {
 
 class _ErrorBoundaryState extends ConsumerState<ErrorBoundary> {
   AppError? _error;
+  late final ErrorHandler _errorHandler;
 
   @override
   void initState() {
     super.initState();
 
-    // Listen to errors from ErrorHandler
-    ref.read(errorHandlerProvider).addListener(_handleError);
+    // Cache error handler to avoid using ref in dispose
+    _errorHandler = ref.read(errorHandlerProvider);
+    _errorHandler.addListener(_handleError);
   }
 
   @override
   void dispose() {
-    ref.read(errorHandlerProvider).removeListener(_handleError);
+    // Use cached handler instead of ref
+    _errorHandler.removeListener(_handleError);
     super.dispose();
   }
 

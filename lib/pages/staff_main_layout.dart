@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/navigation/navigation_models.dart';
 import '../providers/auth_provider.dart';
+import '../utils/performance_monitor.dart';
 import '../widgets/dev_role_switcher.dart';
 import '../widgets/unified_bottom_navigation.dart';
 import 'common/company_info_page.dart';
@@ -40,6 +41,9 @@ class _StaffMainLayoutState extends ConsumerState<StaffMainLayout>
 
   void _onNavigationChanged(int index) {
     if (_currentIndex != index) {
+      // Start performance tracking for navigation
+      PerformanceMonitor().startMeasuring('staff_tab_navigation');
+      
       // Haptic feedback for navigation
       HapticFeedback.lightImpact();
 
@@ -52,6 +56,9 @@ class _StaffMainLayoutState extends ConsumerState<StaffMainLayout>
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
+      
+      // Stop performance tracking
+      PerformanceMonitor().stopMeasuring('staff_tab_navigation');
     }
   }
 

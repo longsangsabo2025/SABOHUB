@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/ai_provider.dart';
+import '../../utils/logger_service.dart';
 import 'package:flutter/foundation.dart';
 
 /// Chat input widget with file attachment support
@@ -77,17 +78,12 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
               // Automatically trigger file processing in background
               unawaited(
                 fileUploadService.processFile(uploadedFile.id).catchError((e) {
-                  if (kDebugMode) {
-                    print(
-                        'Failed to process file ${uploadedFile.fileName}: $e');
-                  }
+                  logger.error('Failed to process file ${uploadedFile.fileName}', e);
                   return uploadedFile; // Return the original file on error
                 }),
               );
             } catch (e) {
-              if (kDebugMode) {
-                print('Failed to upload ${file.name}: $e');
-              }
+              logger.error('Failed to upload file ${file.name}', e);
             }
           }
         }
