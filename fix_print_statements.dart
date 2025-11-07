@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert';
 
 /// Script to replace all print() statements with proper logging
 void main() async {

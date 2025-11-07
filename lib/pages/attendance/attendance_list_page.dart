@@ -6,7 +6,7 @@ import '../../models/attendance.dart';
 import '../../providers/attendance_provider.dart';
 
 class AttendanceListPage extends ConsumerStatefulWidget {
-  const AttendanceListPage({Key? key}) : super(key: key);
+  const AttendanceListPage({super.key});
 
   @override
   ConsumerState<AttendanceListPage> createState() => _AttendanceListPageState();

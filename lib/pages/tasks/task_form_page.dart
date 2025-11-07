@@ -356,7 +356,7 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
                               ],
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                       onChanged: (value) {
                         setState(() => _selectedAssigneeId = value);
@@ -576,13 +576,13 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
       locale: const Locale('vi', 'VN'),
     );
 
-    if (picked != null) {
+    if (picked != null && mounted) {
       final time = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(_selectedDueDate),
       );
 
-      if (time != null) {
+      if (time != null && mounted) {
         setState(() {
           _selectedDueDate = DateTime(
             picked.year,
@@ -661,7 +661,9 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
         _showSnackBar('Cập nhật nhiệm vụ thành công!', Colors.green);
       }
 
-      Navigator.pop(context, true); // Return true to indicate success
+      if (mounted) {
+        Navigator.pop(context, true); // Return true to indicate success
+      }
 
     } catch (e) {
       _showSnackBar('Lỗi: $e', Colors.red);

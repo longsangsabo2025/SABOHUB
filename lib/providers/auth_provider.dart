@@ -9,7 +9,6 @@ import 'dart:math';
 
 import '../models/user.dart' as app_user;
 import '../services/account_storage_service.dart';
-import '../utils/logger_service.dart';
 
 // Get the Supabase client instance
 final _supabaseClient = Supabase.instance.client;

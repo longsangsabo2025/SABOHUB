@@ -1,13 +1,13 @@
-/// 🧪 SABOHUB AUTOMATED TEST RUNNER
-/// 
-/// This script helps QA testers verify key functionality automatically
-/// Run with: flutter test integration_test/qa_test_runner.dart
-/// 
-/// Tests Covered:
-/// - Authentication flow (login, signup, verification)
-/// - Role-based access control
-/// - Navigation and routing
-/// - Core features (check-in, tasks, etc.)
+// 🧪 SABOHUB AUTOMATED TEST RUNNER
+// 
+// This script helps QA testers verify key functionality automatically
+// Run with: flutter test integration_test/qa_test_runner.dart
+// 
+// Tests Covered:
+// - Authentication flow (login, signup, verification)
+// - Role-based access control
+// - Navigation and routing
+// - Core features (check-in, tasks, etc.)
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';

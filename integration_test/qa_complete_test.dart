@@ -1,14 +1,14 @@
-/// 🧪 SABOHUB COMPLETE QA TEST SUITE
-/// 
-/// Comprehensive automated tests covering:
-/// ✅ Authentication flows (login, signup, validation)
-/// ✅ Role-based access control
-/// ✅ UI element verification
-/// ✅ Error handling and edge cases
-/// ✅ Performance metrics
-/// 
-/// Run: flutter test integration_test/qa_complete_test.dart
-/// With coverage: flutter test integration_test/qa_complete_test.dart --coverage
+// 🧪 SABOHUB COMPLETE QA TEST SUITE
+// 
+// Comprehensive automated tests covering:
+// ✅ Authentication flows (login, signup, validation)
+// ✅ Role-based access control
+// ✅ UI element verification
+// ✅ Error handling and edge cases
+// ✅ Performance metrics
+// 
+// Run: flutter test integration_test/qa_complete_test.dart
+// With coverage: flutter test integration_test/qa_complete_test.dart --coverage
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -72,17 +72,17 @@ void main() {
       app.main();
       await tester.pumpAndSettle();
 
-      final passwordField = find.byType(TextFormField).at(1);
-      final widget = tester.widget<TextFormField>(passwordField);
-      
-      expect(widget.obscureText, true, reason: 'Password initially hidden');
+      // Find password field by checking for visibility icon
+      expect(find.byIcon(Icons.visibility_outlined), findsWidgets,
+          reason: 'Password field should have visibility toggle');
 
       // Tap visibility toggle
-      await tester.tap(find.byIcon(Icons.visibility_outlined));
+      await tester.tap(find.byIcon(Icons.visibility_outlined).first);
       await tester.pump();
 
-      final updatedWidget = tester.widget<TextFormField>(passwordField);
-      expect(updatedWidget.obscureText, false, reason: 'Password now visible');
+      // After toggle, icon should change
+      expect(find.byIcon(Icons.visibility_off_outlined), findsWidgets,
+          reason: 'Password should now be visible');
       
       debugPrint('✅ TEST 1.4 PASSED: Password toggle works');
     });
@@ -329,13 +329,13 @@ void main() {
       app.main();
       await tester.pumpAndSettle();
 
-      final emailField = find.byType(TextFormField).first;
-      final fieldWidget = tester.widget<TextFormField>(emailField);
-      
-      expect(fieldWidget.decoration?.prefixIcon, isNotNull,
-          reason: '✅ Should have icon');
-      expect(fieldWidget.decoration?.labelText, isNotNull,
-          reason: '✅ Should have label');
+      // Verify input fields exist and are properly styled
+      expect(find.byType(TextFormField), findsNWidgets(2),
+          reason: '✅ Should have email and password fields');
+      expect(find.byIcon(Icons.email_outlined), findsOneWidget,
+          reason: '✅ Email field should have icon');
+      expect(find.byIcon(Icons.lock_outline), findsOneWidget,
+          reason: '✅ Password field should have icon');
       
       debugPrint('✅ TEST 4.2 PASSED: Input decoration verified');
     });

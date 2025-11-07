@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/ai_provider.dart';
 import '../../utils/logger_service.dart';
-import 'package:flutter/foundation.dart';
 
 /// Chat input widget with file attachment support
 class ChatInputWidget extends ConsumerStatefulWidget {
