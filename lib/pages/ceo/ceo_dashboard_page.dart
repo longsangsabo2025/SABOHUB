@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../providers/cached_data_providers.dart'; // PHASE 3A - Cached providers
@@ -496,8 +497,8 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
                 Icons.person_add,
                 const Color(0xFF00897B),
                 () {
-                  // Navigate to Create Employee page
-                  Navigator.pushNamed(context, '/employees/create');
+                  // Navigate to Create Employee page using GoRouter
+                  context.push('/employees/create');
                 },
               ),
             ),

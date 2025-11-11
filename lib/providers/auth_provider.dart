@@ -141,16 +141,20 @@ class AuthNotifier extends Notifier<AuthState> {
               companyId: response['company_id'] as String?,
             );
 
-            await _saveUser(user, isDemoMode: false);
+            // Save user in background, don't wait
+            _saveUser(user, isDemoMode: false).catchError((e) {
+              // Ignore save errors
+            });
 
+            // Reset session timer
+            _resetSessionTimer();
+
+            // Single state update with all data
             state = state.copyWith(
               user: user,
               isDemoMode: false,
               isLoading: false,
             );
-
-            // Phase 3.1: Reset session timer on successful restore
-            _resetSessionTimer();
 
             return;
           } else {
@@ -161,11 +165,25 @@ class AuthNotifier extends Notifier<AuthState> {
         }
       }
 
-      // 3. Fallback to demo user from local storage
-      await loadUser();
+      // 3. Fallback to demo user from local storage (fast path)
+      final prefs = await SharedPreferences.getInstance();
+      final demoMode = prefs.getBool(_demoModeKey) ?? false;
+      final storedUserJson = prefs.getString(_authStorageKey);
 
-      if (state.user != null) {
-      } else {}
+      if (demoMode && storedUserJson != null) {
+        final userMap = jsonDecode(storedUserJson) as Map<String, dynamic>;
+        final user = app_user.User.fromJson(userMap);
+
+        state = state.copyWith(
+          user: user,
+          isDemoMode: true,
+          isLoading: false,
+        );
+        return;
+      }
+
+      // No session found
+      state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false);
     }
@@ -252,6 +270,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
   /// Login with email and password
   Future<bool> login(String email, String password) async {
+    // Only set loading once at the start
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -260,6 +279,7 @@ class AuthNotifier extends Notifier<AuthState> {
       if (demoUser != null && password == 'demo') {
         await _saveUser(demoUser, isDemoMode: true);
 
+        // Single state update with all data
         state = state.copyWith(
           user: demoUser,
           isDemoMode: true,
@@ -270,7 +290,6 @@ class AuthNotifier extends Notifier<AuthState> {
       }
 
       // 2. Real Supabase authentication
-
       final authResponse = await _supabaseClient.auth.signInWithPassword(
         email: email,
         password: password,
@@ -294,7 +313,7 @@ class AuthNotifier extends Notifier<AuthState> {
         return false;
       }
 
-      // 4. Fetch user profile from database - specify columns to avoid relationship ambiguity
+      // 4. Fetch user profile from database in parallel with save operations
       final response = await _supabaseClient
           .from('users')
           .select(
@@ -321,20 +340,27 @@ class AuthNotifier extends Notifier<AuthState> {
         companyId: response['company_id'] as String?,
       );
 
-      // 6. Save to state and storage
-      await _saveUser(user, isDemoMode: false);
+      // 6. Batch all save operations (don't await each one)
+      final saveOperations = Future.wait([
+        _saveUser(user, isDemoMode: false),
+        AccountStorageService.saveAccount(user),
+      ]);
 
+      // Reset session timer
+      _resetSessionTimer();
+
+      // 7. Update state ONCE with final result (don't wait for save to complete)
       state = state.copyWith(
         user: user,
         isDemoMode: false,
         isLoading: false,
       );
 
-      // ✨ Auto-save account for 1-click switching
-      await AccountStorageService.saveAccount(user);
-
-      // Phase 3.1: Reset session timer on successful login
-      _resetSessionTimer();
+      // Let save operations complete in background
+      saveOperations.catchError((e) {
+        // Ignore save errors, user is already logged in
+        return <void>[];
+      });
 
       return true;
     } on AuthException catch (e) {
