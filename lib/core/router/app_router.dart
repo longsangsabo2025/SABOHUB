@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/user.dart' as user_model;
+import '../../pages/auth/dual_login_page.dart';
 import '../../pages/auth/email_verification_page.dart';
 import '../../pages/auth/employee_signup_page.dart';
 import '../../pages/auth/forgot_password_page.dart';
-import '../../pages/auth/login_page.dart';
 import '../../pages/auth/signup_page_new.dart';
+import '../../pages/ceo/ceo_create_employee_wrapper.dart';
 import '../../pages/company/company_settings_page.dart';
-import '../../pages/employees/create_employee_page.dart';
 import '../../pages/employees/create_invitation_page.dart';
 import '../../pages/employees/employee_list_page.dart';
 import '../../pages/onboarding/onboarding_page.dart';
@@ -175,10 +175,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // Login route
+      // Login route - Dual authentication (CEO email/password OR Employee company/username/password)
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const LoginPage(),
+        builder: (context, state) => const DualLoginPage(),
       ),
 
       // Signup route
@@ -291,9 +291,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.companySettings,
         builder: (context, state) => const CompanySettingsPage(),
       ),
+      // CEO Create Employee route (using new dual auth system)
       GoRoute(
         path: AppRoutes.createEmployee,
-        builder: (context, state) => const CreateEmployeePage(),
+        builder: (context, state) => const CEOCreateEmployeeWrapper(),
       ),
       GoRoute(
         path: AppRoutes.createInvitation,
