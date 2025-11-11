@@ -493,22 +493,6 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
             const SizedBox(width: 12),
             Expanded(
               child: _buildActionCard(
-                'Tạo nhân viên',
-                Icons.person_add,
-                const Color(0xFF00897B),
-                () {
-                  // Navigate to Create Employee page using GoRouter
-                  context.push('/employees/create');
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
                 'Cài đặt hệ thống',
                 Icons.settings,
                 const Color(0xFF7B1FA2),

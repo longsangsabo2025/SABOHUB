@@ -5,8 +5,9 @@ import 'package:geolocator/geolocator.dart';
 import '../../../models/business_type.dart';
 import '../../../models/company.dart';
 import '../../../services/company_service.dart';
-import '../create_employee_simple_dialog.dart';
 import '../company_details_page.dart' show companyDetailsProvider;
+import 'package:go_router/go_router.dart';
+import '../../../core/router/app_router.dart';
 
 /// Settings Tab for Company Details
 /// Shows company settings, edit options, and dangerous actions
@@ -444,12 +445,8 @@ class SettingsTab extends ConsumerWidget {
   // Employee Management Methods
   Future<void> _showCreateEmployeeDialog(
       BuildContext context, Company company) async {
-    await showDialog(
-      context: context,
-      builder: (context) => CreateEmployeeSimpleDialog(
-        company: company,
-      ),
-    );
+    // Navigate to standalone create employee page
+    context.push(AppRoutes.createEmployee);
   }
 
   Future<void> _showEmployeeListDialog(BuildContext context) async {

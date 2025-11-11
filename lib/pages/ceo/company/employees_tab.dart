@@ -6,8 +6,9 @@ import '../../../models/user.dart' as app_user;
 import '../../../providers/employee_provider.dart';
 import '../../../providers/cached_data_providers.dart';
 import '../../../services/employee_service.dart';
-import '../create_employee_simple_dialog.dart';
 import '../edit_employee_dialog.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/router/app_router.dart';
 
 /// Employees Tab for Company Details
 /// Shows employee list with search, filter, and CRUD operations
@@ -666,12 +667,8 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
 
   // Employee Management Methods
   Future<void> _showCreateEmployeeDialog(Company company) async {
-    await showDialog(
-      context: context,
-      builder: (context) => CreateEmployeeSimpleDialog(
-        company: company,
-      ),
-    );
+    // Navigate to standalone create employee page instead of dialog
+    context.push(AppRoutes.createEmployee);
   }
 
   Future<void> _showEditEmployeeDialog(app_user.User employee) async {
