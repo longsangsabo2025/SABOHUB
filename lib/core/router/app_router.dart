@@ -292,6 +292,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const CompanySettingsPage(),
       ),
       // CEO Create Employee route (using new dual auth system)
+      // Note: This route is standalone (no CEOMainLayout wrapper) to avoid GlobalKey conflict
       GoRoute(
         path: AppRoutes.createEmployee,
         builder: (context, state) => const CEOCreateEmployeeWrapper(),
