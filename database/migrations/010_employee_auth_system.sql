@@ -87,7 +87,7 @@ CREATE POLICY "ceo_view_all_employees"
     EXISTS (
       SELECT 1 FROM public.companies
       WHERE companies.id = employees.company_id
-      AND companies.owner_id = auth.uid()
+      AND companies.created_by = auth.uid()
     )
   );
 
@@ -99,7 +99,7 @@ CREATE POLICY "ceo_create_employees"
     EXISTS (
       SELECT 1 FROM public.companies
       WHERE companies.id = employees.company_id
-      AND companies.owner_id = auth.uid()
+      AND companies.created_by = auth.uid()
     )
   );
 
@@ -111,7 +111,7 @@ CREATE POLICY "ceo_update_employees"
     EXISTS (
       SELECT 1 FROM public.companies
       WHERE companies.id = employees.company_id
-      AND companies.owner_id = auth.uid()
+      AND companies.created_by = auth.uid()
     )
   );
 
@@ -123,7 +123,7 @@ CREATE POLICY "ceo_delete_employees"
     EXISTS (
       SELECT 1 FROM public.companies
       WHERE companies.id = employees.company_id
-      AND companies.owner_id = auth.uid()
+      AND companies.created_by = auth.uid()
     )
   );
 
@@ -142,11 +142,11 @@ DECLARE
   v_company_id UUID;
   v_password_match BOOLEAN;
 BEGIN
-  -- Find company by name
+  -- Find company by name (using is_active instead of status)
   SELECT id INTO v_company_id
   FROM public.companies
   WHERE LOWER(name) = LOWER(p_company_name)
-  AND status = 'active'
+  AND is_active = true
   LIMIT 1;
   
   IF v_company_id IS NULL THEN
