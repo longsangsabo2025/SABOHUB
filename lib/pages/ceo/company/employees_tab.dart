@@ -7,8 +7,7 @@ import '../../../providers/employee_provider.dart';
 import '../../../providers/cached_data_providers.dart';
 import '../../../services/employee_service.dart';
 import '../edit_employee_dialog.dart';
-import 'package:go_router/go_router.dart';
-import '../../../core/router/app_router.dart';
+import 'create_employee_dialog.dart';
 
 /// Employees Tab for Company Details
 /// Shows employee list with search, filter, and CRUD operations
@@ -667,8 +666,15 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
 
   // Employee Management Methods
   Future<void> _showCreateEmployeeDialog(Company company) async {
-    // Navigate to standalone create employee page instead of dialog
-    context.push(AppRoutes.createEmployee);
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => CreateEmployeeDialog(company: company),
+    );
+
+    // Refresh employee list if employee was created
+    if (result == true) {
+      ref.invalidate(companyEmployeesProvider(widget.companyId));
+    }
   }
 
   Future<void> _showEditEmployeeDialog(app_user.User employee) async {
