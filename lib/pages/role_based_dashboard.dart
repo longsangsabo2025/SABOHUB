@@ -432,8 +432,8 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
   Widget _buildRoleLayout(UserRole role) {
     switch (role) {
       case UserRole.ceo:
-        // Use same global key as router to avoid GlobalKey conflict
-        return CEOMainLayout(key: ceoMainLayoutKey);
+        // Don't use GlobalKey here - causes conflict when navigating to other CEO pages
+        return const CEOMainLayout();
       case UserRole.manager:
         return const ManagerMainLayout();
       case UserRole.shiftLeader:
