@@ -8,7 +8,7 @@ import '../../pages/auth/email_verification_page.dart';
 import '../../pages/auth/employee_signup_page.dart';
 import '../../pages/auth/forgot_password_page.dart';
 import '../../pages/auth/signup_page_new.dart';
-import '../../pages/ceo/ceo_create_employee_wrapper.dart';
+import '../../pages/employees/create_employee_page.dart';
 import '../../pages/company/company_settings_page.dart';
 import '../../pages/employees/create_invitation_page.dart';
 import '../../pages/employees/employee_list_page.dart';
@@ -272,18 +272,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ManagerMainLayout(),
       ),
 
-      // CEO routes
+      // CEO routes - Remove GlobalKey to fix navigation conflicts
       GoRoute(
         path: AppRoutes.ceoAnalytics,
-        builder: (context, state) => CEOMainLayout(key: ceoMainLayoutKey),
+        builder: (context, state) => const CEOMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.ceoCompanies,
-        builder: (context, state) => CEOMainLayout(key: ceoMainLayoutKey),
+        builder: (context, state) => const CEOMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.ceoSettings,
-        builder: (context, state) => CEOMainLayout(key: ceoMainLayoutKey),
+        builder: (context, state) => const CEOMainLayout(),
       ),
 
       // Company routes
@@ -291,11 +291,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.companySettings,
         builder: (context, state) => const CompanySettingsPage(),
       ),
-      // CEO Create Employee route (using new dual auth system)
-      // Note: This route is standalone (no CEOMainLayout wrapper) to avoid GlobalKey conflict
+      // CEO Create Employee route - CLEAN, simple, standalone page
       GoRoute(
         path: AppRoutes.createEmployee,
-        builder: (context, state) => const CEOCreateEmployeeWrapper(),
+        builder: (context, state) => const CreateEmployeePage(),
       ),
       GoRoute(
         path: AppRoutes.createInvitation,
