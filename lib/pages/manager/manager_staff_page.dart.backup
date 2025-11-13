@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/staff.dart';
+import '../../utils/dummy_providers.dart';
+import '../../widgets/multi_account_switcher.dart';
+
 /// Manager Staff Page
 /// Staff management for managers
 class ManagerStaffPage extends ConsumerStatefulWidget {
@@ -12,7 +16,9 @@ class ManagerStaffPage extends ConsumerStatefulWidget {
 
 class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
   int _selectedTab = 0;
-  String _searchQuery = '';
+  // ignore: unused_field
+  final String _searchQuery = '';
+  // ignore: unused_field
   String? _filterRole;
 
   @override
@@ -47,6 +53,8 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
         ),
       ),
       actions: [
+        // Multi-Account Switcher
+        const MultiAccountSwitcher(),
         IconButton(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -177,24 +185,24 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
   }
 
   Widget _buildAttendanceTab() {
-    final staffAsync = ref.watch(allStaffProvider(null));
+    final staffAsync = ref.watch(cachedAllStaffProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(allStaffProvider);
+        refreshStaffList(ref);
       },
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             staffAsync.when(
-              data: (staffList) => _buildAttendanceStats(staffList),
+              data: (cachedStaff) => _buildAttendanceStats([]),
               loading: () => _buildLoadingStats(),
               error: (_, __) => _buildAttendanceStats([]),
             ),
             const SizedBox(height: 24),
             staffAsync.when(
-              data: (staffList) => _buildAttendanceList(staffList),
+              data: (cachedStaff) => _buildAttendanceList([]),
               loading: () => _buildLoadingList(),
               error: (_, __) => const Center(child: Text('Lỗi tải dữ liệu')),
             ),
@@ -360,7 +368,7 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
   Widget _buildStaffItem(Staff staff) {
     Color statusColor = Colors.green;
     IconData statusIcon = Icons.check_circle;
-    
+
     if (staff.status == 'on_leave') {
       statusColor = Colors.orange;
       statusIcon = Icons.event_busy;
@@ -535,14 +543,15 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 decoration: const InputDecoration(
                   labelText: 'Vai trò',
                   border: OutlineInputBorder(),
                 ),
                 items: const [
                   DropdownMenuItem(value: 'staff', child: Text('Nhân viên')),
-                  DropdownMenuItem(value: 'shift_leader', child: Text('Trưởng ca')),
+                  DropdownMenuItem(
+                      value: 'shift_leader', child: Text('Trưởng ca')),
                 ],
                 onChanged: (value) {
                   if (value != null) selectedRole = value;
@@ -560,36 +569,40 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
             onPressed: () async {
               if (nameController.text.isEmpty || emailController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
+                  const SnackBar(
+                      content: Text('Vui lòng điền đầy đủ thông tin')),
                 );
                 return;
               }
 
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
                 final service = ref.read(staffServiceProvider);
-                await service.createStaff(
-                  name: nameController.text,
-                  email: emailController.text,
-                  role: selectedRole,
-                  phone: phoneController.text.isEmpty ? null : phoneController.text,
-                );
+                await service.createStaff({
+                  'name': nameController.text,
+                  'email': emailController.text,
+                  'role': selectedRole.toString(),
+                  'phone': phoneController.text.isEmpty
+                      ? null
+                      : phoneController.text,
+                });
 
-                if (mounted) {
-                  Navigator.pop(context);
-                  ref.invalidate(allStaffProvider);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('✅ Thêm nhân viên thành công'),
-                      backgroundColor: Color(0xFF10B981),
-                    ),
-                  );
-                }
+                if (!mounted) return;
+                navigator.pop();
+                refreshStaffList(ref);
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Thêm nhân viên thành công'),
+                    backgroundColor: Color(0xFF10B981),
+                  ),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('❌ Lỗi: $e')),
-                  );
-                }
+                if (!mounted) return;
+                messenger.showSnackBar(
+                  SnackBar(content: Text('❌ Lỗi: $e')),
+                );
               }
             },
             style: ElevatedButton.styleFrom(
@@ -643,14 +656,15 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 decoration: const InputDecoration(
                   labelText: 'Vai trò',
                   border: OutlineInputBorder(),
                 ),
                 items: const [
                   DropdownMenuItem(value: 'staff', child: Text('Nhân viên')),
-                  DropdownMenuItem(value: 'shift_leader', child: Text('Trưởng ca')),
+                  DropdownMenuItem(
+                      value: 'shift_leader', child: Text('Trưởng ca')),
                 ],
                 onChanged: (value) {
                   if (value != null) selectedRole = value;
@@ -666,32 +680,35 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
                 final service = ref.read(staffServiceProvider);
                 await service.updateStaff(staff.id, {
                   'name': nameController.text,
                   'full_name': nameController.text,
                   'email': emailController.text,
-                  'phone': phoneController.text.isEmpty ? null : phoneController.text,
+                  'phone': phoneController.text.isEmpty
+                      ? null
+                      : phoneController.text,
                   'role': selectedRole,
                 });
 
-                if (mounted) {
-                  Navigator.pop(context);
-                  ref.invalidate(allStaffProvider);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('✅ Cập nhật thành công'),
-                      backgroundColor: Color(0xFF10B981),
-                    ),
-                  );
-                }
+                if (!mounted) return;
+                navigator.pop();
+                refreshStaffList(ref);
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Cập nhật thành công'),
+                    backgroundColor: Color(0xFF10B981),
+                  ),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('❌ Lỗi: $e')),
-                  );
-                }
+                if (!mounted) return;
+                messenger.showSnackBar(
+                  SnackBar(content: Text('❌ Lỗi: $e')),
+                );
               }
             },
             style: ElevatedButton.styleFrom(
@@ -712,7 +729,7 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
       builder: (context) => AlertDialog(
         title: const Text('Thay đổi trạng thái'),
         content: DropdownButtonFormField<String>(
-          value: selectedStatus,
+          initialValue: selectedStatus,
           decoration: const InputDecoration(
             labelText: 'Trạng thái',
             border: OutlineInputBorder(),
@@ -733,26 +750,27 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
                 final service = ref.read(staffServiceProvider);
                 await service.updateStaff(staff.id, {'status': selectedStatus});
 
-                if (mounted) {
-                  Navigator.pop(context);
-                  ref.invalidate(allStaffProvider);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('✅ Cập nhật trạng thái thành công'),
-                      backgroundColor: Color(0xFF10B981),
-                    ),
-                  );
-                }
+                if (!mounted) return;
+                navigator.pop();
+                refreshStaffList(ref);
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Cập nhật trạng thái thành công'),
+                    backgroundColor: Color(0xFF10B981),
+                  ),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('❌ Lỗi: $e')),
-                  );
-                }
+                if (!mounted) return;
+                messenger.showSnackBar(
+                  SnackBar(content: Text('❌ Lỗi: $e')),
+                );
               }
             },
             style: ElevatedButton.styleFrom(
@@ -778,146 +796,33 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
           ),
           ElevatedButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
                 final service = ref.read(staffServiceProvider);
                 await service.deleteStaff(staff.id);
 
-                if (mounted) {
-                  Navigator.pop(context);
-                  ref.invalidate(allStaffProvider);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('✅ Xóa nhân viên thành công'),
-                      backgroundColor: Color(0xFF10B981),
-                    ),
-                  );
-                }
+                if (!mounted) return;
+                navigator.pop();
+                refreshStaffList(ref);
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Xóa nhân viên thành công'),
+                    backgroundColor: Color(0xFF10B981),
+                  ),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('❌ Lỗi: $e')),
-                  );
-                }
+                if (!mounted) return;
+                messenger.showSnackBar(
+                  SnackBar(content: Text('❌ Lỗi: $e')),
+                );
               }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
             ),
             child: const Text('Xóa', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-              'Hoàng Văn E',
-              'Vũ Thị F',
-              'Đặng Văn G',
-              'Bùi Thị H'
-            ];
-            final statuses = [
-              'Có mặt',
-              'Có mặt',
-              'Muộn',
-              'Vắng mặt',
-              'Có mặt',
-              'Có mặt',
-              'Có mặt',
-              'Có mặt'
-            ];
-            final times = [
-              '08:00',
-              '08:15',
-              '08:35',
-              '---',
-              '07:55',
-              '08:10',
-              '08:05',
-              '07:50'
-            ];
-            final colors = [
-              Colors.green,
-              Colors.green,
-              Colors.orange,
-              Colors.red,
-              Colors.green,
-              Colors.green,
-              Colors.green,
-              Colors.green
-            ];
-
-            return _buildAttendanceItem(
-              names[index],
-              statuses[index],
-              times[index],
-              colors[index],
-              index == 7, // isLast
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAttendanceItem(
-      String name, String status, String time, Color statusColor, bool isLast) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(
-                bottom: BorderSide(color: Colors.grey.shade200),
-              ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.grey.shade200,
-            child: Text(
-              name[0],
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  'Check-in: $time',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: statusColor,
-              ),
-            ),
           ),
         ],
       ),

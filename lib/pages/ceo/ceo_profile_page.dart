@@ -46,8 +46,7 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
       // Fetch user data from users table
       final response = await _supabase
           .from('users')
-          .select(
-              'id, full_name, email, phone, avatar_url, role, branch_id, company_id, company:companies!company_id(name), branch:branches(name)')
+          .select('*')
           .eq('id', user.id)
           .maybeSingle();
 

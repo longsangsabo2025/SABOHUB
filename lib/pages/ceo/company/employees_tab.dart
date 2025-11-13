@@ -514,7 +514,7 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
               child: Text(
                 (employee.name != null && employee.name!.isNotEmpty)
                     ? employee.name![0].toUpperCase()
-                    : employee.email[0].toUpperCase(),
+                    : (employee.email?[0].toUpperCase() ?? '?'),
                 style: TextStyle(
                   color: roleColor,
                   fontWeight: FontWeight.bold,
@@ -532,7 +532,7 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
                     children: [
                       Expanded(
                         child: Text(
-                          employee.name ?? employee.email.split('@').first,
+                          employee.name ?? employee.email?.split('@').first ?? 'Unknown',
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
@@ -569,7 +569,7 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          employee.email,
+                          employee.email ?? 'No email',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey[700],
@@ -672,8 +672,10 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
     );
 
     // Refresh employee list if employee was created
-    if (result == true) {
-      ref.invalidate(companyEmployeesProvider(widget.companyId));
+    if (result == true && mounted) {
+      // Use the helper method to invalidate all related providers
+      ref.invalidateCompanyEmployees(widget.companyId);
+      ref.invalidate(companyEmployeesStatsProvider(widget.companyId));
     }
   }
 
@@ -801,6 +803,8 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
             ),
           );
 
+          // Invalidate both cached and non-cached providers
+          ref.invalidate(cachedCompanyEmployeesProvider(widget.companyId));
           ref.invalidate(companyEmployeesProvider(widget.companyId));
           ref.invalidate(companyEmployeesStatsProvider(widget.companyId));
         }

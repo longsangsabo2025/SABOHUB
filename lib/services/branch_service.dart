@@ -136,7 +136,7 @@ class BranchService {
     try {
       // Get employee count for this branch
       final employeesResponse =
-          await _supabase.from('users').select('id').eq('branch_id', branchId);
+          await _supabase.from('employees').select('id').eq('branch_id', branchId);
 
       // Get table count for this branch
       final tablesResponse =
@@ -149,7 +149,7 @@ class BranchService {
           .from('daily_revenue')
           .select('amount')
           .eq('branch_id', branchId)
-          .gte('date', firstDayOfMonth.toIso8601String());
+          .gte('date', firstDayOfMonth.toIso8601String().split('T')[0]);
 
       double monthlyRevenue = 0.0;
       for (var record in revenueResponse) {

@@ -958,7 +958,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
               ),
               const SizedBox(width: 4),
               Text(
-                'Deadline: ${_formatDate(task.dueDate)}',
+                'Deadline: ${task.dueDate != null ? _formatDate(task.dueDate!) : 'Chưa có'}',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade500,
@@ -1205,3 +1205,4 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
     );
   }
 }
+

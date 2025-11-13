@@ -24,7 +24,7 @@ class AnalyticsService {
       final totalTables = (tablesResponse as List).length;
 
       // Get total employees (users)
-      final usersResponse = await _supabase.from('users').select('id');
+      final usersResponse = await _supabase.from('employees').select('id');
       final totalEmployees = (usersResponse as List).length;
 
       // Get active tasks today
@@ -160,7 +160,7 @@ class AnalyticsService {
 
         // Get employee count
         final employeesResponse =
-            await _supabase.from('users').select('id').eq('branch_id', storeId);
+            await _supabase.from('employees').select('id').eq('branch_id', storeId);
         final employeeCount = (employeesResponse as List).length;
 
         // Calculate revenue from daily_revenue table

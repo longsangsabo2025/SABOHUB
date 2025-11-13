@@ -14,6 +14,7 @@ import 'company/documents_tab.dart';
 import 'company/employee_documents_tab.dart';
 import 'company/employees_tab.dart';
 import 'company/overview_tab.dart';
+import 'company/permissions_management_tab.dart';
 import 'company/settings_tab.dart';
 import 'company/tasks_tab.dart';
 
@@ -183,6 +184,9 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
       case 8:
         return BusinessLawTab(company: company, companyId: widget.companyId);
       case 9:
+        return PermissionsManagementTab(
+            company: company, companyId: widget.companyId);
+      case 10:
         return SettingsTab(company: company, companyId: widget.companyId);
       default:
         return OverviewTab(company: company, companyId: widget.companyId);
@@ -200,6 +204,7 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
       'Kế toán',
       'Hồ sơ NV',
       'Luật DN',
+      'Phân quyền',
       'Cài đặt'
     ];
 
@@ -448,6 +453,10 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage> {
         BottomNavigationBarItem(
           icon: Icon(Icons.gavel),
           label: 'Luật DN',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.admin_panel_settings),
+          label: 'Phân quyền',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.settings),

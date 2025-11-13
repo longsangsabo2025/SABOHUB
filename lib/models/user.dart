@@ -10,6 +10,19 @@ enum UserRole {
   const UserRole(this.value);
   final String value;
 
+  String get displayName {
+    switch (this) {
+      case UserRole.ceo:
+        return 'CEO';
+      case UserRole.manager:
+        return 'Quản lý';
+      case UserRole.shiftLeader:
+        return 'Trưởng ca';
+      case UserRole.staff:
+        return 'Nhân viên';
+    }
+  }
+
   static UserRole fromString(String value) {
     return UserRole.values.firstWhere(
       (role) => role.value == value,
@@ -22,7 +35,7 @@ enum UserRole {
 class User extends Equatable {
   final String id;
   final String? name; // Made nullable to match DB schema
-  final String email;
+  final String? email; // Made nullable for employees table
   final UserRole role;
   final String? phone;
   final String? avatarUrl;
@@ -39,7 +52,7 @@ class User extends Equatable {
   const User({
     required this.id,
     this.name, // Made optional
-    required this.email,
+    this.email, // Made optional for employees
     required this.role,
     this.phone,
     this.avatarUrl,
@@ -79,7 +92,7 @@ class User extends Equatable {
       id: json['id'] as String,
       name: json['full_name'] as String? ??
           json['name'] as String?, // Try full_name first, fallback to name
-      email: json['email'] as String,
+      email: json['email'] as String? ?? json['username'] as String?, // email can be null, use username if available
       role: UserRole.fromString(json['role'] as String),
       phone: json['phone'] as String?,
       avatarUrl: json['avatar_url'] as String?,

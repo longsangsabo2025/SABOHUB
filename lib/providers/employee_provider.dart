@@ -9,57 +9,63 @@ final supabaseProvider = Provider<SupabaseClient>((ref) {
 });
 
 /// Company Employees Provider
-/// Fetches all employees for a specific company
+/// Fetches all employees for a specific company from employees table only
+/// (Custom Auth: Managers, Shift Leaders, Staff)
 final companyEmployeesProvider =
     FutureProvider.family<List<app_user.User>, String>((ref, companyId) async {
   final supabase = ref.watch(supabaseProvider);
 
   try {
-    final response = await supabase
-        .from('users')
+    // Fetch from employees table only (new employee auth system)
+    final employeesResponse = await supabase
+        .from('employees')
         .select('*')
         .eq('company_id', companyId)
+        .eq('is_active', true)
         .order('created_at', ascending: false) as List;
 
-    return response
+    // Convert employees to User objects using fromJson 
+    final employeesData = employeesResponse
         .map((json) => app_user.User.fromJson(json as Map<String, dynamic>))
         .toList();
+
+    return employeesData;
   } catch (e) {
     return [];
   }
 });
 
 /// Company Employees Stats Provider
-/// Returns employee count by role for a specific company
+/// Returns employee count by role for a specific company from employees table only
 final companyEmployeesStatsProvider =
     FutureProvider.family<Map<String, int>, String>((ref, companyId) async {
   final supabase = ref.watch(supabaseProvider);
 
   try {
-    // Fetch all employees for this company
-    final response = await supabase
-        .from('users')
+    // Fetch from employees table only
+    final employeesResponse = await supabase
+        .from('employees')
         .select('role')
-        .eq('company_id', companyId) as List;
-
-    final employees = response;
+        .eq('company_id', companyId)
+        .eq('is_active', true) as List;
+    
     int managerCount = 0;
     int shiftLeaderCount = 0;
     int staffCount = 0;
 
-    for (var emp in employees) {
+    for (var emp in employeesResponse) {
       final role = emp['role'] as String?;
-      if (role == 'manager') {
+      if (role == 'MANAGER') {
         managerCount++;
-      } else if (role == 'shift_leader') {
+      } else if (role == 'SHIFT_LEADER') {
         shiftLeaderCount++;
-      } else if (role == 'staff') {
+      } else if (role == 'STAFF') {
         staffCount++;
       }
     }
 
     return {
-      'total': employees.length,
+      'total': employeesResponse.length,
       'manager': managerCount,
       'shift_leader': shiftLeaderCount,
       'staff': staffCount,
@@ -75,29 +81,32 @@ final companyEmployeesStatsProvider =
 });
 
 /// Active Company Employees Provider
-/// Fetches only active employees for a specific company
+/// Fetches only active employees for a specific company from employees table only
 final activeCompanyEmployeesProvider =
     FutureProvider.family<List<app_user.User>, String>((ref, companyId) async {
   final supabase = ref.watch(supabaseProvider);
 
   try {
-    final response = await supabase
-        .from('users')
+    // Fetch from employees table only
+    final employeesResponse = await supabase
+        .from('employees')
         .select('*')
         .eq('company_id', companyId)
         .eq('is_active', true)
         .order('created_at', ascending: false) as List;
 
-    return response
+    final employeesData = employeesResponse
         .map((json) => app_user.User.fromJson(json as Map<String, dynamic>))
         .toList();
+
+    return employeesData;
   } catch (e) {
     return [];
   }
 });
 
 /// Employees by Role Provider
-/// Fetches employees filtered by company and role
+/// Fetches employees filtered by company and role from employees table only
 final employeesByRoleProvider = FutureProvider.family<List<app_user.User>,
     ({String companyId, app_user.UserRole role})>((ref, params) async {
   final supabase = ref.watch(supabaseProvider);
@@ -119,16 +128,24 @@ final employeesByRoleProvider = FutureProvider.family<List<app_user.User>,
         break;
     }
 
-    final response = await supabase
-        .from('users')
+    // Fetch from employees table only (skip CEO role as CEOs are only in users table)
+    if (params.role == app_user.UserRole.ceo) {
+      return []; // No CEOs in employees table
+    }
+    
+    final employeesResponse = await supabase
+        .from('employees')
         .select('*')
         .eq('company_id', params.companyId)
         .eq('role', roleString)
-        .order('name', ascending: true) as List;
+        .eq('is_active', true)
+        .order('full_name', ascending: true) as List;
 
-    return response
+    final employeesData = employeesResponse
         .map((json) => app_user.User.fromJson(json as Map<String, dynamic>))
         .toList();
+
+    return employeesData;
   } catch (e) {
     return [];
   }

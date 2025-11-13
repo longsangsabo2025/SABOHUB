@@ -9,7 +9,8 @@ class StaffService {
   /// Get all staff members
   Future<List<Staff>> getAllStaff({String? branchId, String? companyId}) async {
     try {
-      var query = _supabase.from('users').select(
+      // Query from employees table (not users)
+      var query = _supabase.from('employees').select(
           'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at');
 
       if (branchId != null) {
@@ -31,8 +32,9 @@ class StaffService {
   /// Get staff by ID
   Future<Staff?> getStaffById(String id) async {
     try {
+      // Query from employees table (not users)
       final response = await _supabase
-          .from('users')
+          .from('employees')
           .select(
               'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
           .eq('id', id)
@@ -47,8 +49,9 @@ class StaffService {
   /// Get staff by role
   Future<List<Staff>> getStaffByRole(String role, {String? branchId}) async {
     try {
+      // Query from employees table (not users)
       var query = _supabase
-          .from('users')
+          .from('employees')
           .select(
               'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
           .eq('role', role);
@@ -74,16 +77,16 @@ class StaffService {
     String? branchId,
   }) async {
     try {
+      // Create staff in employees table (not users)
       final response = await _supabase
-          .from('users')
+          .from('employees')
           .insert({
             'full_name': name,
-            'name': name,
             'email': email,
             'role': role,
             'phone': phone,
             'branch_id': branchId,
-            'status': 'active',
+            'is_active': true,
           })
           .select(
               'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
@@ -98,8 +101,9 @@ class StaffService {
   /// Update staff member
   Future<Staff> updateStaff(String id, Map<String, dynamic> updates) async {
     try {
+      // Update in employees table (not users)
       final response = await _supabase
-          .from('users')
+          .from('employees')
           .update(updates)
           .eq('id', id)
           .select(
@@ -124,7 +128,8 @@ class StaffService {
   /// Get staff statistics by branch
   Future<Map<String, dynamic>> getStaffStats({String? branchId}) async {
     try {
-      var query = _supabase.from('users').select('role, status');
+      // Query from employees table (not users)
+      var query = _supabase.from('employees').select('role, is_active');
 
       if (branchId != null) {
         query = query.eq('branch_id', branchId);
@@ -135,17 +140,16 @@ class StaffService {
 
       // Count by role
       final totalStaff = staffList.length;
-      final managers = staffList.where((s) => s['role'] == 'manager').length;
+      final managers = staffList.where((s) => s['role'] == 'MANAGER').length;
       final shiftLeaders =
-          staffList.where((s) => s['role'] == 'shift_leader').length;
-      final staff = staffList.where((s) => s['role'] == 'staff').length;
+          staffList.where((s) => s['role'] == 'SHIFT_LEADER').length;
+      final staff = staffList.where((s) => s['role'] == 'STAFF').length;
 
-      // Count by status
+      // Count by status (is_active)
       final activeStaff =
-          staffList.where((s) => s['status'] == 'active').length;
+          staffList.where((s) => s['is_active'] == true).length;
       final inactiveStaff =
-          staffList.where((s) => s['status'] == 'inactive').length;
-      final onLeave = staffList.where((s) => s['status'] == 'on_leave').length;
+          staffList.where((s) => s['is_active'] == false).length;
 
       return {
         'totalStaff': totalStaff,
@@ -154,7 +158,7 @@ class StaffService {
         'staff': staff,
         'activeStaff': activeStaff,
         'inactiveStaff': inactiveStaff,
-        'onLeave': onLeave,
+        'onLeave': 0, // employees table không có on_leave status
       };
     } catch (e) {
       return {
@@ -171,8 +175,9 @@ class StaffService {
 
   /// Subscribe to staff changes
   Stream<List<Staff>> subscribeToStaff({String? branchId}) {
+    // Subscribe to employees table (not users)
     var stream = _supabase
-        .from('users')
+        .from('employees')
         .stream(primaryKey: ['id']).order('created_at', ascending: false);
 
     return stream.map((data) {

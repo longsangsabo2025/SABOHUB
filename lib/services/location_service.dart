@@ -87,14 +87,15 @@ class LocationService {
               .from('companies')
               .select('check_in_latitude, check_in_longitude, check_in_radius')
               .eq('id', companyId)
-              .single();
+              .maybeSingle();
           
-          final lat = companyData['check_in_latitude'] as double?;
-          final lng = companyData['check_in_longitude'] as double?;
-          final radius = companyData['check_in_radius'] as double?;
-          
-          if (lat != null && lng != null) {
-            companyLocation = Position(
+          if (companyData != null) {
+            final lat = companyData['check_in_latitude'] as double?;
+            final lng = companyData['check_in_longitude'] as double?;
+            final radius = companyData['check_in_radius'] as double?;
+            
+            if (lat != null && lng != null) {
+              companyLocation = Position(
               latitude: lat,
               longitude: lng,
               timestamp: DateTime.now(),
@@ -110,8 +111,12 @@ class LocationService {
             if (radius != null) {
               allowedRadius = radius;
             }
+            } else {
+              // Nếu chưa cấu hình, dùng mặc định
+              companyLocation = _getCompanyLocation(companyId);
+            }
           } else {
-            // Nếu chưa cấu hình, dùng mặc định
+            // Nếu không tìm thấy company data, dùng mặc định
             companyLocation = _getCompanyLocation(companyId);
           }
         } catch (e) {

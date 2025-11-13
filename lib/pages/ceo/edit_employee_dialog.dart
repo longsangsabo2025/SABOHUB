@@ -22,7 +22,6 @@ class EditEmployeeDialog extends ConsumerStatefulWidget {
 class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _emailController;
   late TextEditingController _phoneController;
   late app_user.UserRole _selectedRole;
   bool _isLoading = false;
@@ -31,7 +30,6 @@ class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.employee.name ?? '');
-    _emailController = TextEditingController(text: widget.employee.email);
     _phoneController = TextEditingController(text: widget.employee.phone ?? '');
     _selectedRole = widget.employee.role;
   }
@@ -39,7 +37,6 @@ class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
@@ -54,7 +51,6 @@ class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
       await service.updateEmployee(
         employeeId: widget.employee.id,
         name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
         phone: _phoneController.text.trim().isEmpty
             ? null
             : _phoneController.text.trim(),
@@ -160,32 +156,6 @@ class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Vui lòng nhập họ và tên';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      // Email Field
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: InputDecoration(
-                          labelText: 'Email *',
-                          hintText: 'Nhập email',
-                          prefixIcon: const Icon(Icons.email_outlined),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Vui lòng nhập email';
-                          }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(value)) {
-                            return 'Email không hợp lệ';
                           }
                           return null;
                         },

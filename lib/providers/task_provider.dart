@@ -18,8 +18,12 @@ final allTasksProvider =
 /// Company Tasks Provider
 final companyTasksProvider =
     FutureProvider.family<List<Task>, String>((ref, companyId) async {
+  print('🚀 [Provider] companyTasksProvider called with companyId: $companyId');
   final service = ref.read(taskServiceProvider);
-  return service.getTasksByCompany(companyId);
+  print('📡 [Provider] Calling service.getTasksByCompany...');
+  final tasks = await service.getTasksByCompany(companyId);
+  print('✅ [Provider] Service returned ${tasks.length} tasks');
+  return tasks;
 });
 
 /// Company Task Stats Provider

@@ -1,10 +1,40 @@
+import 'dart:typed_data';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show FileOptions;
+import 'package:http/http.dart' as http;
 import '../core/services/supabase_service.dart';
 import '../models/management_task.dart';
+import '../models/task_attachment.dart';
+import '../providers/auth_provider.dart';
+
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// 
+/// Service này phục vụ CẢ CEO VÀ MANAGER:
+/// 
+/// **CEO Methods** (OK to use auth.currentUser):
+/// - getCEOStrategicTasks() - Chỉ CEO dùng
+/// - createTask() - Chỉ CEO dùng
+/// - getTaskStatistics() - CEO dashboard
+/// - getCompanyTaskStatistics() - CEO dashboard
+/// 
+/// **Manager/Employee Methods** (PHẢI dùng authProvider):
+/// - getTasksAssignedToMe() - ✅ Đã dùng authProvider
+/// - getTasksCreatedByMe() - ✅ Đã dùng authProvider
+/// - approveTaskApproval() - ⚠️ Cần fix - Manager có thể approve
+/// - rejectTaskApproval() - ⚠️ Cần fix - Manager có thể reject
+/// 
+/// **Shared Methods** (Cả CEO và Manager dùng):
+/// - updateTaskProgress() - Cần truyền userId parameter
+/// - updateTaskStatus() - Cần truyền userId parameter
+/// - deleteTask() - Cần truyền userId parameter
 
 /// Management Task Service
 /// Handles CEO and Manager task operations
 class ManagementTaskService {
   final _supabase = supabase.client;
+  final Ref _ref;
+  
+  ManagementTaskService(this._ref);
 
   /// Get strategic tasks created by CEO
   /// Used in CEO Tasks Page - Strategic Tasks tab
@@ -16,31 +46,12 @@ class ManagementTaskService {
         return [];
       }
 
-      final response = await _supabase.from('tasks').select('''
-            *,
-            created_by_user:users!tasks_created_by_fkey(id, full_name, role),
-            assigned_to_user:users!tasks_assigned_to_fkey(id, full_name, role),
-            company:companies(id, name),
-            branch:branches(id, name)
-          ''').eq('created_by', userId).order('created_at', ascending: false);
+      final response = await _supabase.from('tasks').select('*')
+          .eq('created_by', userId).order('created_at', ascending: false);
 
       return (response as List).map((json) {
-        // Flatten the nested JSON structure
+        // Use the cached fields already in the task record
         final flatJson = Map<String, dynamic>.from(json);
-        if (json['created_by_user'] != null) {
-          flatJson['created_by_name'] = json['created_by_user']['full_name'];
-          flatJson['created_by_role'] = json['created_by_user']['role'];
-        }
-        if (json['assigned_to_user'] != null) {
-          flatJson['assigned_to_name'] = json['assigned_to_user']['full_name'];
-          flatJson['assigned_to_role'] = json['assigned_to_user']['role'];
-        }
-        if (json['company'] != null) {
-          flatJson['company_name'] = json['company']['name'];
-        }
-        if (json['branch'] != null) {
-          flatJson['branch_name'] = json['branch']['name'];
-        }
         return ManagementTask.fromJson(flatJson);
       }).toList();
     } catch (e) {
@@ -52,39 +63,37 @@ class ManagementTaskService {
   /// Used in Manager Tasks Page - From CEO tab
   Future<List<ManagementTask>> getTasksAssignedToMe() async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        // In dev mode without auth, return empty list
+      // Get employee ID from auth provider (for managers/staff who login via employee system)
+      final currentUser = _ref.read(authProvider).user;
+      final employeeId = currentUser?.id;
+      
+      print('🔍 [ManagementTaskService] getTasksAssignedToMe - Current employeeId: $employeeId');
+      print('👤 [ManagementTaskService] getTasksAssignedToMe - Current user: ${currentUser?.name} (${currentUser?.role.displayName})');
+      
+      if (employeeId == null) {
+        print('⚠️ [ManagementTaskService] getTasksAssignedToMe - No employee logged in, returning empty list');
         return [];
       }
 
-      final response = await _supabase.from('tasks').select('''
-            *,
-            created_by_user:users!tasks_created_by_fkey(id, full_name, role),
-            assigned_to_user:users!tasks_assigned_to_fkey(id, full_name, role),
-            company:companies(id, name),
-            branch:branches(id, name)
-          ''').eq('assigned_to', userId).order('created_at', ascending: false);
+      print('📡 [ManagementTaskService] getTasksAssignedToMe - Fetching tasks assigned_to: $employeeId');
+      final response = await _supabase.from('tasks').select('*')
+          .eq('assigned_to', employeeId).order('created_at', ascending: false);
 
-      return (response as List).map((json) {
+      print('📦 [ManagementTaskService] getTasksAssignedToMe - Raw response: $response');
+      print('📊 [ManagementTaskService] getTasksAssignedToMe - Response length: ${(response as List).length}');
+
+      final tasks = (response as List).map((json) {
+        // Use the cached fields already in the task record
         final flatJson = Map<String, dynamic>.from(json);
-        if (json['created_by_user'] != null) {
-          flatJson['created_by_name'] = json['created_by_user']['full_name'];
-          flatJson['created_by_role'] = json['created_by_user']['role'];
-        }
-        if (json['assigned_to_user'] != null) {
-          flatJson['assigned_to_name'] = json['assigned_to_user']['full_name'];
-          flatJson['assigned_to_role'] = json['assigned_to_user']['role'];
-        }
-        if (json['company'] != null) {
-          flatJson['company_name'] = json['company']['name'];
-        }
-        if (json['branch'] != null) {
-          flatJson['branch_name'] = json['branch']['name'];
-        }
+        print('🔄 [ManagementTaskService] getTasksAssignedToMe - Parsing task: ${flatJson['id']} - ${flatJson['title']}');
         return ManagementTask.fromJson(flatJson);
       }).toList();
+      
+      print('✅ [ManagementTaskService] getTasksAssignedToMe - Successfully returned ${tasks.length} tasks');
+      return tasks;
     } catch (e) {
+      print('❌ [ManagementTaskService] getTasksAssignedToMe - Error: $e');
+      print('📍 [ManagementTaskService] getTasksAssignedToMe - Stack trace: ${StackTrace.current}');
       throw Exception('Failed to fetch assigned tasks: $e');
     }
   }
@@ -93,36 +102,20 @@ class ManagementTaskService {
   /// Used in Manager Tasks Page - Assign Tasks tab
   Future<List<ManagementTask>> getTasksCreatedByMe() async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        // In dev mode without auth, return empty list
+      // Get employee ID from auth provider (for managers/staff who login via employee system)
+      final currentUser = _ref.read(authProvider).user;
+      final employeeId = currentUser?.id;
+      
+      if (employeeId == null) {
         return [];
       }
 
-      final response = await _supabase.from('tasks').select('''
-            *,
-            created_by_user:users!tasks_created_by_fkey(id, full_name, role),
-            assigned_to_user:users!tasks_assigned_to_fkey(id, full_name, role),
-            company:companies(id, name),
-            branch:branches(id, name)
-          ''').eq('created_by', userId).order('created_at', ascending: false);
+      final response = await _supabase.from('tasks').select('*')
+          .eq('created_by', employeeId).order('created_at', ascending: false);
 
       return (response as List).map((json) {
+        // Use the cached fields already in the task record
         final flatJson = Map<String, dynamic>.from(json);
-        if (json['created_by_user'] != null) {
-          flatJson['created_by_name'] = json['created_by_user']['full_name'];
-          flatJson['created_by_role'] = json['created_by_user']['role'];
-        }
-        if (json['assigned_to_user'] != null) {
-          flatJson['assigned_to_name'] = json['assigned_to_user']['full_name'];
-          flatJson['assigned_to_role'] = json['assigned_to_user']['role'];
-        }
-        if (json['company'] != null) {
-          flatJson['company_name'] = json['company']['name'];
-        }
-        if (json['branch'] != null) {
-          flatJson['branch_name'] = json['branch']['name'];
-        }
         return ManagementTask.fromJson(flatJson);
       }).toList();
     } catch (e) {
@@ -134,22 +127,12 @@ class ManagementTaskService {
   /// Used in CEO Tasks Page - Approvals tab
   Future<List<TaskApproval>> getPendingApprovals() async {
     try {
-      final response = await _supabase.from('task_approvals').select('''
-            *,
-            submitted_by_user:users!task_approvals_submitted_by_fkey(id, full_name, role),
-            company:companies(id, name)
-          ''').eq('status', 'pending').order('submitted_at', ascending: false);
+      final response = await _supabase.from('task_approvals').select('*')
+          .eq('status', 'pending').order('submitted_at', ascending: false);
 
       return (response as List).map((json) {
+        // Use the cached fields already in the task_approvals record
         final flatJson = Map<String, dynamic>.from(json);
-        if (json['submitted_by_user'] != null) {
-          flatJson['submitted_by_name'] =
-              json['submitted_by_user']['full_name'];
-          flatJson['submitted_by_role'] = json['submitted_by_user']['role'];
-        }
-        if (json['company'] != null) {
-          flatJson['company_name'] = json['company']['name'];
-        }
         return TaskApproval.fromJson(flatJson);
       }).toList();
     } catch (e) {
@@ -184,32 +167,10 @@ class ManagementTaskService {
         'due_date': dueDate?.toIso8601String(),
       };
 
-      final response = await _supabase.from('tasks').insert(taskData).select('''
-            *,
-            created_by_user:users!tasks_created_by_fkey(id, full_name, role),
-            assigned_to_user:users!tasks_assigned_to_fkey(id, full_name, role),
-            company:companies(id, name),
-            branch:branches(id, name)
-          ''').single();
+      final response = await _supabase.from('tasks').insert(taskData).select().single();
 
-      final flatJson = Map<String, dynamic>.from(response);
-      if (response['created_by_user'] != null) {
-        flatJson['created_by_name'] = response['created_by_user']['full_name'];
-        flatJson['created_by_role'] = response['created_by_user']['role'];
-      }
-      if (response['assigned_to_user'] != null) {
-        flatJson['assigned_to_name'] =
-            response['assigned_to_user']['full_name'];
-        flatJson['assigned_to_role'] = response['assigned_to_user']['role'];
-      }
-      if (response['company'] != null) {
-        flatJson['company_name'] = response['company']['name'];
-      }
-      if (response['branch'] != null) {
-        flatJson['branch_name'] = response['branch']['name'];
-      }
-
-      return ManagementTask.fromJson(flatJson);
+      // Use the data as-is since we have cached fields
+      return ManagementTask.fromJson(response);
     } catch (e) {
       throw Exception('Failed to create task: $e');
     }
@@ -235,6 +196,13 @@ class ManagementTaskService {
       }
 
       await _supabase.from('tasks').update(updateData).eq('id', taskId);
+      
+      // Send notification to task creator (CEO)
+      await _sendTaskUpdateNotification(
+        taskId: taskId,
+        progress: progress,
+        status: status,
+      );
     } catch (e) {
       throw Exception('Failed to update task progress: $e');
     }
@@ -254,6 +222,13 @@ class ManagementTaskService {
       }
 
       await _supabase.from('tasks').update(updateData).eq('id', taskId);
+      
+      // Send notification to task creator (CEO)
+      await _sendTaskUpdateNotification(
+        taskId: taskId,
+        progress: status == 'completed' ? 100 : null,
+        status: status,
+      );
     } catch (e) {
       throw Exception('Failed to update task status: $e');
     }
@@ -269,14 +244,29 @@ class ManagementTaskService {
   }
 
   /// Approve a task approval request
-  Future<void> approveTaskApproval(String approvalId) async {
+  /// Can be called by both CEO (has auth) and Manager (uses employee system)
+  /// 
+  /// [approvalId] - ID của approval request
+  /// [userId] - OPTIONAL: ID của người approve (CEO id hoặc employee id)
+  ///            Nếu không truyền, sẽ thử lấy từ authProvider (Manager) hoặc auth (CEO)
+  Future<void> approveTaskApproval(String approvalId, {String? userId}) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) throw Exception('User not authenticated');
+      String? approverId = userId;
+      
+      // Nếu không truyền userId, thử lấy từ authProvider (Manager/Employee)
+      if (approverId == null) {
+        final currentUser = _ref.read(authProvider).user;
+        approverId = currentUser?.id;
+      }
+      
+      // Nếu vẫn null, thử lấy từ Supabase Auth (CEO)
+      approverId ??= _supabase.auth.currentUser?.id;
+      
+      if (approverId == null) throw Exception('User not authenticated');
 
       await _supabase.from('task_approvals').update({
         'status': 'approved',
-        'approved_by': userId,
+        'approved_by': approverId,
         'reviewed_at': DateTime.now().toIso8601String(),
       }).eq('id', approvalId);
     } catch (e) {
@@ -285,17 +275,34 @@ class ManagementTaskService {
   }
 
   /// Reject a task approval request
+  /// Can be called by both CEO (has auth) and Manager (uses employee system)
+  /// 
+  /// [approvalId] - ID của approval request
+  /// [reason] - Lý do từ chối
+  /// [userId] - OPTIONAL: ID của người reject (CEO id hoặc employee id)
+  ///            Nếu không truyền, sẽ thử lấy từ authProvider (Manager) hoặc auth (CEO)
   Future<void> rejectTaskApproval(
     String approvalId, {
     String? reason,
+    String? userId,
   }) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) throw Exception('User not authenticated');
+      String? approverId = userId;
+      
+      // Nếu không truyền userId, thử lấy từ authProvider (Manager/Employee)
+      if (approverId == null) {
+        final currentUser = _ref.read(authProvider).user;
+        approverId = currentUser?.id;
+      }
+      
+      // Nếu vẫn null, thử lấy từ Supabase Auth (CEO)
+      approverId ??= _supabase.auth.currentUser?.id;
+      
+      if (approverId == null) throw Exception('User not authenticated');
 
       await _supabase.from('task_approvals').update({
         'status': 'rejected',
-        'approved_by': userId,
+        'approved_by': approverId,
         'reviewed_at': DateTime.now().toIso8601String(),
         'rejection_reason': reason,
       }).eq('id', approvalId);
@@ -409,27 +416,30 @@ class ManagementTaskService {
   }
 
   /// Get all managers for task assignment dropdown
-  /// Returns list of users with role='manager'
+  /// ⚠️ IMPORTANT: ALL EMPLOYEES (including managers) are in employees table
+  /// users table = CEO ONLY (Supabase Auth)
+  /// employees table = ALL STAFF (Manager, Shift Leader, Staff)
   Future<List<Map<String, dynamic>>> getManagers() async {
     try {
-      // Get all managers first
-      final usersResponse = await _supabase
-          .from('users')
+      // Get managers from employees table ONLY
+      final employeesResponse = await _supabase
+          .from('employees')
           .select('id, full_name, role, company_id')
           .eq('role', 'MANAGER')
+          .eq('is_active', true)
           .order('full_name', ascending: true);
 
-      final users = usersResponse as List;
+      final employees = employeesResponse as List;
 
       // If no managers, return empty list
-      if (users.isEmpty) {
+      if (employees.isEmpty) {
         return [];
       }
 
       // Get company names separately to avoid relationship conflicts
-      final companyIds = users
-          .where((u) => u['company_id'] != null)
-          .map((u) => u['company_id'])
+      final companyIds = employees
+          .where((e) => e['company_id'] != null)
+          .map((e) => e['company_id'])
           .toSet()
           .toList();
 
@@ -446,14 +456,14 @@ class ManagementTaskService {
       }
 
       // Combine data
-      return users.map((user) {
+      return employees.map((employee) {
         return {
-          'id': user['id'],
-          'full_name': user['full_name'],
-          'role': user['role'],
-          'company_id': user['company_id'],
-          'company_name': user['company_id'] != null
-              ? companyNames[user['company_id']]
+          'id': employee['id'],
+          'full_name': employee['full_name'],
+          'role': employee['role'],
+          'company_id': employee['company_id'],
+          'company_name': employee['company_id'] != null
+              ? companyNames[employee['company_id']]
               : null,
         };
       }).toList();
@@ -463,7 +473,7 @@ class ManagementTaskService {
   }
 
   /// Get all companies for CEO task creation
-  /// CEO can create tasks for ANY company
+  /// CEO can see ALL companies, so no filtering by user's company_id
   Future<List<Map<String, dynamic>>> getCompanies() async {
     try {
       // CEO can see ALL companies, so no filtering by user's company_id
@@ -475,6 +485,306 @@ class ManagementTaskService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       return []; // Return empty list instead of throwing
+    }
+  }
+
+  /// Stream tasks assigned to current user (Manager) - REALTIME
+  /// Used in Manager Tasks Page - From CEO tab
+  Stream<List<ManagementTask>> streamTasksAssignedToMe() {
+    // Get employee ID from auth provider
+    final currentUser = _ref.read(authProvider).user;
+    final employeeId = currentUser?.id;
+    
+    print('🔴 [ManagementTaskService] streamTasksAssignedToMe - Starting stream for employeeId: $employeeId');
+    
+    if (employeeId == null) {
+      print('⚠️ [ManagementTaskService] streamTasksAssignedToMe - No employee logged in, returning empty stream');
+      return Stream.value([]);
+    }
+
+    return _supabase
+        .from('tasks')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: false)
+        .map((data) {
+          print('📡 [ManagementTaskService] streamTasksAssignedToMe - Received ${data.length} tasks from stream');
+          
+          // Filter by assigned_to
+          final filtered = data.where((json) => json['assigned_to'] == employeeId).toList();
+          
+          print('✅ [ManagementTaskService] streamTasksAssignedToMe - Filtered to ${filtered.length} tasks for employee');
+          
+          return filtered.map((json) {
+            final flatJson = Map<String, dynamic>.from(json);
+            return ManagementTask.fromJson(flatJson);
+          }).toList();
+        });
+  }
+
+  /// Stream tasks created by current user (Manager) - REALTIME
+  /// Used in Manager Tasks Page - Assign Tasks tab
+  Stream<List<ManagementTask>> streamTasksCreatedByMe() {
+    // Get employee ID from auth provider
+    final currentUser = _ref.read(authProvider).user;
+    final employeeId = currentUser?.id;
+    
+    if (employeeId == null) {
+      return Stream.value([]);
+    }
+
+    return _supabase
+        .from('tasks')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: false)
+        .map((data) {
+          // Filter by created_by
+          final filtered = data.where((json) => json['created_by'] == employeeId).toList();
+          
+          return filtered.map((json) {
+            final flatJson = Map<String, dynamic>.from(json);
+            return ManagementTask.fromJson(flatJson);
+          }).toList();
+        });
+  }
+
+  /// Stream CEO strategic tasks - REALTIME
+  /// Used in CEO Tasks Page - Strategic Tasks tab
+  Stream<List<ManagementTask>> streamCEOStrategicTasks() {
+    final userId = _supabase.auth.currentUser?.id;
+    
+    if (userId == null) {
+      return Stream.value([]);
+    }
+
+    return _supabase
+        .from('tasks')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: false)
+        .map((data) {
+          // Filter by created_by (CEO)
+          final filtered = data.where((json) => json['created_by'] == userId).toList();
+          
+          return filtered.map((json) {
+            final flatJson = Map<String, dynamic>.from(json);
+            return ManagementTask.fromJson(flatJson);
+          }).toList();
+        });
+  }
+
+  // ============================================================================
+  // TASK ATTACHMENTS (File uploads)
+  // ============================================================================
+
+  /// Get attachments for a task
+  Future<List<TaskAttachment>> getTaskAttachments(String taskId) async {
+    try {
+      final response = await _supabase
+          .from('task_attachments')
+          .select('*')
+          .eq('task_id', taskId)
+          .order('created_at', ascending: false);
+
+      return (response as List).map((json) {
+        return TaskAttachment.fromJson(json);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch task attachments: $e');
+    }
+  }
+
+  /// Upload file attachment to task
+  Future<TaskAttachment> uploadTaskAttachment({
+    required String taskId,
+    required String fileName,
+    required List<int> fileBytes,
+    String? fileType,
+  }) async {
+    try {
+      // Get current user (employee ID)
+      final currentUser = _ref.read(authProvider).user;
+      final employeeId = currentUser?.id;
+      
+      if (employeeId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Generate unique file name
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final extension = fileName.split('.').last;
+      final uniqueFileName = 'task_${taskId}_${timestamp}.$extension';
+      
+      // Upload to Supabase Storage
+      final storagePath = 'task-attachments/$taskId/$uniqueFileName';
+      
+      await _supabase.storage.from('documents').uploadBinary(
+        storagePath,
+        Uint8List.fromList(fileBytes),
+        fileOptions: FileOptions(
+          contentType: fileType,
+          upsert: false,
+        ),
+      );
+
+      // Get public URL
+      final fileUrl = _supabase.storage.from('documents').getPublicUrl(storagePath);
+
+      // Save to database
+      final response = await _supabase
+          .from('task_attachments')
+          .insert({
+            'task_id': taskId,
+            'file_name': fileName,
+            'file_url': fileUrl,
+            'file_size': fileBytes.length,
+            'file_type': fileType,
+            'uploaded_by': employeeId,
+          })
+          .select()
+          .single();
+
+      // Send notification to task creator (CEO)
+      await _sendFileUploadNotification(taskId: taskId, fileName: fileName);
+
+      return TaskAttachment.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to upload attachment: $e');
+    }
+  }
+
+  /// Delete attachment
+  Future<void> deleteTaskAttachment(String attachmentId, String fileUrl) async {
+    try {
+      // Extract storage path from URL
+      final uri = Uri.parse(fileUrl);
+      final pathSegments = uri.pathSegments;
+      final storagePathIndex = pathSegments.indexOf('documents') + 1;
+      final storagePath = pathSegments.sublist(storagePathIndex).join('/');
+
+      // Delete from storage
+      await _supabase.storage.from('documents').remove([storagePath]);
+
+      // Delete from database
+      await _supabase
+          .from('task_attachments')
+          .delete()
+          .eq('id', attachmentId);
+    } catch (e) {
+      throw Exception('Failed to delete attachment: $e');
+    }
+  }
+
+  /// Download attachment
+  Future<List<int>> downloadTaskAttachment(String fileUrl) async {
+    try {
+      final response = await http.get(Uri.parse(fileUrl));
+      
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      } else {
+        throw Exception('Failed to download file: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to download attachment: $e');
+    }
+  }
+
+  /// Send notification to task creator (CEO) about task update
+  Future<void> _sendTaskUpdateNotification({
+    required String taskId,
+    int? progress,
+    String? status,
+  }) async {
+    try {
+      // Get task details to find creator (CEO)
+      final taskResponse = await _supabase
+          .from('tasks')
+          .select('title, created_by, assigned_to')
+          .eq('id', taskId)
+          .single();
+
+      final createdBy = taskResponse['created_by'] as String?;
+      if (createdBy == null) return; // No creator to notify
+
+      // Get current user (Manager who is updating)
+      final currentUser = _ref.read(authProvider).user;
+      final managerName = currentUser?.name ?? 'Manager';
+
+      // Build notification message
+      String message;
+      if (status == 'completed') {
+        message = '$managerName đã hoàn thành nhiệm vụ "${taskResponse['title']}"';
+      } else if (progress != null) {
+        message = '$managerName đã cập nhật tiến độ lên $progress% cho nhiệm vụ "${taskResponse['title']}"';
+      } else if (status == 'in_progress') {
+        message = '$managerName đã bắt đầu thực hiện nhiệm vụ "${taskResponse['title']}"';
+      } else {
+        message = '$managerName đã cập nhật nhiệm vụ "${taskResponse['title']}"';
+      }
+
+      // Create notification
+      await _supabase.from('notifications').insert({
+        'user_id': createdBy,
+        'type': 'task_update',
+        'title': 'Cập nhật nhiệm vụ',
+        'message': message,
+        'data': {
+          'task_id': taskId,
+          'progress': progress,
+          'status': status,
+          'updated_by': currentUser?.id,
+          'updated_by_name': managerName,
+        },
+        'is_read': false,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      print('📬 [ManagementTaskService] Notification sent to CEO ($createdBy) for task update');
+    } catch (e) {
+      // Don't throw - notification failure shouldn't block task update
+      print('⚠️ [ManagementTaskService] Failed to send notification: $e');
+    }
+  }
+
+  /// Send notification to task creator (CEO) about file upload
+  Future<void> _sendFileUploadNotification({
+    required String taskId,
+    required String fileName,
+  }) async {
+    try {
+      // Get task details to find creator (CEO)
+      final taskResponse = await _supabase
+          .from('tasks')
+          .select('title, created_by')
+          .eq('id', taskId)
+          .single();
+
+      final createdBy = taskResponse['created_by'] as String?;
+      if (createdBy == null) return; // No creator to notify
+
+      // Get current user (Manager who uploaded)
+      final currentUser = _ref.read(authProvider).user;
+      final managerName = currentUser?.name ?? 'Manager';
+
+      // Create notification
+      await _supabase.from('notifications').insert({
+        'user_id': createdBy,
+        'type': 'task_file_upload',
+        'title': 'File đính kèm mới',
+        'message': '$managerName đã tải lên file "$fileName" cho nhiệm vụ "${taskResponse['title']}"',
+        'data': {
+          'task_id': taskId,
+          'file_name': fileName,
+          'uploaded_by': currentUser?.id,
+          'uploaded_by_name': managerName,
+        },
+        'is_read': false,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      print('📬 [ManagementTaskService] File upload notification sent to CEO ($createdBy)');
+    } catch (e) {
+      // Don't throw - notification failure shouldn't block file upload
+      print('⚠️ [ManagementTaskService] Failed to send file upload notification: $e');
     }
   }
 }

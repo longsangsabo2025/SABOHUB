@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../widgets/dev_role_switcher.dart';
+import '../../widgets/error_boundary.dart';
 import 'ai_management/ai_management_dashboard.dart';
 import 'ceo_analytics_page.dart';
 import 'ceo_companies_page.dart';
@@ -61,23 +61,23 @@ class _CEOMainLayoutState extends ConsumerState<CEOMainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-            children: _pages,
-          ),
-          // DEV: Role Switcher Button
-          const DevRoleSwitcher(),
-        ],
+    return ErrorBoundary(
+      child: Scaffold(
+        body: Stack(
+          children: [
+            PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              children: _pages,
+            ),
+          ],
+        ),
+        bottomNavigationBar: _buildBottomNavigation(),
       ),
-      bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 

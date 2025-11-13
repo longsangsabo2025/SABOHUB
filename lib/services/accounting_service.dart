@@ -20,8 +20,8 @@ class AccountingService {
           .from('daily_revenue')
           .select('amount')
           .eq('company_id', companyId)
-          .gte('date', startDate.toIso8601String())
-          .lte('date', endDate.toIso8601String());
+          .gte('date', startDate.toIso8601String().split('T')[0])
+          .lte('date', endDate.toIso8601String().split('T')[0]);
 
       if (branchId != null) {
         revenueQuery = revenueQuery.eq('branch_id', branchId);
@@ -38,8 +38,8 @@ class AccountingService {
           .from('accounting_transactions')
           .select('type, amount')
           .eq('company_id', companyId)
-          .gte('date', startDate.toIso8601String())
-          .lte('date', endDate.toIso8601String());
+          .gte('date', startDate.toIso8601String().split('T')[0])
+          .lte('date', endDate.toIso8601String().split('T')[0]);
 
       if (branchId != null) {
         transactionQuery = transactionQuery.eq('branch_id', branchId);
@@ -113,11 +113,11 @@ class AccountingService {
       }
 
       if (startDate != null) {
-        query = query.gte('date', startDate.toIso8601String());
+        query = query.gte('date', startDate.toIso8601String().split('T')[0]);
       }
 
       if (endDate != null) {
-        query = query.lte('date', endDate.toIso8601String());
+        query = query.lte('date', endDate.toIso8601String().split('T')[0]);
       }
 
       if (type != null) {
@@ -149,11 +149,11 @@ class AccountingService {
       }
 
       if (startDate != null) {
-        query = query.gte('date', startDate.toIso8601String());
+        query = query.gte('date', startDate.toIso8601String().split('T')[0]);
       }
 
       if (endDate != null) {
-        query = query.lte('date', endDate.toIso8601String());
+        query = query.lte('date', endDate.toIso8601String().split('T')[0]);
       }
 
       final response = await query.order('date', ascending: false);
@@ -277,8 +277,8 @@ class AccountingService {
           .select('type, amount')
           .eq('company_id', companyId)
           .neq('type', 'revenue')
-          .gte('date', startDate.toIso8601String())
-          .lte('date', endDate.toIso8601String());
+          .gte('date', startDate.toIso8601String().split('T')[0])
+          .lte('date', endDate.toIso8601String().split('T')[0]);
 
       if (branchId != null) {
         query = query.eq('branch_id', branchId);
@@ -311,8 +311,8 @@ class AccountingService {
           .from('daily_revenue')
           .select('date, amount')
           .eq('company_id', companyId)
-          .gte('date', startDate.toIso8601String())
-          .lte('date', endDate.toIso8601String());
+          .gte('date', startDate.toIso8601String().split('T')[0])
+          .lte('date', endDate.toIso8601String().split('T')[0]);
 
       if (branchId != null) {
         query = query.eq('branch_id', branchId);

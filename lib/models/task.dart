@@ -91,14 +91,16 @@ class Task {
   final TaskRecurrence recurrence; // NEW: Task recurrence type
   final String? assignedTo;
   final String? assignedToName;
+  final String? assignedToRole; // NEW: Role of assigned user
   final String? assigneeId; // Add this field
-  final DateTime dueDate;
+  final DateTime? dueDate; // Made nullable to handle NULL from database
   final DateTime? completedAt;
   final String createdBy;
   final String createdByName;
   final DateTime createdAt;
   final String? notes;
   final String? projectName; // NEW: For project-based tasks
+  final DateTime? deletedAt; // Soft delete timestamp
 
   const Task({
     required this.id,
@@ -112,6 +114,7 @@ class Task {
     this.recurrence = TaskRecurrence.none, // NEW: Default to none
     this.assignedTo,
     this.assignedToName,
+    this.assignedToRole, // NEW: Role of assigned user
     this.assigneeId, // Add this field to constructor
     required this.dueDate,
     this.completedAt,
@@ -120,17 +123,20 @@ class Task {
     required this.createdAt,
     this.notes,
     this.projectName, // NEW: For project-based tasks
+    this.deletedAt, // Soft delete timestamp
   });
 
   bool get isOverdue =>
+      dueDate != null &&
       status != TaskStatus.completed &&
       status != TaskStatus.cancelled &&
-      dueDate.isBefore(DateTime.now());
+      dueDate!.isBefore(DateTime.now());
 
   bool get isDueSoon =>
+      dueDate != null &&
       status != TaskStatus.completed &&
       status != TaskStatus.cancelled &&
-      dueDate.difference(DateTime.now()).inHours <= 24 &&
+      dueDate!.difference(DateTime.now()).inHours <= 24 &&
       !isOverdue;
 
   Task copyWith({
@@ -145,6 +151,7 @@ class Task {
     TaskRecurrence? recurrence,
     String? assignedTo,
     String? assignedToName,
+    String? assignedToRole, // NEW
     String? assigneeId,
     DateTime? dueDate,
     DateTime? completedAt,
@@ -153,6 +160,7 @@ class Task {
     DateTime? createdAt,
     String? notes,
     String? projectName,
+    DateTime? deletedAt, // NEW
   }) {
     return Task(
       id: id ?? this.id,
@@ -166,6 +174,7 @@ class Task {
       recurrence: recurrence ?? this.recurrence,
       assignedTo: assignedTo ?? this.assignedTo,
       assignedToName: assignedToName ?? this.assignedToName,
+      assignedToRole: assignedToRole ?? this.assignedToRole, // NEW
       assigneeId: assigneeId ?? this.assigneeId,
       dueDate: dueDate ?? this.dueDate,
       completedAt: completedAt ?? this.completedAt,
@@ -174,6 +183,7 @@ class Task {
       createdAt: createdAt ?? this.createdAt,
       notes: notes ?? this.notes,
       projectName: projectName ?? this.projectName,
+      deletedAt: deletedAt ?? this.deletedAt, // NEW
     );
   }
 }

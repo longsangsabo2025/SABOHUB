@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../../providers/analytics_provider.dart';
 import '../../providers/ceo_analytics_provider.dart';
+import '../manager/employee_performance_page.dart';
+import 'daily_reports_dashboard_page.dart';
 
 /// CEO Analytics Page
 /// Advanced analytics and insights for all stores
@@ -162,7 +164,8 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
           _buildTab('Doanh thu', 0),
           _buildTab('Khách hàng', 1),
           _buildTab('Hiệu suất', 2),
-          _buildTab('So sánh', 3),
+          _buildTab('Báo cáo', 3),
+          _buildTab('So sánh', 4),
         ],
       ),
     );
@@ -208,6 +211,8 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
       case 2:
         return _buildPerformanceAnalytics();
       case 3:
+        return _buildDailyReportsTab();
+      case 4:
         return _buildComparisonAnalytics();
       default:
         return _buildRevenueAnalytics();
@@ -625,8 +630,384 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
   }
 
   Widget _buildPerformanceAnalytics() {
-    return const Center(
-      child: Text('Phân tích hiệu suất'),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.analytics, color: Colors.white, size: 40),
+                const SizedBox(height: 12),
+                const Text(
+                  'Đánh giá hiệu suất nhân viên',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Theo dõi KPI, xếp hạng và đánh giá chi tiết',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EmployeePerformancePage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.rate_review),
+                  label: const Text('Xem bảng KPI chi tiết'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF8B5CF6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Quick Stats Row
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickStatCard(
+                  'Tổng nhân viên',
+                  '0',
+                  Icons.people,
+                  Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickStatCard(
+                  'Điểm TB',
+                  '0',
+                  Icons.star,
+                  Colors.amber,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickStatCard(
+                  'KPI đạt',
+                  '0%',
+                  Icons.check_circle,
+                  Colors.green,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickStatCard(
+                  'Cần cải thiện',
+                  '0',
+                  Icons.trending_up,
+                  Colors.orange,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Info Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue.shade700),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Click vào nút trên để xem bảng xếp hạng, KPI chi tiết và thực hiện đánh giá nhân viên',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStatCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailyReportsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.description, color: Colors.white, size: 40),
+                const SizedBox(height: 12),
+                const Text(
+                  'Báo cáo cuối ngày nhân viên',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Xem tổng hợp báo cáo công việc của tất cả nhân viên',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DailyReportsDashboardPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.dashboard),
+                  label: const Text('Mở Dashboard báo cáo'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFFF59E0B),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Features List
+          _buildFeatureCard(
+            'Tự động tạo báo cáo',
+            'Báo cáo được tạo tự động khi nhân viên checkout',
+            Icons.auto_awesome,
+            Colors.blue,
+          ),
+          const SizedBox(height: 12),
+          _buildFeatureCard(
+            'AI Summary',
+            'Tóm tắt thông minh ca làm việc và công việc hoàn thành',
+            Icons.psychology,
+            Colors.purple,
+          ),
+          const SizedBox(height: 12),
+          _buildFeatureCard(
+            'Thống kê chi tiết',
+            'Xem tỷ lệ nộp, giờ làm trung bình, công việc hoàn thành',
+            Icons.analytics,
+            Colors.green,
+          ),
+          const SizedBox(height: 12),
+          _buildFeatureCard(
+            'Lọc và tìm kiếm',
+            'Lọc theo trạng thái, ngày, nhân viên, chi nhánh',
+            Icons.filter_list,
+            Colors.orange,
+          ),
+          const SizedBox(height: 24),
+          
+          // Info Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.lightbulb, color: Colors.amber.shade700),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Click vào nút trên để xem dashboard báo cáo đầy đủ với bộ lọc và thống kê chi tiết',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.amber.shade900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureCard(
+      String title, String description, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

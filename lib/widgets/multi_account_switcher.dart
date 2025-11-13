@@ -318,7 +318,7 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
                               ),
                             ),
                             Text(
-                              currentUser.email,
+                              currentUser.email ?? 'ID: ${currentUser.id}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],

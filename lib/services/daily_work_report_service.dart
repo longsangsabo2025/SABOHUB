@@ -278,6 +278,33 @@ class DailyWorkReportService {
           totalReports > 0 ? (submittedReports / totalReports * 100) : 0,
     };
   }
+
+  /// Get all reports for company on specific date (for Manager/CEO view)
+  Future<List<DailyWorkReport>> getCompanyReports(
+    String companyId,
+    DateTime date,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    // TODO: Query from Supabase with company filter
+    // For now, return all mock reports for the date
+    final dayReports = _mockReports.where((r) {
+      final reportDate = r.date;
+      return reportDate.year == date.year &&
+          reportDate.month == date.month &&
+          reportDate.day == date.day;
+    }).toList();
+
+    // Sort by submission status and then by name
+    dayReports.sort((a, b) {
+      if (a.status != b.status) {
+        return b.status.index.compareTo(a.status.index);
+      }
+      return a.userName.compareTo(b.userName);
+    });
+
+    return dayReports;
+  }
 }
 
 // Riverpod Providers

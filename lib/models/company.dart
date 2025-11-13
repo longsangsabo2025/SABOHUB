@@ -14,6 +14,7 @@ class Company {
   final String status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? deletedAt; // Soft delete timestamp
   
   // Check-in location settings
   final double? checkInLatitude;
@@ -34,6 +35,7 @@ class Company {
     this.status = 'active',
     this.createdAt,
     this.updatedAt,
+    this.deletedAt,
     this.checkInLatitude,
     this.checkInLongitude,
     this.checkInRadius,
@@ -76,6 +78,9 @@ class Company {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
+          : null,
       checkInLatitude: json['check_in_latitude'] as double?,
       checkInLongitude: json['check_in_longitude'] as double?,
       checkInRadius: json['check_in_radius'] as double?,
@@ -116,6 +121,7 @@ class Company {
     String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? deletedAt,
     double? checkInLatitude,
     double? checkInLongitude,
     double? checkInRadius,
@@ -134,6 +140,7 @@ class Company {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       checkInLatitude: checkInLatitude ?? this.checkInLatitude,
       checkInLongitude: checkInLongitude ?? this.checkInLongitude,
       checkInRadius: checkInRadius ?? this.checkInRadius,

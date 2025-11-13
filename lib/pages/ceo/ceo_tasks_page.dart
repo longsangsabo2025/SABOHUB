@@ -6,6 +6,7 @@ import '../../models/management_task.dart';
 import '../../providers/management_task_provider.dart';
 import '../../utils/dummy_providers.dart';
 import 'ceo_profile_page.dart';
+import 'ceo_task_management_page.dart';
 import 'smart_task_creation_page.dart';
 
 /// CEO Tasks Page
@@ -289,6 +290,22 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                             title: '📋 Quản lý nhiệm vụ',
                             actions: [
                               _ActionItem(
+                                icon: Icons.list_alt,
+                                title: 'Quản lý tất cả nhiệm vụ',
+                                subtitle:
+                                    'Xem, chỉnh sửa, xóa tất cả nhiệm vụ',
+                                color: Colors.indigo,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const CEOTaskManagementPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _ActionItem(
                                 icon: Icons.add_task,
                                 title: 'Tạo nhiệm vụ mới',
                                 subtitle:
@@ -412,6 +429,21 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                     _buildActionSection(
                       title: '📋 Quản lý nhiệm vụ',
                       actions: [
+                        _ActionItem(
+                          icon: Icons.list_alt,
+                          title: 'Quản lý tất cả nhiệm vụ',
+                          subtitle: 'Xem, chỉnh sửa, xóa tất cả nhiệm vụ',
+                          color: Colors.indigo,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const CEOTaskManagementPage(),
+                              ),
+                            );
+                          },
+                        ),
                         _ActionItem(
                           icon: Icons.add_task,
                           title: 'Tạo nhiệm vụ mới',

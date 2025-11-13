@@ -599,7 +599,7 @@ class CEOSettingsPage extends ConsumerWidget {
             const SizedBox(height: 24),
             _buildSystemSettings(),
             const SizedBox(height: 24),
-            _buildCompanySettings(),
+            _buildCompanySettings(context),
             const SizedBox(height: 24),
             _buildSecuritySettings(),
             const SizedBox(height: 24),
@@ -756,7 +756,7 @@ class CEOSettingsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildCompanySettings() {
+  Widget _buildCompanySettings(BuildContext context) {
     return _buildSettingsSection(
       'Quản lý công ty',
       [

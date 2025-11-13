@@ -274,9 +274,12 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      print('🔵 [AUTH] Login attempt for: $email');
+      
       // 1. Check demo users first
       final demoUser = app_user.DemoUsers.findByEmail(email);
       if (demoUser != null && password == 'demo') {
+        print('✅ [AUTH] Demo user login successful');
         await _saveUser(demoUser, isDemoMode: true);
 
         // Single state update with all data
@@ -289,13 +292,18 @@ class AuthNotifier extends Notifier<AuthState> {
         return true;
       }
 
+      print('🔄 [AUTH] Attempting Supabase authentication...');
+      
       // 2. Real Supabase authentication
       final authResponse = await _supabaseClient.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
+      print('📊 [AUTH] Auth response received');
+
       if (authResponse.user == null) {
+        print('❌ [AUTH] No user in response');
         state = state.copyWith(
           isLoading: false,
           error: 'Đăng nhập thất bại',
@@ -303,8 +311,11 @@ class AuthNotifier extends Notifier<AuthState> {
         return false;
       }
 
+      print('✅ [AUTH] User authenticated: ${authResponse.user!.id}');
+
       // 3. Check if email is verified
       if (authResponse.user!.emailConfirmedAt == null) {
+        print('⚠️ [AUTH] Email not verified');
         state = state.copyWith(
           isLoading: false,
           error:
@@ -312,6 +323,8 @@ class AuthNotifier extends Notifier<AuthState> {
         );
         return false;
       }
+
+      print('🔄 [AUTH] Fetching user profile...');
 
       // 4. Fetch user profile from database in parallel with save operations
       final response = await _supabaseClient
@@ -321,7 +334,10 @@ class AuthNotifier extends Notifier<AuthState> {
           .eq('id', authResponse.user!.id)
           .maybeSingle();
 
+      print('📊 [AUTH] Profile response: ${response != null ? "found" : "not found"}');
+
       if (response == null) {
+        print('❌ [AUTH] User profile not found in database');
         state = state.copyWith(
           isLoading: false,
           error:
@@ -329,6 +345,8 @@ class AuthNotifier extends Notifier<AuthState> {
         );
         return false;
       }
+
+      print('✅ [AUTH] User profile loaded: ${response['full_name']}');
 
       // 5. Create User object from database
       final user = app_user.User(
@@ -364,6 +382,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
       return true;
     } on AuthException catch (e) {
+      print('❌ [AUTH] AuthException: ${e.message}');
       String errorMessage = 'Đăng nhập thất bại';
 
       if (e.message.contains('Invalid login credentials') ||
@@ -382,10 +401,13 @@ class AuthNotifier extends Notifier<AuthState> {
         error: errorMessage,
       );
       return false;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('💥 [AUTH] Unexpected error: $e');
+      print('📍 [AUTH] Stack trace: $stackTrace');
+      
       state = state.copyWith(
         isLoading: false,
-        error: 'Lỗi hệ thống: $e',
+        error: 'Lỗi kết nối: ${e.toString()}\n\nVui lòng kiểm tra kết nối internet và thử lại.',
       );
       return false;
     }
@@ -741,6 +763,12 @@ class AuthNotifier extends Notifier<AuthState> {
   /// Phase 3.1: Call this method on any user interaction to reset timeout
   void recordActivity() {
     _resetSessionTimer();
+  }
+
+  /// Login with custom User object (for employee login)
+  Future<void> loginWithUser(app_user.User user) async {
+    await _saveUser(user);
+    state = AuthState(user: user, isLoading: false);
   }
 
   /// Save user to storage

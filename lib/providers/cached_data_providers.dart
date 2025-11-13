@@ -249,6 +249,8 @@ final cachedCompanyEmployeesProvider =
 /// Cached Company Tasks Provider (Tasks Tab)
 final cachedCompanyTasksProvider =
     FutureProvider.autoDispose.family<List, String>((ref, companyId) async {
+  print('🔵 [CachedProvider] cachedCompanyTasksProvider called for company: $companyId');
+  
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
   final cacheKey = 'company_tasks_$companyId';
@@ -256,13 +258,17 @@ final cachedCompanyTasksProvider =
   // Try memory cache
   final cached = memoryCache.get<List<dynamic>>(cacheKey);
   if (cached != null) {
+    print('💾 [CachedProvider] Returning ${cached.length} tasks from cache');
     return cached;
   }
 
+  print('🌐 [CachedProvider] Cache miss, fetching from service...');
+  
   // Fetch from service
   final service = ref.watch(taskServiceProvider);
   final tasks = await service.getTasksByCompany(companyId);
-
+  
+  print('✅ [CachedProvider] Service returned ${tasks.length} tasks, caching...');
   // Cache result (1 min TTL - tasks change frequently)
   memoryCache.set(cacheKey, tasks, config.shortTTL);
 
@@ -506,7 +512,7 @@ class EmployeeAttendanceRecord {
   final String employeeName;
   final String? employeeAvatar;
   final DateTime date;
-  final DateTime checkIn;
+  final DateTime? checkIn; // Made nullable
   final DateTime? checkOut;
   final AttendanceStatus status;
   final int lateMinutes;
@@ -519,7 +525,7 @@ class EmployeeAttendanceRecord {
     required this.employeeName,
     this.employeeAvatar,
     required this.date,
-    required this.checkIn,
+    this.checkIn, // Made nullable
     this.checkOut,
     required this.status,
     required this.lateMinutes,
@@ -554,15 +560,15 @@ final cachedCompanyAttendanceProvider = FutureProvider.autoDispose
   final attendanceRecords = records
       .map((record) => EmployeeAttendanceRecord(
             id: record.id,
-            employeeId: record.userId,
-            employeeName: record.userName,
-            employeeAvatar: record.userAvatar,
-            date: record.checkIn,
-            checkIn: record.checkIn,
-            checkOut: record.checkOut,
+            employeeId: record.employeeId,
+            employeeName: record.employeeName,
+            employeeAvatar: null, // Not available in new schema
+            date: record.date,
+            checkIn: record.checkInTime,
+            checkOut: record.checkOutTime,
             status: record.status,
-            lateMinutes: record.lateMinutes,
-            hoursWorked: record.hoursWorked,
+            lateMinutes: 0, // TODO: Calculate from shift
+            hoursWorked: (record.totalWorkedMinutes / 60).toDouble(),
             notes: record.notes,
           ))
       .toList();

@@ -184,26 +184,26 @@ class TaskDetailsDialog extends ConsumerWidget {
                         children: [
                           Icon(
                             Icons.event,
-                            color: _isDueDateOverdue(task.dueDate)
+                            color: task.dueDate != null && _isDueDateOverdue(task.dueDate!)
                                 ? Colors.red
                                 : Theme.of(context).primaryColor,
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            DateFormat('dd/MM/yyyy HH:mm').format(task.dueDate),
+                            task.dueDate != null ? DateFormat('dd/MM/yyyy HH:mm').format(task.dueDate!) : 'Chưa có',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyLarge
                                 ?.copyWith(
-                                  color: _isDueDateOverdue(task.dueDate)
+                                  color: task.dueDate != null && _isDueDateOverdue(task.dueDate!)
                                       ? Colors.red
                                       : null,
-                                  fontWeight: _isDueDateOverdue(task.dueDate)
+                                  fontWeight: task.dueDate != null && _isDueDateOverdue(task.dueDate!)
                                       ? FontWeight.bold
                                       : null,
                                 ),
                           ),
-                          if (_isDueDateOverdue(task.dueDate)) ...[
+                          if (task.dueDate != null && _isDueDateOverdue(task.dueDate!)) ...[
                             const SizedBox(width: 8),
                             const Text(
                               '(Quá hạn)',
@@ -482,3 +482,5 @@ class TaskDetailsDialog extends ConsumerWidget {
     return dueDate.isBefore(DateTime.now());
   }
 }
+
+

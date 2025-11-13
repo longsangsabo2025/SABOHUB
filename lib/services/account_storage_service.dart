@@ -20,14 +20,15 @@ class AccountStorageService {
             accountsList.map((json) => SavedAccount.fromJson(json)).toList();
       }
 
-      // Check if account already exists
+      // Check if account already exists (use email or username as identifier)
+      final identifier = user.email ?? user.id; // Use email if available, else use ID
       final existingIndex =
-          accounts.indexWhere((acc) => acc.email == user.email);
+          accounts.indexWhere((acc) => acc.email == identifier);
 
       if (existingIndex >= 0) {
         // Update existing account
         accounts[existingIndex] = SavedAccount(
-          email: user.email,
+          email: identifier,
           name: user.name ?? 'Unknown',
           role: user.role.name,
           lastUsed: DateTime.now(),
@@ -35,7 +36,7 @@ class AccountStorageService {
       } else {
         // Add new account
         accounts.add(SavedAccount(
-          email: user.email,
+          email: identifier,
           name: user.name ?? 'Unknown',
           role: user.role.name,
           lastUsed: DateTime.now(),

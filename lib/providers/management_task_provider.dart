@@ -5,7 +5,7 @@ import '../services/management_task_service.dart';
 
 /// Management Task Service Provider
 final managementTaskServiceProvider = Provider<ManagementTaskService>((ref) {
-  return ManagementTaskService();
+  return ManagementTaskService(ref);
 });
 
 /// CEO Strategic Tasks Provider
@@ -78,3 +78,31 @@ void refreshAllTasks(WidgetRef ref) {
   ref.invalidate(taskStatisticsProvider);
   ref.invalidate(companyTaskStatisticsProvider);
 }
+
+// ============================================================================
+// REALTIME STREAM PROVIDERS (Auto-update without refresh)
+// ============================================================================
+
+/// CEO Strategic Tasks Stream Provider (REALTIME)
+/// Auto-updates when tasks are created/modified/deleted
+final ceoStrategicTasksStreamProvider =
+    StreamProvider<List<ManagementTask>>((ref) {
+  final service = ref.read(managementTaskServiceProvider);
+  return service.streamCEOStrategicTasks();
+});
+
+/// Manager Assigned Tasks Stream Provider (REALTIME)
+/// Auto-updates when tasks assigned to current manager change
+final managerAssignedTasksStreamProvider =
+    StreamProvider<List<ManagementTask>>((ref) {
+  final service = ref.read(managementTaskServiceProvider);
+  return service.streamTasksAssignedToMe();
+});
+
+/// Manager Created Tasks Stream Provider (REALTIME)
+/// Auto-updates when tasks created by current manager change
+final managerCreatedTasksStreamProvider =
+    StreamProvider<List<ManagementTask>>((ref) {
+  final service = ref.read(managementTaskServiceProvider);
+  return service.streamTasksCreatedByMe();
+});

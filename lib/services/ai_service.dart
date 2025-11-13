@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/ai_assistant.dart';
 import '../models/ai_message.dart';
@@ -44,11 +45,12 @@ class AIService {
 
         return AIAssistant.fromJson(createResponse);
       } catch (rlsError) {
-        // Simple demo fallback - create minimal assistant object
+        // Simple demo fallback - create minimal assistant object with valid UUID
         try {
           final now = DateTime.now();
+          final uuid = const Uuid();
           final demoAssistant = AIAssistant(
-            id: 'demo-assistant-$companyId',
+            id: uuid.v4(), // Generate valid UUID
             companyId: companyId,
             name: 'AI Trợ lý Demo',
             model: 'gpt-4-turbo-preview',

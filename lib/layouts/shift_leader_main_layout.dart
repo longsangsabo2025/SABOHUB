@@ -9,7 +9,7 @@ import '../pages/shift_leader/shift_leader_team_page.dart';
 import '../pages/staff/staff_checkin_page.dart';
 import '../pages/staff/staff_messages_page.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/dev_role_switcher.dart';
+import '../widgets/error_boundary.dart';
 import '../widgets/unified_bottom_navigation.dart';
 
 /// Shift Leader Main Layout
@@ -55,43 +55,43 @@ class _ShiftLeaderMainLayoutState extends ConsumerState<ShiftLeaderMainLayout>
     final currentUser = ref.watch(currentUserProvider);
     final companyId = currentUser?.companyId;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPageIndex = index;
-              });
-            },
-            children: [
-              // 1. Tasks Page
-              ShiftLeaderTasksPage(),
-              // 2. Check-in Page (reuse from Staff)
-              const StaffCheckinPage(),
-              // 3. Messages Page (reuse from Staff)
-              const StaffMessagesPage(),
-              // 4. Team Management Page
-              ShiftLeaderTeamPage(),
-              // 5. Reports Page
-              ShiftLeaderReportsPage(),
-              // 6. Company Info Page
-              companyId != null
-                  ? CompanyInfoPage(companyId: companyId)
-                  : const Center(
-                      child: Text('Bạn chưa được gán vào công ty nào'),
-                    ),
-            ],
-          ),
-          // DEV: Role Switcher Button
-          const DevRoleSwitcher(),
-        ],
-      ),
-      bottomNavigationBar: UnifiedBottomNavigation(
-        userRole: UserRole.shiftLeader,
-        currentIndex: _currentPageIndex,
-        onTap: _onNavigationTap,
+    return ErrorBoundary(
+      child: Scaffold(
+        body: Stack(
+          children: [
+            PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPageIndex = index;
+                });
+              },
+              children: [
+                // 1. Tasks Page
+                ShiftLeaderTasksPage(),
+                // 2. Check-in Page (reuse from Staff)
+                const StaffCheckinPage(),
+                // 3. Messages Page (reuse from Staff)
+                const StaffMessagesPage(),
+                // 4. Team Management Page
+                ShiftLeaderTeamPage(),
+                // 5. Reports Page
+                ShiftLeaderReportsPage(),
+                // 6. Company Info Page
+                companyId != null
+                    ? CompanyInfoPage(companyId: companyId)
+                    : const Center(
+                        child: Text('Bạn chưa được gán vào công ty nào'),
+                      ),
+              ],
+            ),
+          ],
+        ),
+        bottomNavigationBar: UnifiedBottomNavigation(
+          userRole: UserRole.shiftLeader,
+          currentIndex: _currentPageIndex,
+          onTap: _onNavigationTap,
+        ),
       ),
     );
   }

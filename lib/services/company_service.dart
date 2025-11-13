@@ -9,8 +9,24 @@ class CompanyService {
   final _supabase = supabase.client;
   final _branchService = BranchService();
 
-  /// Get all companies
+  /// Get all companies (excludes soft-deleted)
   Future<List<Company>> getAllCompanies() async {
+    try {
+      final response = await _supabase
+          .from('companies')
+          .select(
+              'id, name, address, phone, email, business_type, is_active, created_at, updated_at')
+          .isFilter('deleted_at', null) // Only get non-deleted companies
+          .order('created_at', ascending: false);
+
+      return (response as List).map((json) => Company.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch companies: $e');
+    }
+  }
+
+  /// Get all companies including soft-deleted ones (for admin/restore purposes)
+  Future<List<Company>> getAllCompaniesIncludingDeleted() async {
     try {
       final response = await _supabase
           .from('companies')
@@ -20,7 +36,7 @@ class CompanyService {
 
       return (response as List).map((json) => Company.fromJson(json)).toList();
     } catch (e) {
-      throw Exception('Failed to fetch companies: $e');
+      throw Exception('Failed to fetch all companies: $e');
     }
   }
 
@@ -55,7 +71,7 @@ class CompanyService {
         throw Exception('User not authenticated');
       }
 
-      // ✅ Insert company WITHOUT owner_id (schema doesn't have this column)
+      // ✅ Insert company WITH created_by (CEO owner)
       final response = await _supabase
           .from('companies')
           .insert({
@@ -66,7 +82,7 @@ class CompanyService {
             'business_type':
                 businessType ?? 'restaurant', // Default to restaurant
             'is_active': true,
-            // ❌ REMOVED: 'owner_id': userId - column doesn't exist in schema
+            'created_by': userId, // ✅ Set CEO as company owner for RLS
           })
           .select(
               'id, name, address, phone, email, business_type, is_active, created_at, updated_at')
@@ -109,12 +125,37 @@ class CompanyService {
     }
   }
 
-  /// Delete company
+  /// Delete company (soft delete)
+  /// Sets deleted_at timestamp instead of actually deleting the record
   Future<void> deleteCompany(String id) async {
+    try {
+      // Soft delete: Update deleted_at timestamp
+      await _supabase.from('companies').update({
+        'deleted_at': DateTime.now().toIso8601String(),
+      }).eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to delete company: $e');
+    }
+  }
+
+  /// Permanently delete company (hard delete)
+  /// ⚠️ USE WITH CAUTION - This is irreversible!
+  Future<void> permanentlyDeleteCompany(String id) async {
     try {
       await _supabase.from('companies').delete().eq('id', id);
     } catch (e) {
-      throw Exception('Failed to delete company: $e');
+      throw Exception('Failed to permanently delete company: $e');
+    }
+  }
+
+  /// Restore a soft-deleted company
+  Future<void> restoreCompany(String id) async {
+    try {
+      await _supabase.from('companies').update({
+        'deleted_at': null,
+      }).eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to restore company: $e');
     }
   }
 
@@ -146,7 +187,7 @@ class CompanyService {
           .from('daily_revenue')
           .select('amount')
           .eq('company_id', companyId)
-          .gte('date', firstDayOfMonth.toIso8601String());
+          .gte('date', firstDayOfMonth.toIso8601String().split('T')[0]);
 
       double monthlyRevenue = 0.0;
       for (var record in revenueResponse) {

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/company_list_provider.dart';
 import '../../services/employee_auth_service.dart';
-import '../../models/employee_user.dart';
 
 /// Dual Login Page
 /// Tab 1: CEO Login (Email/Password - Supabase Auth)
@@ -179,21 +180,62 @@ class _CEOLoginTabState extends ConsumerState<CEOLoginTab> {
     super.dispose();
   }
 
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
-
+  Future<void> _quickLogin(String email, String password) async {
     setState(() => _isLoading = true);
-
+    _emailController.text = email;
+    _passwordController.text = password;
+    
     try {
       final success = await ref
           .read(authProvider.notifier)
-          .login(_emailController.text.trim(), _passwordController.text);
+          .login(email, password);
 
       if (!success && mounted) {
         final authState = ref.read(authProvider);
         _showError(authState.error ?? 'Đăng nhập thất bại');
       }
     } catch (e) {
+      if (mounted) {
+        _showError('Lỗi: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _login() async {
+    print('🔵 [LOGIN] _login() called');
+    
+    if (!_formKey.currentState!.validate()) {
+      print('❌ [LOGIN] Form validation failed');
+      return;
+    }
+
+    print('✅ [LOGIN] Form validated, starting login...');
+    print('📧 [LOGIN] Email: ${_emailController.text.trim()}');
+    
+    setState(() => _isLoading = true);
+
+    try {
+      print('🔄 [LOGIN] Calling authProvider.login...');
+      
+      final success = await ref
+          .read(authProvider.notifier)
+          .login(_emailController.text.trim(), _passwordController.text);
+
+      print('📊 [LOGIN] Login result: $success');
+
+      if (!success && mounted) {
+        final authState = ref.read(authProvider);
+        print('❌ [LOGIN] Login failed: ${authState.error}');
+        _showError(authState.error ?? 'Đăng nhập thất bại');
+      } else {
+        print('✅ [LOGIN] Login successful!');
+      }
+    } catch (e) {
+      print('💥 [LOGIN] Exception: $e');
       if (mounted) {
         _showError('Lỗi: ${e.toString()}');
       }
@@ -326,6 +368,61 @@ class _CEOLoginTabState extends ConsumerState<CEOLoginTab> {
                       ),
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            // Quick Login Button
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.purple.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.purple.shade200),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.flash_on,
+                          color: Colors.purple.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Đăng nhập nhanh',
+                        style: TextStyle(
+                          color: Colors.purple.shade700,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading
+                          ? null
+                          : () => _quickLogin('longsangsabo1@gmail.com',
+                              'Acookingoil123@'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(Icons.business, size: 20),
+                      label: const Text(
+                        'CEO - longsangsabo1@gmail.com',
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -372,17 +469,22 @@ class _EmployeeLoginTabState extends ConsumerState<EmployeeLoginTab> {
       );
 
       if (result.success && result.employee != null) {
-        // TODO: Navigate to employee dashboard based on role
-        // For now, show success message
+        // Convert employee to User and login
+        final user = result.employee!.toUser();
+        final authNotifier = ref.read(authProvider.notifier);
+        await authNotifier.loginWithUser(user);
+        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Đăng nhập thành công! Xin chào ${result.employee!.fullName}'),
               backgroundColor: Colors.green,
+              duration: const Duration(seconds: 1),
             ),
           );
-          // TODO: Navigate based on role
-          // Navigator.pushReplacementNamed(context, '/employee-dashboard');
+          
+          // Navigate to main app - RoleBasedDashboard will handle routing
+          context.go('/');
         }
       } else {
         if (mounted) {
@@ -435,22 +537,92 @@ class _EmployeeLoginTabState extends ConsumerState<EmployeeLoginTab> {
             ),
             const SizedBox(height: 32),
 
-            // Company name field
-            TextFormField(
-              controller: _companyController,
-              decoration: InputDecoration(
-                labelText: 'Tên công ty',
-                hintText: 'Ví dụ: SABO Billiards',
-                prefixIcon: const Icon(Icons.business_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Vui lòng nhập tên công ty';
-                }
-                return null;
+            // Company dropdown
+            Consumer(
+              builder: (context, ref, child) {
+                final companiesAsync = ref.watch(allCompaniesProvider);
+                
+                return companiesAsync.when(
+                  data: (companies) {
+                    if (companies.isEmpty) {
+                      return TextFormField(
+                        controller: _companyController,
+                        decoration: InputDecoration(
+                          labelText: 'Tên công ty',
+                          hintText: 'Ví dụ: SABO Billiards',
+                          prefixIcon: const Icon(Icons.business_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Vui lòng nhập tên công ty';
+                          }
+                          return null;
+                        },
+                      );
+                    }
+                    
+                    return DropdownButtonFormField<String>(
+                      value: _companyController.text.isEmpty ? null : _companyController.text,
+                      decoration: InputDecoration(
+                        labelText: 'Tên công ty',
+                        hintText: 'Chọn công ty',
+                        prefixIcon: const Icon(Icons.business_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      items: companies.map((company) {
+                        return DropdownMenuItem<String>(
+                          value: company.name,
+                          child: Text(company.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          _companyController.text = value;
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Vui lòng chọn công ty';
+                        }
+                        return null;
+                      },
+                    );
+                  },
+                  loading: () => TextFormField(
+                    controller: _companyController,
+                    decoration: InputDecoration(
+                      labelText: 'Tên công ty',
+                      hintText: 'Đang tải danh sách công ty...',
+                      prefixIcon: const Icon(Icons.business_outlined),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    enabled: false,
+                  ),
+                  error: (error, stack) => TextFormField(
+                    controller: _companyController,
+                    decoration: InputDecoration(
+                      labelText: 'Tên công ty',
+                      hintText: 'Ví dụ: SABO Billiards',
+                      prefixIcon: const Icon(Icons.business_outlined),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Vui lòng nhập tên công ty';
+                      }
+                      return null;
+                    },
+                  ),
+                );
               },
             ),
 

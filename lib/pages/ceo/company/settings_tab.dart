@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../../models/business_type.dart';
 import '../../../models/company.dart';
+import '../../../providers/company_provider.dart';
 import '../../../services/company_service.dart';
 import '../company_details_page.dart' show companyDetailsProvider;
 import 'package:go_router/go_router.dart';
@@ -423,20 +424,35 @@ class SettingsTab extends ConsumerWidget {
 
   Future<void> _deleteCompany(
       BuildContext context, WidgetRef ref, Company company) async {
+    print('🗑️  [DELETE] Starting delete for company: ${company.id}');
+    
     try {
       final service = CompanyService();
+      print('🗑️  [DELETE] Calling service.deleteCompany()...');
       await service.deleteCompany(company.id);
+      print('🗑️  [DELETE] Delete successful!');
 
+      // Invalidate companies cache
+      ref.invalidate(companiesProvider);
+      
       if (context.mounted) {
+        print('🗑️  [DELETE] Navigating back...');
         Navigator.of(context).pop(); // Return to companies list
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã xóa công ty')),
+          const SnackBar(
+            content: Text('Đã xóa công ty'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
+      print('🗑️  [DELETE] ERROR: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e')),
+          SnackBar(
+            content: Text('Lỗi: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

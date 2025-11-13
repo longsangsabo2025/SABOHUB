@@ -92,9 +92,54 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
 
           // Attendance List
           attendanceAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Đang tải dữ liệu chấm công...',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             error: (error, stack) => Center(
-              child: Text('Lỗi tải dữ liệu: $error'),
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Lỗi tải dữ liệu',
+                      style: TextStyle(fontSize: 16, color: Colors.grey[700], fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      error.toString().contains('TimeoutException')
+                        ? 'Mất kết nối với máy chủ. Vui lòng thử lại.'
+                        : 'Không thể tải dữ liệu chấm công. Vui lòng thử lại.',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        ref.invalidate(cachedCompanyAttendanceProvider(params));
+                        ref.invalidate(cachedAttendanceStatsProvider(params));
+                      },
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              ),
             ),
             data: (records) => _buildAttendanceList(records),
           ),
@@ -194,11 +239,13 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
         color: Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
         children: [
           // Date Picker
-          Expanded(
-            flex: 2,
+          SizedBox(
+            width: 200,
             child: InkWell(
               onTap: () => _selectDate(context),
               child: Container(
@@ -210,14 +257,18 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
                   border: Border.all(color: Colors.grey[300]!),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.calendar_today, color: Colors.blue[700]),
-                    const SizedBox(width: 12),
-                    Text(
-                      DateFormat('dd/MM/yyyy').format(_selectedDate),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                    Icon(Icons.calendar_today, color: Colors.blue[700], size: 20),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        DateFormat('dd/MM/yyyy').format(_selectedDate),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -225,11 +276,10 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
               ),
             ),
           ),
-          const SizedBox(width: 16),
 
           // Status Filter
-          Expanded(
-            flex: 2,
+          SizedBox(
+            width: 180,
             child: DropdownButtonFormField<AttendanceStatus?>(
               initialValue: _filterStatus,
               decoration: InputDecoration(
@@ -245,10 +295,16 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
                 ...AttendanceStatus.values.map((status) => DropdownMenuItem(
                       value: status,
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.circle, color: status.color, size: 12),
                           const SizedBox(width: 8),
-                          Text(status.label),
+                          Flexible(
+                            child: Text(
+                              status.label,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     )),
@@ -256,20 +312,20 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
               onChanged: (value) => setState(() => _filterStatus = value),
             ),
           ),
-          const SizedBox(width: 16),
 
           // Search
-          Expanded(
-            flex: 3,
+          SizedBox(
+            width: 250,
             child: TextField(
               decoration: InputDecoration(
-                labelText: 'Tìm kiếm nhân viên',
+                labelText: 'Tìm kiếm',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
               onChanged: (value) => setState(() => _searchQuery = value),
             ),
@@ -445,7 +501,9 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
           Expanded(
             flex: 2,
             child: Text(
-              DateFormat('HH:mm').format(record.checkIn),
+              record.checkIn != null
+                  ? DateFormat('HH:mm').format(record.checkIn!)
+                  : '--:--',
               style: const TextStyle(fontSize: 14),
             ),
           ),
@@ -580,8 +638,10 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
             children: [
               _buildDetailRow(
                   'Ngày', DateFormat('dd/MM/yyyy').format(record.date)),
-              _buildDetailRow(
-                  'Giờ vào', DateFormat('HH:mm:ss').format(record.checkIn)),
+              _buildDetailRow('Giờ vào',
+                  record.checkIn != null
+                      ? DateFormat('HH:mm:ss').format(record.checkIn!)
+                      : '--:--:--'),
               _buildDetailRow(
                   'Giờ ra',
                   record.checkOut != null

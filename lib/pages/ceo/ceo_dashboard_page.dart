@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../providers/cached_data_providers.dart'; // PHASE 3A - Cached providers
 import '../../providers/ceo_tab_provider.dart';
+import '../../widgets/multi_account_switcher.dart';
 import '../attendance/attendance_list_page.dart';
 import '../schedules/schedule_list_page.dart';
 import 'ceo_main_layout.dart';
@@ -13,7 +13,6 @@ import 'ceo_profile_page.dart';
 
 /// CEO Dashboard Page
 /// Main overview dashboard for CEO with key metrics and KPIs
-import '../../widgets/multi_account_switcher.dart';
 
 class CEODashboardPage extends ConsumerStatefulWidget {
   const CEODashboardPage({super.key});

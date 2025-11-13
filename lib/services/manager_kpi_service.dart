@@ -1,45 +1,45 @@
 import '../core/services/supabase_service.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// **MANAGER KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
+/// - Service này được dùng bởi Manager Dashboard
+/// - Manager login qua mã nhân viên, KHÔNG có trong auth.users
+/// - ❌ KHÔNG ĐƯỢC dùng `_supabase.auth.currentUser`
+/// - ✅ Caller PHẢI truyền employeeId và companyId từ authProvider
+
 /// Manager KPI Service
 /// Provides KPIs and metrics for Manager Dashboard
 class ManagerKPIService {
   final _supabase = supabase.client;
 
   /// Get Manager Dashboard KPIs
-  Future<Map<String, dynamic>> getDashboardKPIs({String? branchId}) async {
+  /// 
+  /// [employeeId] - ID của manager từ employees table (KHÔNG phải auth.user.id)
+  /// [companyId] - ID công ty của manager
+  /// [branchId] - Optional: ID chi nhánh để filter thêm
+  Future<Map<String, dynamic>> getDashboardKPIs({
+    required String employeeId,
+    required String companyId,
+    String? branchId,
+  }) async {
     try {
-      // Get current user's branch
-      final userId = _supabase.auth.currentUser?.id;
-      String? targetBranchId = branchId;
-
-      if (targetBranchId == null && userId != null) {
-        final profile = await _supabase
-            .from('users')
-            .select('branch_id')
-            .eq('id', userId)
-            .single();
-        targetBranchId = profile['branch_id'] as String?;
-      }
-
-      // Get staff count
+      // Get staff count from employees table - FILTER BY COMPANY
       final staffQuery =
-          _supabase.from('users').select('id, status').eq('role', 'STAFF');
+          _supabase.from('employees').select('id, is_active').eq('role', 'STAFF');
 
-      if (targetBranchId != null) {
-        staffQuery.eq('branch_id', targetBranchId);
-      }
+      // Manager sees all staff in their company (not just branch)
+      staffQuery.eq('company_id', companyId);
 
       final staffData = await staffQuery;
       final totalStaff = (staffData as List).length;
       final activeStaff =
-          staffData.where((s) => s['status'] == 'active').length;
+          staffData.where((s) => s['is_active'] == true).length;
 
-      // Get tables count
+      // Get tables count - FILTER BY COMPANY
       final tablesQuery = _supabase.from('tables').select('id, status');
 
-      if (targetBranchId != null) {
-        tablesQuery.eq('branch_id', targetBranchId);
-      }
+      // Manager sees all tables in their company
+      tablesQuery.eq('company_id', companyId);
 
       final tablesData = await tablesQuery;
       final totalTables = (tablesData as List).length;
@@ -47,7 +47,7 @@ class ManagerKPIService {
           .where((t) => t['status'] == 'OCCUPIED' || t['status'] == 'RESERVED')
           .length;
 
-      // Get tasks for today
+      // Get tasks for today - FILTER BY COMPANY
       final today = DateTime.now();
       final startOfDay = DateTime(today.year, today.month, today.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
@@ -58,9 +58,8 @@ class ManagerKPIService {
           .gte('created_at', startOfDay.toIso8601String())
           .lt('created_at', endOfDay.toIso8601String());
 
-      if (targetBranchId != null) {
-        tasksQuery.eq('branch_id', targetBranchId);
-      }
+      // Manager sees all tasks in their company
+      tasksQuery.eq('company_id', companyId);
 
       final tasksData = await tasksQuery;
       final totalOrders = (tasksData as List).length;
@@ -113,29 +112,25 @@ class ManagerKPIService {
   }
 
   /// Get team members for today
-  Future<List<Map<String, dynamic>>> getTeamMembers({String? branchId}) async {
+  /// 
+  /// [employeeId] - ID của manager từ employees table
+  /// [companyId] - ID công ty của manager
+  /// [branchId] - Optional: ID chi nhánh để filter thêm
+  Future<List<Map<String, dynamic>>> getTeamMembers({
+    required String employeeId,
+    required String companyId,
+    String? branchId,
+  }) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      String? targetBranchId = branchId;
-
-      if (targetBranchId == null && userId != null) {
-        final profile = await _supabase
-            .from('users')
-            .select('branch_id')
-            .eq('id', userId)
-            .single();
-        targetBranchId = profile['branch_id'] as String?;
-      }
-
+      // Query staff from employees table - FILTER BY COMPANY
       final baseQuery =
-          _supabase.from('users').select('id, name, full_name, role, status');
+          _supabase.from('employees').select('id, full_name, role, is_active');
 
-      final filteredQuery = targetBranchId != null
-          ? baseQuery.eq('branch_id', targetBranchId)
-          : baseQuery;
+      // Manager sees all team members in their company
+      final filteredQuery = baseQuery.eq('company_id', companyId);
 
       final response = await filteredQuery
-          .or('role.eq.staff,role.eq.shift_leader')
+          .or('role.eq.STAFF,role.eq.SHIFT_LEADER')
           .order('created_at', ascending: false)
           .limit(10);
 
@@ -174,27 +169,24 @@ class ManagerKPIService {
   }
 
   /// Get recent activities
-  Future<List<Map<String, dynamic>>> getRecentActivities(
-      {String? branchId, int limit = 10}) async {
+  /// 
+  /// [employeeId] - ID của manager từ employees table
+  /// [companyId] - ID công ty của manager
+  /// [branchId] - Optional: ID chi nhánh để filter thêm
+  /// [limit] - Số lượng activities tối đa
+  Future<List<Map<String, dynamic>>> getRecentActivities({
+    required String employeeId,
+    required String companyId,
+    String? branchId,
+    int limit = 10,
+  }) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      String? targetBranchId = branchId;
+      // Query tasks - FILTER BY COMPANY  
+      // Note: Cannot use JOIN without FK, will populate names separately if needed
+      final baseQuery = _supabase.from('tasks').select('*');
 
-      if (targetBranchId == null && userId != null) {
-        final profile = await _supabase
-            .from('users')
-            .select('branch_id')
-            .eq('id', userId)
-            .single();
-        targetBranchId = profile['branch_id'] as String?;
-      }
-
-      final baseQuery = _supabase.from('tasks').select(
-          'id, title, status, created_at, assigned_to, users(name, full_name)');
-
-      final filteredQuery = targetBranchId != null
-          ? baseQuery.eq('branch_id', targetBranchId)
-          : baseQuery;
+      // Manager sees all activities in their company
+      final filteredQuery = baseQuery.eq('company_id', companyId);
 
       final response = await filteredQuery
           .order('created_at', ascending: false)

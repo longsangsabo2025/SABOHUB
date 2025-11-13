@@ -7,7 +7,10 @@ import '../../../models/company.dart';
 import '../../../models/task.dart';
 import '../../../providers/task_provider.dart';
 import '../../../providers/cached_data_providers.dart';
+import '../../../providers/data_action_providers.dart';
+import '../../../providers/cache_provider.dart';
 import '../../../services/task_service.dart';
+import '../../../widgets/task_test_widget.dart';
 import '../create_task_dialog.dart';
 import '../edit_task_dialog.dart';
 import '../task_details_dialog.dart';
@@ -146,6 +149,9 @@ class _TasksTabState extends ConsumerState<TasksTab>
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          // Add test widget for debugging
+          TaskTestWidget(),
           const SizedBox(height: 16),
           statsAsync.when(
             data: (stats) => Row(
@@ -329,16 +335,22 @@ class _TasksTabState extends ConsumerState<TasksTab>
   }
 
   Widget _buildTasksList(AsyncValue<List<Task>> tasksAsync) {
-    return Expanded(
-      child: tasksAsync.when(
+    print('🎯 [TasksTab] Building tasks list, async state: ${tasksAsync}');
+    
+    return tasksAsync.when(
         data: (tasks) {
+          print('✅ [TasksTab] Received ${tasks.length} tasks from provider');
+          
           var filteredTasks = _selectedRecurrence == null
               ? tasks
               : tasks
                   .where((task) => task.recurrence == _selectedRecurrence)
                   .toList();
 
+          print('🔍 [TasksTab] After filter: ${filteredTasks.length} tasks (filter: $_selectedRecurrence)');
+
           if (filteredTasks.isEmpty) {
+            print('⚠️ [TasksTab] No tasks after filtering, showing empty state');
             return _buildEmptyState();
           }
 
@@ -355,18 +367,54 @@ class _TasksTabState extends ConsumerState<TasksTab>
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, __) => Center(child: Text('Lỗi: $error')),
-      ),
-    );
+        loading: () => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Đang tải công việc...',
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        error: (error, __) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+              const SizedBox(height: 16),
+              Text('Lỗi tải dữ liệu', style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+              const SizedBox(height: 8),
+              Text(
+                error.toString().contains('TimeoutException') 
+                  ? 'Mất kết nối với máy chủ. Vui lòng thử lại.'
+                  : 'Không thể tải công việc. Vui lòng thử lại.',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ref.invalidate(companyTasksProvider(widget.companyId));
+                },
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
   }
 
   Widget _buildTaskCard(Task task) {
     final dateFormat = DateFormat('dd/MM/yyyy');
     final now = DateTime.now();
-    final daysUntilDue = task.dueDate.difference(now).inDays;
-    final isOverdue = daysUntilDue < 0;
-    final isUrgent = daysUntilDue >= 0 && daysUntilDue <= 3;
+    final daysUntilDue = task.dueDate?.difference(now).inDays ?? 0;
+    final isOverdue = task.dueDate != null && daysUntilDue < 0;
+    final isUrgent = task.dueDate != null && daysUntilDue >= 0 && daysUntilDue <= 3;
     
     // Màu viền theo mức độ ưu tiên
     Color borderColor = Colors.grey[300]!;
@@ -648,8 +696,8 @@ class _TasksTabState extends ConsumerState<TasksTab>
                               isOverdue
                                   ? 'QUÁ HẠN ${-daysUntilDue}d'
                                   : isUrgent
-                                      ? 'GẤP ${daysUntilDue}d - ${dateFormat.format(task.dueDate)}'
-                                      : dateFormat.format(task.dueDate),
+                                      ? 'GẤP ${daysUntilDue}d - ${task.dueDate != null ? dateFormat.format(task.dueDate!) : 'Chưa có'}'
+                                      : task.dueDate != null ? dateFormat.format(task.dueDate!) : 'Chưa có',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: isOverdue || isUrgent ? FontWeight.bold : FontWeight.w600,
@@ -1139,18 +1187,32 @@ class _TasksTabState extends ConsumerState<TasksTab>
     if (confirmed != true) return;
 
     try {
-      final taskService = TaskService();
-      await taskService.deleteTask(task.id);
+      // ✅ Use action provider to auto-invalidate cache
+      final taskActions = ref.read(taskActionsProvider);
+      await taskActions.deleteTask(task.id);
 
       if (mounted) {
+        // ✅ NUCLEAR OPTION: Clear ALL caches immediately
+        final memoryCache = ref.read(memoryCacheProvider);
+        memoryCache.clear(); // XÓA TẤT CẢ cache luôn
+        
+        // ✅ Force REFRESH providers - làm providers fetch lại từ DB
+        // ignore: unused_local_variable
+        final unused1 = ref.refresh(cachedCompanyTasksProvider(widget.companyId));
+        // ignore: unused_local_variable
+        final unused2 = ref.refresh(cachedCompanyTaskStatsProvider(widget.companyId));
+        // ignore: unused_local_variable
+        final unused3 = ref.refresh(companyTasksProvider(widget.companyId));
+        // ignore: unused_local_variable
+        final unused4 = ref.refresh(companyTaskStatsProvider(widget.companyId));
+        
+        // ✅ Force UI rebuild by updating state
+        setState(() {});
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('Đã xóa công việc'), backgroundColor: Colors.green),
         );
-
-        // Invalidate CACHED providers để UI cập nhật ngay
-        ref.invalidate(cachedCompanyTasksProvider(widget.companyId));
-        ref.invalidate(cachedCompanyTaskStatsProvider(widget.companyId));
       }
     } catch (e) {
       if (mounted) {
@@ -1342,3 +1404,4 @@ class _TasksTabState extends ConsumerState<TasksTab>
     });
   }
 }
+

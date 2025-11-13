@@ -121,7 +121,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
                 radius: 30,
                 backgroundColor: const Color(0xFF10B981),
                 child: Text(
-                  user.email[0].toUpperCase(),
+                  (user.email ?? 'U')[0].toUpperCase(),
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -135,7 +135,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user.email,
+                      user.email ?? 'Unknown',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -204,7 +204,8 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
                 child: _buildProfileStat('Nhân viên', '0'),
               ),
               Expanded(
-                child: _buildProfileStat('Email', user.email.split('@')[0]),
+                child: _buildProfileStat(
+                    'Email', (user.email ?? 'unknown').split('@')[0]),
               ),
               Expanded(
                 child: _buildProfileStat('Vai trò', 'Manager'),

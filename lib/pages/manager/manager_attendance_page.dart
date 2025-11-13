@@ -1,10 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
+import 'package:geolocator/geolocator.dart';
 
 import '../../services/attendance_service.dart';
+import '../../models/attendance.dart';
+import '../../providers/auth_provider.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// 
+/// **NHÂN VIÊN KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
+/// 
+/// Quy tắc:
+/// 1. CHỈ CÓ CEO được phép đăng ký và đăng nhập qua Supabase Auth
+/// 2. TẤT CẢ NHÂN VIÊN (bao gồm Manager, Staff) được CEO tạo trong bảng `employees`
+/// 3. Nhân viên login bằng MÃ NHÂN VIÊN, KHÔNG dùng email/password Supabase Auth
+/// 4. Nhân viên KHÔNG CÓ user_id trong auth.users
+/// 5. Nhân viên chỉ có employee_id trong bảng employees
+/// 
+/// DO ĐÓ:
+/// - ❌ KHÔNG ĐƯỢC dùng `Supabase.instance.client.auth.currentUser`
+/// - ❌ KHÔNG ĐƯỢC query bảng auth.users cho nhân viên
+/// - ✅ PHẢI dùng `ref.read(authProvider).user` để lấy thông tin employee
+/// - ✅ Employee có: id, name, role, company_id, branch_id trong bảng employees
+/// - ✅ Attendance service nhận employee.id làm userId (KHÔNG phải auth user id)
+///
 /// Manager Attendance Page
 /// Allows manager to check in/out and view attendance history
 class ManagerAttendancePage extends ConsumerStatefulWidget {
@@ -20,8 +41,9 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
   bool _isLoading = false;
   AttendanceRecord? _todayAttendance;
   List<AttendanceRecord> _recentAttendance = [];
-  String? _storeId;
+  String? _branchId; // Changed from _storeId
   String? _companyId;
+  String? _userId; // Store user ID from authProvider
 
   @override
   void initState() {
@@ -32,45 +54,43 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
-
-      // Load manager's company and first store
-      final companyData = await Supabase.instance.client
-          .from('companies')
-          .select('id')
-          .eq('manager_id', user.id)
-          .maybeSingle();
-
-      if (companyData != null) {
-        _companyId = companyData['id'] as String;
-
-        // Get first store of this company
-        final storeData = await Supabase.instance.client
-            .from('stores')
-            .select('id')
-            .eq('company_id', _companyId!)
-            .limit(1)
-            .maybeSingle();
-
-        if (storeData != null) {
-          _storeId = storeData['id'] as String;
-        }
+      // FIXED: Get user from authProvider (employee login system)
+      final currentUser = ref.read(authProvider).user;
+      
+      if (currentUser == null) {
+        print('🔴 [ManagerAttendance] No user logged in from authProvider');
+        return;
       }
 
+      _userId = currentUser.id;
+      print('🔍 [ManagerAttendance] Loading data for employee: ${currentUser.id}');
+      print('� [ManagerAttendance] Employee name: ${currentUser.name}');
+      print('🔍 [ManagerAttendance] Employee role: ${currentUser.role}');
+      print('� [ManagerAttendance] Employee company: ${currentUser.companyId}');
+      print('� [ManagerAttendance] Employee branch: ${currentUser.branchId}');
+
+      // Get company_id and branch_id directly from user object
+      _companyId = currentUser.companyId;
+      _branchId = currentUser.branchId;
+
+      print('� [ManagerAttendance] Direct from user: company=$_companyId, branch=$_branchId');
+
       // Load recent attendance using service
-      if (_storeId != null) {
+      if (_branchId != null && _companyId != null && _userId != null) {
+        print('⏳ [ManagerAttendance] Loading attendance history...');
         _recentAttendance = await _attendanceService.getUserAttendance(
-          userId: user.id,
+          userId: _userId!,
           startDate: DateTime.now().subtract(const Duration(days: 7)),
         );
+        print('✅ [ManagerAttendance] Loaded ${_recentAttendance.length} attendance records');
 
         // Find today's attendance
         final today = DateTime.now();
         _todayAttendance = _recentAttendance.where((record) {
-          return record.checkIn.year == today.year &&
-              record.checkIn.month == today.month &&
-              record.checkIn.day == today.day;
+          return record.checkInTime != null &&
+              record.checkInTime!.year == today.year &&
+              record.checkInTime!.month == today.month &&
+              record.checkInTime!.day == today.day;
         }).firstOrNull;
       }
     } catch (e) {
@@ -87,22 +107,48 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
   }
 
   Future<void> _checkIn() async {
-    if (_storeId == null) {
+    print('🎯 [ManagerAttendance] _checkIn called');
+    print('📊 [ManagerAttendance] Current state: user=$_userId, company=$_companyId, branch=$_branchId');
+    
+    if (_branchId == null || _companyId == null || _userId == null) {
+      print('🔴 [ManagerAttendance] Missing data - user=$_userId, branch=$_branchId, company=$_companyId');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không tìm thấy thông tin cửa hàng')),
+        const SnackBar(content: Text('Không tìm thấy thông tin chi nhánh')),
       );
       return;
     }
 
+    print('✅ [ManagerAttendance] Data validated, proceeding with check-in');
+
     try {
       setState(() => _isLoading = true);
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) return;
 
+      print('🌍 [ManagerAttendance] Getting GPS location...');
+      
+      // Get GPS location
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        print('✅ [ManagerAttendance] GPS: ${position.latitude}, ${position.longitude}');
+      } catch (e) {
+        // GPS not available, continue without it
+        print('⚠️ [ManagerAttendance] GPS error: $e');
+      }
+
+      print('⏳ [ManagerAttendance] Calling attendance service...');
+      
       await _attendanceService.checkIn(
-        userId: user.id,
-        storeId: _storeId!,
+        userId: _userId!,
+        branchId: _branchId!,
+        companyId: _companyId!,
+        latitude: position?.latitude,
+        longitude: position?.longitude,
+        location: 'Office', // TODO: Get actual location name
       );
+
+      print('✅ [ManagerAttendance] Check-in successful!');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -258,8 +304,8 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
   }
 
   Widget _buildTodayStatus() {
-    final checkIn = _todayAttendance!.checkIn;
-    final checkOut = _todayAttendance!.checkOut;
+    final checkIn = _todayAttendance!.checkInTime;
+    final checkOut = _todayAttendance!.checkOutTime;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -281,7 +327,9 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
               ),
               const SizedBox(height: 4),
               Text(
-                DateFormat('HH:mm').format(checkIn),
+                checkIn != null
+                    ? DateFormat('HH:mm').format(checkIn)
+                    : '--:--',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
@@ -317,7 +365,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
               ),
             ],
           ),
-          if (checkOut != null)
+          if (checkOut != null && checkIn != null)
             Column(
               children: [
                 const Text(
@@ -345,7 +393,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
 
   Widget _buildActionButtons() {
     final hasCheckedIn = _todayAttendance != null;
-    final hasCheckedOut = hasCheckedIn && _todayAttendance!.checkOut != null;
+    final hasCheckedOut = hasCheckedIn && _todayAttendance!.checkOutTime != null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -441,10 +489,13 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
   }
 
   Widget _buildAttendanceCard(AttendanceRecord attendance) {
-    final checkIn = attendance.checkIn;
-    final checkOut = attendance.checkOut;
-    final duration =
-        checkOut != null ? checkOut.difference(checkIn) : Duration.zero;
+    final checkIn = attendance.checkInTime;
+    final checkOut = attendance.checkOutTime;
+    final duration = checkOut != null && checkIn != null
+        ? checkOut.difference(checkIn)
+        : Duration.zero;
+
+    if (checkIn == null) return const SizedBox.shrink();
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),

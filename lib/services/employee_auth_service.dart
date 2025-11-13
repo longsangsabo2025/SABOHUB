@@ -44,6 +44,7 @@ class EmployeeAuthService {
   }
 
   /// Create employee (CEO only)
+  /// Creates both employee record and Supabase auth user
   Future<CreateEmployeeResult> createEmployee({
     required String companyId,
     required String username,
@@ -55,23 +56,30 @@ class EmployeeAuthService {
     String? branchId,
   }) async {
     try {
-      // Hash password first
-      final passwordHash = await _hashPassword(password);
+      // Call database function to create employee with auth user
+      final response = await _supabase.rpc('create_employee_with_auth', params: {
+        'p_company_id': companyId,
+        'p_username': username,
+        'p_password': password,
+        'p_full_name': fullName,
+        'p_role': role.value,
+        'p_email': email,
+        'p_phone': phone,
+        'p_branch_id': branchId,
+      });
 
-      // Insert employee
-      final response = await _supabase.from('employees').insert({
-        'company_id': companyId,
-        'username': username,
-        'password_hash': passwordHash,
-        'full_name': fullName,
-        'role': role.value,
-        'email': email,
-        'phone': phone,
-        'branch_id': branchId,
-        'is_active': true,
-      }).select().single();
+      final data = response as Map<String, dynamic>;
+      final success = data['success'] as bool;
 
-      final employee = EmployeeUser.fromJson(response);
+      if (!success) {
+        final error = data['error'] as String? ?? 'Tạo tài khoản thất bại';
+        return CreateEmployeeResult.error(error);
+      }
+
+      // Parse employee data
+      final employeeData = data['employee'] as Map<String, dynamic>;
+      final employee = EmployeeUser.fromJson(employeeData);
+      
       return CreateEmployeeResult.success(employee);
     } catch (e) {
       if (e.toString().contains('unique_username_per_company')) {

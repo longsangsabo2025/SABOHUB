@@ -29,7 +29,7 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
 
   late TaskPriority _selectedPriority;
   late TaskStatus _selectedStatus;
-  late DateTime _selectedDueDate;
+  late DateTime? _selectedDueDate;
   String? _selectedAssigneeId;
 
   bool _isLoading = false;
@@ -113,7 +113,7 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
         'description': _descriptionController.text.trim(),
         'priority': _selectedPriority.name,
         'status': _selectedStatus.name,
-        'due_date': _selectedDueDate.toIso8601String(),
+        'due_date': _selectedDueDate?.toIso8601String(),
         'assigned_to': _selectedAssigneeId,
         'assigned_to_name': assigneeName,
       });
@@ -316,7 +316,7 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                dateFormat.format(_selectedDueDate),
+                                _selectedDueDate != null ? dateFormat.format(_selectedDueDate!) : 'Chưa có',
                                 style: const TextStyle(fontSize: 16),
                               ),
                               const Icon(Icons.arrow_drop_down),
@@ -347,7 +347,7 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
                               ...employees.map((employee) {
                                 return DropdownMenuItem(
                                   value: employee.id,
-                                  child: Text(employee.name ?? employee.email),
+                                  child: Text(employee.name ?? employee.email ?? 'Employee ${employee.id}'),
                                 );
                               }),
                             ],
@@ -413,3 +413,5 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
     );
   }
 }
+
+

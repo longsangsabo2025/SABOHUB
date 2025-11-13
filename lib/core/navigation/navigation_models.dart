@@ -99,7 +99,7 @@ class NavigationConfig {
       allowedRoles: [UserRole.manager, UserRole.ceo],
     ),
     NavigationItem(
-      route: '/manager/companies',
+      route: '/manager/company-info',
       icon: Icons.business,
       activeIcon: Icons.business,
       label: 'Công ty',

@@ -1,0 +1,14 @@
+============================================================
+CHECKING COMPANY RELATIONSHIPS
+============================================================
+Traceback (most recent call last):
+  File "D:\0\0211\SABOHUB\check_company_constraints.py", line 106, in <module>
+    check_company_relationships()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\0\0211\SABOHUB\check_company_constraints.py", line 29, in check_company_relationships
+    print(f"\n\u2705 Found {len(companies)} companies:")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 2: character maps to <undefined>

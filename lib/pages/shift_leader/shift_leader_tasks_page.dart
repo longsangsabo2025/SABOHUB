@@ -195,7 +195,7 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
                   Icon(Icons.access_time,
                       size: 14, color: Colors.grey.shade500),
                   const SizedBox(width: 4),
-                  Text(DateFormat('dd/MM HH:mm').format(t.dueDate),
+                  Text(t.dueDate != null ? DateFormat('dd/MM HH:mm').format(t.dueDate!) : 'Chưa có',
                       style:
                           TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                 ],
@@ -440,3 +440,4 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
     );
   }
 }
+

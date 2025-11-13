@@ -24,8 +24,9 @@ class StoreService {
   Future<Store?> getStoreById(String id) async {
     try {
       final response =
-          await _supabase.from('stores').select().eq('id', id).single();
+          await _supabase.from('stores').select().eq('id', id).maybeSingle();
 
+      if (response == null) return null;
       return Store.fromJson(response);
     } catch (e) {
       return null;
@@ -88,7 +89,7 @@ class StoreService {
     try {
       // Get employee count for this store
       final employeesResponse =
-          await _supabase.from('users').select('id').eq('store_id', storeId);
+          await _supabase.from('employees').select('id').eq('store_id', storeId);
 
       // Note: Table counts and revenue would come from other tables
       // when they are properly configured with the new schema

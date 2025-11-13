@@ -1,6 +1,9 @@
-/// Employee Model (Non-Auth Users)
-/// For MANAGER, SHIFT_LEADER, STAFF roles
-/// Login via company_name + username + password
+// Employee Model (Non-Auth Users)
+// For MANAGER, SHIFT_LEADER, STAFF roles
+// Login via company_name + username + password
+
+import 'user.dart' as app_user;
+
 class EmployeeUser {
   final String id;
   final String companyId;
@@ -34,21 +37,25 @@ class EmployeeUser {
 
   factory EmployeeUser.fromJson(Map<String, dynamic> json) {
     return EmployeeUser(
-      id: json['id'] as String,
-      companyId: json['company_id'] as String,
-      username: json['username'] as String,
-      fullName: json['full_name'] as String,
+      id: json['id'] as String? ?? '',
+      companyId: json['company_id'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      fullName: json['full_name'] as String? ?? '',
       email: json['email'] as String?,
       phone: json['phone'] as String?,
-      role: EmployeeRole.fromString(json['role'] as String),
+      role: EmployeeRole.fromString(json['role'] as String? ?? 'STAFF'),
       branchId: json['branch_id'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       isActive: json['is_active'] as bool? ?? true,
       lastLoginAt: json['last_login_at'] != null
-          ? DateTime.parse(json['last_login_at'] as String)
+          ? DateTime.tryParse(json['last_login_at'] as String)
           : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: json['created_at'] != null 
+          ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'] as String) ?? DateTime.now()
+          : DateTime.now(),
     );
   }
 
@@ -99,6 +106,23 @@ class EmployeeUser {
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  /// Convert to app User model for auth provider
+  app_user.User toUser() {
+    return app_user.User(
+      id: id,
+      name: fullName,
+      email: email ?? '$username@employee.local',
+      role: app_user.UserRole.fromString(role.value),
+      phone: phone,
+      avatarUrl: avatarUrl,
+      branchId: branchId,
+      companyId: companyId,
+      isActive: isActive,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 }

@@ -4,11 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/navigation/navigation_models.dart';
 import '../pages/manager/manager_analytics_page.dart';
 import '../pages/manager/manager_attendance_page.dart';
-import '../pages/manager/manager_companies_page.dart';
+import '../pages/manager/manager_company_info_page.dart';
 import '../pages/manager/manager_dashboard_page.dart';
 import '../pages/manager/manager_staff_page.dart';
 import '../pages/manager/manager_tasks_page.dart';
-import '../widgets/dev_role_switcher.dart';
+import '../providers/auth_provider.dart';
+import '../widgets/error_boundary.dart';
 import '../widgets/unified_bottom_navigation.dart';
 
 /// Manager Main Layout
@@ -50,33 +51,39 @@ class _ManagerMainLayoutState extends ConsumerState<ManagerMainLayout>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPageIndex = index;
-              });
-            },
-            children: const [
-              ManagerDashboardPage(),
-              ManagerCompaniesPage(),
-              ManagerTasksPage(),
-              ManagerAttendancePage(),
-              ManagerAnalyticsPage(),
-              ManagerStaffPage(),
-            ],
-          ),
-          // DEV: Role Switcher Button
-          const DevRoleSwitcher(),
-        ],
-      ),
-      bottomNavigationBar: UnifiedBottomNavigation(
-        userRole: UserRole.manager,
-        currentIndex: _currentPageIndex,
-        onTap: _onNavigationTap,
+    final authState = ref.watch(authProvider);
+    final companyId = authState.user?.companyId;
+
+    return ErrorBoundary(
+      child: Scaffold(
+        body: Stack(
+          children: [
+            PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPageIndex = index;
+                });
+              },
+              children: [
+                const ManagerDashboardPage(),
+                if (companyId != null)
+                  ManagerCompanyInfoPage(companyId: companyId)
+                else
+                  const Center(child: Text('Không tìm thấy thông tin công ty')),
+                const ManagerTasksPage(),
+                const ManagerAttendancePage(),
+                const ManagerAnalyticsPage(),
+                const ManagerStaffPage(),
+              ],
+            ),
+          ],
+        ),
+        bottomNavigationBar: UnifiedBottomNavigation(
+          userRole: UserRole.manager,
+          currentIndex: _currentPageIndex,
+          onTap: _onNavigationTap,
+        ),
       ),
     );
   }

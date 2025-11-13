@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/management_task.dart';
-import '../../utils/dummy_providers.dart';
+import '../../providers/management_task_provider.dart';
+import 'management_task_detail_dialog.dart';
 import '../../widgets/multi_account_switcher.dart';
 
 /// Manager Tasks Page
@@ -123,33 +124,47 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
 
   // TAB 1: Tasks from CEO
   Widget _buildFromCEOTab() {
-    final tasksAsync = ref.watch(cachedManagerAssignedTasksProvider);
+    print('🎯 [ManagerTasksPage] Building FROM CEO tab...');
+    final tasksAsync = ref.watch(managerAssignedTasksStreamProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
-        refreshManagerAssignedTasks(ref);
+        print('🔄 [ManagerTasksPage] Refreshing CEO assigned tasks...');
+        refreshAllTasks(ref);
       },
       child: tasksAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Lỗi tải nhiệm vụ: $error'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => refreshManagerAssignedTasks(ref),
-                child: const Text('Thử lại'),
-              ),
-            ],
-          ),
-        ),
+        loading: () {
+          print('⏳ [ManagerTasksPage] FROM CEO tab - Loading state');
+          return const Center(child: CircularProgressIndicator());
+        },
+        error: (error, stack) {
+          print('❌ [ManagerTasksPage] FROM CEO tab - Error: $error');
+          print('📍 [ManagerTasksPage] FROM CEO tab - Stack: $stack');
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Lỗi tải nhiệm vụ: $error'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => refreshAllTasks(ref),
+                  child: const Text('Thử lại'),
+                ),
+              ],
+            ),
+          );
+        },
         data: (cachedTasks) {
+          print('✅ [ManagerTasksPage] FROM CEO tab - Received ${cachedTasks.length} tasks');
+          print('📦 [ManagerTasksPage] FROM CEO tab - Tasks data: ${cachedTasks.map((t) => {'id': t.id, 'title': t.title, 'status': t.status}).toList()}');
+          
           final ceoTasks = cachedTasks;
 
           if (ceoTasks.isEmpty) {
+            print('⚠️ [ManagerTasksPage] FROM CEO tab - No tasks to display (empty)');
+
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -187,11 +202,11 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
 
   // TAB 2: Assign tasks to staff
   Widget _buildAssignTasksTab() {
-    final tasksAsync = ref.watch(cachedManagerCreatedTasksProvider);
+    final tasksAsync = ref.watch(managerCreatedTasksStreamProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
-        refreshManagerCreatedTasks(ref);
+        refreshAllTasks(ref);
       },
       child: tasksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -204,7 +219,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
               Text('Lỗi tải nhiệm vụ: $error'),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => refreshManagerCreatedTasks(ref),
+                onPressed: () => refreshAllTasks(ref),
                 child: const Text('Thử lại'),
               ),
             ],
@@ -261,11 +276,11 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
 
   // TAB 3: Manager's personal tasks
   Widget _buildMyTasksTab() {
-    final tasksAsync = ref.watch(cachedManagerAssignedTasksProvider);
+    final tasksAsync = ref.watch(managerAssignedTasksStreamProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
-        refreshManagerAssignedTasks(ref);
+        refreshAllTasks(ref);
       },
       child: tasksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -278,7 +293,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
               Text('Lỗi tải nhiệm vụ: $error'),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => refreshManagerAssignedTasks(ref),
+                onPressed: () => refreshAllTasks(ref),
                 child: const Text('Thử lại'),
               ),
             ],
@@ -292,7 +307,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.checklist, size: 64, color: Colors.grey.shade400),
+                  Icon(Icons.task_alt, size: 64, color: Colors.grey.shade400),
                   const SizedBox(height: 16),
                   Text(
                     'Chưa có nhiệm vụ cá nhân',
@@ -478,9 +493,10 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
       ),
       child: InkWell(
         onTap: () {
-          // Show task details
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Chi tiết: ${task.title}')),
+          // Show task details dialog
+          showDialog(
+            context: context,
+            builder: (context) => ManagementTaskDetailDialog(task: task),
           );
         },
         borderRadius: BorderRadius.circular(12),
@@ -526,6 +542,52 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
+              const SizedBox(height: 12),
+              // Progress Bar
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Tiến độ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              '${task.progress}%',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _getProgressColor(task.progress),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: task.progress / 100,
+                            minHeight: 8,
+                            backgroundColor: Colors.grey.shade200,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              _getProgressColor(task.progress),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -689,50 +751,239 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
     }
   }
 
+  Color _getProgressColor(int progress) {
+    if (progress >= 75) {
+      return Colors.green.shade600; // Good progress
+    } else if (progress >= 50) {
+      return Colors.orange.shade600; // Medium progress
+    } else if (progress >= 25) {
+      return Colors.amber.shade700; // Low progress
+    } else {
+      return Colors.red.shade600; // Very low progress
+    }
+  }
+
   void _showCreateTaskDialog() {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    TaskPriority selectedPriority = TaskPriority.medium;
+    TaskStatus selectedStatus = TaskStatus.pending;
+    DateTime? selectedDueDate;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tạo công việc mới'),
-        content: const SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Tiêu đề',
-                  border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Tạo công việc mới'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Tiêu đề *',
+                    border: OutlineInputBorder(),
+                    hintText: 'Nhập tiêu đề công việc',
+                  ),
                 ),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Mô tả',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Mô tả',
+                    border: OutlineInputBorder(),
+                    hintText: 'Mô tả chi tiết công việc',
+                  ),
+                  maxLines: 3,
                 ),
-                maxLines: 3,
-              ),
-              // Add more fields: priority, due date, assignee
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Create task
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green.shade600,
+                const SizedBox(height: 12),
+                DropdownButtonFormField<TaskPriority>(
+                  value: selectedPriority,
+                  decoration: const InputDecoration(
+                    labelText: 'Độ ưu tiên',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: TaskPriority.values.map((priority) {
+                    return DropdownMenuItem(
+                      value: priority,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.flag,
+                            color: _getPriorityColor(priority.value),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(priority.label),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() => selectedPriority = value!);
+                  },
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<TaskStatus>(
+                  value: selectedStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'Trạng thái',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: TaskStatus.values.map((status) {
+                    return DropdownMenuItem(
+                      value: status,
+                      child: Row(
+                        children: [
+                          Icon(
+                            _getStatusIcon(status.value),
+                            color: _getStatusColor(status.value),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(status.label),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() => selectedStatus = value!);
+                  },
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      setState(() => selectedDueDate = date);
+                    }
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Ngày hết hạn',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today),
+                    ),
+                    child: Text(
+                      selectedDueDate != null
+                          ? DateFormat('dd/MM/yyyy').format(selectedDueDate!)
+                          : 'Chọn ngày hết hạn',
+                      style: TextStyle(
+                        color: selectedDueDate != null
+                            ? Colors.black87
+                            : Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: const Text('Tạo'),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (titleController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Vui lòng nhập tiêu đề công việc'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.pop(context);
+                
+                // Show success message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.white),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'Tạo công việc thành công!',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                'Trạng thái: ${selectedStatus.label}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: Colors.green.shade600,
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+
+                // TODO: Save to database
+                // final newTask = ManagementTask(
+                //   id: uuid.v4(),
+                //   title: titleController.text.trim(),
+                //   description: descriptionController.text.trim(),
+                //   priority: selectedPriority,
+                //   status: selectedStatus,
+                //   progress: selectedStatus == TaskStatus.completed ? 100 : 0,
+                //   dueDate: selectedDueDate,
+                //   createdBy: currentUserId,
+                //   createdAt: DateTime.now(),
+                //   updatedAt: DateTime.now(),
+                // );
+                
+                // Refresh task list
+                refreshAllTasks(ref);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade600,
+              ),
+              child: const Text('Tạo'),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+      case 'taskstatus.pending':
+        return Icons.pending;
+      case 'in_progress':
+      case 'inprogress':
+      case 'taskstatus.inprogress':
+        return Icons.play_arrow;
+      case 'completed':
+      case 'taskstatus.completed':
+        return Icons.check_circle;
+      case 'overdue':
+      case 'taskstatus.overdue':
+        return Icons.warning;
+      case 'cancelled':
+      case 'taskstatus.cancelled':
+        return Icons.cancel;
+      default:
+        return Icons.help_outline;
+    }
   }
 }

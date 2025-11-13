@@ -174,7 +174,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user.name ?? user.email.split('@').first,
+                      user.name ?? user.email?.split('@').first ?? 'Unknown',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

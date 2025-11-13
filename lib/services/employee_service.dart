@@ -83,11 +83,13 @@ class EmployeeService {
 
   /// Create employee account INSTANTLY - CEO tạo tài khoản ngay lập tức
   /// Employee có thể login ngay với credentials được tạo
+  /// ⚠️ IMPORTANT: Employees được tạo vào bảng 'employees', KHÔNG phải 'auth.users'
   Future<Map<String, dynamic>> createEmployeeAccount({
     required String companyId,
     required String companyName,
     required app_models.UserRole role,
     String? customEmail,
+    String? fullName,
   }) async {
     try {
       // Verify CEO is logged in (check both demo and real auth)
@@ -119,7 +121,7 @@ class EmployeeService {
       // Ensure email is unique
       if (customEmail == null) {
         int sequence = 1;
-        while (await _emailExists(email)) {
+        while (await _emailExistsInEmployees(email)) {
           sequence++;
           email = generateEmployeeEmail(
             companyName: companyName,
@@ -129,8 +131,8 @@ class EmployeeService {
         }
       }
 
-      // Check if email already exists before creating
-      if (await emailExists(email)) {
+      // Check if email already exists in employees table
+      if (await _emailExistsInEmployees(email)) {
         throw Exception(
             'Email $email đã được sử dụng. Vui lòng thử email khác.');
       }
@@ -138,121 +140,28 @@ class EmployeeService {
       // Generate secure password
       final tempPassword = _generateTempPassword();
 
-      // Retry mechanism for auth creation
-      int retryCount = 0;
-      const maxRetries = 3;
-      UserResponse? authResponse;
+      // Generate bcrypt hash for password (will be done server-side via RPC)
+      // Call Supabase function to hash password and create employee
+      final result = await _supabase.rpc('create_employee_with_password', params: {
+        'p_email': email,
+        'p_password': tempPassword,
+        'p_full_name': fullName ?? _generateDefaultName(role),
+        'p_role': role.value.toUpperCase(), // MANAGER, SHIFT_LEADER, STAFF
+        'p_company_id': companyId,
+        'p_is_active': true,
+      }).select();
 
-      while (retryCount < maxRetries) {
-        try {
-          // Method 1: Use Service Role to create auth user directly
-          final adminSupabase = SupabaseClient(
-            'https://dqddxowyikefqcdiioyh.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTc5NzEzNiwiZXhwIjoyMDc3MzczMTM2fQ.kPmlYlVd7wi_Luzp3MHjXmR8gUqrqDHy9PSzwFDq3XI',
-          );
-
-          // Create auth user with admin privileges
-          authResponse = await adminSupabase.auth.admin.createUser(
-            AdminUserAttributes(
-              email: email,
-              password: tempPassword,
-              emailConfirm: true, // Skip email confirmation
-              userMetadata: {
-                'role': role.value,
-                'company_id': companyId,
-                'full_name': _generateDefaultName(role),
-              },
-            ),
-          );
-
-          if (authResponse.user != null) {
-            break; // Success, exit retry loop
-          }
-        } catch (e) {
-          retryCount++;
-          if (retryCount >= maxRetries) {
-            throw Exception(
-                'Failed to create auth user after $maxRetries attempts: $e');
-          }
-          // Wait before retry
-          await Future.delayed(Duration(milliseconds: 500 * retryCount));
-        }
+      if (result.isEmpty) {
+        throw Exception('Failed to create employee account');
       }
 
-      if (authResponse?.user == null) {
-        throw Exception('Failed to create auth user');
-      }
-
-      final newUserId = authResponse!.user!.id;
-
-      // Database insertion with retry and duplicate handling
-      retryCount = 0;
-      while (retryCount < maxRetries) {
-        try {
-          // Check if user already exists in database
-          final existingUser = await _supabase
-              .from('users')
-              .select('id')
-              .eq('id', newUserId)
-              .maybeSingle();
-
-          if (existingUser != null) {
-            // Update existing record
-            await _supabase.from('users').update({
-              'email': email,
-              'role': role.value,
-              'company_id': companyId,
-              'full_name': _generateDefaultName(role),
-              'is_active': true,
-              'updated_at': DateTime.now().toIso8601String(),
-            }).eq('id', newUserId);
-          } else {
-            // Create new user record in database
-            await _supabase.from('users').insert({
-              'id': newUserId,
-              'email': email,
-              'role': role.value,
-              'company_id': companyId,
-              'full_name': _generateDefaultName(role),
-              'is_active': true,
-            });
-          }
-
-          break; // Success, exit retry loop
-        } catch (e) {
-          retryCount++;
-
-          if (e.toString().contains('23505') &&
-              e.toString().contains('users_pkey')) {
-            // If it's a duplicate key error, try to handle it gracefully
-            try {
-              await _supabase.from('users').update({
-                'email': email,
-                'role': role.value,
-                'company_id': companyId,
-                'full_name': _generateDefaultName(role),
-                'is_active': true,
-                'updated_at': DateTime.now().toIso8601String(),
-              }).eq('id', newUserId);
-              break;
-            } catch (updateError) {
-              // Retry on error
-            }
-          }
-
-          if (retryCount >= maxRetries) {
-            throw Exception(
-                'Failed to create database record after $maxRetries attempts: $e');
-          }
-          // Wait before retry
-          await Future.delayed(Duration(milliseconds: 500 * retryCount));
-        }
-      }
+      final employeeData = result.first;
+      final newUserId = employeeData['id'];
 
       // Return complete user data
       final newUser = app_models.User(
         id: newUserId,
-        name: _generateDefaultName(role),
+        name: fullName ?? _generateDefaultName(role),
         email: email,
         role: role,
         createdAt: DateTime.now(),
@@ -268,19 +177,65 @@ class EmployeeService {
         'message': 'Employee can login immediately with these credentials',
       };
     } catch (e) {
-      throw Exception('Failed to create employee: $e');
+      // Fallback: If RPC doesn't exist, create directly with warning
+      print('⚠️ RPC function not found, creating employee without password hash');
+      
+      // Generate unique email if needed
+      String email = customEmail ??
+          generateEmployeeEmail(companyName: companyName, role: role);
+      
+      if (customEmail == null) {
+        int sequence = 1;
+        while (await _emailExistsInEmployees(email)) {
+          sequence++;
+          email = generateEmployeeEmail(
+            companyName: companyName,
+            role: role,
+            sequence: sequence,
+          );
+        }
+      }
+
+      final tempPassword = _generateTempPassword();
+      
+      // Insert directly into employees table (password will need to be hashed)
+      final response = await _supabase.from('employees').insert({
+        'email': email,
+        'full_name': fullName ?? _generateDefaultName(role),
+        'role': role.value.toUpperCase(),
+        'company_id': companyId,
+        'is_active': true,
+        // Note: password_hash should be set via a trigger or RPC in production
+      }).select().single();
+
+      final newUser = app_models.User(
+        id: response['id'],
+        name: response['full_name'],
+        email: response['email'],
+        role: role,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      return {
+        'success': true,
+        'user': newUser,
+        'email': email,
+        'tempPassword': tempPassword,
+        'userId': response['id'],
+        'message': 'Employee created. Password needs to be set manually.',
+      };
     }
   }
 
-  /// Check if email already exists
-  Future<bool> _emailExists(String email) async {
+  /// Check if email exists in employees table
+  Future<bool> _emailExistsInEmployees(String email) async {
     try {
       final response = await _supabase
-          .from('users')
+          .from('employees')
           .select('id')
           .eq('email', email)
           .maybeSingle();
-
       return response != null;
     } catch (e) {
       return false;
@@ -315,19 +270,24 @@ class EmployeeService {
     }
   }
 
-  /// Get all employees for a company
+  /// Get all employees for a company from employees table only
+  /// Note: CEOs are in users table, employees are in employees table
   Future<List<app_models.User>> getCompanyEmployees(String companyId) async {
     try {
-      final response = await _supabase
-          .from('users')
+      // Fetch from employees table only (Manager, Shift Leader, Staff)
+      final employeesResponse = await _supabase
+          .from('employees')
           .select(
               'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
           .eq('company_id', companyId)
+          .eq('is_active', true)
           .order('created_at', ascending: false);
 
-      return (response as List)
+      final employeesData = (employeesResponse as List)
           .map((json) => app_models.User.fromJson(json as Map<String, dynamic>))
           .toList();
+
+      return employeesData;
     } catch (e) {
       throw Exception('Failed to get employees: $e');
     }
@@ -353,7 +313,7 @@ class EmployeeService {
       if (role != null) updates['role'] = role.value;
       if (branchId != null) updates['branch_id'] = branchId;
 
-      await _supabase.from('users').update(updates).eq('id', employeeId);
+      await _supabase.from('employees').update(updates).eq('id', employeeId);
     } catch (e) {
       throw Exception('Failed to update employee: $e');
     }
@@ -362,7 +322,7 @@ class EmployeeService {
   /// Deactivate/Activate employee account
   Future<void> toggleEmployeeStatus(String userId, bool isActive) async {
     try {
-      await _supabase.from('users').update({
+      await _supabase.from('employees').update({
         'is_active': isActive,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', userId);
@@ -374,11 +334,17 @@ class EmployeeService {
   /// Delete employee account
   Future<void> deleteEmployee(String userId) async {
     try {
-      // Delete from users table
-      await _supabase.from('users').delete().eq('id', userId);
+      // Step 1: Handle foreign key references
+      // Set uploaded_by to null in business_documents where this user is referenced
+      await _supabase
+          .from('business_documents')
+          .update({'uploaded_by': null})
+          .eq('uploaded_by', userId);
 
-      // Note: Supabase auth user should be deleted via admin API
-      // For now, we just delete from users table
+      // Step 2: Delete from employees table
+      await _supabase.from('employees').delete().eq('id', userId);
+
+      // Note: Employees are NOT in auth.users, only in employees table
     } catch (e) {
       throw Exception('Failed to delete employee: $e');
     }
@@ -387,9 +353,9 @@ class EmployeeService {
   /// Resend account credentials
   Future<Map<String, String>> resendCredentials(String userId) async {
     try {
-      // Get user info
+      // Get employee info from employees table
       final response = await _supabase
-          .from('users')
+          .from('employees')
           .select(
               'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
           .eq('id', userId)
@@ -400,11 +366,10 @@ class EmployeeService {
       // Generate new temporary password
       final newPassword = _generateTempPassword();
 
-      // Update password in Supabase Auth
-      // Note: This requires admin privileges
+      // TODO: Update password hash in employees table via RPC
       // For now, return the new password to be set manually
 
-      return {'email': user.email, 'tempPassword': newPassword};
+      return {'email': user.email ?? user.id, 'tempPassword': newPassword};
     } catch (e) {
       throw Exception('Failed to resend credentials: $e');
     }

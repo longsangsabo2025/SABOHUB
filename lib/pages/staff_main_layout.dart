@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/navigation/navigation_models.dart';
 import '../providers/auth_provider.dart';
 import '../utils/performance_monitor.dart';
-import '../widgets/dev_role_switcher.dart';
+import '../widgets/error_boundary.dart';
 import '../widgets/unified_bottom_navigation.dart';
 import 'common/company_info_page.dart';
 import 'staff/staff_checkin_page.dart';
@@ -67,18 +67,19 @@ class _StaffMainLayoutState extends ConsumerState<StaffMainLayout>
     final currentUser = ref.watch(currentUserProvider);
     final companyId = currentUser?.companyId;
 
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Column(
-              children: [
-                // Main content
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    onPageChanged: (index) {
+    return ErrorBoundary(
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        body: Stack(
+          children: [
+            SafeArea(
+              child: Column(
+                children: [
+                  // Main content
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      onPageChanged: (index) {
                       setState(() {
                         _currentIndex = index;
                       });
@@ -108,9 +109,8 @@ class _StaffMainLayoutState extends ConsumerState<StaffMainLayout>
               ],
             ),
           ),
-          // DEV: Role Switcher Button
-          const DevRoleSwitcher(),
         ],
+      ),
       ),
     );
   }

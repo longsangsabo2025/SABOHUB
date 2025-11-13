@@ -1,0 +1,28 @@
+================================================================================
+CHECKING EMPLOYEES IN DATABASE
+================================================================================
+
+1. EMPLOYEES IN 'users' TABLE:
+--------------------------------------------------------------------------------
+
+1. User:
+   ID: b8a01d6f-080d-4e28-9821-39e31e2ed579
+Traceback (most recent call last):
+  File "D:\0\0211\SABOHUB\check_employees_list.py", line 36, in <module>
+    print(f"   Name: {user[1]}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u1ecd' in position 14: character maps to <undefined>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\0\0211\SABOHUB\check_employees_list.py", line 145, in <module>
+    print(f"\n\u274c Error: {e}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u274c' in position 2: character maps to <undefined>
