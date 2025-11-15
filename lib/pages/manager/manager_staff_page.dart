@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
@@ -625,8 +626,18 @@ class _EmployeeDetailsSheet extends StatelessWidget {
               if (employee.phone != null)
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: Call phone
+                    onPressed: () async {
+                      final phone = employee.phone!;
+                      final uri = Uri(scheme: 'tel', path: phone);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri);
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Không thể gọi $phone')),
+                          );
+                        }
+                      }
                     },
                     icon: const Icon(Icons.phone),
                     label: const Text('Gọi điện'),
@@ -638,8 +649,18 @@ class _EmployeeDetailsSheet extends StatelessWidget {
               if (employee.phone != null) const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: Send email
+                  onPressed: () async {
+                    final email = employee.email ?? '${employee.id}@sabohub.com';
+                    final uri = Uri(scheme: 'mailto', path: email);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri);
+                    } else {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Không thể gửi email tới $email')),
+                        );
+                      }
+                    }
                   },
                   icon: const Icon(Icons.email),
                   label: const Text('Email'),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/kpi_service.dart';
 import '../../services/performance_metrics_service.dart';
 import '../../providers/auth_provider.dart';
@@ -616,15 +617,46 @@ class _EmployeePerformancePageState
               child: const Text('Hủy'),
             ),
             ElevatedButton(
-              onPressed: () {
-                // TODO: Save manual evaluation
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Đánh giá đã được lưu!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+              onPressed: () async {
+                try {
+                  final currentUser = ref.read(authProvider).user;
+                  if (currentUser == null) {
+                    throw Exception('User not authenticated');
+                  }
+
+                  // Save manual evaluation to employee_evaluations table
+                  final supabase = Supabase.instance.client;
+                  await supabase.from('employee_evaluations').insert({
+                    'employee_id': evaluation['user_id'],
+                    'evaluator_id': currentUser.id,
+                    'company_id': currentUser.companyId,
+                    'branch_id': currentUser.branchId,
+                    'manual_score': manualScore,
+                    'system_score': evaluation['overall_score'],
+                    'notes': notesController.text.trim(),
+                    'evaluated_at': DateTime.now().toIso8601String(),
+                  });
+
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ Đánh giá đã được lưu thành công!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  debugPrint('❌ Failed to save evaluation: $e');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('❌ Lỗi khi lưu đánh giá: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo,

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/management_task.dart';
 import '../../providers/management_task_provider.dart';
+import '../../providers/auth_provider.dart';
 import 'management_task_detail_dialog.dart';
 import '../../widgets/multi_account_switcher.dart';
 
@@ -892,7 +893,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
               child: const Text('Hủy'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (titleController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -936,19 +937,39 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
                   ),
                 );
 
-                // TODO: Save to database
-                // final newTask = ManagementTask(
-                //   id: uuid.v4(),
-                //   title: titleController.text.trim(),
-                //   description: descriptionController.text.trim(),
-                //   priority: selectedPriority,
-                //   status: selectedStatus,
-                //   progress: selectedStatus == TaskStatus.completed ? 100 : 0,
-                //   dueDate: selectedDueDate,
-                //   createdBy: currentUserId,
-                //   createdAt: DateTime.now(),
-                //   updatedAt: DateTime.now(),
-                // );
+                // Save to database
+                try {
+                  final service = ref.read(managementTaskServiceProvider);
+                  final currentUser = ref.read(authProvider).user;
+                  
+                  if (currentUser == null) {
+                    throw Exception('User not authenticated');
+                  }
+
+                  await service.createTask(
+                    title: titleController.text.trim(),
+                    description: descriptionController.text.trim().isEmpty 
+                        ? null 
+                        : descriptionController.text.trim(),
+                    priority: selectedPriority.name,
+                    assignedTo: currentUser.id, // Self-assign for now, could add assignee picker
+                    companyId: currentUser.companyId,
+                    branchId: currentUser.branchId,
+                    dueDate: selectedDueDate,
+                  );
+                  
+                  print('✅ Task created successfully');
+                } catch (e) {
+                  print('❌ Failed to create task: $e');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('❌ Lỗi tạo công việc: $e'),
+                        backgroundColor: Colors.red.shade600,
+                      ),
+                    );
+                  }
+                }
                 
                 // Refresh task list
                 refreshAllTasks(ref);

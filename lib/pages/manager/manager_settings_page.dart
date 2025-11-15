@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../widgets/multi_account_switcher.dart';
 
 /// Manager Settings Page
@@ -15,27 +16,31 @@ class ManagerSettingsPage extends ConsumerStatefulWidget {
 }
 
 class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
-  bool _notificationsEnabled = true;
-  bool _autoScheduling = false;
-  bool _overtimeAlerts = true;
-
   @override
   Widget build(BuildContext context) {
+    final settingsAsync = ref.watch(userSettingsProvider);
+    
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildProfileSection(),
-            const SizedBox(height: 24),
-            _buildOperationsSection(),
-            const SizedBox(height: 24),
-            _buildNotificationsSection(),
-            const SizedBox(height: 24),
-            _buildSystemSection(),
-          ],
+      body: settingsAsync.when(
+        data: (settings) => SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _buildProfileSection(),
+              const SizedBox(height: 24),
+              _buildOperationsSection(),
+              const SizedBox(height: 24),
+              _buildNotificationsSection(settings),
+              const SizedBox(height: 24),
+              _buildSystemSection(),
+            ],
+          ),
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Text('Lỗi tải cài đặt: $error'),
         ),
       ),
     );
@@ -349,7 +354,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
     );
   }
 
-  Widget _buildNotificationsSection() {
+  Widget _buildNotificationsSection(UserSettings settings) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -379,22 +384,28 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
             'Thông báo chung',
             'Nhận thông báo về hoạt động chung',
             Icons.notifications,
-            _notificationsEnabled,
-            (value) => setState(() => _notificationsEnabled = value),
+            settings.notificationsEnabled,
+            (value) async {
+              await ref.read(userSettingsProvider.notifier).setNotificationsEnabled(value);
+            },
           ),
           _buildSwitchItem(
             'Cảnh báo làm thêm giờ',
             'Thông báo khi nhân viên làm quá giờ',
             Icons.access_time,
-            _overtimeAlerts,
-            (value) => setState(() => _overtimeAlerts = value),
+            settings.overtimeAlertsEnabled,
+            (value) async {
+              await ref.read(userSettingsProvider.notifier).setOvertimeAlertsEnabled(value);
+            },
           ),
           _buildSwitchItem(
             'Tự động lập lịch',
             'Tự động sắp xếp ca làm việc',
             Icons.auto_awesome,
-            _autoScheduling,
-            (value) => setState(() => _autoScheduling = value),
+            settings.autoSchedulingEnabled,
+            (value) async {
+              await ref.read(userSettingsProvider.notifier).setAutoSchedulingEnabled(value);
+            },
             isLast: true,
           ),
         ],

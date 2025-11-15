@@ -23,6 +23,7 @@ import '../../pages/user/user_profile_page.dart';
 import '../../layouts/manager_main_layout.dart';
 import '../../layouts/shift_leader_main_layout.dart';
 import '../../pages/ceo/ceo_main_layout.dart';
+import '../../pages/manager/manager_reports_page.dart';
 import '../../providers/auth_provider.dart';
 import '../navigation/navigation_models.dart' as nav;
 
@@ -51,6 +52,7 @@ class AppRoutes {
   static const String managerDashboard = '/manager/dashboard';
   static const String managerEmployees = '/manager/employees';
   static const String managerFinance = '/manager/finance';
+  static const String managerReports = '/manager-reports';
 
   // CEO routes
   static const String ceoAnalytics = '/ceo/analytics';
@@ -270,6 +272,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.managerFinance,
         builder: (context, state) => const ManagerMainLayout(),
+      ),
+      GoRoute(
+        path: AppRoutes.managerReports,
+        builder: (context, state) => const ManagerReportsPage(),
       ),
 
       // CEO routes - Remove GlobalKey to fix navigation conflicts

@@ -84,6 +84,14 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
         ),
       ),
       actions: [
+        // View Reports button
+        IconButton(
+          icon: const Icon(Icons.assignment, color: Colors.black87),
+          onPressed: () {
+            context.push('/manager-reports');
+          },
+          tooltip: 'Báo cáo nhân viên',
+        ),
         // Multi-Account Switcher
         const MultiAccountSwitcher(),
         IconButton(

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../utils/dummy_providers.dart';
+import '../../providers/cached_data_providers.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/multi_account_switcher.dart';
 
 /// Manager Analytics Page
@@ -23,13 +24,16 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final branchId = authState.user?.branchId;
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
       body: RefreshIndicator(
         onRefresh: () async {
-          refreshAllManagerData(ref);
-          refreshAllStaffData(ref);
+          // Invalidate cache to force fresh data
+          ref.invalidateManagerDashboard(branchId);
         },
         child: Column(
           children: [
@@ -198,8 +202,12 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildRevenueTab() {
-    final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider);
-    final staffStatsAsync = ref.watch(cachedStaffStatsProvider);
+    final authState = ref.watch(authProvider);
+    final branchId = authState.user?.branchId;
+    final companyId = authState.user?.companyId;
+
+    final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider(branchId));
+    final staffStatsAsync = ref.watch(cachedStaffStatsProvider(companyId));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -529,14 +537,15 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildCustomerStats() {
-    final staffAsync = ref.watch(cachedAllStaffProvider);
+    final authState = ref.watch(authProvider);
+    final companyId = authState.user?.companyId;
+    final employeesAsync = ref.watch(cachedCompanyEmployeesProvider(companyId ?? ''));
 
-    return staffAsync.when(
-      data: (cachedStaff) {
-        final staff = cachedStaff;
-        final activeStaff = staff.where((s) => s.status == 'active').length;
-        final totalStaff = staff.length;
-        final onLeave = staff.where((s) => s.status == 'on_leave').length;
+    return employeesAsync.when(
+      data: (employees) {
+        final activeStaff = employees.where((e) => e.isActive).length;
+        final totalStaff = employees.length;
+        final onLeave = employees.where((e) => !e.isActive).length;
 
         return Container(
           padding: const EdgeInsets.all(20),
@@ -624,12 +633,13 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildCustomerSegments() {
-    final staffAsync = ref.watch(cachedAllStaffProvider);
+    final authState = ref.watch(authProvider);
+    final companyId = authState.user?.companyId;
+    final employeesAsync = ref.watch(cachedCompanyEmployeesProvider(companyId ?? ''));
 
-    return staffAsync.when(
-      data: (cachedStaff) {
-        final staff = cachedStaff;
-        final total = staff.length;
+    return employeesAsync.when(
+      data: (employees) {
+        final total = employees.length;
         if (total == 0) {
           return Container(
             padding: const EdgeInsets.all(20),
@@ -642,8 +652,9 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
         }
 
         final roleStats = <String, int>{};
-        for (var s in staff) {
-          roleStats[s.role] = (roleStats[s.role] ?? 0) + 1;
+        for (var e in employees) {
+          final role = e.role.toString().split('.').last;
+          roleStats[role] = (roleStats[role] ?? 0) + 1;
         }
 
         return Container(
@@ -763,7 +774,9 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildTopProducts() {
-    final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider);
+    final authState = ref.watch(authProvider);
+    final branchId = authState.user?.branchId;
+    final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider(branchId));
 
     return kpisAsync.when(
       data: (cachedKpis) {
@@ -874,9 +887,11 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildProductCategories() {
-    final staffAsync = ref.watch(cachedStaffStatsProvider);
+    final authState = ref.watch(authProvider);
+    final companyId = authState.user?.companyId;
+    final statsAsync = ref.watch(cachedStaffStatsProvider(companyId));
 
-    return staffAsync.when(
+    return statsAsync.when(
       data: (cachedStats) {
         final stats = cachedStats;
         return Container(

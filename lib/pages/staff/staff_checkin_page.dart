@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/daily_work_report_service.dart';
 import '../../widgets/location_status_widget.dart';
 import '../../widgets/work_report_preview_dialog.dart';
+import 'staff_reports_page.dart';
 
 /// Staff Check-in Page
 /// Attendance and scheduling for staff members
@@ -93,6 +94,19 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
         ),
       ),
       actions: [
+        // View Reports button
+        IconButton(
+          icon: const Icon(Icons.assignment, color: Colors.black87),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const StaffReportsPage(),
+              ),
+            );
+          },
+          tooltip: 'Xem báo cáo',
+        ),
         IconButton(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -644,6 +658,8 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
       final report = await reportService.generateReportFromCheckout(
         attendance: attendance,
         userName: user.name ?? 'Nhân viên',
+        companyId: user.companyId, // Pass companyId from user
+        userRole: user.role.name,  // Pass user role
       );
 
       // Step 3: Show report preview dialog
