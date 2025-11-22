@@ -474,7 +474,8 @@ class _TaskListPageState extends ConsumerState<TaskListPage>
     );
   }
 
-  String _formatDueDate(DateTime dueDate) {
+  String _formatDueDate(DateTime? dueDate) {
+    if (dueDate == null) return 'Chưa có hạn';
     final now = DateTime.now();
     final difference = dueDate.difference(now);
 

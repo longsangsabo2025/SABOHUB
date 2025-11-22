@@ -25,7 +25,7 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
   TaskCategory _selectedCategory = TaskCategory.operations;
   TaskPriority _selectedPriority = TaskPriority.medium;
   TaskRecurrence _selectedRecurrence = TaskRecurrence.none;
-  DateTime _selectedDueDate = DateTime.now().add(const Duration(days: 7));
+  DateTime? _selectedDueDate = DateTime.now().add(const Duration(days: 7));
   String? _selectedAssigneeId;
   bool _isLoading = false;
 
@@ -570,7 +570,7 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
   Future<void> _selectDueDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDueDate,
+      initialDate: _selectedDueDate ?? DateTime.now().add(const Duration(days: 7)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       locale: const Locale('vi', 'VN'),
@@ -579,7 +579,7 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
     if (picked != null && mounted) {
       final time = await showTimePicker(
         context: context,
-        initialTime: TimeOfDay.fromDateTime(_selectedDueDate),
+        initialTime: TimeOfDay.fromDateTime(_selectedDueDate ?? DateTime.now()),
       );
 
       if (time != null && mounted) {
@@ -655,7 +655,7 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
           'recurrence': task.recurrence.name,
           'assigned_to': task.assigneeId,
           'assigned_to_name': task.assignedToName,
-          'due_date': task.dueDate.toIso8601String(),
+          'due_date': task.dueDate?.toIso8601String(),
           'notes': task.notes,
         });
         _showSnackBar('Cập nhật nhiệm vụ thành công!', Colors.green);
@@ -698,7 +698,8 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
     }
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Chưa chọn';
     final now = DateTime.now();
     final difference = date.difference(now);
     

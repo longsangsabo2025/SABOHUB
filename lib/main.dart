@@ -15,7 +15,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
-  await dotenv.load(fileName: '.env');
+  await dotenv.load(fileName: '.env.local');
   
   // Initialize Vietnamese locale for date formatting
   await initializeDateFormatting('vi', null);

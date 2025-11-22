@@ -35,6 +35,13 @@ flutter_sdk.zip
 build/
 **/build/
 
+# Environment files - NEVER COMMIT SECRETS
+.env
+.env.local
+.env.*.local
+*.env.local
+**/.env.local
+
 # Generated files
 *.g.dart
 *.freezed.dart

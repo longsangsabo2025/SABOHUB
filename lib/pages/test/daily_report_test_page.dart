@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/attendance.dart';
 import '../../models/daily_work_report.dart';
@@ -18,7 +19,7 @@ class DailyReportTestPage extends ConsumerStatefulWidget {
 }
 
 class _DailyReportTestPageState extends ConsumerState<DailyReportTestPage> {
-  final _reportService = DailyWorkReportService();
+  late final _reportService = DailyWorkReportService(Supabase.instance.client);
   DailyWorkReport? _generatedReport;
   bool _isGenerating = false;
 
@@ -453,6 +454,8 @@ class _DailyReportTestPageState extends ConsumerState<DailyReportTestPage> {
       final report = await _reportService.generateReportFromCheckout(
         attendance: mockAttendance,
         userName: 'Nguyễn Văn A (Test User)',
+        companyId: 'test-company-id',
+        userRole: 'STAFF',
       );
 
       setState(() {

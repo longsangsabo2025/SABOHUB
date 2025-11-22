@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/manager_permissions.dart';
-import '../../services/manager_permissions_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/manager_permissions_provider.dart';
 
@@ -317,7 +316,7 @@ class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
                 radius: 24,
                 backgroundColor: const Color(0xFF3B82F6).withValues(alpha: 0.2),
                 child: Text(
-                  managerName[0].toUpperCase(),
+                  widget.managerName[0].toUpperCase(),
                   style: const TextStyle(
                     color: Color(0xFF3B82F6),
                     fontWeight: FontWeight.bold,
@@ -330,7 +329,7 @@ class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    managerName,
+                    widget.managerName,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -356,27 +355,27 @@ class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
             Icons.tab,
             [
               _PermissionItem('Tổng quan', 'can_view_overview',
-                  permissions.canViewOverview),
+                  widget.permissions.canViewOverview),
               _PermissionItem('Nhân viên', 'can_view_employees',
-                  permissions.canViewEmployees),
+                  widget.permissions.canViewEmployees),
               _PermissionItem(
-                  'Công việc', 'can_view_tasks', permissions.canViewTasks),
+                  'Công việc', 'can_view_tasks', widget.permissions.canViewTasks),
               _PermissionItem(
-                  'Tài liệu', 'can_view_documents', permissions.canViewDocuments),
+                  'Tài liệu', 'can_view_documents', widget.permissions.canViewDocuments),
               _PermissionItem('Trợ lý AI', 'can_view_ai_assistant',
-                  permissions.canViewAiAssistant),
+                  widget.permissions.canViewAiAssistant),
               _PermissionItem('Chấm công', 'can_view_attendance',
-                  permissions.canViewAttendance),
+                  widget.permissions.canViewAttendance),
               _PermissionItem(
-                  'Kế toán', 'can_view_accounting', permissions.canViewAccounting),
+                  'Kế toán', 'can_view_accounting', widget.permissions.canViewAccounting),
               _PermissionItem('Hồ sơ NV', 'can_view_employee_docs',
-                  permissions.canViewEmployeeDocs),
+                  widget.permissions.canViewEmployeeDocs),
               _PermissionItem('Luật DN', 'can_view_business_law',
-                  permissions.canViewBusinessLaw),
+                  widget.permissions.canViewBusinessLaw),
               _PermissionItem(
-                  'Cài đặt', 'can_view_settings', permissions.canViewSettings),
+                  'Cài đặt', 'can_view_settings', widget.permissions.canViewSettings),
             ],
-            permissions,
+            widget.permissions,
           ),
 
           const SizedBox(height: 32),
@@ -387,21 +386,21 @@ class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
             Icons.security,
             [
               _PermissionItem('Tạo nhân viên', 'can_create_employee',
-                  permissions.canCreateEmployee),
+                  widget.permissions.canCreateEmployee),
               _PermissionItem('Sửa nhân viên', 'can_edit_employee',
-                  permissions.canEditEmployee),
+                  widget.permissions.canEditEmployee),
               _PermissionItem('Xóa nhân viên', 'can_delete_employee',
-                  permissions.canDeleteEmployee),
+                  widget.permissions.canDeleteEmployee),
               _PermissionItem(
-                  'Tạo công việc', 'can_create_task', permissions.canCreateTask),
+                  'Tạo công việc', 'can_create_task', widget.permissions.canCreateTask),
               _PermissionItem(
-                  'Sửa công việc', 'can_edit_task', permissions.canEditTask),
+                  'Sửa công việc', 'can_edit_task', widget.permissions.canEditTask),
               _PermissionItem(
-                  'Xóa công việc', 'can_delete_task', permissions.canDeleteTask),
+                  'Xóa công việc', 'can_delete_task', widget.permissions.canDeleteTask),
               _PermissionItem('Duyệt chấm công', 'can_approve_attendance',
-                  permissions.canApproveAttendance),
+                  widget.permissions.canApproveAttendance),
             ],
-            permissions,
+            widget.permissions,
           ),
 
           const SizedBox(height: 32),
@@ -410,7 +409,7 @@ class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isSaving ? null : () => _savePermissions(permissions),
+              onPressed: _isSaving ? null : () => _savePermissions(widget.permissions),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3B82F6),
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -517,7 +516,7 @@ class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
     // This will trigger a rebuild with updated value
     // The actual update will be in the copyWith when saving
     ref.invalidate(managerPermissionsByCompanyProvider({
-      'managerId': _selectedManagerId!,
+      'managerId': widget.managerId,
       'companyId': widget.companyId,
     }));
   }
@@ -548,7 +547,7 @@ class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
       // Refresh data
       ref.invalidate(allManagerPermissionsProvider(widget.companyId));
       ref.invalidate(managerPermissionsByCompanyProvider({
-        'managerId': _selectedManagerId!,
+        'managerId': widget.managerId,
         'companyId': widget.companyId,
       }));
     } catch (e) {
