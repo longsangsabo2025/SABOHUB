@@ -8,10 +8,12 @@ import 'core/config/supabase_config.dart';
 import 'core/router/app_router.dart';
 import 'providers/auth_provider.dart';
 import 'utils/error_tracker.dart' as tracker;
+import 'utils/longsang_error_reporter.dart'; // 🔴 LONGSANG AUTO-FIX
 import 'widgets/error_boundary.dart';
 // import 'utils/debug_utils.dart' if (dart.library.html) 'utils/debug_utils.dart';
 
-void main() async {
+void main() {
+  LongSangErrorReporter.init(() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
@@ -42,6 +44,7 @@ void main() async {
   );
 
   runApp(const ProviderScope(child: SaboHubApp()));
+  }, appName: 'sabo-hub');
 }
 
 class SaboHubApp extends ConsumerStatefulWidget {
