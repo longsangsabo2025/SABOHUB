@@ -5,6 +5,10 @@
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
 
+# Google Play Core (Fix R8 missing class errors)
+-dontwarn com.google.android.play.core.**
+-keep class com.google.android.play.core.** { *; }
+
 # Supabase
 -keep class io.supabase.** { *; }
 -dontwarn io.supabase.**
