@@ -23,6 +23,6 @@
   },
   "homepage": "https://github.com/longsangsabo2025/SABOHUB#readme",
   "dependencies": {
-    "puppeteer": "^24.27.0"
+    "puppeteer": "^24.33.0"
   }
 }
