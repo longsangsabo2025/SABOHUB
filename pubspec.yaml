@@ -91,5 +91,5 @@ flutter:
   uses-material-design: true
   
   assets:
-    - .env.local
+    - .env
     - assets/images/
