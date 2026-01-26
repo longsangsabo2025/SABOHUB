@@ -114,6 +114,9 @@ final employeesByRoleProvider = FutureProvider.family<List<app_user.User>,
   try {
     String roleString;
     switch (params.role) {
+      case app_user.UserRole.superAdmin:
+        roleString = 'SUPER_ADMIN';
+        break;
       case app_user.UserRole.manager:
         roleString = 'MANAGER';
         break;
@@ -126,11 +129,17 @@ final employeesByRoleProvider = FutureProvider.family<List<app_user.User>,
       case app_user.UserRole.ceo:
         roleString = 'CEO';
         break;
+      case app_user.UserRole.driver:
+        roleString = 'DRIVER';
+        break;
+      case app_user.UserRole.warehouse:
+        roleString = 'WAREHOUSE';
+        break;
     }
 
-    // Fetch from employees table only (skip CEO role as CEOs are only in users table)
-    if (params.role == app_user.UserRole.ceo) {
-      return []; // No CEOs in employees table
+    // Fetch from employees table only (skip CEO and Super Admin as they are only in users table)
+    if (params.role == app_user.UserRole.ceo || params.role == app_user.UserRole.superAdmin) {
+      return []; // No CEOs or Super Admins in employees table
     }
     
     final employeesResponse = await supabase

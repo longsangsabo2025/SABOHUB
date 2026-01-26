@@ -476,6 +476,8 @@ class _EmployeeCard extends StatelessWidget {
 
   Color _getRoleColor(UserRole role) {
     switch (role) {
+      case UserRole.superAdmin:
+        return Colors.red;
       case UserRole.ceo:
         return Colors.purple;
       case UserRole.manager:
@@ -484,6 +486,10 @@ class _EmployeeCard extends StatelessWidget {
         return Colors.orange;
       case UserRole.staff:
         return Colors.green;
+      case UserRole.driver:
+        return Colors.teal;
+      case UserRole.warehouse:
+        return Colors.brown;
     }
   }
 }
@@ -515,6 +521,8 @@ class _RoleBadge extends StatelessWidget {
 
   Color _getColor() {
     switch (role) {
+      case UserRole.superAdmin:
+        return Colors.red;
       case UserRole.ceo:
         return Colors.purple;
       case UserRole.manager:
@@ -523,6 +531,10 @@ class _RoleBadge extends StatelessWidget {
         return Colors.orange;
       case UserRole.staff:
         return Colors.green;
+      case UserRole.driver:
+        return Colors.teal;
+      case UserRole.warehouse:
+        return Colors.brown;
     }
   }
 }
@@ -721,6 +733,8 @@ class _EmployeeDetailsSheet extends StatelessWidget {
 
   Color _getRoleColor() {
     switch (employee.role) {
+      case UserRole.superAdmin:
+        return Colors.red;
       case UserRole.ceo:
         return Colors.purple;
       case UserRole.manager:
@@ -729,6 +743,10 @@ class _EmployeeDetailsSheet extends StatelessWidget {
         return Colors.orange;
       case UserRole.staff:
         return Colors.green;
+      case UserRole.driver:
+        return Colors.teal;
+      case UserRole.warehouse:
+        return Colors.brown;
     }
   }
 

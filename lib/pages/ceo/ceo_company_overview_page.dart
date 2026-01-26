@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
+
 /// CEO Company Overview Page
 /// Overview of all companies in the CEO's portfolio
 class CEOCompanyOverviewPage extends ConsumerStatefulWidget {
@@ -80,7 +82,7 @@ class _CEOCompanyOverviewPageState
         onPressed: () {
           // Add new company
         },
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: AppTheme.primaryPurple,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -199,7 +201,7 @@ class _CEOCompanyOverviewPageState
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1976D2) : Colors.grey.shade200,
+          color: isSelected ? AppTheme.primaryPurple : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -253,7 +255,7 @@ class _CEOCompanyOverviewPageState
               'Tổng công ty',
               '${_companies.length}',
               Icons.business,
-              const Color(0xFF1976D2),
+              AppTheme.primaryPurple,
             ),
           ),
           const SizedBox(width: 12),
@@ -477,7 +479,7 @@ class _CEOCompanyOverviewPageState
                     // Quick actions
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1976D2),
+                    backgroundColor: AppTheme.primaryPurple,
                     foregroundColor: Colors.white,
                   ),
                   child: const Text('Quản lý'),
@@ -517,7 +519,7 @@ class _CEOCompanyOverviewPageState
   Color _getTypeColor(String type) {
     switch (type.toLowerCase()) {
       case 'billiards':
-        return const Color(0xFF1976D2);
+        return AppTheme.primaryPurple;
       case 'restaurant':
         return const Color(0xFF4CAF50);
       case 'cafe':

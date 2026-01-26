@@ -6,6 +6,18 @@ import '../models/ai_uploaded_file.dart';
 import '../utils/logger_service.dart';
 import 'package:flutter/foundation.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// 
+/// SABOHUB sử dụng "CEO Auth" model:
+/// - Chỉ CEO có tài khoản Supabase Auth thực sự
+/// - Employees/Managers đăng nhập qua mã nhân viên, KHÔNG có auth.users
+/// 
+/// ❌ KHÔNG DÙNG: _supabase.auth.currentUser (chỉ CEO có)
+/// ✅ PHẢI DÙNG: Truyền userId parameter từ authProvider của caller
+/// 
+/// Service này yêu cầu userId được truyền vào từ caller (widget/provider)
+/// để hỗ trợ cả CEO và Employee uploads.
+
 /// Service for handling file uploads for AI Assistant
 class FileUploadService {
   final SupabaseClient _supabase;
@@ -13,9 +25,13 @@ class FileUploadService {
   FileUploadService(this._supabase);
 
   /// Upload a file to Supabase Storage and create database record
+  /// 
+  /// [userId] - ID của user đang upload (từ authProvider.user.id)
+  ///            Không dùng auth.currentUser vì employees không có Supabase Auth
   Future<AIUploadedFile> uploadFile({
     required String assistantId,
     required String companyId,
+    required String userId,
     required File file,
     required String fileName,
     List<String>? tags,
@@ -50,7 +66,7 @@ class FileUploadService {
           .insert({
             'assistant_id': assistantId,
             'company_id': companyId,
-            'user_id': _supabase.auth.currentUser?.id,
+            'user_id': userId, // Dùng userId parameter, không dùng auth.currentUser
             'file_name': fileName,
             'file_type': fileType,
             'mime_type': mimeType,
@@ -68,9 +84,12 @@ class FileUploadService {
   }
 
   /// Upload multiple files
+  /// 
+  /// [userId] - ID của user đang upload (từ authProvider.user.id)
   Future<List<AIUploadedFile>> uploadMultipleFiles({
     required String assistantId,
     required String companyId,
+    required String userId,
     required List<File> files,
     List<String>? tags,
     Map<String, dynamic>? metadata,
@@ -83,6 +102,7 @@ class FileUploadService {
         final uploadedFile = await uploadFile(
           assistantId: assistantId,
           companyId: companyId,
+          userId: userId,
           file: file,
           fileName: fileName,
           tags: tags,

@@ -14,16 +14,35 @@ import '../../pages/employees/create_invitation_page.dart';
 import '../../pages/employees/employee_list_page.dart';
 import '../../pages/onboarding/onboarding_page.dart';
 import '../../pages/role_based_dashboard.dart';
-import '../../pages/staff/staff_checkin_page.dart';
-import '../../pages/staff/staff_messages_page.dart';
 import '../../pages/staff/staff_profile_page.dart';
-import '../../pages/staff/staff_tables_page.dart';
-import '../../pages/staff/staff_tasks_page.dart';
 import '../../pages/user/user_profile_page.dart';
 import '../../layouts/manager_main_layout.dart';
 import '../../layouts/shift_leader_main_layout.dart';
+import '../../layouts/driver_main_layout.dart';
+import '../../layouts/warehouse_main_layout.dart';
+import '../../pages/staff_main_layout.dart';
 import '../../pages/ceo/ceo_main_layout.dart';
 import '../../pages/manager/manager_reports_page.dart';
+// Odori B2B Module Pages
+import '../../pages/customers/odori_customers_page.dart';
+import '../../pages/products/odori_products_page.dart';
+import '../../pages/orders/odori_orders_page.dart';
+import '../../pages/deliveries/odori_deliveries_page.dart';
+import '../../pages/receivables/odori_receivables_page.dart';
+// Warehouse & Driver Pages - Now using layouts
+import '../../pages/delivery/route_planning_page.dart';
+// Manufacturing Module Pages
+import '../../pages/manufacturing/suppliers_page.dart';
+import '../../pages/manufacturing/materials_page.dart';
+import '../../pages/manufacturing/bom_page.dart';
+import '../../pages/manufacturing/purchase_orders_page.dart';
+import '../../pages/manufacturing/production_orders_page.dart';
+import '../../pages/manufacturing/payables_page.dart';
+// Map & GPS Module Pages - TEMPORARILY DISABLED for web compatibility
+// import '../../pages/map/map_overview_page.dart';
+// import '../../pages/map/delivery_tracking_page.dart';
+// import '../../pages/map/staff_tracking_page.dart';
+// import '../../pages/map/route_planning_page.dart';
 import '../../providers/auth_provider.dart';
 import '../navigation/navigation_models.dart' as nav;
 
@@ -36,6 +55,9 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String onboarding = '/onboard/:token'; // Employee onboarding
   static const String profile = '/profile';
+
+  // Super Admin routes
+  static const String superAdminDashboard = '/super-admin/dashboard';
 
   // Staff routes
   static const String staffCheckin = '/staff/checkin';
@@ -72,18 +94,46 @@ class AppRoutes {
   static const String commissionRules = '/commission/rules';
   static const String uploadBill = '/commission/upload-bill';
 
+  // Odori B2B Module routes
+  static const String odoriCustomers = '/odori/customers';
+  static const String odoriProducts = '/odori/products';
+  static const String odoriOrders = '/odori/orders';
+  static const String odoriDeliveries = '/odori/deliveries';
+  static const String odoriReceivables = '/odori/receivables';
+  
+  // Warehouse & Driver routes
+  static const String warehousePicking = '/warehouse/picking';
+  static const String routePlanning = '/delivery/route-planning';
+  static const String driverDashboard = '/driver/dashboard';
+
+  // Manufacturing Module routes
+  static const String manufacturingSuppliers = '/manufacturing/suppliers';
+  static const String manufacturingMaterials = '/manufacturing/materials';
+  static const String manufacturingBOM = '/manufacturing/bom';
+  static const String manufacturingPurchaseOrders = '/manufacturing/purchase-orders';
+  static const String manufacturingProductionOrders = '/manufacturing/production-orders';
+  static const String manufacturingPayables = '/manufacturing/payables';
+
+  // Map & GPS Module routes
+  static const String mapOverview = '/map/overview';
+  static const String mapDeliveryTracking = '/map/delivery-tracking';
+  static const String mapStaffTracking = '/map/staff-tracking';
+  static const String mapRoutePlanning = '/map/route-planning';
+
   // Debug routes (temporarily disabled)
   // static const String debugSettings = '/debug/settings';
 }
 
 /// Current user role provider (based on auth state)
-final currentUserRoleProvider = Provider<nav.UserRole>((ref) {
+final currentUserRoleProvider = Provider<nav.UserRole>((Ref ref) {
   // Watch authProvider to reactively update when auth state changes
   final authState = ref.watch(authProvider);
 
   if (authState.isAuthenticated && authState.user?.role != null) {
     // Map from User model UserRole to Navigation UserRole
     switch (authState.user!.role) {
+      case user_model.UserRole.superAdmin:
+        return nav.UserRole.superAdmin;
       case user_model.UserRole.ceo:
         return nav.UserRole.ceo;
       case user_model.UserRole.manager:
@@ -92,6 +142,10 @@ final currentUserRoleProvider = Provider<nav.UserRole>((ref) {
         return nav.UserRole.shiftLeader;
       case user_model.UserRole.staff:
         return nav.UserRole.staff;
+      case user_model.UserRole.driver:
+        return nav.UserRole.driver;
+      case user_model.UserRole.warehouse:
+        return nav.UserRole.warehouse;
     }
   }
 
@@ -113,6 +167,8 @@ class RouteGuard {
     if (!allowedRoutes.contains(route)) {
       // Redirect to appropriate dashboard based on role
       switch (userRole) {
+        case nav.UserRole.superAdmin:
+          return AppRoutes.superAdminDashboard;
         case nav.UserRole.staff:
           return AppRoutes.staffCheckin;
         case nav.UserRole.shiftLeader:
@@ -121,6 +177,10 @@ class RouteGuard {
           return AppRoutes.managerDashboard;
         case nav.UserRole.ceo:
           return AppRoutes.ceoAnalytics;
+        case nav.UserRole.driver:
+          return AppRoutes.driverDashboard;
+        case nav.UserRole.warehouse:
+          return AppRoutes.warehousePicking;
       }
     }
 
@@ -128,13 +188,13 @@ class RouteGuard {
   }
 }
 
-final appRouterProvider = Provider<GoRouter>((ref) {
+final appRouterProvider = Provider<GoRouter>((Ref ref) {
   final userRole = ref.watch(currentUserRoleProvider);
   final authState = ref.watch(authProvider);
 
   return GoRouter(
     initialLocation: AppRoutes.login,
-    redirect: (context, state) {
+    redirect: (BuildContext context, GoRouterState state) {
       final isLoggedIn = authState.isAuthenticated;
       final isLoading = authState.isLoading;
       final isAuthRoute = state.matchedLocation == AppRoutes.login ||
@@ -180,19 +240,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Login route - Dual authentication (CEO email/password OR Employee company/username/password)
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const DualLoginPage(),
+        builder: (BuildContext context, GoRouterState state) => const DualLoginPage(),
       ),
 
       // Signup route
       GoRoute(
         path: AppRoutes.signup,
-        builder: (context, state) => const SignUpPageNew(),
+        builder: (BuildContext context, GoRouterState state) => const SignUpPageNew(),
       ),
 
       // Email Verification route
       GoRoute(
         path: AppRoutes.emailVerification,
-        builder: (context, state) {
+        builder: (BuildContext context, GoRouterState state) {
           final email = state.uri.queryParameters['email'] ?? '';
           return EmailVerificationPage(email: email);
         },
@@ -201,13 +261,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Forgot Password route
       GoRoute(
         path: AppRoutes.forgotPassword,
-        builder: (context, state) => const ForgotPasswordPage(),
+        builder: (BuildContext context, GoRouterState state) => const ForgotPasswordPage(),
       ),
 
       // Employee Onboarding route (public - no auth required)
       GoRoute(
         path: AppRoutes.onboarding,
-        builder: (context, state) {
+        builder: (BuildContext context, GoRouterState state) {
           final token = state.pathParameters['token'] ?? '';
           return OnboardingPage(inviteToken: token);
         },
@@ -216,7 +276,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Home route
       GoRoute(
         path: AppRoutes.home,
-        builder: (context, state) {
+        builder: (BuildContext context, GoRouterState state) {
           final roleParam = state.uri.queryParameters['role'];
           return RoleBasedDashboard(roleParam: roleParam);
         },
@@ -225,94 +285,94 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Profile route - accessible by all roles
       GoRoute(
         path: AppRoutes.profile,
-        builder: (context, state) => const UserProfilePage(),
+        builder: (BuildContext context, GoRouterState state) => const UserProfilePage(),
       ),
 
-      // Staff routes
+      // Staff routes - Use full layout for proper navigation
       GoRoute(
         path: AppRoutes.staffCheckin,
-        builder: (context, state) => const StaffCheckinPage(),
+        builder: (BuildContext context, GoRouterState state) => const StaffMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.staffTables,
-        builder: (context, state) => const StaffTablesPage(),
+        builder: (BuildContext context, GoRouterState state) => const StaffMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.staffTasks,
-        builder: (context, state) => const StaffTasksPage(),
+        builder: (BuildContext context, GoRouterState state) => const StaffMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.staffMessages,
-        builder: (context, state) => const StaffMessagesPage(),
+        builder: (BuildContext context, GoRouterState state) => const StaffMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.staffProfile,
-        builder: (context, state) => const StaffProfilePage(),
+        builder: (BuildContext context, GoRouterState state) => const StaffProfilePage(),
       ),
 
       // Shift Leader routes
       GoRoute(
         path: AppRoutes.shiftLeaderTeam,
-        builder: (context, state) => const ShiftLeaderMainLayout(),
+        builder: (BuildContext context, GoRouterState state) => const ShiftLeaderMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.shiftLeaderReports,
-        builder: (context, state) => const ShiftLeaderMainLayout(),
+        builder: (BuildContext context, GoRouterState state) => const ShiftLeaderMainLayout(),
       ),
 
       // Manager routes
       GoRoute(
         path: AppRoutes.managerDashboard,
-        builder: (context, state) => const ManagerMainLayout(),
+        builder: (BuildContext context, GoRouterState state) => const ManagerMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.managerEmployees,
-        builder: (context, state) => const ManagerMainLayout(),
+        builder: (BuildContext context, GoRouterState state) => const ManagerMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.managerFinance,
-        builder: (context, state) => const ManagerMainLayout(),
+        builder: (BuildContext context, GoRouterState state) => const ManagerMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.managerReports,
-        builder: (context, state) => const ManagerReportsPage(),
+        builder: (BuildContext context, GoRouterState state) => const ManagerReportsPage(),
       ),
 
       // CEO routes - Remove GlobalKey to fix navigation conflicts
       GoRoute(
         path: AppRoutes.ceoAnalytics,
-        builder: (context, state) => const CEOMainLayout(),
+        builder: (BuildContext context, GoRouterState state) => const CEOMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.ceoCompanies,
-        builder: (context, state) => const CEOMainLayout(),
+        builder: (BuildContext context, GoRouterState state) => const CEOMainLayout(),
       ),
       GoRoute(
         path: AppRoutes.ceoSettings,
-        builder: (context, state) => const CEOMainLayout(),
+        builder: (BuildContext context, GoRouterState state) => const CEOMainLayout(),
       ),
 
       // Company routes
       GoRoute(
         path: AppRoutes.companySettings,
-        builder: (context, state) => const CompanySettingsPage(),
+        builder: (BuildContext context, GoRouterState state) => const CompanySettingsPage(),
       ),
       // CEO Create Employee route - CLEAN, simple, standalone page
       GoRoute(
         path: AppRoutes.createEmployee,
-        builder: (context, state) => const CreateEmployeePage(),
+        builder: (BuildContext context, GoRouterState state) => const CreateEmployeePage(),
       ),
       GoRoute(
         path: AppRoutes.createInvitation,
-        builder: (context, state) => const CreateInvitationPage(),
+        builder: (BuildContext context, GoRouterState state) => const CreateInvitationPage(),
       ),
       GoRoute(
         path: AppRoutes.employeeList,
-        builder: (context, state) => const EmployeeListPage(),
+        builder: (BuildContext context, GoRouterState state) => const EmployeeListPage(),
       ),
       GoRoute(
         path: AppRoutes.joinInvitation,
-        builder: (context, state) {
+        builder: (BuildContext context, GoRouterState state) {
           final code = state.pathParameters['code'];
           if (code == null) {
             return const Scaffold(
@@ -325,14 +385,94 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
 
+      // Odori B2B Module routes
+      GoRoute(
+        path: AppRoutes.odoriCustomers,
+        builder: (BuildContext context, GoRouterState state) => const OdoriCustomersPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.odoriProducts,
+        builder: (BuildContext context, GoRouterState state) => const OdoriProductsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.odoriOrders,
+        builder: (BuildContext context, GoRouterState state) => const OdoriOrdersPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.odoriDeliveries,
+        builder: (BuildContext context, GoRouterState state) => const OdoriDeliveriesPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.odoriReceivables,
+        builder: (BuildContext context, GoRouterState state) => const OdoriReceivablesPage(),
+      ),
+
+      // Warehouse & Driver routes - Use full layouts for proper navigation
+      GoRoute(
+        path: AppRoutes.warehousePicking,
+        builder: (BuildContext context, GoRouterState state) => const WarehouseMainLayout(),
+      ),
+      GoRoute(
+        path: AppRoutes.routePlanning,
+        builder: (BuildContext context, GoRouterState state) => const RoutePlanningPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.driverDashboard,
+        builder: (BuildContext context, GoRouterState state) => const DriverMainLayout(),
+      ),
+
+      // Manufacturing Module routes
+      GoRoute(
+        path: AppRoutes.manufacturingSuppliers,
+        builder: (BuildContext context, GoRouterState state) => const SuppliersPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.manufacturingMaterials,
+        builder: (BuildContext context, GoRouterState state) => const MaterialsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.manufacturingBOM,
+        builder: (BuildContext context, GoRouterState state) => const BOMPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.manufacturingPurchaseOrders,
+        builder: (BuildContext context, GoRouterState state) => const PurchaseOrdersPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.manufacturingProductionOrders,
+        builder: (BuildContext context, GoRouterState state) => const ProductionOrdersPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.manufacturingPayables,
+        builder: (BuildContext context, GoRouterState state) => const PayablesPage(),
+      ),
+
+      // Map & GPS routes - TEMPORARILY DISABLED for web compatibility
+      // GoRoute(
+      //   path: AppRoutes.mapOverview,
+      //   builder: (BuildContext context, GoRouterState state) => const MapOverviewPage(),
+      // ),
+      // GoRoute(
+      //   path: AppRoutes.mapDeliveryTracking,
+      //   builder: (BuildContext context, GoRouterState state) => const DeliveryTrackingPage(),
+      // ),
+      // GoRoute(
+      //   path: AppRoutes.mapStaffTracking,
+      //   builder: (BuildContext context, GoRouterState state) => const StaffTrackingPage(),
+      // ),
+      // GoRoute(
+      //   path: AppRoutes.mapRoutePlanning,
+      //   builder: (BuildContext context, GoRouterState state) => const RoutePlanningPage(),
+      // ),
+
       // Debug routes (temporarily disabled)
       // if (kDebugMode)
       //   GoRoute(
       //     path: AppRoutes.debugSettings,
-      //     builder: (context, state) => const DebugSettingsPage(),
+      //     builder: (BuildContext context, GoRouterState state) => const DebugSettingsPage(),
       //   ),
     ],
-    errorBuilder: (context, state) => Scaffold(
+    errorBuilder: (BuildContext context, GoRouterState state) => Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/payment.dart';
 import '../../providers/payment_provider.dart';
+import 'payment_form_page.dart';
 
 class PaymentListPage extends ConsumerStatefulWidget {
   const PaymentListPage({super.key});
@@ -93,6 +94,17 @@ class _PaymentListPageState extends ConsumerState<PaymentListPage>
           _buildPaymentsByStatusTab(PaymentStatus.failed),
           _buildPaymentsByStatusTab(PaymentStatus.refunded),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PaymentFormPage()),
+          );
+        },
+        label: const Text('Thanh toán'),
+        icon: const Icon(Icons.add),
+        backgroundColor: Colors.green.shade600,
       ),
     );
   }

@@ -570,6 +570,12 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
 
   Map<String, dynamic> _getRoleInfo(UserRole role) {
     switch (role) {
+      case UserRole.superAdmin:
+        return {
+          'title': 'Super Admin',
+          'icon': Icons.admin_panel_settings,
+          'color': Colors.red,
+        };
       case UserRole.ceo:
         return {
           'title': 'CEO',
@@ -593,6 +599,18 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
           'title': 'Nhân viên',
           'icon': Icons.person,
           'color': Colors.blue,
+        };
+      case UserRole.driver:
+        return {
+          'title': 'Tài xế',
+          'icon': Icons.local_shipping,
+          'color': Colors.teal,
+        };
+      case UserRole.warehouse:
+        return {
+          'title': 'Nhân viên kho',
+          'icon': Icons.warehouse,
+          'color': Colors.brown,
         };
     }
   }

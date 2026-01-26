@@ -141,9 +141,13 @@ class FileUploadNotifier extends AsyncNotifier<List<AIUploadedFile>> {
     return [];
   }
 
+  /// Upload a single file
+  /// 
+  /// [userId] - Required: ID của user từ authProvider (không dùng auth.currentUser)
   Future<void> uploadFile({
     required String assistantId,
     required String companyId,
+    required String userId,
     required dynamic file, // File from file_picker
     required String fileName,
     List<String>? tags,
@@ -155,6 +159,7 @@ class FileUploadNotifier extends AsyncNotifier<List<AIUploadedFile>> {
       await fileUploadService.uploadFile(
         assistantId: assistantId,
         companyId: companyId,
+        userId: userId,
         file: file,
         fileName: fileName,
         tags: tags,
@@ -167,9 +172,13 @@ class FileUploadNotifier extends AsyncNotifier<List<AIUploadedFile>> {
     });
   }
 
+  /// Upload multiple files
+  /// 
+  /// [userId] - Required: ID của user từ authProvider (không dùng auth.currentUser)
   Future<void> uploadMultipleFiles({
     required String assistantId,
     required String companyId,
+    required String userId,
     required List<dynamic> files,
     List<String>? tags,
     Map<String, dynamic>? metadata,
@@ -182,6 +191,7 @@ class FileUploadNotifier extends AsyncNotifier<List<AIUploadedFile>> {
       await fileUploadService.uploadMultipleFiles(
         assistantId: assistantId,
         companyId: companyId,
+        userId: userId,
         files: fileList.cast(),
         tags: tags,
         metadata: metadata,

@@ -1,17 +1,25 @@
 import '../core/services/supabase_service.dart';
 import '../models/store.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// **EMPLOYEE KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
+/// - Employee login qua mã nhân viên, KHÔNG có trong auth.users
+/// - ❌ KHÔNG ĐƯỢC dùng `_supabase.auth.currentUser`
+/// - ✅ Caller PHẢI truyền companyId từ authProvider
+
 /// Store Service
 /// Handles all store-related database operations
 class StoreService {
   final _supabase = supabase.client;
 
-  /// Get all stores
-  Future<List<Store>> getAllStores() async {
+  /// Get all stores for current user's company
+  /// [companyId] - REQUIRED: ID công ty từ authProvider
+  Future<List<Store>> getAllStores({required String companyId}) async {
     try {
       final response = await _supabase
           .from('stores')
           .select()
+          .eq('company_id', companyId)
           .order('created_at', ascending: false);
 
       return (response as List).map((json) => Store.fromJson(json)).toList();
@@ -20,11 +28,15 @@ class StoreService {
     }
   }
 
-  /// Get store by ID
-  Future<Store?> getStoreById(String id) async {
+  /// Get store by ID (with company validation)
+  Future<Store?> getStoreById(String id, {required String companyId}) async {
     try {
-      final response =
-          await _supabase.from('stores').select().eq('id', id).maybeSingle();
+      final response = await _supabase
+          .from('stores')
+          .select()
+          .eq('id', id)
+          .eq('company_id', companyId)
+          .maybeSingle();
 
       if (response == null) return null;
       return Store.fromJson(response);
@@ -33,12 +45,13 @@ class StoreService {
     }
   }
 
-  /// Create new store
+  /// Create new store (for current user's company)
   Future<Store> createStore({
     required String name,
     String? address,
     String? phone,
     String? email,
+    required String companyId,
   }) async {
     try {
       final response = await _supabase
@@ -48,6 +61,7 @@ class StoreService {
             'address': address,
             'phone': phone,
             'email': email,
+            'company_id': companyId,
             'status': 'ACTIVE',
           })
           .select()
@@ -59,13 +73,14 @@ class StoreService {
     }
   }
 
-  /// Update store
-  Future<Store> updateStore(String id, Map<String, dynamic> updates) async {
+  /// Update store (with company validation)
+  Future<Store> updateStore(String id, Map<String, dynamic> updates, {required String companyId}) async {
     try {
       final response = await _supabase
           .from('stores')
           .update(updates)
           .eq('id', id)
+          .eq('company_id', companyId)
           .select()
           .single();
 
@@ -75,10 +90,10 @@ class StoreService {
     }
   }
 
-  /// Delete store
-  Future<void> deleteStore(String id) async {
+  /// Delete store (with company validation)
+  Future<void> deleteStore(String id, {required String companyId}) async {
     try {
-      await _supabase.from('stores').delete().eq('id', id);
+      await _supabase.from('stores').delete().eq('id', id).eq('company_id', companyId);
     } catch (e) {
       throw Exception('Failed to delete store: $e');
     }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/ai_uploaded_file.dart';
 import '../../../models/business_document.dart';
 import '../../../models/company.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/cached_data_providers.dart';
 import '../../../services/business_document_service.dart';
 
@@ -132,12 +133,14 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
           onUpload: (details) async {
             final scaffoldMessenger = ScaffoldMessenger.of(context);
             // setState(() => _isUploading = true); // Removed unused state
-
+            final user = ref.read(authProvider).user;
+            
             try {
               // Here you would upload to storage first, then create document record
               // For now, we'll create a simple document record
               await _documentService.uploadDocument(
                 companyId: widget.company.id,
+                userId: user?.id ?? '',
                 type: BusinessDocumentType.values.firstWhere(
                   (e) => e.name == docType,
                   orElse: () => BusinessDocumentType.other,

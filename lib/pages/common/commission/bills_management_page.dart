@@ -23,10 +23,10 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
 
   String? _statusFilter;
 
-  Future<void> _approveBill(Bill bill) async {
+  Future<void> _approveBill(Bill bill, String userId) async {
     try {
       // Approve bill
-      await _billService.approveBill(bill.id);
+      await _billService.approveBill(bill.id, userId: userId);
 
       // Calculate commissions for all employees
       await _commissionService.calculateBillCommissions(billId: bill.id);
@@ -55,9 +55,9 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
     }
   }
 
-  Future<void> _rejectBill(Bill bill) async {
+  Future<void> _rejectBill(Bill bill, String userId) async {
     try {
-      await _billService.rejectBill(bill.id);
+      await _billService.rejectBill(bill.id, userId: userId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -113,6 +113,7 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider);
     final companyId = user.user?.companyId;
+    final userId = user.user?.id ?? '';
     final userRole = user.user?.role;
 
     if (companyId == null) {
@@ -190,7 +191,7 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final bill = bills[index];
-                return _buildBillCard(bill, userRole?.name);
+                return _buildBillCard(bill, userRole?.name, userId);
               },
             ),
           );
@@ -217,7 +218,7 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
     );
   }
 
-  Widget _buildBillCard(Bill bill, String? userRole) {
+  Widget _buildBillCard(Bill bill, String? userRole, String userId) {
     final status = BillStatus.fromString(bill.status);
     Color statusColor;
 
@@ -327,7 +328,7 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () => _approveBill(bill),
+                            onPressed: () => _approveBill(bill, userId),
                             icon: const Icon(Icons.check),
                             label: const Text('Duyệt & Tính HH'),
                             style: ElevatedButton.styleFrom(
@@ -339,7 +340,7 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => _rejectBill(bill),
+                            onPressed: () => _rejectBill(bill, userId),
                             icon: const Icon(Icons.close),
                             label: const Text('Từ chối'),
                             style: OutlinedButton.styleFrom(

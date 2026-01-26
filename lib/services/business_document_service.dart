@@ -1,6 +1,15 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/business_document.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// 
+/// SABOHUB sử dụng "CEO Auth" model:
+/// - Chỉ CEO có tài khoản Supabase Auth thực sự
+/// - Employees/Managers đăng nhập qua mã nhân viên, KHÔNG có auth.users
+/// 
+/// ❌ KHÔNG DÙNG: _supabase.auth.currentUser (chỉ CEO có)
+/// ✅ PHẢI DÙNG: Truyền userId parameter từ authProvider của caller
+
 class BusinessDocumentService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
@@ -41,8 +50,11 @@ class BusinessDocumentService {
   }
 
   /// Thêm tài liệu mới
+  /// 
+  /// [userId] - Required: ID của user upload (từ authProvider.user.id)
   Future<BusinessDocument> uploadDocument({
     required String companyId,
+    required String userId,
     required BusinessDocumentType type,
     required String title,
     required String documentNumber,
@@ -56,8 +68,7 @@ class BusinessDocumentService {
     String? notes,
   }) async {
     try {
-      final currentUser = _supabase.auth.currentUser;
-      if (currentUser == null) {
+      if (userId.isEmpty) {
         throw Exception('User not authenticated');
       }
 
@@ -73,7 +84,7 @@ class BusinessDocumentService {
         'issue_date': issueDate.toIso8601String().split('T')[0],
         'issued_by': issuedBy,
         'expiry_date': expiryDate?.toIso8601String().split('T')[0],
-        'uploaded_by': currentUser.id,
+        'uploaded_by': userId,
         'notes': notes,
         'status': 'active',
       };
@@ -91,17 +102,18 @@ class BusinessDocumentService {
   }
 
   /// Xác minh tài liệu
-  Future<void> verifyDocument(String documentId) async {
+  /// 
+  /// [userId] - Required: ID của user xác minh (từ authProvider.user.id)
+  Future<void> verifyDocument(String documentId, {required String userId}) async {
     try {
-      final currentUser = _supabase.auth.currentUser;
-      if (currentUser == null) {
+      if (userId.isEmpty) {
         throw Exception('User not authenticated');
       }
 
       await _supabase.from('business_documents').update({
         'is_verified': true,
         'verified_date': DateTime.now().toIso8601String(),
-        'verified_by': currentUser.id,
+        'verified_by': userId,
       }).eq('id', documentId);
     } catch (e) {
       throw Exception('Failed to verify document: $e');

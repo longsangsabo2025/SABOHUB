@@ -477,6 +477,10 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
     String roleLabel;
 
     switch (employee.role) {
+      case app_user.UserRole.superAdmin:
+        roleColor = Colors.red;
+        roleLabel = 'Super Admin';
+        break;
       case app_user.UserRole.manager:
         roleColor = Colors.green;
         roleLabel = 'Quản lý';
@@ -492,6 +496,14 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
       case app_user.UserRole.ceo:
         roleColor = Colors.blue;
         roleLabel = 'CEO';
+        break;
+      case app_user.UserRole.driver:
+        roleColor = Colors.teal;
+        roleLabel = 'Tài xế';
+        break;
+      case app_user.UserRole.warehouse:
+        roleColor = Colors.brown;
+        roleLabel = 'Nhân viên kho';
         break;
     }
 

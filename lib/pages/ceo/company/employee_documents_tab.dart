@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../models/company.dart';
 import '../../../models/employee_document.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/cached_data_providers.dart';
 
 /// Employee Documents Tab
@@ -456,7 +457,8 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
   Future<void> _verifyDocument(String documentId) async {
     try {
       final service = ref.read(employeeDocumentServiceProvider);
-      await service.verifyDocument(documentId);
+      final user = ref.read(authProvider).user;
+      await service.verifyDocument(documentId, userId: user?.id ?? '');
       ref.invalidateEmployeeDocuments(widget.companyId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

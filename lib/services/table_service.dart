@@ -2,6 +2,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/table.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// **EMPLOYEE KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
+/// - Employee login qua mã nhân viên, KHÔNG có trong auth.users
+/// - ❌ KHÔNG ĐƯỢC dùng `_supabase.auth.currentUser`
+/// - ✅ Caller PHẢI truyền employeeId từ authProvider
+
 /// Table Service
 /// Handles all billiards table-related database operations
 /// Uses 'tables' table in Supabase
@@ -47,23 +53,22 @@ class TableService {
   }
 
   /// Create new table
+  /// [employeeId] - ID của employee từ authProvider (KHÔNG phải từ auth.currentUser)
   Future<BilliardsTable> createTable({
     required String tableNumber,
     required String companyId,
     required String tableType,
     required double hourlyRate,
+    String? employeeId,
   }) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) throw Exception('User not authenticated');
-
       final data = {
         'table_number': int.parse(tableNumber),
         'store_id': companyId,
         'table_type': tableType,
         'hourly_rate': hourlyRate,
         'status': 'AVAILABLE',
-        'created_by': userId,
+        'created_by': employeeId,
       };
 
       final response =
@@ -95,22 +100,21 @@ class TableService {
   }
 
   /// Start table session (occupy table)
+  /// [employeeId] - ID của employee từ authProvider (KHÔNG phải từ auth.currentUser)
   Future<BilliardsTable> startTableSession({
     required String tableId,
     String? customerName,
     String? notes,
+    String? employeeId,
   }) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) throw Exception('User not authenticated');
-
       // First create table session
       final sessionData = {
         'table_id': tableId,
         'start_time': DateTime.now().toIso8601String(),
         'hourly_rate': 50000, // Default rate, should get from table
         'status': 'ACTIVE',
-        'created_by': userId,
+        'created_by': employeeId,
       };
 
       final sessionResponse = await _supabase

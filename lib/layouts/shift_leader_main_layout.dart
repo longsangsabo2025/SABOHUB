@@ -11,6 +11,7 @@ import '../pages/staff/staff_messages_page.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/error_boundary.dart';
 import '../widgets/unified_bottom_navigation.dart';
+import '../widgets/realtime_notification_widgets.dart';
 
 /// Shift Leader Main Layout
 /// Complete layout with navigation for shift leader role
@@ -57,6 +58,12 @@ class _ShiftLeaderMainLayoutState extends ConsumerState<ShiftLeaderMainLayout>
 
     return ErrorBoundary(
       child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Trưởng ca'),
+          actions: const [
+            RealtimeNotificationBell(),
+          ],
+        ),
         body: Stack(
           children: [
             PageView(

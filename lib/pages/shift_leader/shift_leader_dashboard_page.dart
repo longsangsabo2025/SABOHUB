@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../providers/manager_provider.dart';
-import '../../providers/staff_provider.dart';
+import '../../providers/cached_providers.dart';
+import '../../models/staff.dart';
 import '../../widgets/multi_account_switcher.dart';
 
 /// Shift Leader Dashboard Page
@@ -13,8 +13,9 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final kpisAsync = ref.watch(managerDashboardKPIsProvider(null));
-    final staffStatsAsync = ref.watch(staffStatsProvider(null));
+    // 🔥 PHASE 4: Use CACHED providers
+    final statsAsync = ref.watch(cachedShiftLeaderDashboardStatsProvider);
+    final teamAsync = ref.watch(cachedShiftLeaderTeamProvider);
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
 
     return Scaffold(
@@ -22,8 +23,8 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
       appBar: _buildAppBar(context),
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(managerDashboardKPIsProvider(null));
-          ref.invalidate(staffStatsProvider(null));
+          refreshShiftLeaderData(ref);
+          await Future.delayed(const Duration(milliseconds: 300));
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -33,21 +34,21 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
             children: [
               _buildGreeting(),
               const SizedBox(height: 24),
-              kpisAsync.when(
-                data: (kpis) => _buildKPICards(kpis, currencyFormat),
+              statsAsync.when(
+                data: (stats) => _buildKPICards(stats, currencyFormat),
                 loading: () => _buildLoadingKPIs(),
                 error: (e, s) => _buildErrorCard('Lỗi tải KPIs', e.toString()),
               ),
               const SizedBox(height: 24),
-              staffStatsAsync.when(
-                data: (stats) => _buildStaffOverview(stats),
+              teamAsync.when(
+                data: (team) => _buildStaffOverview(_convertTeamToStats(team)),
                 loading: () => _buildLoadingCard(height: 150),
                 error: (e, s) =>
                     _buildErrorCard('Lỗi tải nhân viên', e.toString()),
               ),
               const SizedBox(height: 24),
-              kpisAsync.when(
-                data: (kpis) => _buildShiftSummary(kpis, currencyFormat),
+              statsAsync.when(
+                data: (stats) => _buildShiftSummary(stats, currencyFormat),
                 loading: () => _buildLoadingCard(height: 200),
                 error: (e, s) =>
                     _buildErrorCard('Lỗi tải ca làm', e.toString()),
@@ -57,6 +58,17 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  // Convert team list to stats map
+  Map<String, dynamic> _convertTeamToStats(List<Staff> team) {
+    final active = team.where((m) => m.status == 'active').length;
+    final onLeave = team.where((m) => m.status == 'on_leave').length;
+    return {
+      'total': team.length,
+      'active': active,
+      'onLeave': onLeave,
+    };
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {

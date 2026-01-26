@@ -52,7 +52,7 @@ class InvitationService {
         'company_id': companyId,
         'invitation_code': invitationCode,
         'position': position,
-        'role': role.value,
+        'role': role.toUpperString(),
         'max_uses': maxUses,
         'current_uses': 0,
         'message': message,
@@ -267,6 +267,8 @@ Link có hiệu lực trong 7 ngày. Hãy đăng ký sớm để bảo đảm v�
 extension UserRoleInvitation on UserRole {
   String get displayName {
     switch (this) {
+      case UserRole.superAdmin:
+        return 'Super Admin';
       case UserRole.manager:
         return 'Quản lý';
       case UserRole.shiftLeader:
@@ -275,11 +277,17 @@ extension UserRoleInvitation on UserRole {
         return 'Nhân viên';
       case UserRole.ceo:
         return 'CEO';
+      case UserRole.driver:
+        return 'Tài xế';
+      case UserRole.warehouse:
+        return 'Nhân viên kho';
     }
   }
 
   String get description {
     switch (this) {
+      case UserRole.superAdmin:
+        return 'Quản lý toàn bộ hệ thống SABOHUB';
       case UserRole.manager:
         return 'Quản lý nhân viên và hoạt động cửa hàng';
       case UserRole.shiftLeader:
@@ -288,6 +296,10 @@ extension UserRoleInvitation on UserRole {
         return 'Thực hiện các nhiệm vụ hàng ngày';
       case UserRole.ceo:
         return 'Quản lý toàn bộ hệ thống';
+      case UserRole.driver:
+        return 'Giao hàng và vận chuyển';
+      case UserRole.warehouse:
+        return 'Quản lý kho hàng và xuất nhập';
     }
   }
 }

@@ -376,6 +376,8 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
 
   String _getRoleDisplayName(UserRole role) {
     switch (role) {
+      case UserRole.superAdmin:
+        return 'Super Admin';
       case UserRole.ceo:
         return 'CEO - Giám đốc';
       case UserRole.manager:
@@ -384,6 +386,10 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
         return 'Shift Leader - Trưởng ca';
       case UserRole.staff:
         return 'Staff - Nhân viên';
+      case UserRole.driver:
+        return 'Driver - Tài xế';
+      case UserRole.warehouse:
+        return 'Warehouse - Nhân viên kho';
     }
   }
 }

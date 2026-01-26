@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/navigation/navigation_models.dart';
+import '../../widgets/grouped_navigation_drawer.dart';
 import '../../widgets/error_boundary.dart';
 import 'ai_management/ai_management_dashboard.dart';
 import 'ceo_analytics_page.dart';
@@ -61,8 +64,31 @@ class _CEOMainLayoutState extends ConsumerState<CEOMainLayout> {
 
   @override
   Widget build(BuildContext context) {
+    final currentRoute = GoRouterState.of(context).uri.path;
+    
     return ErrorBoundary(
       child: Scaffold(
+        appBar: AppBar(
+          title: const Text('SABOHUB CEO'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () {
+                // TODO: Show notifications
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.person_outline),
+              onPressed: () {
+                // TODO: Show profile
+              },
+            ),
+          ],
+        ),
+        drawer: GroupedNavigationDrawer(
+          userRole: UserRole.ceo,
+          currentRoute: currentRoute,
+        ),
         body: Stack(
           children: [
             PageView(

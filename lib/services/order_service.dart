@@ -2,6 +2,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/order.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// **EMPLOYEE KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
+/// - Employee login qua mã nhân viên, KHÔNG có trong auth.users
+/// - ❌ KHÔNG ĐƯỢC dùng `_supabase.auth.currentUser`
+/// - ✅ Caller PHẢI truyền employeeId từ authProvider
+
 /// Order Service
 /// Handles all order-related database operations
 class OrderService {
@@ -46,6 +52,7 @@ class OrderService {
   }
 
   /// Create new order
+  /// [employeeId] - ID của employee từ authProvider (KHÔNG phải từ auth.currentUser)
   Future<Order> createOrder({
     required String companyId,
     String? tableId,
@@ -53,11 +60,9 @@ class OrderService {
     required List<OrderItem> items,
     String? customerName,
     String? notes,
+    String? employeeId,
   }) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) throw Exception('User not authenticated');
-
       final orderData = {
         'id': null, // Auto-generated UUID
         'company_id': companyId,
@@ -66,7 +71,7 @@ class OrderService {
         'status': OrderStatus.pending.name,
         'customer_name': customerName,
         'notes': notes,
-        'created_by': userId,
+        'created_by': employeeId,
         'created_at': DateTime.now().toIso8601String(),
       };
 

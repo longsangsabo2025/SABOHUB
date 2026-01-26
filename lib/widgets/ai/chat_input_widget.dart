@@ -12,12 +12,14 @@ import '../../utils/logger_service.dart';
 class ChatInputWidget extends ConsumerStatefulWidget {
   final String assistantId;
   final String companyId;
+  final String userId; // Required: ID của user từ authProvider
   final VoidCallback? onMessageSent;
 
   const ChatInputWidget({
     super.key,
     required this.assistantId,
     required this.companyId,
+    required this.userId,
     this.onMessageSent,
   });
 
@@ -64,6 +66,7 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
               final uploadedFile = await fileUploadService.uploadFile(
                 assistantId: widget.assistantId,
                 companyId: widget.companyId,
+                userId: widget.userId, // Dùng userId từ widget thay vì auth.currentUser
                 file: File(file.path!),
                 fileName: file.name,
               );

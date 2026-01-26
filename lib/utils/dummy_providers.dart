@@ -1,85 +1,94 @@
-// TEMPORARY DUMMY FUNCTIONS FOR RIVERPOD 3.x MIGRATION
-// These are placeholder functions to prevent compile errors
-// Will be properly implemented later
+// MIGRATED TO REAL PROVIDERS - This file now re-exports from cached_providers.dart
+// Keeping backward compatibility for existing imports
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/store.dart';
 
-// Dummy CachedData class
+// Re-export from cached_providers.dart
+// NOTE: managementTaskServiceProvider is NOT exported here to avoid ambiguous import
+// Use 'import management_task_provider.dart' or 'import cached_providers.dart' directly
+export '../providers/cached_providers.dart'
+    show
+        // Task providers (Manager/CEO)
+        cachedManagerAssignedTasksProvider,
+        cachedManagerCreatedTasksProvider,
+        cachedTaskStatisticsProvider,
+        cachedCeoStrategicTasksProvider,
+        cachedPendingApprovalsProvider,
+        cachedCompanyTaskStatisticsProvider,
+        // Staff providers
+        cachedManagerTeamMembersProvider,
+        cachedStaffStatsProvider,
+        cachedAllStaffProvider,
+        cachedStaffListProvider,
+        // Dashboard providers (Manager)
+        cachedManagerDashboardKPIsProvider,
+        cachedManagerRecentActivitiesProvider,
+        // Service providers (only staffServiceProvider, not managementTaskServiceProvider)
+        staffServiceProvider,
+        // Refresh functions (Manager/CEO)
+        refreshStaffList,
+        refreshManagerAssignedTasks,
+        refreshManagerCreatedTasks,
+        refreshAllManagementTasks,
+        refreshAllManagerData,
+        refreshAllTasksCache,
+        invalidateAllTasksCache,
+        refreshAllStaffData,
+        // Driver providers
+        cachedDriverDeliveriesProvider,
+        cachedDriverDeliveryHistoryProvider,
+        cachedDriverDashboardStatsProvider,
+        refreshDriverDeliveries,
+        refreshDriverHistory,
+        refreshAllDriverData,
+        driverDeliveryListenerProvider,
+        // Warehouse providers
+        cachedWarehouseOrdersProvider,
+        cachedWarehouseDashboardStatsProvider,
+        refreshWarehouseOrders,
+        warehouseOrderListenerProvider,
+        // Shift Leader providers
+        cachedShiftLeaderTeamProvider,
+        cachedShiftLeaderTasksProvider,
+        cachedShiftLeaderDashboardStatsProvider,
+        refreshShiftLeaderData,
+        // Staff providers
+        cachedStaffAttendanceProvider,
+        cachedStaffMyTasksProvider,
+        cachedStaffDashboardStatsProvider,
+        refreshStaffData,
+        // Sales providers
+        cachedSalesRoutesProvider,
+        cachedSalesCustomersProvider,
+        cachedSalesOrdersProvider,
+        cachedSalesDashboardStatsProvider,
+        refreshSalesData,
+        salesOrderListenerProvider,
+        // Super Admin providers
+        cachedAllCompaniesProvider,
+        cachedPlatformStatsProvider,
+        refreshSuperAdminData,
+        // Universal refresh
+        refreshAllDataByRole;
+
+// Dummy CachedData class (still used by some legacy code)
 class CachedData<T> {
   final T data;
   const CachedData(this.data);
 }
 
-// Dummy service classes
-class DummyStaffService {
-  Future<void> updateStaff(
-      String staffId, Map<String, dynamic> updates) async {}
-
-  Future<void> deleteStaff(String staffId) async {}
-
-  Future<void> createStaff(Map<String, dynamic> staffData) async {}
-}
-
-// Dummy refresh functions
-void refreshStaffList(WidgetRef ref) {
-  // TODO: Implement proper refresh logic
-}
-
-void refreshManagerAssignedTasks(WidgetRef ref) {
-  // TODO: Implement proper refresh logic
-}
-
-void refreshManagerCreatedTasks(WidgetRef ref) {
-  // TODO: Implement proper refresh logic
-}
-
-void refreshAllManagementTasks(WidgetRef ref) {
-  // TODO: Implement proper refresh logic
-}
-
-void refreshAllManagerData(WidgetRef ref) {
-  // TODO: Implement proper refresh logic
-}
-
-void refreshAllTasksCache(WidgetRef ref, String? branchId) {
-  // TODO: Implement proper refresh logic
-}
-
-void invalidateAllTasksCache(WidgetRef ref, String? branchId) {
-  // TODO: Implement proper refresh logic
-}
-
-void refreshStores(WidgetRef ref) {
-  // TODO: Implement proper refresh logic
-}
-
-void refreshAllStaffData(WidgetRef ref) {
-  // TODO: Implement proper refresh logic
-}
-
-// Dummy providers - return empty data
-final cachedManagerAssignedTasksProvider = FutureProvider((ref) async => []);
-final cachedManagerCreatedTasksProvider = FutureProvider((ref) async => []);
-final cachedTaskStatisticsProvider =
-    FutureProvider((ref) async => <String, int>{});
-final cachedCeoStrategicTasksProvider = FutureProvider((ref) async => []);
-final cachedPendingApprovalsProvider = FutureProvider((ref) async => []);
-final cachedCompanyTaskStatisticsProvider =
-    FutureProvider((ref) async => <String, dynamic>{});
-final cachedManagerTeamMembersProvider = FutureProvider((ref) async => []);
-final cachedManagerDashboardKPIsProvider =
-    FutureProvider((ref) async => <String, dynamic>{});
-final cachedStaffStatsProvider = FutureProvider((ref) async => <String, int>{});
-final cachedManagerRecentActivitiesProvider = FutureProvider((ref) async => []);
-final cachedAllStaffProvider = FutureProvider((ref) async => []);
-final cachedStaffListProvider = FutureProvider((ref) async => []);
-final simpleAllTasksProvider = FutureProvider((ref) async => []);
-final simpleTaskStatsProvider = FutureProvider((ref) async => <String, int>{});
-
-// Store providers
+// Store providers (not yet migrated)
 final cachedStoresProvider =
     FutureProvider((ref) async => CachedData<List<Store>>([]));
 
-// Service providers
-final staffServiceProvider = Provider((ref) => DummyStaffService());
+// Legacy alias providers (remove when no longer used)
+final simpleAllTasksProvider =
+    FutureProvider((ref) async => <dynamic>[]);
+final simpleTaskStatsProvider =
+    FutureProvider((ref) async => <String, int>{});
+
+// Dummy refresh for stores (not yet migrated)
+void refreshStores(WidgetRef ref) {
+  // TODO: Implement proper refresh logic for stores
+}

@@ -1,35 +1,10 @@
 import 'package:equatable/equatable.dart';
 
-/// User role enumeration
-enum UserRole {
-  ceo('CEO'),
-  manager('MANAGER'),
-  shiftLeader('SHIFT_LEADER'),
-  staff('STAFF');
+import '../constants/roles.dart';
+import 'business_type.dart';
 
-  const UserRole(this.value);
-  final String value;
-
-  String get displayName {
-    switch (this) {
-      case UserRole.ceo:
-        return 'CEO';
-      case UserRole.manager:
-        return 'Quản lý';
-      case UserRole.shiftLeader:
-        return 'Trưởng ca';
-      case UserRole.staff:
-        return 'Nhân viên';
-    }
-  }
-
-  static UserRole fromString(String value) {
-    return UserRole.values.firstWhere(
-      (role) => role.value == value,
-      orElse: () => UserRole.staff,
-    );
-  }
-}
+/// User role enumeration (alias to shared SaboRole for backward compatibility)
+typedef UserRole = SaboRole;
 
 /// User model class
 class User extends Equatable {
@@ -37,10 +12,13 @@ class User extends Equatable {
   final String? name; // Made nullable to match DB schema
   final String? email; // Made nullable for employees table
   final UserRole role;
+  final String? department; // Department for sub-role routing (sales, warehouse, etc.)
   final String? phone;
   final String? avatarUrl;
   final String? branchId; // Add branchId for staff/branch association
   final String? companyId; // Add companyId for company association
+  final String? companyName; // Company name for display
+  final BusinessType? businessType; // Business type for layout routing
   final bool? isActive; // Active status for employee accounts
   final String? inviteToken; // Invite token for employee onboarding
   final DateTime? inviteExpiresAt; // When invite expires
@@ -54,10 +32,13 @@ class User extends Equatable {
     this.name, // Made optional
     this.email, // Made optional for employees
     required this.role,
+    this.department, // Add department
     this.phone,
     this.avatarUrl,
     this.branchId, // Add branchId to constructor
     this.companyId, // Add companyId to constructor
+    this.companyName, // Add companyName to constructor
+    this.businessType, // Add businessType to constructor
     this.isActive, // Add isActive to constructor
     this.inviteToken,
     this.inviteExpiresAt,
@@ -73,10 +54,13 @@ class User extends Equatable {
         name,
         email,
         role,
+        department,
         phone,
         avatarUrl,
         branchId,
         companyId,
+        companyName,
+        businessType,
         isActive,
         inviteToken,
         inviteExpiresAt,
@@ -88,16 +72,44 @@ class User extends Equatable {
 
   /// Create User from JSON
   factory User.fromJson(Map<String, dynamic> json) {
+    // Parse business type from company data if available, OR from direct field (for local storage restore)
+    BusinessType? businessType;
+    final company = json['companies'];
+    if (company != null) {
+      final typeStr = company['business_type'] as String?;
+      if (typeStr != null) {
+        businessType = BusinessType.values.firstWhere(
+          (e) => e.toString().split('.').last == typeStr,
+          orElse: () => BusinessType.billiards,
+        );
+      }
+    } else if (json['business_type'] != null) {
+      // Restore from direct field (local storage)
+      final typeStr = json['business_type'] as String?;
+      if (typeStr != null) {
+        businessType = BusinessType.values.firstWhere(
+          (e) => e.toString().split('.').last == typeStr,
+          orElse: () => BusinessType.billiards,
+        );
+      }
+    }
+
+    // Get company name from joined data OR from direct field
+    final companyName = company?['name'] as String? ?? json['company_name'] as String?;
+    
     return User(
       id: json['id'] as String,
       name: json['full_name'] as String? ??
           json['name'] as String?, // Try full_name first, fallback to name
       email: json['email'] as String? ?? json['username'] as String?, // email can be null, use username if available
       role: UserRole.fromString(json['role'] as String),
+      department: json['department'] as String?, // Add department
       phone: json['phone'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       branchId: json['branch_id'] as String?, // Add branchId
       companyId: json['company_id'] as String?, // Add companyId
+      companyName: companyName, // Add companyName from joined data OR direct field
+      businessType: businessType, // Add businessType from joined data OR direct field
       isActive: json['is_active'] as bool?, // Add isActive
       inviteToken: json['invite_token'] as String?,
       inviteExpiresAt: json['invite_expires_at'] != null
@@ -125,11 +137,14 @@ class User extends Equatable {
       'full_name': name, // Use full_name for DB
       'name': name, // Keep for compatibility
       'email': email,
-      'role': role.value,
+      'role': role.toUpperString(),
+      'department': department, // Add department
       'phone': phone,
       'avatar_url': avatarUrl,
       'branch_id': branchId, // Add branchId
       'company_id': companyId, // Add companyId
+      'company_name': companyName, // Add companyName for local storage
+      'business_type': businessType?.toString().split('.').last, // Add businessType for local storage
       'is_active': isActive, // Add isActive
       'invite_token': inviteToken,
       'invite_expires_at': inviteExpiresAt?.toIso8601String(),
@@ -146,10 +161,13 @@ class User extends Equatable {
     String? name,
     String? email,
     UserRole? role,
+    String? department, // Add department
     String? phone,
     String? avatarUrl,
     String? branchId, // Add branchId
     String? companyId, // Add companyId
+    String? companyName, // Add companyName
+    BusinessType? businessType, // Add businessType
     bool? isActive, // Add isActive
     String? inviteToken,
     DateTime? inviteExpiresAt,
@@ -163,10 +181,13 @@ class User extends Equatable {
       name: name ?? this.name,
       email: email ?? this.email,
       role: role ?? this.role,
+      department: department ?? this.department, // Add department
       phone: phone ?? this.phone,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       branchId: branchId ?? this.branchId, // Add branchId
       companyId: companyId ?? this.companyId, // Add companyId
+      companyName: companyName ?? this.companyName, // Add companyName
+      businessType: businessType ?? this.businessType, // Add businessType
       isActive: isActive ?? this.isActive, // Add isActive
       inviteToken: inviteToken ?? this.inviteToken,
       inviteExpiresAt: inviteExpiresAt ?? this.inviteExpiresAt,
@@ -207,6 +228,8 @@ class User extends Equatable {
   /// Get user display name based on role
   String get displayName {
     switch (role) {
+      case UserRole.superAdmin:
+        return '🛡️ $name (Super Admin)';
       case UserRole.ceo:
         return '👔 $name (CEO)';
       case UserRole.manager:
@@ -215,12 +238,18 @@ class User extends Equatable {
         return '⏰ $name (Trưởng ca)';
       case UserRole.staff:
         return '👤 $name (Nhân viên)';
+      case UserRole.driver:
+        return '🚗 $name (Tài xế)';
+      case UserRole.warehouse:
+        return '📦 $name (Nhân viên kho)';
     }
   }
 
   /// Get role display name in Vietnamese
   String get roleDisplayName {
     switch (role) {
+      case UserRole.superAdmin:
+        return 'Super Admin';
       case UserRole.ceo:
         return 'CEO';
       case UserRole.manager:
@@ -229,6 +258,10 @@ class User extends Equatable {
         return 'Trưởng ca';
       case UserRole.staff:
         return 'Nhân viên';
+      case UserRole.driver:
+        return 'Tài xế';
+      case UserRole.warehouse:
+        return 'Nhân viên kho';
     }
   }
 }

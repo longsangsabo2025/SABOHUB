@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/store.dart';
 import '../../utils/dummy_providers.dart';
 import '../../services/store_service.dart';
+import '../../providers/auth_provider.dart';
 
 /// Store Service Provider (for mutations)
 final storeServiceProvider = Provider<StoreService>((ref) {
@@ -379,10 +380,11 @@ class _CEOStoresPageState extends ConsumerState<CEOStoresPage>
             onPressed: () async {
               Navigator.pop(context);
               final scaffoldMessenger = ScaffoldMessenger.of(context);
+              final companyId = ref.read(authProvider).user?.companyId ?? '';
               
               try {
                 final service = ref.read(storeServiceProvider);
-                await service.deleteStore(store.id);
+                await service.deleteStore(store.id, companyId: companyId);
 
                 // ✅ Refresh cached provider
                 refreshStores(ref);
@@ -497,6 +499,7 @@ class _StoreFormDialogState extends ConsumerState<_StoreFormDialog> {
 
     try {
       final service = ref.read(storeServiceProvider);
+      final companyId = ref.read(authProvider).user?.companyId ?? '';
 
       if (widget.store == null) {
         // Create new store
@@ -508,6 +511,7 @@ class _StoreFormDialogState extends ConsumerState<_StoreFormDialog> {
           phone: _phoneController.text.trim().isEmpty
               ? null
               : _phoneController.text.trim(),
+          companyId: companyId,
         );
       } else {
         // Update existing store
@@ -519,7 +523,7 @@ class _StoreFormDialogState extends ConsumerState<_StoreFormDialog> {
           'phone': _phoneController.text.trim().isEmpty
               ? null
               : _phoneController.text.trim(),
-        });
+        }, companyId: companyId);
       }
 
       // ✅ Refresh cached provider

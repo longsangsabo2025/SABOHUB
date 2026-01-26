@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../providers/cached_data_providers.dart'; // PHASE 3A - Cached providers
 import '../../providers/ceo_tab_provider.dart';
 import '../../widgets/multi_account_switcher.dart';
@@ -197,8 +198,8 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1976D2), Color(0xFF1565C0)],
+        gradient: LinearGradient(
+          colors: [AppTheme.primaryPurple, AppTheme.secondaryCyan],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -454,7 +455,7 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
               child: _buildActionCard(
                 'Báo cáo tài chính',
                 Icons.assessment,
-                const Color(0xFF1976D2),
+                AppTheme.primaryPurple,
                 () {
                   // Navigate to Reports tab
                   _navigateToTab(CEOTabs.reports);

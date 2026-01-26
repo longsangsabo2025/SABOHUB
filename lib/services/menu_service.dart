@@ -2,6 +2,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/menu_item.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// **EMPLOYEE KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
+/// - Employee login qua mã nhân viên, KHÔNG có trong auth.users
+/// - ❌ KHÔNG ĐƯỢC dùng `_supabase.auth.currentUser`
+/// - ✅ Caller PHẢI truyền employeeId từ authProvider
+
 /// Menu Service
 /// Handles all menu item/product-related database operations
 /// Uses 'products' table in Supabase for menu items
@@ -48,6 +54,7 @@ class MenuService {
   }
 
   /// Create new menu item
+  /// [employeeId] - ID của employee từ authProvider (KHÔNG phải từ auth.currentUser)
   Future<MenuItem> createMenuItem({
     required String name,
     required MenuCategory category,
@@ -55,11 +62,9 @@ class MenuService {
     String? description,
     String? imageUrl,
     String? companyId,
+    String? employeeId,
   }) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) throw Exception('User not authenticated');
-
       final data = {
         'name': name,
         'category': _categoryToDbString(category),
@@ -70,7 +75,7 @@ class MenuService {
         'image_url': imageUrl,
         'is_active': true,
         'store_id': companyId, // Using store_id as company_id
-        'created_by': userId,
+        'created_by': employeeId,
       };
 
       final response =

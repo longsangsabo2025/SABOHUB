@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../core/navigation/navigation_models.dart';
 import '../pages/manager/manager_analytics_page.dart';
@@ -10,7 +11,10 @@ import '../pages/manager/manager_staff_page.dart';
 import '../pages/manager/manager_tasks_page.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/error_boundary.dart';
+import '../widgets/grouped_navigation_drawer.dart';
 import '../widgets/unified_bottom_navigation.dart';
+import '../widgets/realtime_notification_widgets.dart';
+import '../utils/app_logger.dart';
 
 /// Manager Main Layout
 /// Complete layout with navigation for manager role
@@ -52,10 +56,31 @@ class _ManagerMainLayoutState extends ConsumerState<ManagerMainLayout>
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final companyId = authState.user?.companyId;
+    final user = authState.user;
+    final companyId = user?.companyId;
+    final currentRoute = GoRouterState.of(context).uri.path;
+
+    // 🔥 DEBUG: Log why this layout is shown instead of DistributionManagerLayout
+    AppLogger.box('⚠️ SABO ManagerLayout SHOWN', {
+      'userName': user?.name ?? 'null',
+      'role': user?.role.toString() ?? 'null',
+      'businessType': user?.businessType?.toString() ?? '❌ NULL',
+      'companyName': user?.companyName ?? 'null',
+      'companyId': user?.companyId ?? 'null',
+    });
 
     return ErrorBoundary(
       child: Scaffold(
+        appBar: AppBar(
+          title: const Text('SABOHUB Manager'),
+          actions: const [
+            RealtimeNotificationBell(),
+          ],
+        ),
+        drawer: GroupedNavigationDrawer(
+          userRole: UserRole.manager,
+          currentRoute: currentRoute,
+        ),
         body: Stack(
           children: [
             PageView(
@@ -76,6 +101,22 @@ class _ManagerMainLayoutState extends ConsumerState<ManagerMainLayout>
                 const ManagerAnalyticsPage(),
                 const ManagerStaffPage(),
               ],
+            ),
+            // 🔥 DEBUG BANNER - Shows why wrong layout is displayed
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                color: Colors.red.withValues(alpha: 0.9),
+                child: Text(
+                  '⚠️ DEBUG: businessType = ${user?.businessType?.toString() ?? "NULL"} | '
+                  'Expected: distribution for Odori',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ),
           ],
         ),

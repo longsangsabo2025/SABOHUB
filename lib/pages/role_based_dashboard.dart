@@ -3,18 +3,31 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../layouts/manager_main_layout.dart';
+import '../pages/super_admin/super_admin_main_layout.dart';
+import '../layouts/distribution_manager_layout.dart';
+import '../layouts/distribution_sales_layout.dart';
+import '../layouts/distribution_warehouse_layout.dart';
+import '../layouts/distribution_driver_layout.dart';
+import '../layouts/distribution_customer_service_layout.dart';
+import '../layouts/distribution_finance_layout.dart';
 import '../layouts/shift_leader_main_layout.dart';
+import '../layouts/driver_main_layout.dart';
+import '../layouts/warehouse_main_layout.dart';
 import '../pages/ceo/ceo_main_layout.dart';
 import '../pages/staff_main_layout.dart';
 import '../providers/auth_provider.dart';
 import '../models/user.dart' as app_user;
+import '../utils/app_logger.dart';
 
 /// User Role Enum
 enum UserRole {
+  superAdmin('SUPER_ADMIN', 'Super Admin', Color(0xFFEF4444), Icons.admin_panel_settings),
   ceo('CEO', 'Tổng Giám Đốc', Color(0xFF3B82F6), Icons.business_center),
   manager('MANAGER', 'Quản Lý', Color(0xFF10B981), Icons.supervisor_account),
   shiftLeader('SHIFT_LEADER', 'Trưởng Ca', Color(0xFF8B5CF6), Icons.group),
-  staff('STAFF', 'Nhân Viên', Color(0xFF10B981), Icons.person);
+  staff('STAFF', 'Nhân Viên', Color(0xFF10B981), Icons.person),
+  driver('DRIVER', 'Tài Xế', Color(0xFF0EA5E9), Icons.local_shipping),
+  warehouse('WAREHOUSE', 'Nhân Viên Kho', Color(0xFFF97316), Icons.warehouse);
 
   const UserRole(this.id, this.displayName, this.color, this.icon);
 
@@ -191,7 +204,7 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
-              '4 Role Navigation Systems',
+              '6 Role Navigation Systems',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.white,
@@ -310,6 +323,8 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
 
   String _getRoleDescription(UserRole role) {
     switch (role) {
+      case UserRole.superAdmin:
+        return '6 tabs • Platform';
       case UserRole.ceo:
         return '4 tabs • Executive';
       case UserRole.manager:
@@ -318,6 +333,10 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
         return '3 tabs • Operations';
       case UserRole.staff:
         return '5 tabs • Daily Work';
+      case UserRole.driver:
+        return '3 tabs • Delivery';
+      case UserRole.warehouse:
+        return '3 tabs • Warehouse';
     }
   }
 
@@ -356,6 +375,8 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
           _buildInfoRow('✅ MANAGER System', '4 tabs - Business management'),
           _buildInfoRow('✅ SHIFT_LEADER System', '3 tabs - Operations'),
           _buildInfoRow('✅ STAFF System', '5 tabs - Daily operations'),
+          _buildInfoRow('✅ DRIVER System', '3 tabs - Delivery tasks'),
+          _buildInfoRow('✅ WAREHOUSE System', '3 tabs - Warehouse ops'),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
@@ -418,6 +439,8 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
   // Map app_user.UserRole to local UserRole enum
   UserRole _mapUserRoleToEnum(app_user.UserRole userRole) {
     switch (userRole) {
+      case app_user.UserRole.superAdmin:
+        return UserRole.superAdmin;
       case app_user.UserRole.ceo:
         return UserRole.ceo;
       case app_user.UserRole.manager:
@@ -426,20 +449,85 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
         return UserRole.shiftLeader;
       case app_user.UserRole.staff:
         return UserRole.staff;
+      case app_user.UserRole.driver:
+        return UserRole.driver;
+      case app_user.UserRole.warehouse:
+        return UserRole.warehouse;
     }
   }
 
   Widget _buildRoleLayout(UserRole role) {
+    // Get current user to check business type and department
+    final currentUser = ref.read(currentUserProvider);
+    final businessType = currentUser?.businessType;
+    final department = currentUser?.department;
+    
+    // 🔥 DEBUG: Log routing decision
+    AppLogger.box('🧭 ROUTING DECISION', {
+      'role': role.toString(),
+      'businessType': businessType?.toString() ?? 'NULL',
+      'department': department ?? 'NULL',
+      'isDistribution': businessType?.isDistribution.toString() ?? 'N/A',
+      'userName': currentUser?.name ?? 'Unknown',
+      'companyName': currentUser?.companyName ?? 'Unknown',
+    });
+    
     switch (role) {
+      case UserRole.superAdmin:
+        AppLogger.nav('→ Routing to SuperAdminMainLayout');
+        return const SuperAdminMainLayout();
       case UserRole.ceo:
-        // Don't use GlobalKey here - causes conflict when navigating to other CEO pages
+        AppLogger.nav('→ Routing to CEOMainLayout');
         return const CEOMainLayout();
       case UserRole.manager:
+        // Route to different layout based on business type
+        if (businessType != null && businessType.isDistribution) {
+          AppLogger.nav('→ Routing to DistributionManagerLayout (isDistribution=true)');
+          return const DistributionManagerLayout();
+        }
+        AppLogger.nav('→ Routing to ManagerMainLayout (default)');
         return const ManagerMainLayout();
       case UserRole.shiftLeader:
+        AppLogger.nav('→ Routing to ShiftLeaderMainLayout');
         return const ShiftLeaderMainLayout();
       case UserRole.staff:
+        // Route STAFF based on department and business type
+        if (businessType != null && businessType.isDistribution) {
+          if (department == 'sales') {
+            AppLogger.nav('→ Routing to DistributionSalesLayout (staff + sales dept + distribution)');
+            return const DistributionSalesLayout();
+          }
+          if (department == 'warehouse') {
+            AppLogger.nav('→ Routing to DistributionWarehouseLayout (staff + warehouse dept + distribution)');
+            return const DistributionWarehouseLayout();
+          }
+          if (department == 'delivery' || department == 'driver') {
+            AppLogger.nav('→ Routing to DistributionDriverLayout (staff + delivery dept + distribution)');
+            return const DistributionDriverLayout();
+          }
+          if (department == 'customer_service') {
+            AppLogger.nav('→ Routing to DistributionCustomerServiceLayout (staff + customer_service dept + distribution)');
+            return const DistributionCustomerServiceLayout();
+          }
+          if (department == 'finance') {
+            AppLogger.nav('→ Routing to DistributionFinanceLayout (staff + finance dept + distribution)');
+            return const DistributionFinanceLayout();
+          }
+          // Other distribution staff go to default staff layout for now
+        }
+        AppLogger.nav('→ Routing to StaffMainLayout');
         return const StaffMainLayout();
+      case UserRole.driver:
+        // Distribution company drivers use DistributionDriverLayout
+        if (businessType != null && businessType.isDistribution) {
+          AppLogger.nav('→ Routing to DistributionDriverLayout (driver + distribution)');
+          return const DistributionDriverLayout();
+        }
+        AppLogger.nav('→ Routing to DriverMainLayout');
+        return const DriverMainLayout();
+      case UserRole.warehouse:
+        AppLogger.nav('→ Routing to WarehouseMainLayout');
+        return const WarehouseMainLayout();
     }
   }
 }

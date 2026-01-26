@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/ai_assistant.dart';
 import '../../models/ai_message.dart';
 import '../../providers/ai_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/ai/chat_input_widget.dart';
 import '../../widgets/ai/chat_message_widget.dart';
 import '../../widgets/ai/file_gallery_widget.dart';
@@ -134,6 +135,7 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
         ChatInputWidget(
           assistantId: assistant.id,
           companyId: widget.companyId,
+          userId: ref.read(authProvider).user?.id ?? '',
           onMessageSent: () {
             // Scroll to bottom after sending message
             Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);

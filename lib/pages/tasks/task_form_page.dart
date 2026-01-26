@@ -674,6 +674,8 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
 
   Color _getRoleColor(UserRole role) {
     switch (role) {
+      case UserRole.superAdmin:
+        return Colors.red;
       case UserRole.ceo:
         return Colors.purple;
       case UserRole.manager:
@@ -682,11 +684,17 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
         return Colors.orange;
       case UserRole.staff:
         return Colors.green;
+      case UserRole.driver:
+        return Colors.teal;
+      case UserRole.warehouse:
+        return Colors.brown;
     }
   }
 
   String _getRoleDisplayName(UserRole role) {
     switch (role) {
+      case UserRole.superAdmin:
+        return 'Super Admin';
       case UserRole.ceo:
         return 'Giám đốc';
       case UserRole.manager:
@@ -695,6 +703,10 @@ class _TaskFormPageState extends ConsumerState<TaskFormPage> {
         return 'Trưởng ca';
       case UserRole.staff:
         return 'Nhân viên';
+      case UserRole.driver:
+        return 'Tài xế';
+      case UserRole.warehouse:
+        return 'Nhân viên kho';
     }
   }
 

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/auth_provider.dart';
+import '../../constants/roles.dart';
+import '../../models/user.dart' as app_user;
 
 /// Staff Profile Page
 /// Personal settings and profile management for staff
@@ -17,6 +20,9 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+    
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: _buildAppBar(),
@@ -24,13 +30,13 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _buildProfileHeader(),
+            _buildProfileHeader(user),
             const SizedBox(height: 24),
             _buildStatsSection(),
             const SizedBox(height: 24),
-            _buildWorkInfoSection(),
+            _buildWorkInfoSection(user),
             const SizedBox(height: 24),
-            _buildSettingsSection(),
+            _buildSettingsSection(user),
             const SizedBox(height: 24),
             _buildSupportSection(),
           ],
@@ -119,22 +125,64 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
     );
   }
 
-  Widget _buildProfileHeader() {
+  String _getRoleLabel(SaboRole role) {
+    switch (role) {
+      case SaboRole.superAdmin:
+        return 'Super Admin';
+      case SaboRole.ceo:
+        return 'Giám đốc điều hành';
+      case SaboRole.manager:
+        return 'Quản lý';
+      case SaboRole.shiftLeader:
+        return 'Trưởng ca';
+      case SaboRole.staff:
+        return 'Nhân viên';
+      case SaboRole.driver:
+        return 'Tài xế giao hàng';
+      case SaboRole.warehouse:
+        return 'Nhân viên kho';
+    }
+  }
+
+  Color _getRoleColor(SaboRole role) {
+    switch (role) {
+      case SaboRole.superAdmin:
+        return const Color(0xFFEF4444);
+      case SaboRole.ceo:
+        return const Color(0xFF8B5CF6);
+      case SaboRole.manager:
+        return const Color(0xFF3B82F6);
+      case SaboRole.shiftLeader:
+        return const Color(0xFFF59E0B);
+      case SaboRole.staff:
+        return const Color(0xFF10B981);
+      case SaboRole.driver:
+        return const Color(0xFF0EA5E9);
+      case SaboRole.warehouse:
+        return const Color(0xFFF97316);
+    }
+  }
+
+  Widget _buildProfileHeader(app_user.User? user) {
+    final roleColor = user != null ? _getRoleColor(user.role) : const Color(0xFF10B981);
+    final userName = user?.name ?? 'Người dùng';
+    final roleLabel = user != null ? _getRoleLabel(user.role) : 'Nhân viên';
+    
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF10B981),
-            Color(0xFF059669),
+            roleColor,
+            roleColor.withOpacity(0.8),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF10B981).withValues(alpha: 0.3),
+            color: roleColor.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -147,11 +195,12 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
               CircleAvatar(
                 radius: 50,
                 backgroundColor: Colors.white.withValues(alpha: 0.2),
-                child: const Icon(
-                  Icons.person,
-                  size: 50,
-                  color: Colors.white,
-                ),
+                backgroundImage: user != null && user.avatarUrl != null 
+                    ? NetworkImage(user.avatarUrl!) 
+                    : null,
+                child: user == null || user.avatarUrl == null 
+                    ? const Icon(Icons.person, size: 50, color: Colors.white)
+                    : null,
               ),
               Positioned(
                 bottom: 0,
@@ -169,19 +218,19 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.camera_alt,
                     size: 16,
-                    color: Color(0xFF10B981),
+                    color: roleColor,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Nguyễn Văn Staff',
-            style: TextStyle(
+          Text(
+            userName,
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -194,9 +243,9 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
-              'Nhân viên phục vụ',
-              style: TextStyle(
+            child: Text(
+              roleLabel,
+              style: const TextStyle(
                 fontSize: 14,
                 color: Colors.white,
               ),
@@ -342,7 +391,15 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
     );
   }
 
-  Widget _buildWorkInfoSection() {
+  Widget _buildWorkInfoSection(app_user.User? user) {
+    final employeeId = user?.id?.substring(0, 8).toUpperCase() ?? 'N/A';
+    final email = user?.email ?? 'Chưa cập nhật';
+    final phone = user?.phone ?? 'Chưa cập nhật';
+    final createdAt = user?.createdAt;
+    final joinDate = createdAt != null 
+        ? '${createdAt.day.toString().padLeft(2, '0')}/${createdAt.month.toString().padLeft(2, '0')}/${createdAt.year}'
+        : 'Chưa xác định';
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -367,11 +424,10 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildInfoItem('Mã nhân viên', 'STAFF001', Icons.badge),
-          _buildInfoItem('Ngày vào làm', '15/03/2024', Icons.calendar_today),
-          _buildInfoItem('Khu vực chính', 'Khu A & Bar', Icons.location_on),
-          _buildInfoItem('Ca làm ưa thích', 'Ca chiều', Icons.schedule),
-          _buildInfoItem('Lương cơ bản', '8.5M VNĐ/tháng', Icons.attach_money),
+          _buildInfoItem('Mã nhân viên', employeeId, Icons.badge),
+          _buildInfoItem('Ngày vào làm', joinDate, Icons.calendar_today),
+          _buildInfoItem('Email', email, Icons.email),
+          _buildInfoItem('Điện thoại', phone, Icons.phone),
         ],
       ),
     );
@@ -422,7 +478,10 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
     );
   }
 
-  Widget _buildSettingsSection() {
+  Widget _buildSettingsSection(app_user.User? user) {
+    final isDriver = user?.role == SaboRole.driver;
+    final isWarehouse = user?.role == SaboRole.warehouse;
+    
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -455,7 +514,21 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
             _notificationsEnabled,
             (value) => setState(() => _notificationsEnabled = value),
           ),
-          _buildSwitchItem(
+          if (isDriver) _buildSwitchItem(
+            'Chia sẻ vị trí GPS',
+            'Cho phép theo dõi vị trí khi giao hàng',
+            Icons.gps_fixed,
+            _locationSharing,
+            (value) => setState(() => _locationSharing = value),
+          ),
+          if (isWarehouse) _buildSwitchItem(
+            'Quét mã QR tự động',
+            'Tự động quét khi mở ứng dụng',
+            Icons.qr_code_scanner,
+            _locationSharing,
+            (value) => setState(() => _locationSharing = value),
+          ),
+          if (!isDriver && !isWarehouse) _buildSwitchItem(
             'Chia sẻ vị trí',
             'Cho phép quản lý biết vị trí khi làm việc',
             Icons.location_on,
@@ -690,9 +763,10 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
             child: const Text('Hủy'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // Handle logout
+              // Perform actual logout
+              await ref.read(authProvider.notifier).logout();
             },
             child: const Text(
               'Đăng xuất',

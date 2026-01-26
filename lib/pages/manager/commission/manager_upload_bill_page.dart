@@ -57,6 +57,7 @@ class _ManagerUploadBillPageState extends ConsumerState<ManagerUploadBillPage> {
 
     final user = ref.read(authProvider);
     final companyId = user.user?.companyId;
+    final userId = user.user?.id ?? '';
 
     if (companyId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -85,6 +86,7 @@ class _ManagerUploadBillPageState extends ConsumerState<ManagerUploadBillPage> {
       // Create bill
       await _billService.uploadBill(
         companyId: companyId,
+        userId: userId,
         billNumber: _billNumberController.text,
         billDate: _billDate,
         totalAmount: double.parse(_totalAmountController.text),

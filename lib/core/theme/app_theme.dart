@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// App theme configuration matching the iOS design system from React Native version
+/// App theme configuration matching SABOHUB brand (purple/cyan) from web
 class AppTheme {
-  // Color Scheme
-  static const Color primaryBlue = Color(0xFF3B82F6);
-  static const Color secondaryBlue = Color(0xFF1E40AF);
+  // Brand Colors (matching web CSS variables)
+  static const Color primaryPurple = Color(0xFF7C3AED); // --primary: 262 83% 58%
+  static const Color secondaryCyan = Color(0xFF06B6D4);  // --secondary: 188 94% 43%
   static const Color successGreen = Color(0xFF10B981);
   static const Color warningOrange = Color(0xFFF59E0B);
   static const Color errorRed = Color(0xFFEF4444);
@@ -14,13 +14,16 @@ class AppTheme {
   static const Color textDark = Color(0xFF1E293B);
   static const Color textLight = Color(0xFF64748B);
 
+  // Design tokens (matching web)
+  static const double radius = 12.0; // --radius: 0.75rem
+
   /// Light theme configuration
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: primaryBlue,
+      seedColor: primaryPurple,
       brightness: Brightness.light,
-      primary: primaryBlue,
-      secondary: secondaryBlue,
+      primary: primaryPurple,
+      secondary: secondaryCyan,
       error: errorRed,
       surface: surfaceGray,
       onSurface: textDark,
@@ -47,10 +50,10 @@ class AppTheme {
   /// Dark theme configuration
   static ThemeData get darkTheme {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: primaryBlue,
+      seedColor: primaryPurple,
       brightness: Brightness.dark,
-      primary: primaryBlue,
-      secondary: secondaryBlue,
+      primary: primaryPurple,
+      secondary: secondaryCyan,
       error: errorRed,
     );
 

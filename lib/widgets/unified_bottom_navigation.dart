@@ -44,7 +44,7 @@ class _UnifiedBottomNavigationState
       vsync: this,
     );
 
-    _navigationItems = NavigationConfig.getNavigationForRole(widget.userRole);
+    _navigationItems = NavigationConfig.getItemsForRole(widget.userRole);
   }
 
   @override
@@ -77,10 +77,16 @@ class _UnifiedBottomNavigationState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // Guard: BottomNavigationBar requires at least 2 items
+    if (_navigationItems.length < 2) {
+      // Return empty container or single item layout
+      return const SizedBox.shrink();
+    }
+
     // Use standard BottomNavigationBar for single row (max 6 items)
     if (_navigationItems.length <= 6) {
       return BottomNavigationBar(
-        currentIndex: widget.currentIndex,
+        currentIndex: widget.currentIndex.clamp(0, _navigationItems.length - 1),
         onTap: _handleTap,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: colorScheme.primary,

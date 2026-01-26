@@ -436,7 +436,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   void _navigateToOrderForm([Order? order]) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => OrderFormPage(order: order),
+        builder: (context) => const OrderFormPage(),
       ),
     );
   }

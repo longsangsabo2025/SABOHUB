@@ -1,7 +1,7 @@
 name: flutter_sabohub
 description: 'SABOHUB - Quản lý quán bida chuyên nghiệp'
 publish_to: 'none'
-version: 1.0.2+2
+version: 1.0.3+3
 
 environment:
   sdk: ^3.5.0
@@ -14,15 +14,27 @@ dependencies:
   flutter_riverpod: ^3.0.3
 
   # Navigation
-  go_router: ^16.3.0
+  go_router: ^14.8.0
 
   # Network
   dio: ^5.4.0
   http: ^1.2.2
+  connectivity_plus: ^6.1.3  # For offline detection
 
-  # Location Services
-  geolocator: 13.0.4
+  # Location Services - Updated to latest (2025)
+  geolocator: ^14.0.2
+  geolocator_android: ^5.0.2  # Phải phù hợp với geolocator 14.x
+  geolocator_apple: ^2.3.10
   permission_handler: ^12.0.1
+  geocoding: ^3.0.0
+  
+  # Background Geolocation - Sử dụng geolocator với foreground service
+  # flutter_background_geolocation: Removed - license required for v5
+  
+  # Maps - Free OpenStreetMap solution
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
+  flutter_polyline_points: ^2.1.0
 
   # Supabase
   supabase_flutter: ^2.10.3
@@ -62,6 +74,11 @@ dependencies:
   
   # Charts
   fl_chart: ^0.70.1
+  image_picker: ^1.2.1
+  
+  # PDF & Printing
+  pdf: ^3.11.2
+  printing: ^5.13.4
 
 dev_dependencies:
   flutter_test:

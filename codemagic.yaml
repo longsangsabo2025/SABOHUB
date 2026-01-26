@@ -1,241 +1,276 @@
 # =============================================================================
-# CODEMAGIC YAML CONFIGURATION - FORCE USE THIS INSTEAD OF WORKFLOW EDITOR
+# CODEMAGIC YAML CONFIGURATION - SABOHUB
 # =============================================================================
-# This file MUST override any workflow editor configuration!
+# Deploy to App Store & Google Play - Hardcoded values for testing
 # =============================================================================
 
 workflows:
   ios-workflow:
-    name: iOS App Store YAML Mode
+    name: iOS App Store
     max_build_duration: 120
-    instance_type: mac_mini_m1
-    
-    # Note: App Store Connect credentials are loaded from environment group 'app_store'
-    # No integration needed - using environment variables instead
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: sabohub-asc
     
     environment:
-      groups:
-        - app_store # Group contains: APP_STORE_CONNECT_PRIVATE_KEY, BUNDLE_ID, ISSUER_ID, KEY_IDENTIFIER
-      flutter: stable
-      xcode: latest
-      cocoapods: default
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.sabohub.app
+      flutter: stable
+      xcode: latest
+      cocoapods: default
       vars:
         BUNDLE_ID: "com.sabohub.app"
         APP_NAME: "SABOHUB"
-        # Apple Developer Portal - Hardcoded for testing
-        APP_STORE_CONNECT_ISSUER_ID: "4405e7f9-8e89-495a-b535-f9e83e96a7ad"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "JL9L6RNRXB"
-        APP_STORE_CONNECT_PRIVATE_KEY: |
-          -----BEGIN PRIVATE KEY-----
-          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgODcxzeojG2ZCyrp5
-          IUQYz9Hmt1j1SP+ir+/7F4Xyf2+gCgYIKoZIzj0DAQehRANCAATvHGwxR+IIQMjz
-          grkecL92Sc33Hu7CmCHNEWS/G/eUKtYL03bpH4dZ/HdBNGnovyRKI3GvTzHGC461
-          gsx6uVPf
-          -----END PRIVATE KEY-----
-        # Environment variables from .env file
+        # Supabase - Hardcoded
         SUPABASE_URL: "https://dqddxowyikefqcdiioyh.supabase.co"
         SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3OTcxMzYsImV4cCI6MjA3NzM3MzEzNn0.okmsG2R248fxOHUEFFl5OBuCtjtCIlO9q9yVSyCV25Y"
         SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTc5NzEzNiwiZXhwIjoyMDc3MzczMTM2fQ.kPmlYlVd7wi_Luzp3MHjXmR8gUqrqDHy9PSzwFDq3XI"
-        # Google Drive credentials (for documents feature)
+        # Google Drive credentials
         GOOGLE_DRIVE_CLIENT_ID_IOS: "321771498359-ocllju34h6cd4040ipoeq41j8mmg08p8.apps.googleusercontent.com"
         GOOGLE_DRIVE_CLIENT_ID_WEB: "321771498359-gcm0og29knjjmaevr7uv0aa27vam765u.apps.googleusercontent.com"
-        GOOGLE_DRIVE_CLIENT_ID_ANDROID: "321771498359-tmnp2ks7n6ipjp10fsrjrefrilr6ts15.apps.googleusercontent.com"
     
     cache:
       cache_paths:
         - $HOME/.pub-cache
         - $HOME/Library/Caches/CocoaPods
     
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    
     scripts:
-      # 1. Clean iOS dependencies (avoid Podfile.lock conflicts)
-      - name: Clean iOS dependencies
+      - name: Create .env file
         script: |
-          echo "🧹 Cleaning iOS artifacts..."
-          cd ios
-          rm -rf Pods
-          rm -rf Podfile.lock
-          cd ..
-      
-      # 2. Set up environment file
-      - name: Set up .env file
-        script: |
-          echo "📝 Creating .env file with environment variables..."
-          cat <<EOF > .env
+          echo "📄 Creating .env file..."
+          cat > .env << EOF
           SUPABASE_URL=$SUPABASE_URL
           SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
           SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
           GOOGLE_DRIVE_CLIENT_ID_IOS=$GOOGLE_DRIVE_CLIENT_ID_IOS
           GOOGLE_DRIVE_CLIENT_ID_WEB=$GOOGLE_DRIVE_CLIENT_ID_WEB
-          GOOGLE_DRIVE_CLIENT_ID_ANDROID=$GOOGLE_DRIVE_CLIENT_ID_ANDROID
           EOF
           echo "✅ .env file created"
-      
-      # 3. Get Flutter packages
+          
+      - name: Clean and prepare
+        script: |
+          echo "🧹 Cleaning build artifacts..."
+          flutter clean
+          rm -rf ios/Pods
+          rm -rf ios/Podfile.lock
+          rm -rf $HOME/Library/Caches/CocoaPods
+          echo "✅ Cleaned"
+          
       - name: Get Flutter packages
-        script: |
-          echo "📦 Getting Flutter packages..."
-          flutter packages pub get
-      
-      # 4. Install CocoaPods
-      - name: Install pods
-        script: |
-          echo "☕ Installing CocoaPods dependencies..."
-          find . -name "Podfile" -execdir pod install \;
-          echo "✅ Pods installed"
-      
-      # 5. Auto-increment build number (avoid duplicate version errors)
+        script: flutter pub get
+        
       - name: Auto-increment build number
         script: |
-          echo "🔢 Auto-incrementing build number to avoid duplicates..."
+          echo "🔢 Auto-incrementing build number..."
           CURRENT_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
-          echo "Current version: $CURRENT_VERSION"
-          
-          # Split version into name and build number
-          VERSION_NAME=$(echo $CURRENT_VERSION | cut -d'+' -f1)  # e.g., 1.0.8
-          BUILD_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f2)  # e.g., 30
-          
-          # Increment build number
+          VERSION_NAME=$(echo $CURRENT_VERSION | cut -d'+' -f1)
+          BUILD_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f2)
           NEW_BUILD_NUMBER=$((BUILD_NUMBER + 1))
           NEW_VERSION="${VERSION_NAME}+${NEW_BUILD_NUMBER}"
-          
-          echo "📱 Updating version to: $NEW_VERSION"
+          echo "📱 Updating to: $NEW_VERSION"
           sed -i.bak "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
-          
-          echo "✅ Version updated successfully"
           grep "^version:" pubspec.yaml
-      
-      # 6. Configure Xcode project with provisioning profiles
-      - name: Set up code signing in Xcode
+        
+      - name: Install CocoaPods
         script: |
-          echo "🔧 Configuring Xcode project with provisioning profiles..."
+          echo "☕ Installing CocoaPods..."
+          cd ios && pod install --verbose
+          
+      - name: Configure code signing
+        script: |
+          echo "🔧 Configuring code signing..."
           xcode-project use-profiles
-          echo "✅ Xcode code signing configured"
-      
-      # 7. Flutter analyze
-      - name: Flutter analyze
+          echo "🔐 Available signing identities:"
+          security find-identity -v -p codesigning
+          
+      - name: Build iOS App
         script: |
-          echo "🔍 Running Flutter analyze..."
-          flutter analyze
-      
-      # 8. Flutter test (optional)
-      # - name: Flutter test
-      #   script: |
-      #     flutter test
-      #   ignore_failure: true
-      
-      # 9. Build iOS Archive
-      - name: Build iOS Archive
-        script: |
-          echo "🏗️  Building iOS Archive for App Store..."
-          flutter build ios --release --no-codesign \
-            --dart-define=SUPABASE_URL=$SUPABASE_URL \
-            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
-            --dart-define=SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY \
-            --dart-define=ENABLE_QUICK_LOGIN=true
-          echo "✅ iOS build completed"
-      
-      # 10. Create Xcode Archive
-      - name: Create Xcode Archive
-        script: |
+          echo "🚀 Building iOS app..."
+          flutter build ios --release --verbose \
+            --dart-define="SUPABASE_URL=$SUPABASE_URL" \
+            --dart-define="SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" \
+            --dart-define="SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" \
+            --no-codesign
+          
           echo "📦 Creating Xcode archive..."
           xcodebuild -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
-            -archivePath build/ios/Runner.xcarchive \
-            archive
+            -archivePath build/ios/archive/Runner.xcarchive \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=B465SC3K74
           echo "✅ Archive created"
-      
-      # 11. Export IPA with provisioning profile
-      - name: Export IPA for App Store
+          
+      - name: Export IPA
         script: |
-          echo "📤 Exporting IPA for App Store distribution..."
+          echo "📤 Exporting IPA..."
+          
+          # Find provisioning profile UUID
+          PROFILE_UUID=""
+          for profile in "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision; do
+            if [ -f "$profile" ]; then
+              APP_ID=$(security cms -D -i "$profile" 2>/dev/null | plutil -extract Entitlements.application-identifier raw - 2>/dev/null)
+              if [[ "$APP_ID" == *"com.sabohub.app"* ]]; then
+                PROFILE_UUID=$(security cms -D -i "$profile" 2>/dev/null | plutil -extract UUID raw - 2>/dev/null)
+                PROFILE_NAME=$(security cms -D -i "$profile" 2>/dev/null | plutil -extract Name raw - 2>/dev/null)
+                echo "✅ Found profile: $PROFILE_NAME ($PROFILE_UUID)"
+                break
+              fi
+            fi
+          done
+          
+          if [ -z "$PROFILE_UUID" ]; then
+            echo "❌ No provisioning profile found!"
+            exit 1
+          fi
+          
+          # Create ExportOptions.plist
+          cat > /tmp/ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>B465SC3K74</string>
+              <key>uploadBitcode</key>
+              <false/>
+              <key>uploadSymbols</key>
+              <true/>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.sabohub.app</key>
+                  <string>$PROFILE_UUID</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+          
+          # Export IPA
           xcodebuild -exportArchive \
-            -archivePath build/ios/Runner.xcarchive \
+            -archivePath build/ios/archive/Runner.xcarchive \
             -exportPath build/ios/ipa \
-            -exportOptionsPlist ios/ExportOptions.plist
-          echo "✅ IPA exported successfully"
+            -exportOptionsPlist /tmp/ExportOptions.plist
+          
+          echo "✅ IPA exported"
+          ls -la build/ios/ipa/
+          
+      - name: Verify IPA
+        script: |
+          if ls build/ios/ipa/*.ipa 1> /dev/null 2>&1; then
+            echo "✅ IPA file found!"
+            ls -la build/ios/ipa/*.ipa
+          else
+            echo "❌ No IPA file found!"
+            exit 1
+          fi
+          
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
+      
     publishing:
       email:
         recipients:
-          - longsangsabo2025@gmail.com # ⚠️ THAY ĐỔI EMAIL CỦA BẠN Ở ĐÂY
+          - longsangsabo2025@gmail.com
         notify:
           success: true
           failure: true
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
         submit_to_testflight: true
-        submit_to_app_store: false # Set to true when ready for App Store submission
+        submit_to_app_store: false
 
+  # =========================================================================
+  # ANDROID GOOGLE PLAY WORKFLOW
+  # =========================================================================
   android-workflow:
-    name: Android Workflow
+    name: Android Google Play
     max_build_duration: 120
     instance_type: linux_x2
+    
     environment:
+      android_signing:
+        - sabohub_keystore
       groups:
-        - google_play # <-- (Includes GCLOUD_SERVICE_ACCOUNT_CREDENTIALS)
+        - google_play
+      flutter: stable
+      java: 17
       vars:
         PACKAGE_NAME: "com.sabohub.app"
-        # Environment variables from .env file
         SUPABASE_URL: "https://dqddxowyikefqcdiioyh.supabase.co"
         SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3OTcxMzYsImV4cCI6MjA3NzM3MzEzNn0.okmsG2R248fxOHUEFFl5OBuCtjtCIlO9q9yVSyCV25Y"
         SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTc5NzEzNiwiZXhwIjoyMDc3MzczMTM2fQ.kPmlYlVd7wi_Luzp3MHjXmR8gUqrqDHy9PSzwFDq3XI"
-        # Google Drive credentials
         GOOGLE_DRIVE_CLIENT_ID_ANDROID: "321771498359-tmnp2ks7n6ipjp10fsrjrefrilr6ts15.apps.googleusercontent.com"
         GOOGLE_DRIVE_CLIENT_ID_WEB: "321771498359-gcm0og29knjjmaevr7uv0aa27vam765u.apps.googleusercontent.com"
-      flutter: stable
-      java: 17
+    
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    
     scripts:
-      - name: Set up .env file
+      - name: Create .env file
         script: |
-          #!/usr/bin/env bash
-          
-          cat <<EOF > .env
+          cat > .env << EOF
           SUPABASE_URL=$SUPABASE_URL
           SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
           SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
           GOOGLE_DRIVE_CLIENT_ID_ANDROID=$GOOGLE_DRIVE_CLIENT_ID_ANDROID
           GOOGLE_DRIVE_CLIENT_ID_WEB=$GOOGLE_DRIVE_CLIENT_ID_WEB
           EOF
+          
       - name: Get Flutter packages
+        script: flutter pub get
+        
+      - name: Auto-increment build number
         script: |
-          flutter packages pub get
-      - name: Flutter analyze
-        script: |
-          flutter analyze
-      - name: Flutter test
-        script: |
-          flutter test
-        ignore_failure: true
+          CURRENT_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
+          VERSION_NAME=$(echo $CURRENT_VERSION | cut -d'+' -f1)
+          BUILD_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f2)
+          NEW_BUILD_NUMBER=$((BUILD_NUMBER + 1))
+          NEW_VERSION="${VERSION_NAME}+${NEW_BUILD_NUMBER}"
+          sed -i.bak "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+          echo "📱 Version: $NEW_VERSION"
+          
       - name: Set up key.properties
         script: |
-          cat <<EOF > $CM_BUILD_DIR/android/key.properties
+          cat > $CM_BUILD_DIR/android/key.properties << EOF
           storePassword=$CM_KEYSTORE_PASSWORD
           keyPassword=$CM_KEY_PASSWORD
           keyAlias=$CM_KEY_ALIAS
           storeFile=$CM_KEYSTORE_PATH
           EOF
-      - name: Build Android release
+          
+      - name: Build Android App Bundle
         script: |
           flutter build appbundle --release \
-            --build-name=1.0.0 \
-            --build-number=$BUILD_NUMBER
+            --dart-define="SUPABASE_URL=$SUPABASE_URL" \
+            --dart-define="SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" \
+            --dart-define="SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY"
+          
     artifacts:
       - build/**/outputs/**/*.aab
       - build/**/outputs/**/mapping.txt
-      - flutter_drive.log
+      
     publishing:
       email:
         recipients:
-          - longsangsabo2025@gmail.com # ⚠️ THAY ĐỔI EMAIL CỦA BẠN Ở ĐÂY
+          - longsangsabo2025@gmail.com
         notify:
           success: true
           failure: true

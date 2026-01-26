@@ -2,13 +2,25 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/bill.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// 
+/// SABOHUB sử dụng "CEO Auth" model:
+/// - Chỉ CEO có tài khoản Supabase Auth thực sự
+/// - Employees/Managers đăng nhập qua mã nhân viên, KHÔNG có auth.users
+/// 
+/// ❌ KHÔNG DÙNG: _supabase.auth.currentUser (chỉ CEO có)
+/// ✅ PHẢI DÙNG: Truyền userId parameter từ authProvider của caller
+///
 /// Bill Service - Quản lý bills (Manager upload, CEO approve)
 class BillService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   /// Upload bill mới (Manager)
+  /// 
+  /// [userId] - Required: ID của user upload (từ authProvider.user.id)
   Future<Bill> uploadBill({
     required String companyId,
+    required String userId,
     required String billNumber,
     required DateTime billDate,
     required double totalAmount,
@@ -17,8 +29,7 @@ class BillService {
     Map<String, dynamic>? ocrData,
     String? notes,
   }) async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
+    if (userId.isEmpty) throw Exception('User not authenticated');
 
     final data = {
       'company_id': companyId,
@@ -73,9 +84,10 @@ class BillService {
   }
 
   /// Approve bill (CEO)
-  Future<Bill> approveBill(String billId, {String? notes}) async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
+  /// 
+  /// [userId] - Required: ID của CEO approve (từ authProvider.user.id)
+  Future<Bill> approveBill(String billId, {required String userId, String? notes}) async {
+    if (userId.isEmpty) throw Exception('User not authenticated');
 
     final data = {
       'status': 'approved',
@@ -95,9 +107,10 @@ class BillService {
   }
 
   /// Reject bill (CEO)
-  Future<Bill> rejectBill(String billId, {String? notes}) async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
+  /// 
+  /// [userId] - Required: ID của CEO reject (từ authProvider.user.id)
+  Future<Bill> rejectBill(String billId, {required String userId, String? notes}) async {
+    if (userId.isEmpty) throw Exception('User not authenticated');
 
     final data = {
       'status': 'rejected',

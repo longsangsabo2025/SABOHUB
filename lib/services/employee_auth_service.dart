@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/employee_user.dart';
+import '../utils/app_logger.dart';
 
 /// Employee Authentication Service
 /// Handles login for non-auth users (MANAGER, SHIFT_LEADER, STAFF)
@@ -12,7 +13,17 @@ class EmployeeAuthService {
     required String username,
     required String password,
   }) async {
+    final timer = AppLogger.startTimer('Employee Login');
+    
+    AppLogger.auth('🚀 Starting employee login', {
+      'company': companyName,
+      'username': username,
+      'password_length': password.length,
+    });
+
     try {
+      AppLogger.api('📡 Calling RPC: employee_login');
+      
       // Call employee_login function
       final response = await _supabase.rpc('employee_login', params: {
         'p_company_name': companyName,
@@ -20,25 +31,49 @@ class EmployeeAuthService {
         'p_password': password,
       });
 
+      AppLogger.api('📥 RPC Response received', {
+        'response_type': response.runtimeType.toString(),
+        'response': response,
+      });
+
       // Parse response
       if (response == null) {
+        AppLogger.error('❌ Response is NULL');
+        timer.logEnd('Employee Login - FAILED (null response)');
         return EmployeeLoginResult.error('Lỗi kết nối server');
       }
 
       final data = response as Map<String, dynamic>;
+      AppLogger.data('📦 Parsed response data', data);
+      
       final success = data['success'] as bool;
+      AppLogger.auth('🔍 Login success flag: $success');
 
       if (!success) {
         final error = data['error'] as String? ?? 'Đăng nhập thất bại';
+        AppLogger.error('❌ Login failed', error);
+        timer.logEnd('Employee Login - FAILED');
         return EmployeeLoginResult.error(error);
       }
 
       // Parse employee data
+      AppLogger.data('📦 Parsing employee data from response');
       final employeeData = data['employee'] as Map<String, dynamic>;
+      AppLogger.data('👤 Employee raw data', employeeData);
+      
       final employee = EmployeeUser.fromJson(employeeData);
+      AppLogger.success('✅ Employee parsed successfully', {
+        'id': employee.id,
+        'fullName': employee.fullName,
+        'role': employee.role.value,
+        'companyId': employee.companyId,
+      });
 
+      timer.logEnd('Employee Login - SUCCESS');
       return EmployeeLoginResult.success(employee);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error('💥 Exception during login', e, stackTrace);
+      timer.logEnd('Employee Login - EXCEPTION');
       return EmployeeLoginResult.error('Lỗi: ${e.toString()}');
     }
   }

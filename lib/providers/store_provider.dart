@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/store.dart';
 import '../services/store_service.dart';
+import 'auth_provider.dart';
 
 /// Store Service Provider
 final storeServiceProvider = Provider<StoreService>((ref) {
@@ -12,14 +13,20 @@ final storeServiceProvider = Provider<StoreService>((ref) {
 /// Fetches and caches all stores from Supabase
 final storesProvider = FutureProvider<List<Store>>((ref) async {
   final service = ref.watch(storeServiceProvider);
-  return await service.getAllStores();
+  final auth = ref.watch(authProvider);
+  final companyId = auth.user?.companyId ?? '';
+  if (companyId.isEmpty) return [];
+  return await service.getAllStores(companyId: companyId);
 });
 
 /// Single Store Provider
 /// Gets a specific store by ID
 final storeProvider = FutureProvider.family<Store?, String>((ref, id) async {
   final service = ref.watch(storeServiceProvider);
-  return await service.getStoreById(id);
+  final auth = ref.watch(authProvider);
+  final companyId = auth.user?.companyId ?? '';
+  if (companyId.isEmpty) return null;
+  return await service.getStoreById(id, companyId: companyId);
 });
 
 /// Store Stats Provider

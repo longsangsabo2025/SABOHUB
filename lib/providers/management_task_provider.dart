@@ -1,12 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/management_task.dart';
-import '../services/management_task_service.dart';
+import 'cached_providers.dart' show managementTaskServiceProvider;
 
-/// Management Task Service Provider
-final managementTaskServiceProvider = Provider<ManagementTaskService>((ref) {
-  return ManagementTaskService(ref);
-});
+// Re-export for backward compatibility
+export 'cached_providers.dart' show managementTaskServiceProvider;
 
 /// CEO Strategic Tasks Provider
 /// Fetches all tasks created by CEO

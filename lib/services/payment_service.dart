@@ -2,12 +2,32 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/payment.dart';
 import '../models/session.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// **EMPLOYEE KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
+/// - Employee login qua mã nhân viên, KHÔNG có trong auth.users
+/// - ❌ KHÔNG ĐƯỢC dùng `_supabase.auth.currentUser`
+/// - ✅ Caller PHẢI truyền companyId từ authProvider
+
 class PaymentService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  
+  // ⚠️ Lưu companyId từ caller thay vì dùng auth
+  final String? companyId;
+  
+  PaymentService({this.companyId});
+  
+  // Helper để validate và lấy companyId
+  String _getCompanyId([String? overrideCompanyId]) {
+    final cid = overrideCompanyId ?? companyId;
+    if (cid == null) throw Exception('Company ID is required');
+    return cid;
+  }
 
   // Get all payments for current company
-  Future<List<Payment>> getAllPayments() async {
+  Future<List<Payment>> getAllPayments({String? overrideCompanyId}) async {
     try {
+      final cid = _getCompanyId(overrideCompanyId);
+      
       final response = await _supabase
           .from('payments')
           .select('''
@@ -18,7 +38,7 @@ class PaymentService {
               )
             )
           ''')
-          .eq('table_sessions.billiards_tables.company_id', _supabase.auth.currentUser?.userMetadata?['company_id'])
+          .eq('table_sessions.billiards_tables.company_id', cid)
           .order('paid_at', ascending: false);
 
       return response.map<Payment>((data) => _mapToPayment(data)).toList();
@@ -28,8 +48,10 @@ class PaymentService {
   }
 
   // Get payments by status
-  Future<List<Payment>> getPaymentsByStatus(PaymentStatus status) async {
+  Future<List<Payment>> getPaymentsByStatus(PaymentStatus status, {String? overrideCompanyId}) async {
     try {
+      final cid = _getCompanyId(overrideCompanyId);
+      
       final response = await _supabase
           .from('payments')
           .select('''
@@ -40,7 +62,7 @@ class PaymentService {
               )
             )
           ''')
-          .eq('table_sessions.billiards_tables.company_id', _supabase.auth.currentUser?.userMetadata?['company_id'])
+          .eq('table_sessions.billiards_tables.company_id', cid)
           .eq('status', status.name)
           .order('paid_at', ascending: false);
 
@@ -88,11 +110,14 @@ class PaymentService {
     String? notes,
     String? referenceNumber,
     String? customerName,
+    String? overrideCompanyId,
   }) async {
     try {
+      final cid = _getCompanyId(overrideCompanyId);
+      
       final paymentData = {
         'session_id': sessionId,
-        'company_id': _supabase.auth.currentUser?.userMetadata?['company_id'],
+        'company_id': cid,
         'amount': amount,
         'method': method.name,
         'status': PaymentStatus.pending.name,

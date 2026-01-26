@@ -123,12 +123,23 @@ class ManagementTaskService {
     }
   }
 
-  /// Get pending approvals for CEO
+  /// Get pending approvals for CEO - filtered by user's company
   /// Used in CEO Tasks Page - Approvals tab
   Future<List<TaskApproval>> getPendingApprovals() async {
     try {
-      final response = await _supabase.from('task_approvals').select('*')
-          .eq('status', 'pending').order('submitted_at', ascending: false);
+      // Get current user's company_id from metadata
+      final user = _supabase.auth.currentUser;
+      final companyId = user?.userMetadata?['company_id'] as String?;
+      
+      var query = _supabase.from('task_approvals').select('*')
+          .eq('status', 'pending');
+      
+      // Filter by company_id if available
+      if (companyId != null) {
+        query = query.eq('company_id', companyId);
+      }
+      
+      final response = await query.order('submitted_at', ascending: false);
 
       return (response as List).map((json) {
         // Use the cached fields already in the task_approvals record
@@ -362,54 +373,63 @@ class ManagementTaskService {
   }
 
   /// Get company task statistics for CEO overview
+  /// Only shows statistics for the user's company (not all companies)
   Future<List<Map<String, dynamic>>> getCompanyTaskStatistics() async {
     try {
-      // Get all companies
-      final companies = await _supabase.from('companies').select('id, name');
-
-      final results = <Map<String, dynamic>>[];
-
-      for (final company in companies as List) {
-        final companyId = company['id'] as String;
-
-        // Get tasks for this company
-        final tasks = await _supabase
-            .from('tasks')
-            .select('status')
-            .eq('company_id', companyId);
-
-        int total = 0;
-        int completed = 0;
-        int inProgress = 0;
-        int overdue = 0;
-
-        for (final task in tasks as List) {
-          total++;
-          final status = task['status'] as String;
-          switch (status) {
-            case 'completed':
-              completed++;
-              break;
-            case 'in_progress':
-              inProgress++;
-              break;
-            case 'overdue':
-              overdue++;
-              break;
-          }
-        }
-
-        results.add({
-          'company_id': companyId,
-          'company_name': company['name'],
-          'total': total,
-          'completed': completed,
-          'in_progress': inProgress,
-          'overdue': overdue,
-        });
+      // Get current user's company_id from metadata
+      final user = _supabase.auth.currentUser;
+      final companyId = user?.userMetadata?['company_id'] as String?;
+      
+      if (companyId == null) {
+        return [];
       }
 
-      return results;
+      // Get the user's company info
+      final companyResponse = await _supabase
+          .from('companies')
+          .select('id, name')
+          .eq('id', companyId)
+          .maybeSingle();
+
+      if (companyResponse == null) {
+        return [];
+      }
+
+      // Get tasks for this company only
+      final tasks = await _supabase
+          .from('tasks')
+          .select('status')
+          .eq('company_id', companyId);
+
+      int total = 0;
+      int completed = 0;
+      int inProgress = 0;
+      int overdue = 0;
+
+      for (final task in tasks as List) {
+        total++;
+        final status = task['status'] as String;
+        switch (status) {
+          case 'completed':
+            completed++;
+            break;
+          case 'in_progress':
+            inProgress++;
+            break;
+          case 'overdue':
+            overdue++;
+            break;
+        }
+      }
+
+      return [{
+        'company_id': companyId,
+        'company_name': companyResponse['name'],
+        'total': total,
+        'completed': completed,
+        'in_progress': inProgress,
+        'overdue': overdue,
+      }];
     } catch (e) {
       throw Exception('Failed to fetch company statistics: $e');
     }

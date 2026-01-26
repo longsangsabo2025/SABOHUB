@@ -9,6 +9,8 @@ import 'dart:math';
 
 import '../models/user.dart' as app_user;
 import '../services/account_storage_service.dart';
+import '../constants/roles.dart';
+import '../utils/app_logger.dart';
 
 // Get the Supabase client instance
 final _supabaseClient = Supabase.instance.client;
@@ -19,12 +21,14 @@ class AuthState {
   final bool isLoading;
   final bool isDemoMode;
   final String? error;
+  final bool isInitialized; // Track if auth has completed initial load
 
   const AuthState({
     this.user,
-    this.isLoading = false,
+    this.isLoading = true, // Default to true - auth starts in loading state
     this.isDemoMode = false,
     this.error,
+    this.isInitialized = false, // Default to false - not yet initialized
   });
 
   AuthState copyWith({
@@ -32,12 +36,14 @@ class AuthState {
     bool? isLoading,
     bool? isDemoMode,
     String? error,
+    bool? isInitialized,
   }) {
     return AuthState(
       user: user ?? this.user,
       isLoading: isLoading ?? this.isLoading,
       isDemoMode: isDemoMode ?? this.isDemoMode,
       error: error ?? this.error,
+      isInitialized: isInitialized ?? this.isInitialized,
     );
   }
 
@@ -123,23 +129,17 @@ class AuthNotifier extends Notifier<AuthState> {
         }
 
         try {
-          // 2. Fetch user profile from database - specify columns to avoid relationship ambiguity
+          // 2. Fetch user profile from database WITH company data for businessType
           final response = await _supabaseClient
               .from('users')
               .select(
-                  'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
+                  'id, full_name, email, role, department, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at, companies(name, business_type)')
               .eq('id', session.user.id)
               .maybeSingle();
 
           if (response != null) {
-            final user = app_user.User(
-              id: response['id'] as String,
-              name: response['full_name'] as String,
-              email: response['email'] as String,
-              role: _parseRole(response['role'] as String),
-              phone: response['phone'] as String? ?? '',
-              companyId: response['company_id'] as String?,
-            );
+            // Use User.fromJson to properly parse company data and businessType
+            final user = app_user.User.fromJson(response);
 
             // Save user in background, don't wait
             _saveUser(user, isDemoMode: false).catchError((e) {
@@ -154,6 +154,7 @@ class AuthNotifier extends Notifier<AuthState> {
               user: user,
               isDemoMode: false,
               isLoading: false,
+              isInitialized: true,
             );
 
             return;
@@ -165,27 +166,29 @@ class AuthNotifier extends Notifier<AuthState> {
         }
       }
 
-      // 3. Fallback to demo user from local storage (fast path)
+      // 3. Fallback to stored user from local storage (Employee login or Demo mode)
       final prefs = await SharedPreferences.getInstance();
       final demoMode = prefs.getBool(_demoModeKey) ?? false;
       final storedUserJson = prefs.getString(_authStorageKey);
 
-      if (demoMode && storedUserJson != null) {
+      if (storedUserJson != null) {
         final userMap = jsonDecode(storedUserJson) as Map<String, dynamic>;
         final user = app_user.User.fromJson(userMap);
 
+        // Restore user from local storage (works for Employee login too!)
         state = state.copyWith(
           user: user,
-          isDemoMode: true,
+          isDemoMode: demoMode,
           isLoading: false,
+          isInitialized: true,
         );
         return;
       }
 
       // No session found
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(isLoading: false, isInitialized: true);
     } catch (e) {
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(isLoading: false, isInitialized: true);
     }
   }
 
@@ -353,7 +356,7 @@ class AuthNotifier extends Notifier<AuthState> {
         id: response['id'] as String,
         name: response['full_name'] as String,
         email: response['email'] as String,
-        role: _parseRole(response['role'] as String),
+        role: SaboRole.fromString(response['role'] as String),
         phone: response['phone'] as String? ?? '',
         companyId: response['company_id'] as String?,
       );
@@ -410,22 +413,6 @@ class AuthNotifier extends Notifier<AuthState> {
         error: 'Lỗi kết nối: ${e.toString()}\n\nVui lòng kiểm tra kết nối internet và thử lại.',
       );
       return false;
-    }
-  }
-
-  /// Parse role string to UserRole enum
-  app_user.UserRole _parseRole(String roleString) {
-    switch (roleString.toUpperCase()) {
-      case 'CEO':
-        return app_user.UserRole.ceo;
-      case 'MANAGER':
-        return app_user.UserRole.manager;
-      case 'SHIFT_LEADER':
-        return app_user.UserRole.shiftLeader;
-      case 'STAFF':
-        return app_user.UserRole.staff;
-      default:
-        return app_user.UserRole.staff;
     }
   }
 
@@ -767,8 +754,29 @@ class AuthNotifier extends Notifier<AuthState> {
 
   /// Login with custom User object (for employee login)
   Future<void> loginWithUser(app_user.User user) async {
-    await _saveUser(user);
-    state = AuthState(user: user, isLoading: false);
+    AppLogger.box('🔐 AUTH PROVIDER: loginWithUser', {
+      'userId': user.id,
+      'userName': user.name,
+      'userRole': user.role.toString(),
+      'businessType': user.businessType?.toString() ?? 'null',
+      'companyName': user.companyName ?? 'null',
+    });
+
+    try {
+      AppLogger.auth('💾 Saving user to SharedPreferences...');
+      await _saveUser(user);
+      AppLogger.success('✅ User saved!');
+
+      AppLogger.state('🔄 Updating AuthState...');
+      state = AuthState(user: user, isLoading: false);
+      AppLogger.success('✅ AuthState updated!', {
+        'isAuthenticated': state.isAuthenticated,
+        'user': state.user?.name,
+      });
+    } catch (e, stackTrace) {
+      AppLogger.error('💥 Error in loginWithUser', e, stackTrace);
+      rethrow;
+    }
   }
 
   /// Save user to storage

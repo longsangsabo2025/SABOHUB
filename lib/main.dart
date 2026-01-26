@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/config/supabase_config.dart';
 import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'utils/error_tracker.dart' as tracker;
 import 'utils/longsang_error_reporter.dart'; // 🔴 LONGSANG AUTO-FIX
@@ -72,13 +73,7 @@ class _SaboHubAppState extends ConsumerState<SaboHubApp> {
       child: MaterialApp.router(
         title: 'SABOHUB Flutter',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF3B82F6),
-            brightness: Brightness.light,
-          ),
-        ),
+        theme: AppTheme.lightTheme,
         routerConfig: router,
       ),
     );

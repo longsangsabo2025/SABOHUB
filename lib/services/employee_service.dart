@@ -60,6 +60,9 @@ class EmployeeService {
     // Role prefix
     String rolePrefix;
     switch (role) {
+      case app_models.UserRole.superAdmin:
+        rolePrefix = 'superadmin';
+        break;
       case app_models.UserRole.manager:
         rolePrefix = 'manager';
         break;
@@ -71,6 +74,12 @@ class EmployeeService {
         break;
       case app_models.UserRole.ceo:
         rolePrefix = 'ceo';
+        break;
+      case app_models.UserRole.driver:
+        rolePrefix = 'driver';
+        break;
+      case app_models.UserRole.warehouse:
+        rolePrefix = 'warehouse';
         break;
     }
 
@@ -146,7 +155,7 @@ class EmployeeService {
         'p_email': email,
         'p_password': tempPassword,
         'p_full_name': fullName ?? _generateDefaultName(role),
-        'p_role': role.value.toUpperCase(), // MANAGER, SHIFT_LEADER, STAFF
+        'p_role': role.toUpperString(), // MANAGER, SHIFT_LEADER, STAFF
         'p_company_id': companyId,
         'p_is_active': true,
       }).select();
@@ -202,7 +211,7 @@ class EmployeeService {
       final response = await _supabase.from('employees').insert({
         'email': email,
         'full_name': fullName ?? _generateDefaultName(role),
-        'role': role.value.toUpperCase(),
+        'role': role.toUpperString(),
         'company_id': companyId,
         'is_active': true,
         // Note: password_hash should be set via a trigger or RPC in production
@@ -259,6 +268,8 @@ class EmployeeService {
   /// Generate default name based on role
   String _generateDefaultName(app_models.UserRole role) {
     switch (role) {
+      case app_models.UserRole.superAdmin:
+        return 'Super Admin';
       case app_models.UserRole.manager:
         return 'Quản lý';
       case app_models.UserRole.shiftLeader:
@@ -267,6 +278,10 @@ class EmployeeService {
         return 'Nhân viên';
       case app_models.UserRole.ceo:
         return 'CEO';
+      case app_models.UserRole.driver:
+        return 'Tài xế';
+      case app_models.UserRole.warehouse:
+        return 'Nhân viên kho';
     }
   }
 
@@ -310,7 +325,7 @@ class EmployeeService {
       if (name != null) updates['full_name'] = name;
       if (email != null) updates['email'] = email;
       if (phone != null) updates['phone'] = phone;
-      if (role != null) updates['role'] = role.value;
+      if (role != null) updates['role'] = role.toUpperString();
       if (branchId != null) updates['branch_id'] = branchId;
 
       await _supabase.from('employees').update(updates).eq('id', employeeId);

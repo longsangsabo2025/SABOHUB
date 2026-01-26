@@ -1,8 +1,13 @@
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart' as geo;
+import 'package:geolocator/geolocator.dart' show Position, LocationAccuracy, Geolocator, LocationAccuracyStatus;
+import 'package:geolocator_android/geolocator_android.dart';
+import 'package:geolocator_apple/geolocator_apple.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Service quản lý location và kiểm tra vị trí check-in
+/// Updated: v2.0 - Sử dụng Geolocator 14.x với Platform-specific Settings
 class LocationService {
   static const double _allowedRadiusMeters = 100.0; // Bán kính mặc định 100m
   final _supabase = Supabase.instance.client;
@@ -22,6 +27,49 @@ class LocationService {
       headingAccuracy: 0,
     ),
   };
+
+  /// Lấy LocationSettings phù hợp với từng platform
+  /// Tối ưu cho từng hệ điều hành
+  LocationSettings _getLocationSettings({
+    LocationAccuracy accuracy = LocationAccuracy.high,
+    int distanceFilter = 0,
+    Duration? timeLimit,
+  }) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidSettings(
+        accuracy: accuracy,
+        distanceFilter: distanceFilter,
+        forceLocationManager: false,
+        intervalDuration: const Duration(seconds: 5),
+        // Foreground notification cho background tracking
+        foregroundNotificationConfig: const ForegroundNotificationConfig(
+          notificationText: "SABOHUB đang xác định vị trí của bạn",
+          notificationTitle: "GPS Active",
+          enableWakeLock: true,
+          notificationIcon: AndroidResource(
+            name: 'ic_launcher',
+            defType: 'mipmap',
+          ),
+        ),
+      );
+    } else if (defaultTargetPlatform == TargetPlatform.iOS ||
+               defaultTargetPlatform == TargetPlatform.macOS) {
+      return AppleSettings(
+        accuracy: accuracy,
+        activityType: ActivityType.otherNavigation,
+        distanceFilter: distanceFilter,
+        pauseLocationUpdatesAutomatically: true,
+        showBackgroundLocationIndicator: true,
+      );
+    }
+    
+    // Default settings cho các platform khác (web, linux, windows)
+    return LocationSettings(
+      accuracy: accuracy,
+      distanceFilter: distanceFilter,
+      timeLimit: timeLimit,
+    );
+  }
 
   /// Kiểm tra và yêu cầu quyền truy cập location
   Future<bool> checkAndRequestLocationPermission() async {
@@ -48,7 +96,21 @@ class LocationService {
     return permission.isGranted;
   }
 
-  /// Lấy vị trí hiện tại của người dùng
+  /// Kiểm tra loại quyền location đã cấp (precise/approximate)
+  Future<LocationAccuracyStatus> getLocationAccuracyStatus() async {
+    return await Geolocator.getLocationAccuracy();
+  }
+
+  /// Yêu cầu quyền location chính xác (Android 12+)
+  Future<LocationAccuracyStatus> requestTemporaryFullAccuracy({
+    required String purposeKey,
+  }) async {
+    return await Geolocator.requestTemporaryFullAccuracy(
+      purposeKey: purposeKey,
+    );
+  }
+
+  /// Lấy vị trí hiện tại của người dùng - Cập nhật với API mới
   Future<Position> getCurrentLocation() async {
     bool hasPermission = await checkAndRequestLocationPermission();
     if (!hasPermission) {
@@ -56,17 +118,44 @@ class LocationService {
     }
 
     try {
+      // Sử dụng platform-specific settings
+      final locationSettings = _getLocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 0,
+        timeLimit: const Duration(seconds: 15),
+      );
+      
       Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 0,
-          timeLimit: Duration(seconds: 10),
-        ),
+        locationSettings: locationSettings,
       );
       return position;
     } catch (e) {
       throw LocationServiceException('Không thể lấy vị trí hiện tại: $e');
     }
+  }
+
+  /// Lấy vị trí đã lưu trước đó (nhanh hơn getCurrentLocation)
+  Future<Position?> getLastKnownPosition() async {
+    try {
+      return await Geolocator.getLastKnownPosition();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Stream vị trí liên tục - Cập nhật với API mới
+  Stream<Position> getPositionStream({
+    LocationAccuracy accuracy = LocationAccuracy.high,
+    int distanceFilter = 10,
+  }) {
+    final locationSettings = _getLocationSettings(
+      accuracy: accuracy,
+      distanceFilter: distanceFilter,
+    );
+    
+    return Geolocator.getPositionStream(
+      locationSettings: locationSettings,
+    );
   }
 
   /// Kiểm tra xem vị trí hiện tại có trong phạm vi cho phép không
@@ -96,21 +185,21 @@ class LocationService {
             
             if (lat != null && lng != null) {
               companyLocation = Position(
-              latitude: lat,
-              longitude: lng,
-              timestamp: DateTime.now(),
-              accuracy: 0,
-              altitude: 0,
-              heading: 0,
-              speed: 0,
-              speedAccuracy: 0,
-              altitudeAccuracy: 0,
-              headingAccuracy: 0,
-            );
+                latitude: lat,
+                longitude: lng,
+                timestamp: DateTime.now(),
+                accuracy: 0,
+                altitude: 0,
+                heading: 0,
+                speed: 0,
+                speedAccuracy: 0,
+                altitudeAccuracy: 0,
+                headingAccuracy: 0,
+              );
             
-            if (radius != null) {
-              allowedRadius = radius;
-            }
+              if (radius != null) {
+                allowedRadius = radius;
+              }
             } else {
               // Nếu chưa cấu hình, dùng mặc định
               companyLocation = _getCompanyLocation(companyId);
@@ -185,7 +274,7 @@ class LocationService {
     return null;
   }
 
-  /// Tính khoảng cách giữa 2 điểm
+  /// Tính khoảng cách giữa 2 điểm (mét)
   double calculateDistance(Position pos1, Position pos2) {
     return Geolocator.distanceBetween(
       pos1.latitude,
@@ -195,9 +284,39 @@ class LocationService {
     );
   }
 
+  /// Tính góc hướng giữa 2 điểm (độ)
+  double calculateBearing(Position from, Position to) {
+    return Geolocator.bearingBetween(
+      from.latitude,
+      from.longitude,
+      to.latitude,
+      to.longitude,
+    );
+  }
+
   /// Kiểm tra xem GPS có độ chính xác tốt không
   bool hasGoodAccuracy(Position position) {
     return position.accuracy <= 20.0; // Độ chính xác <= 20m
+  }
+
+  /// Kiểm tra xem GPS có độ chính xác cao không
+  bool hasHighAccuracy(Position position) {
+    return position.accuracy <= 10.0; // Độ chính xác <= 10m
+  }
+
+  /// Mở cài đặt location của thiết bị
+  Future<bool> openLocationSettings() async {
+    return await Geolocator.openLocationSettings();
+  }
+
+  /// Mở cài đặt app để cấp quyền
+  Future<bool> openAppPermissionSettings() async {
+    return await Geolocator.openAppSettings();
+  }
+
+  /// Lắng nghe thay đổi trạng thái GPS service
+  Stream<geo.ServiceStatus> getServiceStatusStream() {
+    return Geolocator.getServiceStatusStream();
   }
 }
 
@@ -235,6 +354,25 @@ class LocationValidationResult {
     } else {
       return 'Độ chính xác thấp (±${accuracy.toInt()}m)';
     }
+  }
+
+  /// Kiểm tra xem có thể check-in không
+  bool get canCheckIn => isValid && accuracy <= 50;
+
+  /// Thông báo chi tiết cho người dùng
+  String get detailedMessage {
+    final buffer = StringBuffer();
+    buffer.writeln(statusMessage);
+    buffer.writeln(accuracyMessage);
+    if (!canCheckIn) {
+      if (!isValid) {
+        buffer.writeln('💡 Di chuyển gần hơn đến vị trí công ty');
+      }
+      if (accuracy > 50) {
+        buffer.writeln('💡 Đợi GPS ổn định hơn hoặc ra ngoài trời');
+      }
+    }
+    return buffer.toString().trim();
   }
 }
 

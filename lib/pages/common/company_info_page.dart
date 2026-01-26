@@ -142,6 +142,7 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
 
     // Add role-specific tabs
     switch (role) {
+      case UserRole.superAdmin:
       case UserRole.ceo:
       case UserRole.manager:
         // Full access - redirect to full company details page
@@ -174,6 +175,26 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
             icon: Icons.folder_shared,
             label: 'Hồ sơ',
             description: 'Hồ sơ của tôi',
+          ),
+        ];
+
+      case UserRole.driver:
+        return [
+          ...baseTabs,
+          _TabConfig(
+            icon: Icons.local_shipping,
+            label: 'Giao hàng',
+            description: 'Lịch sử giao hàng',
+          ),
+        ];
+
+      case UserRole.warehouse:
+        return [
+          ...baseTabs,
+          _TabConfig(
+            icon: Icons.inventory,
+            label: 'Kho hàng',
+            description: 'Quản lý tồn kho',
           ),
         ];
     }

@@ -1,6 +1,15 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/employee_document.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// 
+/// SABOHUB sử dụng "CEO Auth" model:
+/// - Chỉ CEO có tài khoản Supabase Auth thực sự
+/// - Employees/Managers đăng nhập qua mã nhân viên, KHÔNG có auth.users
+/// 
+/// ❌ KHÔNG DÙNG: _supabase.auth.currentUser (chỉ CEO có)
+/// ✅ PHẢI DÙNG: Truyền userId parameter từ authProvider của caller
+
 class EmployeeDocumentService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
@@ -84,9 +93,12 @@ class EmployeeDocumentService {
   }
 
   /// Thêm tài liệu mới
+  /// 
+  /// [userId] - Required: ID của user upload (từ authProvider.user.id)
   Future<EmployeeDocument> uploadDocument({
     required String employeeId,
     required String companyId,
+    required String userId,
     required EmployeeDocumentType type,
     required String title,
     String? documentNumber,
@@ -99,8 +111,7 @@ class EmployeeDocumentService {
     String? notes,
   }) async {
     try {
-      final currentUser = _supabase.auth.currentUser;
-      if (currentUser == null) {
+      if (userId.isEmpty) {
         throw Exception('User not authenticated');
       }
 
@@ -116,7 +127,7 @@ class EmployeeDocumentService {
         'file_size': fileSize,
         'issue_date': issueDate?.toIso8601String(),
         'expiry_date': expiryDate?.toIso8601String(),
-        'uploaded_by': currentUser.id,
+        'uploaded_by': userId,
         'notes': notes,
         'status': 'active',
       };
@@ -134,9 +145,12 @@ class EmployeeDocumentService {
   }
 
   /// Tạo hợp đồng lao động mới
+  /// 
+  /// [userId] - Required: ID của user tạo hợp đồng (từ authProvider.user.id)
   Future<LaborContract> createContract({
     required String employeeId,
     required String companyId,
+    required String userId,
     required ContractType contractType,
     required String contractNumber,
     required String position,
@@ -155,8 +169,7 @@ class EmployeeDocumentService {
     String? notes,
   }) async {
     try {
-      final currentUser = _supabase.auth.currentUser;
-      if (currentUser == null) {
+      if (userId.isEmpty) {
         throw Exception('User not authenticated');
       }
 
@@ -180,7 +193,7 @@ class EmployeeDocumentService {
         'file_url': fileUrl,
         'status': 'active',
         'notes': notes,
-        'created_by': currentUser.id,
+        'created_by': userId,
       };
 
       final response = await _supabase
@@ -196,17 +209,18 @@ class EmployeeDocumentService {
   }
 
   /// Xác minh tài liệu
-  Future<void> verifyDocument(String documentId) async {
+  /// 
+  /// [userId] - Required: ID của user xác minh (từ authProvider.user.id)
+  Future<void> verifyDocument(String documentId, {required String userId}) async {
     try {
-      final currentUser = _supabase.auth.currentUser;
-      if (currentUser == null) {
+      if (userId.isEmpty) {
         throw Exception('User not authenticated');
       }
 
       await _supabase.from('employee_documents').update({
         'is_verified': true,
         'verified_date': DateTime.now().toIso8601String(),
-        'verified_by': currentUser.id,
+        'verified_by': userId,
       }).eq('id', documentId);
     } catch (e) {
       throw Exception('Failed to verify document: $e');
@@ -286,8 +300,11 @@ class EmployeeDocumentService {
   }
 
   /// Gia hạn hợp đồng
+  /// 
+  /// [userId] - Required: ID của user gia hạn (từ authProvider.user.id)
   Future<LaborContract> renewContract({
     required String oldContractId,
+    required String userId,
     required String contractNumber,
     required DateTime startDate,
     DateTime? endDate,
@@ -297,6 +314,10 @@ class EmployeeDocumentService {
     String? notes,
   }) async {
     try {
+      if (userId.isEmpty) {
+        throw Exception('User not authenticated');
+      }
+
       // Lấy thông tin hợp đồng cũ
       final oldContract = await _supabase
           .from('labor_contracts')
@@ -310,11 +331,6 @@ class EmployeeDocumentService {
           .update({'status': 'expired'}).eq('id', oldContractId);
 
       // Tạo hợp đồng mới
-      final currentUser = _supabase.auth.currentUser;
-      if (currentUser == null) {
-        throw Exception('User not authenticated');
-      }
-
       final newContractData = {
         'employee_id': oldContract['employee_id'],
         'company_id': oldContract['company_id'],
@@ -331,7 +347,7 @@ class EmployeeDocumentService {
         'job_description': oldContract['job_description'],
         'status': 'active',
         'notes': notes,
-        'created_by': currentUser.id,
+        'created_by': userId,
       };
 
       final response = await _supabase

@@ -522,6 +522,13 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
 
   Map<String, dynamic> _getRoleInfo(UserRole role) {
     switch (role) {
+      case UserRole.superAdmin:
+        return {
+          'title': 'Super Admin',
+          'description': 'Quản lý toàn bộ hệ thống SABOHUB',
+          'icon': Icons.admin_panel_settings,
+          'color': Colors.red,
+        };
       case UserRole.manager:
         return {
           'title': 'Quản lý',
@@ -549,6 +556,20 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
           'description': 'Quản lý toàn bộ hệ thống',
           'icon': Icons.business_center,
           'color': Colors.purple,
+        };
+      case UserRole.driver:
+        return {
+          'title': 'Tài xế',
+          'description': 'Giao hàng và vận chuyển',
+          'icon': Icons.local_shipping,
+          'color': Colors.teal,
+        };
+      case UserRole.warehouse:
+        return {
+          'title': 'Nhân viên kho',
+          'description': 'Quản lý kho hàng và xuất nhập',
+          'icon': Icons.warehouse,
+          'color': Colors.brown,
         };
     }
   }

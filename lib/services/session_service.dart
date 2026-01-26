@@ -1,12 +1,32 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/session.dart';
 
+/// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
+/// **EMPLOYEE KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
+/// - Employee login qua mã nhân viên, KHÔNG có trong auth.users
+/// - ❌ KHÔNG ĐƯỢC dùng `_supabase.auth.currentUser`
+/// - ✅ Caller PHẢI truyền companyId từ authProvider
+
 class SessionService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  
+  // ⚠️ Lưu companyId từ caller thay vì dùng auth
+  final String? companyId;
+  
+  SessionService({this.companyId});
+  
+  // Helper để validate và lấy companyId
+  String _getCompanyId([String? overrideCompanyId]) {
+    final cid = overrideCompanyId ?? companyId;
+    if (cid == null) throw Exception('Company ID is required');
+    return cid;
+  }
 
   // Get all sessions for current company
-  Future<List<TableSession>> getAllSessions() async {
+  Future<List<TableSession>> getAllSessions({String? overrideCompanyId}) async {
     try {
+      final cid = _getCompanyId(overrideCompanyId);
+      
       final response = await _supabase
           .from('table_sessions')
           .select('''
@@ -16,7 +36,7 @@ class SessionService {
               company_id
             )
           ''')
-          .eq('billiards_tables.company_id', _supabase.auth.currentUser?.userMetadata?['company_id'])
+          .eq('billiards_tables.company_id', cid)
           .order('start_time', ascending: false);
 
       return response.map<TableSession>((data) => _mapToTableSession(data)).toList();
@@ -26,8 +46,10 @@ class SessionService {
   }
 
   // Get sessions by status
-  Future<List<TableSession>> getSessionsByStatus(SessionStatus status) async {
+  Future<List<TableSession>> getSessionsByStatus(SessionStatus status, {String? overrideCompanyId}) async {
     try {
+      final cid = _getCompanyId(overrideCompanyId);
+      
       final response = await _supabase
           .from('table_sessions')
           .select('''
@@ -37,7 +59,7 @@ class SessionService {
               company_id
             )
           ''')
-          .eq('billiards_tables.company_id', _supabase.auth.currentUser?.userMetadata?['company_id'])
+          .eq('billiards_tables.company_id', cid)
           .eq('status', status.name)
           .order('start_time', ascending: false);
 
@@ -48,13 +70,15 @@ class SessionService {
   }
 
   // Get active sessions (for real-time monitoring)
-  Future<List<TableSession>> getActiveSessions() async {
-    return await getSessionsByStatus(SessionStatus.active);
+  Future<List<TableSession>> getActiveSessions({String? overrideCompanyId}) async {
+    return await getSessionsByStatus(SessionStatus.active, overrideCompanyId: overrideCompanyId);
   }
 
   // Get session by ID
-  Future<TableSession?> getSessionById(String sessionId) async {
+  Future<TableSession?> getSessionById(String sessionId, {String? overrideCompanyId}) async {
     try {
+      final cid = _getCompanyId(overrideCompanyId);
+      
       final response = await _supabase
           .from('table_sessions')
           .select('''
@@ -65,7 +89,7 @@ class SessionService {
             )
           ''')
           .eq('id', sessionId)
-          .eq('billiards_tables.company_id', _supabase.auth.currentUser?.userMetadata?['company_id'])
+          .eq('billiards_tables.company_id', cid)
           .single();
 
       return _mapToTableSession(response);

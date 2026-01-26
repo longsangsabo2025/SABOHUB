@@ -5,33 +5,40 @@ import '../core/services/supabase_service.dart';
 class AnalyticsService {
   final _supabase = supabase.client;
 
-  /// Get Dashboard KPIs
-  /// Returns overview metrics for CEO dashboard
-  Future<Map<String, dynamic>> getDashboardKPIs() async {
-    try {
-      // Get total companies
-      final companiesResponse =
-          await _supabase.from('companies').select('id').eq('is_active', true);
-      final totalCompanies = (companiesResponse as List).length;
+  /// Helper to get current user's company_id
+  Future<String?> _getCompanyId() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return null;
+    return user.userMetadata?['company_id'] as String?;
+  }
 
-      // Get total branches (stores) across all companies
+  /// Get Dashboard KPIs for a specific company
+  /// Returns overview metrics for CEO dashboard
+  Future<Map<String, dynamic>> getDashboardKPIs({String? companyId}) async {
+    try {
+      // Get company_id from parameter or current user
+      final cid = companyId ?? await _getCompanyId();
+      if (cid == null) throw Exception('Company ID not found');
+
+      // Get total branches (stores) for this company
       final branchesResponse =
-          await _supabase.from('branches').select('id').eq('is_active', true);
+          await _supabase.from('branches').select('id').eq('company_id', cid).eq('is_active', true);
       final totalStores = (branchesResponse as List).length;
 
-      // Get total tables across all stores
-      final tablesResponse = await _supabase.from('tables').select('id');
+      // Get total tables for this company's stores
+      final tablesResponse = await _supabase.from('tables').select('id').eq('company_id', cid);
       final totalTables = (tablesResponse as List).length;
 
-      // Get total employees (users)
-      final usersResponse = await _supabase.from('employees').select('id');
+      // Get total employees for this company
+      final usersResponse = await _supabase.from('employees').select('id').eq('company_id', cid);
       final totalEmployees = (usersResponse as List).length;
 
-      // Get active tasks today
+      // Get active tasks today for this company
       final today = DateTime.now().toIso8601String().split('T')[0];
       final tasksResponse = await _supabase
           .from('tasks')
           .select('id')
+          .eq('company_id', cid)
           .gte('created_at', today)
           .eq('status', 'in_progress');
       final activeTasks = (tasksResponse as List).length;
@@ -47,6 +54,7 @@ class AnalyticsService {
         final revenueResponse = await _supabase
             .from('daily_revenue')
             .select('total_revenue')
+            .eq('company_id', cid)
             .gte('date', firstDayOfMonth.toIso8601String().split('T')[0])
             .lte('date', lastDayOfMonth.toIso8601String().split('T')[0]);
 
@@ -63,7 +71,6 @@ class AnalyticsService {
       final revenueGrowth = 12.5; // Mock growth rate for now
 
       return {
-        'totalCompanies': totalCompanies,
         'totalStores': totalStores,
         'totalTables': totalTables,
         'totalEmployees': totalEmployees,

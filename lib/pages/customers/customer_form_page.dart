@@ -1,0 +1,252 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../providers/odori_providers.dart';
+import '../../providers/auth_provider.dart';
+
+class CustomerFormPage extends ConsumerStatefulWidget {
+  const CustomerFormPage({super.key});
+
+  @override
+  ConsumerState<CustomerFormPage> createState() => _CustomerFormPageState();
+}
+
+class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
+  final _formKey = GlobalKey<FormState>();
+  
+  // Controllers
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _taxIdController = TextEditingController();
+  
+  // State
+  String _customerType = 'direct'; // direct, distributor, agent
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _emailController.dispose();
+    _taxIdController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Thêm khách hàng mới'),
+        actions: [
+          TextButton.icon(
+            onPressed: _isLoading ? null : _submit,
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check),
+            label: const Text('LƯU'),
+          ),
+        ],
+      ),
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildGeneralInfoSection(),
+              const SizedBox(height: 16),
+              _buildContactInfoSection(),
+              const SizedBox(height: 16),
+              _buildAdditionalInfoSection(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGeneralInfoSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Thông tin chung',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Tên khách hàng / NPP *',
+                prefixIcon: Icon(Icons.business),
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Vui lòng nhập tên khách hàng';
+                }
+                return null;
+              },
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _customerType,
+              decoration: const InputDecoration(
+                labelText: 'Loại khách hàng',
+                prefixIcon: Icon(Icons.category),
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'direct', child: Text('Khách lẻ (Direct)')),
+                DropdownMenuItem(value: 'distributor', child: Text('Nhà Phân Phối (NPP)')),
+                DropdownMenuItem(value: 'agent', child: Text('Đại lý')),
+              ],
+              onChanged: (value) {
+                if (value != null) setState(() => _customerType = value);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactInfoSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Liên hệ & Địa chỉ',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _phoneController,
+              decoration: const InputDecoration(
+                labelText: 'Số điện thoại',
+                prefixIcon: Icon(Icons.phone),
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _addressController,
+              decoration: const InputDecoration(
+                labelText: 'Địa chỉ',
+                prefixIcon: Icon(Icons.location_on),
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+             const SizedBox(height: 16),
+            TextFormField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.email),
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdditionalInfoSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Thông tin khác',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _taxIdController,
+              decoration: const InputDecoration(
+                labelText: 'Mã số thuế',
+                prefixIcon: Icon(Icons.confirmation_number),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final authState = ref.read(authProvider);
+      final companyId = authState.user?.companyId;
+
+      if (companyId == null) throw Exception('Không tìm thấy thông tin công ty');
+
+      final customerId = const Uuid().v4();
+      
+      // Auto generate code: KH + Timestamp (simple logic)
+      final customerCode = 'KH${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+
+      await supabase.from('customers').insert({
+        'id': customerId,
+        'company_id': companyId,
+        'customer_code': customerCode,
+        'name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+        'address': _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
+        'email': _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
+        'tax_id': _taxIdController.text.trim().isNotEmpty ? _taxIdController.text.trim() : null,
+        'customer_type': _customerType,
+        'status': 'active',
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Thêm khách hàng thành công!'),
+          backgroundColor: Colors.green,
+        ));
+         // Refresh customer list
+        ref.invalidate(customersProvider);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Lỗi: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}

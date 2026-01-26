@@ -1,0 +1,621 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/odori_customer.dart';
+import '../models/odori_product.dart';
+import '../models/odori_sales_order.dart';
+import '../models/odori_delivery.dart';
+import '../models/odori_receivable.dart';
+import '../models/inventory_movement.dart';
+import 'auth_provider.dart';
+
+final supabase = Supabase.instance.client;
+
+/// Exception thrown when auth is still loading
+class _AuthLoadingException implements Exception {
+  const _AuthLoadingException();
+  @override
+  String toString() => 'Đang tải thông tin đăng nhập...';
+}
+
+// ============================================================================
+// CUSTOMERS PROVIDER
+// ============================================================================
+final customersProvider = FutureProvider.autoDispose
+    .family<List<OdoriCustomer>, CustomerFilters>((ref, filters) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  print('🔍 customersProvider: START - companyId=$companyId, filters: ch=${filters.channel}, search=${filters.search}');
+  
+  if (companyId == null) {
+    print('⚠️ customersProvider: companyId is NULL');
+    return [];
+  }
+
+  try {
+    var query = supabase
+        .from('customers')
+        .select('*, employees(full_name)')
+        .eq('company_id', companyId);
+
+    if (filters.status != null) {
+      query = query.eq('status', filters.status!);
+    }
+    if (filters.customerType != null) {
+      query = query.eq('type', filters.customerType!); // DB uses 'type' not 'customer_type'
+    }
+    if (filters.channel != null) {
+      query = query.eq('channel', filters.channel!);
+    }
+    if (filters.search != null && filters.search!.isNotEmpty) {
+      query = query.or('name.ilike.%${filters.search}%,code.ilike.%${filters.search}%'); // DB uses 'code' not 'customer_code'
+    }
+
+    // Pagination: limit results for better performance
+    final limit = filters.limit ?? 50;
+    final offset = filters.offset ?? 0;
+    
+    print('📤 customersProvider: Executing query with limit=$limit, offset=$offset');
+    
+    final response = await query
+        .order('last_order_date', ascending: false, nullsFirst: false) // Ưu tiên KH mới mua gần đây
+        .range(offset, offset + limit - 1);
+    
+    print('📦 customersProvider: loaded ${(response as List).length} customers (offset=$offset, limit=$limit)');
+    return response.map((json) => OdoriCustomer.fromJson(json)).toList();
+  } catch (e, stack) {
+    print('❌ customersProvider ERROR: $e');
+    print('Stack trace: $stack');
+    rethrow;
+  }
+});
+
+class CustomerFilters {
+  final String? status;
+  final String? customerType;
+  final String? channel;
+  final String? search;
+  final int? limit;
+  final int? offset;
+
+  const CustomerFilters({
+    this.status, 
+    this.customerType, 
+    this.channel, 
+    this.search,
+    this.limit,
+    this.offset,
+  });
+  
+  CustomerFilters copyWith({
+    String? status,
+    String? customerType,
+    String? channel,
+    String? search,
+    int? limit,
+    int? offset,
+  }) {
+    return CustomerFilters(
+      status: status ?? this.status,
+      customerType: customerType ?? this.customerType,
+      channel: channel ?? this.channel,
+      search: search ?? this.search,
+      limit: limit ?? this.limit,
+      offset: offset ?? this.offset,
+    );
+  }
+}
+
+// ============================================================================
+// PRODUCTS PROVIDER
+// ============================================================================
+final productsProvider = FutureProvider.autoDispose
+    .family<List<OdoriProduct>, ProductFilters>((ref, filters) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  var query = supabase
+      .from('products')
+      .select('*, product_categories(name)')
+      .eq('company_id', companyId);
+
+  if (filters.categoryId != null) {
+    query = query.eq('category_id', filters.categoryId!);
+  }
+  if (filters.isActive != null) {
+    // DB uses 'status' column instead of 'is_active' boolean
+    query = query.eq('status', filters.isActive! ? 'active' : 'inactive');
+  }
+  if (filters.search != null && filters.search!.isNotEmpty) {
+    query = query.or('name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%');
+  }
+
+  final response = await query.order('name');
+  return (response as List).map((json) => OdoriProduct.fromJson(json)).toList();
+});
+
+final productCategoriesProvider = FutureProvider.autoDispose<List<OdoriProductCategory>>((ref) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  final response = await supabase
+      .from('product_categories')
+      .select()
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .order('sort_order');
+
+  return (response as List).map((json) => OdoriProductCategory.fromJson(json)).toList();
+});
+
+class ProductFilters {
+  final String? categoryId;
+  final bool? isActive;
+  final String? search;
+
+  const ProductFilters({this.categoryId, this.isActive, this.search});
+}
+
+// ============================================================================
+// SALES ORDERS PROVIDER
+// ============================================================================
+final salesOrdersProvider = FutureProvider.autoDispose
+    .family<List<OdoriSalesOrder>, OrderFilters>((ref, filters) async {
+  final authState = ref.watch(authProvider);
+  
+  // Wait for auth to finish initializing
+  if (!authState.isInitialized || authState.isLoading) {
+    print('🔄 salesOrdersProvider: Waiting for auth to initialize... (isInitialized=${authState.isInitialized}, isLoading=${authState.isLoading})');
+    // Throw a special "loading" exception to show loading state
+    throw const _AuthLoadingException();
+  }
+  
+  final companyId = authState.user?.companyId;
+  print('🔍 salesOrdersProvider: user=${authState.user?.name}, companyId=$companyId, status=${filters.status}');
+  
+  if (companyId == null) {
+    print('⚠️ salesOrdersProvider: companyId is NULL - user may not have company assigned');
+    // Throw error so UI can show proper message instead of silent empty list
+    throw Exception('Không tìm thấy công ty. Vui lòng liên hệ Admin để được gán vào công ty.');
+  }
+
+  var query = supabase
+      .from('sales_orders')
+      .select('*, customers(name), employees(full_name), warehouses(name)')
+      .eq('company_id', companyId);
+
+  if (filters.status != null) {
+    query = query.eq('status', filters.status!);
+  }
+  if (filters.customerId != null) {
+    query = query.eq('customer_id', filters.customerId!);
+  }
+  if (filters.dateFrom != null) {
+    query = query.gte('order_date', filters.dateFrom!.toIso8601String());
+  }
+  if (filters.dateTo != null) {
+    query = query.lte('order_date', filters.dateTo!.toIso8601String());
+  }
+
+  final response = await query.order('order_date', ascending: false);
+  print('✅ salesOrdersProvider: loaded ${(response as List).length} orders');
+  return response.map((json) => OdoriSalesOrder.fromJson(json)).toList();
+});
+
+final salesOrderDetailProvider = FutureProvider.autoDispose
+    .family<OdoriSalesOrder?, String>((ref, orderId) async {
+  final response = await supabase
+      .from('sales_orders')
+      .select('*, customers(name), employees(full_name), warehouses(name), sales_order_items(*, products(name, sku))')
+      .eq('id', orderId)
+      .single();
+
+  return OdoriSalesOrder.fromJson(response);
+});
+
+final pendingApprovalsProvider = FutureProvider.autoDispose<List<OdoriSalesOrder>>((ref) async {
+  final authState = ref.watch(authProvider);
+  
+  // Wait for auth to finish initializing
+  if (!authState.isInitialized || authState.isLoading) {
+    print('🔄 pendingApprovalsProvider: Waiting for auth to initialize...');
+    return [];
+  }
+  
+  final companyId = authState.user?.companyId;
+  print('🔍 pendingApprovalsProvider: companyId=$companyId');
+  
+  if (companyId == null) {
+    print('⚠️ pendingApprovalsProvider: companyId is NULL');
+    return []; // For badge count, return empty instead of error
+  }
+
+  final response = await supabase
+      .from('sales_orders')
+      .select('*, customers(name), employees(full_name)')
+      .eq('company_id', companyId)
+      .eq('status', 'pending_approval')
+      .order('created_at');
+
+  print('✅ pendingApprovalsProvider: loaded ${(response as List).length} pending orders');
+  return response.map((json) => OdoriSalesOrder.fromJson(json)).toList();
+});
+
+class OrderFilters {
+  final String? status;
+  final String? customerId;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
+
+  const OrderFilters({this.status, this.customerId, this.dateFrom, this.dateTo});
+}
+
+// ============================================================================
+// DELIVERIES PROVIDER
+// ============================================================================
+final deliveriesProvider = FutureProvider.autoDispose
+    .family<List<OdoriDelivery>, DeliveryFilters>((ref, filters) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  var query = supabase
+      .from('deliveries')
+      .select('*, employees(full_name)')
+      .eq('company_id', companyId);
+
+  if (filters.status != null) {
+    query = query.eq('status', filters.status!);
+  }
+  if (filters.date != null) {
+    query = query.eq('delivery_date', filters.date!.toIso8601String().split('T')[0]);
+  }
+  if (filters.driverId != null) {
+    query = query.eq('driver_id', filters.driverId!);
+  }
+
+  final response = await query.order('delivery_date', ascending: false);
+  return (response as List).map((json) => OdoriDelivery.fromJson(json)).toList();
+});
+
+final deliveryDetailProvider = FutureProvider.autoDispose
+    .family<OdoriDelivery?, String>((ref, deliveryId) async {
+  final response = await supabase
+      .from('deliveries')
+      .select('*, employees(full_name), delivery_items(*, sales_orders(order_number))')
+      .eq('id', deliveryId)
+      .single();
+
+  return OdoriDelivery.fromJson(response);
+});
+
+final activeDeliveriesProvider = FutureProvider.autoDispose<List<OdoriDelivery>>((ref) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  final response = await supabase
+      .from('deliveries')
+      .select('*, employees(full_name)')
+      .eq('company_id', companyId)
+      .eq('status', 'in_progress')
+      .order('started_at');
+
+  return (response as List).map((json) => OdoriDelivery.fromJson(json)).toList();
+});
+
+class DeliveryFilters {
+  final String? status;
+  final DateTime? date;
+  final String? driverId;
+
+  const DeliveryFilters({this.status, this.date, this.driverId});
+}
+
+// ============================================================================
+// RECEIVABLES PROVIDER
+// ============================================================================
+final receivablesProvider = FutureProvider.autoDispose
+    .family<List<OdoriReceivable>, ReceivableFilters>((ref, filters) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  var query = supabase
+      .from('receivables')
+      .select('*, customers(name), sales_orders(order_number)')
+      .eq('company_id', companyId);
+
+  if (filters.status != null) {
+    query = query.eq('status', filters.status!);
+  }
+  if (filters.customerId != null) {
+    query = query.eq('customer_id', filters.customerId!);
+  }
+
+  final response = await query.order('due_date');
+  return (response as List).map((json) => OdoriReceivable.fromJson(json)).toList();
+});
+
+final overdueReceivablesProvider = FutureProvider.autoDispose<List<OdoriReceivable>>((ref) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  final today = DateTime.now().toIso8601String().split('T')[0];
+  final response = await supabase
+      .from('receivables')
+      .select('*, customers(name)')
+      .eq('company_id', companyId)
+      .inFilter('status', ['open', 'partial'])
+      .lt('due_date', today)
+      .order('due_date');
+
+  return (response as List).map((json) => OdoriReceivable.fromJson(json)).toList();
+});
+
+class ReceivableFilters {
+  final String? status;
+  final String? customerId;
+
+  const ReceivableFilters({this.status, this.customerId});
+}
+
+// ============================================================================
+// PAYMENTS PROVIDER
+// ============================================================================
+final paymentsProvider = FutureProvider.autoDispose
+    .family<List<OdoriPayment>, PaymentFilters>((ref, filters) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  var query = supabase
+      .from('payments')
+      .select('*, customers(name), employees(full_name)')
+      .eq('company_id', companyId);
+
+  if (filters.customerId != null) {
+    query = query.eq('customer_id', filters.customerId!);
+  }
+  if (filters.dateFrom != null) {
+    query = query.gte('payment_date', filters.dateFrom!.toIso8601String());
+  }
+  if (filters.dateTo != null) {
+    query = query.lte('payment_date', filters.dateTo!.toIso8601String());
+  }
+
+  final response = await query.order('payment_date', ascending: false);
+  return (response as List).map((json) => OdoriPayment.fromJson(json)).toList();
+});
+
+class PaymentFilters {
+  final String? customerId;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
+
+  const PaymentFilters({this.customerId, this.dateFrom, this.dateTo});
+}
+
+// ============================================================================
+// INVENTORY MOVEMENTS PROVIDER
+// ============================================================================
+final inventoryMovementsProvider = FutureProvider.autoDispose
+    .family<List<InventoryMovement>, InventoryFilters>((ref, filters) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  var query = supabase
+      .from('inventory_movements')
+      .select('*, products(name, sku)')
+      .eq('company_id', companyId);
+
+  if (filters.productId != null) {
+    query = query.eq('product_id', filters.productId!);
+  }
+  if (filters.type != null) {
+    query = query.eq('type', filters.type!);
+  }
+
+  final response = await query.order('created_at', ascending: false).limit(100);
+  return (response as List).map((json) => InventoryMovement.fromJson(json)).toList();
+});
+
+class InventoryFilters {
+  final String? productId;
+  final String? type;
+  const InventoryFilters({this.productId, this.type});
+}
+
+// ============================================================================
+// DASHBOARD STATS PROVIDERS
+// ============================================================================
+
+/// Dashboard statistics model
+class OdoriDashboardStats {
+  final int totalCustomers;
+  final int activeCustomers;
+  final int totalProducts;
+  final int pendingOrders;
+  final int inProgressDeliveries;
+  final int completedOrdersToday;
+  final double todayRevenue;
+  final double monthRevenue;
+  final double totalReceivables;
+  final double overdueReceivables;
+
+  const OdoriDashboardStats({
+    this.totalCustomers = 0,
+    this.activeCustomers = 0,
+    this.totalProducts = 0,
+    this.pendingOrders = 0,
+    this.inProgressDeliveries = 0,
+    this.completedOrdersToday = 0,
+    this.todayRevenue = 0,
+    this.monthRevenue = 0,
+    this.totalReceivables = 0,
+    this.overdueReceivables = 0,
+  });
+}
+
+/// Provider for dashboard statistics
+final dashboardStatsProvider = FutureProvider.autoDispose<OdoriDashboardStats>((ref) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return const OdoriDashboardStats();
+
+  try {
+    // Get customer counts
+    final customersResult = await supabase
+        .from('customers')
+        .select('id, status')
+        .eq('company_id', companyId);
+    final customers = customersResult as List;
+    final totalCustomers = customers.length;
+    final activeCustomers = customers.where((c) => c['status'] == 'active').length;
+
+    // Get product count
+    final productsResult = await supabase
+        .from('products')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('status', 'active');
+    final totalProducts = (productsResult as List).length;
+
+    // Get order stats
+    final ordersResult = await supabase
+        .from('sales_orders')
+        .select('id, status, total, created_at')
+        .eq('company_id', companyId);
+    final orders = ordersResult as List;
+    
+    final pendingOrders = orders.where((o) => o['status'] == 'pending_approval').length;
+    
+    final today = DateTime.now();
+    final todayStr = today.toIso8601String().split('T')[0];
+    final completedToday = orders.where((o) => 
+        o['status'] == 'delivered' && 
+        (o['created_at'] as String).startsWith(todayStr)
+    ).length;
+
+    // Calculate revenue
+    double todayRevenue = 0;
+    double monthRevenue = 0;
+    final monthStart = DateTime(today.year, today.month, 1);
+    
+    for (final order in orders) {
+      if (order['status'] == 'delivered') {
+        final total = (order['total'] as num?)?.toDouble() ?? 0;
+        final createdAt = DateTime.parse(order['created_at'] as String);
+        
+        if (createdAt.year == today.year && 
+            createdAt.month == today.month && 
+            createdAt.day == today.day) {
+          todayRevenue += total;
+        }
+        if (createdAt.isAfter(monthStart.subtract(const Duration(days: 1)))) {
+          monthRevenue += total;
+        }
+      }
+    }
+
+    // Get delivery stats
+    final deliveriesResult = await supabase
+        .from('deliveries')
+        .select('id, status')
+        .eq('company_id', companyId);
+    final deliveries = deliveriesResult as List;
+    final inProgressDeliveries = deliveries.where((d) => d['status'] == 'in_progress').length;
+
+    // Get receivables
+    final receivablesResult = await supabase
+        .from('receivables')
+        .select('original_amount, paid_amount, due_date, status')
+        .eq('company_id', companyId)
+        .inFilter('status', ['open', 'partial']);
+    final receivables = receivablesResult as List;
+    
+    double totalReceivables = 0;
+    double overdueReceivables = 0;
+    
+    for (final r in receivables) {
+      final originalAmount = (r['original_amount'] as num?)?.toDouble() ?? 0;
+      final paidAmount = (r['paid_amount'] as num?)?.toDouble() ?? 0;
+      final outstandingAmount = originalAmount - paidAmount;
+      totalReceivables += outstandingAmount;
+      
+      if (r['due_date'] != null) {
+        final dueDate = DateTime.parse(r['due_date'] as String);
+        if (dueDate.isBefore(today)) {
+          overdueReceivables += outstandingAmount;
+        }
+      }
+    }
+
+    return OdoriDashboardStats(
+      totalCustomers: totalCustomers,
+      activeCustomers: activeCustomers,
+      totalProducts: totalProducts,
+      pendingOrders: pendingOrders,
+      inProgressDeliveries: inProgressDeliveries,
+      completedOrdersToday: completedToday,
+      todayRevenue: todayRevenue,
+      monthRevenue: monthRevenue,
+      totalReceivables: totalReceivables,
+      overdueReceivables: overdueReceivables,
+    );
+  } catch (e) {
+    print('Error loading dashboard stats: $e');
+    return const OdoriDashboardStats();
+  }
+});
+
+/// Provider for recent orders
+final recentOrdersProvider = FutureProvider.autoDispose<List<OdoriSalesOrder>>((ref) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  final response = await supabase
+      .from('sales_orders')
+      .select('*, customers(name)')
+      .eq('company_id', companyId)
+      .order('created_at', ascending: false)
+      .limit(10);
+
+  return (response as List).map((json) => OdoriSalesOrder.fromJson(json)).toList();
+});
+
+/// Provider for all customers (simple list)
+final allCustomersProvider = FutureProvider.autoDispose<List<OdoriCustomer>>((ref) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  final response = await supabase
+      .from('customers')
+      .select('*, employees(full_name)')
+      .eq('company_id', companyId)
+      .eq('status', 'active')
+      .order('name');
+
+  return (response as List).map((json) => OdoriCustomer.fromJson(json)).toList();
+});
+
+/// Provider for all products (simple list)
+final allProductsProvider = FutureProvider.autoDispose<List<OdoriProduct>>((ref) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  final response = await supabase
+      .from('products')
+      .select('*, product_categories(name)')
+      .eq('company_id', companyId)
+      .eq('status', 'active')
+      .order('name');
+
+  return (response as List).map((json) => OdoriProduct.fromJson(json)).toList();
+});
