@@ -92,4 +92,5 @@ flutter:
   
   assets:
     - .env
+    - .env.local
     - assets/images/

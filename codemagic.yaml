@@ -62,7 +62,7 @@ workflows:
       # 2. Set up environment file
       - name: Set up .env file
         script: |
-          echo "📝 Creating .env file with environment variables..."
+          echo "📝 Creating .env and .env.local files with environment variables..."
           cat <<EOF > .env
           SUPABASE_URL=$SUPABASE_URL
           SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
@@ -71,7 +71,8 @@ workflows:
           GOOGLE_DRIVE_CLIENT_ID_WEB=$GOOGLE_DRIVE_CLIENT_ID_WEB
           GOOGLE_DRIVE_CLIENT_ID_ANDROID=$GOOGLE_DRIVE_CLIENT_ID_ANDROID
           EOF
-          echo "✅ .env file created"
+          cp .env .env.local
+          echo "✅ .env and .env.local files created"
       
       # 3. Get Flutter packages
       - name: Get Flutter packages
@@ -206,6 +207,7 @@ workflows:
           GOOGLE_DRIVE_CLIENT_ID_ANDROID=$GOOGLE_DRIVE_CLIENT_ID_ANDROID
           GOOGLE_DRIVE_CLIENT_ID_WEB=$GOOGLE_DRIVE_CLIENT_ID_WEB
           EOF
+          cp .env .env.local
       - name: Get Flutter packages
         script: |
           flutter packages pub get
