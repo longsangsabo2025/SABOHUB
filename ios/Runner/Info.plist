@@ -55,5 +55,17 @@
 	<!-- Privacy - Location When In Use -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>SABOHUB cần truy cập vị trí của bạn để xác minh địa điểm làm việc khi check-in. Vị trí chỉ được sử dụng trong thời gian bạn mở ứng dụng và không được lưu trữ hay chia sẻ với bên thứ ba.</string>
+	
+	<!-- Privacy - Location Always And When In Use (Required for background location) -->
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>SABOHUB cần quyền truy cập vị trí liên tục để theo dõi hành trình giao hàng và xác minh địa điểm làm việc. Vị trí chỉ được thu thập khi bạn đang làm việc và không được chia sẻ với bên thứ ba.</string>
+	
+	<!-- Privacy - Location Always (Legacy - iOS 10) -->
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>SABOHUB cần quyền truy cập vị trí để theo dõi hành trình giao hàng và xác minh địa điểm làm việc.</string>
+	
+	<!-- Privacy - Camera Usage -->
+	<key>NSCameraUsageDescription</key>
+	<string>SABOHUB cần truy cập camera để chụp ảnh tài liệu, hóa đơn và xác nhận giao hàng.</string>
 </dict>
 </plist>
