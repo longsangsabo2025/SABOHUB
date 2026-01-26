@@ -9,8 +9,6 @@ workflows:
     name: iOS App Store
     max_build_duration: 120
     instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: sabohub-asc
     
     environment:
       ios_signing:
@@ -19,6 +17,8 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
+      groups:
+        - app_store_credentials
       vars:
         BUNDLE_ID: "com.sabohub.app"
         APP_NAME: "SABOHUB"
