@@ -20,6 +20,10 @@ import '../../layouts/manager_main_layout.dart';
 import '../../layouts/shift_leader_main_layout.dart';
 import '../../layouts/driver_main_layout.dart';
 import '../../layouts/warehouse_main_layout.dart';
+import '../../layouts/distribution_warehouse_layout.dart';
+import '../../pages/driver/distribution_driver_layout_refactored.dart';
+import '../../layouts/distribution_finance_layout.dart';
+import '../../layouts/distribution_customer_service_layout.dart';
 import '../../pages/staff_main_layout.dart';
 import '../../pages/ceo/ceo_main_layout.dart';
 import '../../pages/manager/manager_reports_page.dart';
@@ -100,6 +104,12 @@ class AppRoutes {
   static const String odoriOrders = '/odori/orders';
   static const String odoriDeliveries = '/odori/deliveries';
   static const String odoriReceivables = '/odori/receivables';
+  
+  // Direct role layout routes for manager navigation
+  static const String warehouse = '/warehouse';
+  static const String driver = '/driver';
+  static const String finance = '/finance';
+  static const String support = '/support';
   
   // Warehouse & Driver routes
   static const String warehousePicking = '/warehouse/picking';
@@ -201,9 +211,19 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
           state.matchedLocation == AppRoutes.signup ||
           state.matchedLocation == AppRoutes.forgotPassword;
 
+      // 🔍 DEBUG LOG - Remove after fixing
+      print('🚀 [ROUTER] ==================');
+      print('🚀 [ROUTER] matchedLocation: ${state.matchedLocation}');
+      print('🚀 [ROUTER] isLoggedIn: $isLoggedIn');
+      print('🚀 [ROUTER] isLoading: $isLoading');
+      print('🚀 [ROUTER] userRole: $userRole');
+      print('🚀 [ROUTER] user: ${authState.user?.name} (${authState.user?.role})');
+      print('🚀 [ROUTER] isAuthRoute: $isAuthRoute');
+
       // ✅ FIX: Wait for session restore to complete before redirecting
       // This prevents the race condition where user sees login page briefly
       if (isLoading) {
+        print('🚀 [ROUTER] --> WAITING (isLoading)');
         return null; // Stay on current route while loading
       }
 
@@ -221,19 +241,24 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
           !isAuthRoute &&
           !isEmailVerification &&
           !isOnboarding) {
+        print('🚀 [ROUTER] --> REDIRECT TO LOGIN (not logged in)');
         return AppRoutes.login;
       }
 
       // If logged in and on auth pages (but not email verification), redirect to home
       if (isLoggedIn && isAuthRoute && !isEmailVerification) {
+        print('🚀 [ROUTER] --> REDIRECT TO HOME (logged in on auth page)');
         return AppRoutes.home;
       }
 
       // Check role-based access for authenticated users (skip email verification and onboarding)
       if (isLoggedIn && !isEmailVerification && !isOnboarding) {
-        return RouteGuard.checkAccess(userRole, state.matchedLocation);
+        final redirectRoute = RouteGuard.checkAccess(userRole, state.matchedLocation);
+        print('🚀 [ROUTER] --> RouteGuard.checkAccess returned: $redirectRoute');
+        return redirectRoute;
       }
 
+      print('🚀 [ROUTER] --> NO REDIRECT (null)');
       return null;
     },
     routes: [
@@ -407,6 +432,24 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) => const OdoriReceivablesPage(),
       ),
 
+      // Direct role layout routes for manager navigation
+      GoRoute(
+        path: AppRoutes.warehouse,
+        builder: (BuildContext context, GoRouterState state) => const DistributionWarehouseLayout(),
+      ),
+      GoRoute(
+        path: AppRoutes.driver,
+        builder: (BuildContext context, GoRouterState state) => const DistributionDriverLayout(),
+      ),
+      GoRoute(
+        path: AppRoutes.finance,
+        builder: (BuildContext context, GoRouterState state) => const DistributionFinanceLayout(),
+      ),
+      GoRoute(
+        path: AppRoutes.support,
+        builder: (BuildContext context, GoRouterState state) => const DistributionCustomerServiceLayout(),
+      ),
+      
       // Warehouse & Driver routes - Use full layouts for proper navigation
       GoRoute(
         path: AppRoutes.warehousePicking,

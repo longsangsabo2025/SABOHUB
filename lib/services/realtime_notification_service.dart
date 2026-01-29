@@ -44,11 +44,13 @@ class AppNotification {
       userId: json['user_id'] as String,
       companyId: json['company_id'] as String?,
       title: json['title'] as String,
-      body: json['body'] as String?,
+      // Database uses 'message' instead of 'body'
+      body: (json['body'] ?? json['message']) as String?,
       type: json['type'] as String? ?? 'info',
       referenceType: json['reference_type'] as String?,
       referenceId: json['reference_id'] as String?,
-      actionUrl: json['action_url'] as String?,
+      // Database uses 'link' instead of 'action_url'
+      actionUrl: (json['action_url'] ?? json['link']) as String?,
       actionData: json['action_data'] as Map<String, dynamic>?,
       isRead: json['is_read'] as bool? ?? false,
       readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
@@ -108,7 +110,7 @@ class RealtimeNotificationService {
 
   final _supabase = Supabase.instance.client;
   
-  // Stream controllers
+  // Stream controllers - use broadcast for multiple listeners
   final _notificationsController = StreamController<List<AppNotification>>.broadcast();
   final _newNotificationController = StreamController<AppNotification>.broadcast();
   final _unreadCountController = StreamController<int>.broadcast();
@@ -117,10 +119,23 @@ class RealtimeNotificationService {
   List<AppNotification> _notifications = [];
   int _unreadCount = 0;
   RealtimeChannel? _channel;
-  String? _currentUserId;
+  String? _currentUserId; // Employee ID used for notifications
+  String? _lastAuthUserId; // Track auth user ID to avoid unnecessary re-init
+  bool _hasInitialData = false; // Track if initial data has been loaded
 
-  // Streams
-  Stream<List<AppNotification>> get notificationsStream => _notificationsController.stream;
+  // Streams - wrap with logic to emit current data for new listeners
+  Stream<List<AppNotification>> get notificationsStream {
+    // If we have data, emit it immediately for new subscribers
+    if (_hasInitialData && _notifications.isNotEmpty) {
+      return Stream.value(_notifications).asyncExpand((initial) async* {
+        yield initial;
+        await for (final update in _notificationsController.stream) {
+          yield update;
+        }
+      });
+    }
+    return _notificationsController.stream;
+  }
   Stream<AppNotification> get newNotificationStream => _newNotificationController.stream;
   Stream<int> get unreadCountStream => _unreadCountController.stream;
 
@@ -129,12 +144,44 @@ class RealtimeNotificationService {
   int get unreadCount => _unreadCount;
 
   /// Initialize service and subscribe to realtime updates
-  Future<void> initialize(String userId) async {
-    if (_currentUserId == userId) return; // Already initialized for this user
+  /// [authUserId] is the Supabase auth user ID, we need to lookup the employee ID
+  Future<void> initialize(String authUserId) async {
+    debugPrint('🔔 [NOTIF] initialize called with authUserId: $authUserId');
+    
+    // Skip if already initialized for this auth user
+    if (_lastAuthUserId == authUserId && _currentUserId != null) {
+      debugPrint('🔔 [NOTIF] Already initialized, skipping. currentUserId: $_currentUserId');
+      return;
+    }
     
     // Clean up previous subscription
     await dispose();
-    _currentUserId = userId;
+    _lastAuthUserId = authUserId;
+    
+    // Lookup employee ID from auth_user_id
+    // Notifications are stored with employee.id, not auth user id
+    try {
+      final employeeResponse = await _supabase
+          .from('employees')
+          .select('id')
+          .eq('auth_user_id', authUserId)
+          .maybeSingle();
+      
+      if (employeeResponse != null) {
+        _currentUserId = employeeResponse['id'] as String;
+        debugPrint('📬 Notification service: using employee ID $_currentUserId');
+      } else {
+        // Fallback: try using auth_user_id directly (for users table)
+        _currentUserId = authUserId;
+        debugPrint('📬 Notification service: using auth user ID $authUserId (no employee found)');
+      }
+    } catch (e) {
+      // Fallback to auth user ID
+      _currentUserId = authUserId;
+      debugPrint('📬 Notification service: fallback to auth user ID due to error: $e');
+    }
+    
+    if (_currentUserId == null) return;
 
     // Load initial notifications
     await _loadNotifications();
@@ -146,9 +193,14 @@ class RealtimeNotificationService {
 
   /// Load notifications from database
   Future<void> _loadNotifications() async {
-    if (_currentUserId == null) return;
+    debugPrint('🔔 [NOTIF] _loadNotifications called, currentUserId: $_currentUserId');
+    if (_currentUserId == null) {
+      debugPrint('🔔 [NOTIF] currentUserId is null, returning early');
+      return;
+    }
 
     try {
+      debugPrint('🔔 [NOTIF] Querying notifications for user_id: $_currentUserId');
       final response = await _supabase
           .from('notifications')
           .select()
@@ -156,13 +208,20 @@ class RealtimeNotificationService {
           .order('created_at', ascending: false)
           .limit(50);
 
+      debugPrint('🔔 [NOTIF] Raw response: ${response.length} items');
+      debugPrint('🔔 [NOTIF] First item: ${response.isNotEmpty ? response.first : "empty"}');
+      
       _notifications = (response as List)
           .map((json) => AppNotification.fromJson(json))
           .toList();
       
+      debugPrint('🔔 [NOTIF] Parsed ${_notifications.length} notifications, adding to stream');
+      _hasInitialData = true;
       _notificationsController.add(_notifications);
-    } catch (e) {
-      debugPrint('Error loading notifications: $e');
+      debugPrint('🔔 [NOTIF] Stream updated successfully');
+    } catch (e, stack) {
+      debugPrint('❌ [NOTIF] Error loading notifications: $e');
+      debugPrint('❌ [NOTIF] Stack: $stack');
     }
   }
 
@@ -409,22 +468,37 @@ class RealtimeNotificationService {
     bool excludeSelf = true,
   }) async {
     try {
-      // Get all users in company
-      var query = _supabase
+      // Get all users from both users and employees tables
+      var usersQuery = _supabase
           .from('users')
           .select('id')
           .eq('company_id', companyId);
       
+      var employeesQuery = _supabase
+          .from('employees')
+          .select('id')
+          .eq('company_id', companyId);
+      
       if (excludeSelf && _currentUserId != null) {
-        query = query.neq('id', _currentUserId!);
+        usersQuery = usersQuery.neq('id', _currentUserId!);
+        employeesQuery = employeesQuery.neq('id', _currentUserId!);
       }
       
-      final users = await query;
+      final users = await usersQuery;
+      final employees = await employeesQuery;
+      
+      // Combine and dedupe user IDs
+      final allUserIds = <String>{};
+      for (final user in users as List) {
+        allUserIds.add(user['id'] as String);
+      }
+      for (final employee in employees as List) {
+        allUserIds.add(employee['id'] as String);
+      }
       
       // Send notification to each user
       int count = 0;
-      for (final user in users as List) {
-        final userId = user['id'] as String;
+      for (final userId in allUserIds) {
         final result = await sendNotification(
           userId: userId,
           title: title,
@@ -468,7 +542,9 @@ class RealtimeNotificationService {
     await _channel?.unsubscribe();
     _channel = null;
     _currentUserId = null;
+    _lastAuthUserId = null;
     _notifications = [];
     _unreadCount = 0;
+    _hasInitialData = false;
   }
 }

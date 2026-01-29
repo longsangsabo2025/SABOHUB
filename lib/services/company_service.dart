@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../core/services/supabase_service.dart';
 import '../models/company.dart';
 import 'branch_service.dart';
@@ -10,6 +12,7 @@ class CompanyService {
   final _branchService = BranchService();
 
   /// Get all companies (excludes soft-deleted)
+  /// Get all companies (admin only - for platform management)
   Future<List<Company>> getAllCompanies() async {
     try {
       final response = await _supabase
@@ -22,6 +25,34 @@ class CompanyService {
       return (response as List).map((json) => Company.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch companies: $e');
+    }
+  }
+
+  /// Get companies owned by current user (CEO)
+  /// This is the PRIMARY method for CEO dashboard - only shows their companies
+  Future<List<Company>> getMyCompanies() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        debugPrint('🏢 getMyCompanies: User not authenticated');
+        return [];
+      }
+      
+      debugPrint('🏢 getMyCompanies: Fetching for user $userId');
+      
+      final response = await _supabase
+          .from('companies')
+          .select('*')
+          .or('created_by.eq.$userId,owner_id.eq.$userId')
+          .isFilter('deleted_at', null)
+          .order('created_at', ascending: false);
+
+      final companies = (response as List).map((json) => Company.fromJson(json)).toList();
+      debugPrint('🏢 getMyCompanies: Found ${companies.length} companies');
+      return companies;
+    } catch (e) {
+      debugPrint('🏢 getMyCompanies ERROR: $e');
+      throw Exception('Failed to fetch my companies: $e');
     }
   }
 
@@ -111,6 +142,8 @@ class CompanyService {
 
   /// Update company
   Future<Company> updateCompany(String id, Map<String, dynamic> updates) async {
+    debugPrint('🏢 CompanyService.updateCompany - ID: $id');
+    debugPrint('🏢 Updates: $updates');
     try {
       final response = await _supabase
           .from('companies')
@@ -119,8 +152,10 @@ class CompanyService {
           .select()
           .single();
 
+      debugPrint('🏢 Response: $response');
       return Company.fromJson(response);
     } catch (e) {
+      debugPrint('🏢 ERROR: $e');
       throw Exception('Failed to update company: $e');
     }
   }
@@ -162,11 +197,16 @@ class CompanyService {
   /// Get company statistics
   Future<Map<String, dynamic>> getCompanyStats(String companyId) async {
     try {
-      // Get employee count for this company
-      final employeesResponse = await _supabase
+      // Get employee count from both users and employees tables
+      final usersResponse = await _supabase
           .from('users')
           .select('id')
           .eq('company_id', companyId);
+      final employeesResponse = await _supabase
+          .from('employees')
+          .select('id')
+          .eq('company_id', companyId);
+      final totalEmployees = (usersResponse as List).length + (employeesResponse as List).length;
 
       // Get branch count for this company
       final branchesResponse = await _supabase
@@ -195,7 +235,7 @@ class CompanyService {
       }
 
       return {
-        'employeeCount': (employeesResponse as List).length,
+        'employeeCount': totalEmployees,
         'branchCount': (branchesResponse as List).length,
         'tableCount': (tablesResponse as List).length,
         'monthlyRevenue': monthlyRevenue,

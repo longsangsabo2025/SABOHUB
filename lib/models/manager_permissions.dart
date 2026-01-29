@@ -26,6 +26,7 @@ class ManagerPermissions {
   final bool canDeleteTask;
   final bool canApproveAttendance;
   final bool canEditCompanyInfo;
+  final bool canManageBankAccount;
 
   // Metadata
   final String? grantedBy;
@@ -55,6 +56,7 @@ class ManagerPermissions {
     this.canDeleteTask = false,
     this.canApproveAttendance = true,
     this.canEditCompanyInfo = false,
+    this.canManageBankAccount = false,
     this.grantedBy,
     required this.grantedAt,
     required this.updatedAt,
@@ -85,6 +87,7 @@ class ManagerPermissions {
       canDeleteTask: json['can_delete_task'] as bool? ?? false,
       canApproveAttendance: json['can_approve_attendance'] as bool? ?? true,
       canEditCompanyInfo: json['can_edit_company_info'] as bool? ?? false,
+      canManageBankAccount: json['can_manage_bank_account'] as bool? ?? false,
       grantedBy: json['granted_by'] as String?,
       grantedAt: DateTime.parse(json['granted_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -116,6 +119,7 @@ class ManagerPermissions {
       'can_delete_task': canDeleteTask,
       'can_approve_attendance': canApproveAttendance,
       'can_edit_company_info': canEditCompanyInfo,
+      'can_manage_bank_account': canManageBankAccount,
       'granted_by': grantedBy,
       'granted_at': grantedAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),

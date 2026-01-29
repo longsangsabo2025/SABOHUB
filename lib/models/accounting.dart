@@ -18,8 +18,10 @@ enum TransactionType {
 enum PaymentMethod {
   cash('Tiền mặt', 'cash'),
   bank('Chuyển khoản', 'bank'),
+  transfer('Chuyển khoản', 'transfer'),
   card('Thẻ', 'card'),
   momo('MoMo', 'momo'),
+  debt('Công nợ', 'debt'),
   other('Khác', 'other');
 
   final String label;
@@ -40,8 +42,8 @@ class AccountingTransaction {
   final String? category;
   final String? referenceId;
   final String? notes;
-  final String createdBy;
-  final DateTime createdAt;
+  final String? createdBy;
+  final DateTime? createdAt;
 
   const AccountingTransaction({
     required this.id,
@@ -55,8 +57,8 @@ class AccountingTransaction {
     this.category,
     this.referenceId,
     this.notes,
-    required this.createdBy,
-    required this.createdAt,
+    this.createdBy,
+    this.createdAt,
   });
 
   factory AccountingTransaction.fromJson(Map<String, dynamic> json) {
@@ -78,8 +80,8 @@ class AccountingTransaction {
       category: json['category'] as String?,
       referenceId: json['reference_id'] as String?,
       notes: json['notes'] as String?,
-      createdBy: json['created_by'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdBy: json['created_by'] as String?,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
     );
   }
 
@@ -97,7 +99,7 @@ class AccountingTransaction {
       'reference_id': referenceId,
       'notes': notes,
       'created_by': createdBy,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 }
@@ -111,6 +113,10 @@ class AccountingSummary {
   final int transactionCount;
   final DateTime startDate;
   final DateTime endDate;
+  // Extended fields for real data
+  final double totalReceivable;
+  final int paidOrderCount;
+  final int unpaidOrderCount;
 
   const AccountingSummary({
     required this.totalRevenue,
@@ -120,6 +126,9 @@ class AccountingSummary {
     required this.transactionCount,
     required this.startDate,
     required this.endDate,
+    this.totalReceivable = 0,
+    this.paidOrderCount = 0,
+    this.unpaidOrderCount = 0,
   });
 
   String get formattedRevenue => NumberFormat.currency(
@@ -141,46 +150,55 @@ class AccountingSummary {
       ).format(netProfit);
 
   String get formattedProfitMargin => '${profitMargin.toStringAsFixed(1)}%';
+
+  String get formattedReceivable => NumberFormat.currency(
+        locale: 'vi_VN',
+        symbol: '₫',
+        decimalDigits: 0,
+      ).format(totalReceivable);
 }
 
 /// Daily Revenue Model
 class DailyRevenue {
   final String id;
   final String companyId;
-  final String branchId;
+  final String? branchId;
   final DateTime date;
   final double amount;
   final int tableCount;
   final int customerCount;
+  final int orderCount;
   final String? notes;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   const DailyRevenue({
     required this.id,
     required this.companyId,
-    required this.branchId,
+    this.branchId,
     required this.date,
     required this.amount,
-    required this.tableCount,
-    required this.customerCount,
+    this.tableCount = 0,
+    this.customerCount = 0,
+    this.orderCount = 0,
     this.notes,
-    required this.createdAt,
-    required this.updatedAt,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory DailyRevenue.fromJson(Map<String, dynamic> json) {
     return DailyRevenue(
       id: json['id'] as String,
       companyId: json['company_id'] as String,
-      branchId: json['branch_id'] as String,
+      branchId: json['branch_id'] as String?,
       date: DateTime.parse(json['date'] as String),
       amount: (json['amount'] as num).toDouble(),
       tableCount: json['table_count'] as int? ?? 0,
       customerCount: json['customer_count'] as int? ?? 0,
+      orderCount: json['order_count'] as int? ?? 0,
       notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
     );
   }
 
@@ -193,9 +211,10 @@ class DailyRevenue {
       'amount': amount,
       'table_count': tableCount,
       'customer_count': customerCount,
+      'order_count': orderCount,
       'notes': notes,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 

@@ -72,8 +72,8 @@ class OdoriCustomer extends Equatable {
       city: json['city'] as String?,
       district: json['district'] as String?,
       ward: json['ward'] as String?,
-      latitude: (json['latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble(),
+      latitude: (json['lat'] as num?)?.toDouble(),  // DB uses 'lat' not 'latitude'
+      longitude: (json['lng'] as num?)?.toDouble(),  // DB uses 'lng' not 'longitude'
       taxId: json['tax_id'] as String?,
       creditLimit: (json['credit_limit'] as num?)?.toDouble(),
       paymentTerms: json['payment_terms'] as int?,
@@ -99,8 +99,8 @@ class OdoriCustomer extends Equatable {
     'city': city,
     'district': district,
     'ward': ward,
-    'latitude': latitude,
-    'longitude': longitude,
+    'lat': latitude,  // DB uses 'lat' not 'latitude'
+    'lng': longitude,  // DB uses 'lng' not 'longitude'
     'tax_id': taxId,
     'credit_limit': creditLimit,
     'payment_terms': paymentTerms,

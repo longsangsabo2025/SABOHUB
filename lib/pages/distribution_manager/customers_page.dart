@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dvhcvn/dvhcvn.dart' as dvhcvn;
 import '../../models/odori_customer.dart';
 import '../../providers/auth_provider.dart';
 import '../orders/order_form_page.dart';
@@ -771,6 +772,9 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   Widget _buildCustomerCard(OdoriCustomer customer) {
     final lastOrderColor = _getLastOrderColor(customer.lastOrderDate);
     final isVIP = customer.creditLimit > 10000000;
+    final needsAddress = customer.address == null || customer.address!.isEmpty;
+    final needsCoords = customer.lat == null || customer.lng == null;
+    final hasWarning = needsAddress || needsCoords;
     
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -785,7 +789,26 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
             children: [
               Row(
                 children: [
-                  _buildCustomerAvatar(customer),
+                  // Avatar with warning badge
+                  Stack(
+                    children: [
+                      _buildCustomerAvatar(customer),
+                      if (hasWarning)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            child: const Icon(Icons.priority_high, size: 10, color: Colors.white),
+                          ),
+                        ),
+                    ],
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -793,6 +816,31 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                       children: [
                         Row(
                           children: [
+                            if (hasWarning)
+                              Tooltip(
+                                message: needsAddress 
+                                    ? 'Thiếu địa chỉ' 
+                                    : 'Thiếu tọa độ - cần bổ sung để hiển thị trên bản đồ',
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  margin: const EdgeInsets.only(right: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade100,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.warning_amber, size: 10, color: Colors.red.shade700),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        needsAddress ? 'Thiếu ĐC' : 'Thiếu tọa độ',
+                                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.red.shade700),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             if (isVIP) 
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -828,16 +876,32 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                                   style: TextStyle(fontSize: 10, color: _getChannelColor(customer.channel)),
                                 ),
                               ),
-                            if (customer.district != null) ...[
+                            // Clickable address to open Google Maps
+                            if (customer.district != null || customer.street != null) ...[
                               const SizedBox(width: 6),
-                              Icon(Icons.location_on, size: 12, color: Colors.grey.shade500),
-                              const SizedBox(width: 2),
                               Expanded(
-                                child: Text(
-                                  customer.district!,
-                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                child: InkWell(
+                                  onTap: () => _openGoogleMaps(customer),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.location_on, size: 12, color: Colors.teal.shade400),
+                                      const SizedBox(width: 2),
+                                      Expanded(
+                                        child: Text(
+                                          _buildFullAddress(customer),
+                                          style: TextStyle(
+                                            fontSize: 11, 
+                                            color: Colors.teal.shade600,
+                                            decoration: TextDecoration.underline,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(Icons.open_in_new, size: 10, color: Colors.teal.shade400),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
@@ -948,6 +1012,82 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       default: return Colors.grey;
     }
   }
+  
+  /// Build full address from structured fields
+  String _buildFullAddress(OdoriCustomer customer) {
+    final parts = <String>[];
+    if (customer.streetNumber != null && customer.streetNumber!.isNotEmpty) {
+      parts.add(customer.streetNumber!);
+    }
+    if (customer.street != null && customer.street!.isNotEmpty) {
+      parts.add(customer.street!);
+    }
+    if (customer.ward != null && customer.ward!.isNotEmpty) {
+      // Add "Phường" prefix if it's a number
+      final isNumber = int.tryParse(customer.ward!) != null;
+      parts.add(isNumber ? 'Phường ${customer.ward}' : customer.ward!);
+    }
+    if (customer.district != null && customer.district!.isNotEmpty) {
+      // Add "Quận" prefix if it's a number
+      final isNumber = int.tryParse(customer.district!) != null;
+      parts.add(isNumber ? 'Quận ${customer.district}' : customer.district!);
+    }
+    return parts.join(', ');
+  }
+  
+  /// Open Google Maps with customer address
+  Future<void> _openGoogleMaps(OdoriCustomer customer) async {
+    String formattedAddress;
+    
+    // Build structured address for Google Maps
+    final streetNumber = customer.streetNumber ?? '';
+    final street = customer.street ?? '';
+    final ward = customer.ward ?? '';
+    final district = customer.district ?? '';
+    final city = customer.city ?? 'Hồ Chí Minh';
+    
+    if (street.isNotEmpty && district.isNotEmpty) {
+      // Format: 254 Nhật Tảo, Phường 6, Quận 10, Hồ Chí Minh, Việt Nam
+      final parts = <String>[];
+      if (streetNumber.isNotEmpty) {
+        parts.add('$streetNumber $street');
+      } else {
+        parts.add(street);
+      }
+      if (ward.isNotEmpty) {
+        final isNumber = int.tryParse(ward) != null;
+        parts.add(isNumber ? 'Phường $ward' : ward);
+      }
+      final isDistrictNumber = int.tryParse(district) != null;
+      parts.add(isDistrictNumber ? 'Quận $district' : district);
+      parts.add(city);
+      formattedAddress = parts.join(', ') + ', Việt Nam';
+    } else if (customer.address != null && customer.address!.isNotEmpty) {
+      // Fallback to raw address field
+      formattedAddress = customer.address!;
+      if (!formattedAddress.toLowerCase().contains('việt nam')) {
+        formattedAddress += ', Việt Nam';
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Khách hàng chưa có địa chỉ'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+    
+    final encodedAddress = Uri.encodeComponent(formattedAddress);
+    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$encodedAddress');
+    
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không thể mở Google Maps'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
 }
 
 // ==================== SLIVER DELEGATE FOR PINNED SEARCH BAR ====================
@@ -1001,10 +1141,17 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
   final _nameController = TextEditingController();
   final _codeController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _districtController = TextEditingController();
+  final _streetNumberController = TextEditingController();
+  final _streetController = TextEditingController();
   final _creditLimitController = TextEditingController();
   final _paymentTermsController = TextEditingController();
+  
+  // Vietnamese Address Selection
+  dvhcvn.Level1? _selectedCity;
+  dvhcvn.Level2? _selectedDistrict;
+  dvhcvn.Level3? _selectedWard;
+  List<dvhcvn.Level2> _districts = [];
+  List<dvhcvn.Level3> _wards = [];
   
   String _selectedChannel = 'GT Sỉ';
   String _selectedStatus = 'active';
@@ -1013,19 +1160,62 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
   @override
   void initState() {
     super.initState();
+    _initializeAddress();
     if (widget.customer != null) {
       _nameController.text = widget.customer!.name;
       _codeController.text = widget.customer!.code;
       _phoneController.text = widget.customer!.phone ?? '';
-      _addressController.text = widget.customer!.address ?? '';
-      _districtController.text = widget.customer!.district ?? '';
+      _streetNumberController.text = widget.customer!.streetNumber ?? '';
+      _streetController.text = widget.customer!.street ?? '';
       _creditLimitController.text = widget.customer!.creditLimit.toString();
       _paymentTermsController.text = widget.customer!.paymentTerms.toString();
       _selectedChannel = widget.customer!.channel ?? 'GT Sỉ';
       _selectedStatus = widget.customer!.status;
+      
+      // Try to match existing address to dropdowns
+      _matchExistingAddress();
     } else {
       _creditLimitController.text = '0';
       _paymentTermsController.text = '0';
+    }
+  }
+  
+  void _initializeAddress() {
+    // Default to Ho Chi Minh City
+    final hcm = dvhcvn.findLevel1ByName('Thành phố Hồ Chí Minh');
+    if (hcm != null) {
+      _selectedCity = hcm;
+      _districts = hcm.children;
+    }
+  }
+  
+  void _matchExistingAddress() {
+    if (widget.customer == null) return;
+    
+    final customer = widget.customer!;
+    
+    // Try to match district
+    if (customer.district != null && _selectedCity != null) {
+      for (var d in _districts) {
+        // Match by name containing the district value (handles "10", "Tân Bình", etc)
+        if (d.name.contains(customer.district!) || 
+            customer.district!.contains(d.name.replaceAll('Quận ', '').replaceAll('Huyện ', ''))) {
+          _selectedDistrict = d;
+          _wards = d.children;
+          break;
+        }
+      }
+    }
+    
+    // Try to match ward
+    if (customer.ward != null && _selectedDistrict != null) {
+      for (var w in _wards) {
+        if (w.name.contains(customer.ward!) ||
+            customer.ward!.contains(w.name.replaceAll('Phường ', '').replaceAll('Xã ', ''))) {
+          _selectedWard = w;
+          break;
+        }
+      }
     }
   }
 
@@ -1034,8 +1224,8 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
     _nameController.dispose();
     _codeController.dispose();
     _phoneController.dispose();
-    _addressController.dispose();
-    _districtController.dispose();
+    _streetNumberController.dispose();
+    _streetController.dispose();
     _creditLimitController.dispose();
     _paymentTermsController.dispose();
     super.dispose();
@@ -1053,6 +1243,25 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
       if (companyId == null || companyId.isEmpty) {
         throw Exception('Không tìm thấy company_id. Vui lòng đăng nhập lại.');
       }
+      
+      // Build full address from structured fields
+      final addressParts = <String>[];
+      if (_streetNumberController.text.trim().isNotEmpty) {
+        addressParts.add(_streetNumberController.text.trim());
+      }
+      if (_streetController.text.trim().isNotEmpty) {
+        addressParts.add(_streetController.text.trim());
+      }
+      if (_selectedWard != null) {
+        addressParts.add(_selectedWard!.name);
+      }
+      if (_selectedDistrict != null) {
+        addressParts.add(_selectedDistrict!.name);
+      }
+      if (_selectedCity != null) {
+        addressParts.add(_selectedCity!.name);
+      }
+      final fullAddress = addressParts.join(', ');
 
       final customerData = {
         'name': _nameController.text.trim(),
@@ -1060,8 +1269,13 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
             ? 'KH${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}'
             : _codeController.text.trim(),
         'phone': _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-        'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-        'district': _districtController.text.trim().isEmpty ? null : _districtController.text.trim(),
+        // Structured address fields
+        'street_number': _streetNumberController.text.trim().isEmpty ? null : _streetNumberController.text.trim(),
+        'street': _streetController.text.trim().isEmpty ? null : _streetController.text.trim(),
+        'ward': _selectedWard?.name.replaceAll('Phường ', '').replaceAll('Xã ', '').replaceAll('Thị trấn ', ''),
+        'district': _selectedDistrict?.name.replaceAll('Quận ', '').replaceAll('Huyện ', '').replaceAll('Thành phố ', '').replaceAll('Thị xã ', ''),
+        'city': _selectedCity?.name.replaceAll('Thành phố ', '').replaceAll('Tỉnh ', ''),
+        'address': fullAddress.isEmpty ? null : fullAddress,
         'channel': _selectedChannel,
         'status': _selectedStatus,
         'credit_limit': double.tryParse(_creditLimitController.text) ?? 0,
@@ -1178,47 +1392,106 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
               ),
               const SizedBox(height: 12),
               
-              TextFormField(
-                controller: _addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Địa chỉ',
-                  prefixIcon: Icon(Icons.location_on),
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 2,
+              // === ĐỊA CHỈ VIỆT NAM ===
+              const Text(
+                '📍 Địa chỉ',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.teal),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               
+              // Số nhà + Tên đường
               Row(
                 children: [
-                  Expanded(
+                  SizedBox(
+                    width: 100,
                     child: TextFormField(
-                      controller: _districtController,
+                      controller: _streetNumberController,
                       decoration: const InputDecoration(
-                        labelText: 'Quận/Huyện',
-                        prefixIcon: Icon(Icons.map),
+                        labelText: 'Số nhà',
                         border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedChannel,
+                    child: TextFormField(
+                      controller: _streetController,
                       decoration: const InputDecoration(
-                        labelText: 'Kênh',
-                        prefixIcon: Icon(Icons.store),
+                        labelText: 'Tên đường',
                         border: OutlineInputBorder(),
+                        hintText: 'VD: Lê Văn Thọ',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'Horeca', child: Text('Horeca')),
-                        DropdownMenuItem(value: 'GT Sỉ', child: Text('GT Sỉ')),
-                        DropdownMenuItem(value: 'GT Lẻ', child: Text('GT Lẻ')),
-                      ],
-                      onChanged: (value) => setState(() => _selectedChannel = value!),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              
+              // Quận/Huyện dropdown
+              DropdownButtonFormField<dvhcvn.Level2>(
+                value: _selectedDistrict,
+                decoration: const InputDecoration(
+                  labelText: 'Quận/Huyện *',
+                  prefixIcon: Icon(Icons.location_city),
+                  border: OutlineInputBorder(),
+                ),
+                isExpanded: true,
+                items: _districts.map((d) => DropdownMenuItem(
+                  value: d,
+                  child: Text(d.name, overflow: TextOverflow.ellipsis),
+                )).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedDistrict = value;
+                    _selectedWard = null;
+                    _wards = value?.children ?? [];
+                  });
+                },
+                validator: (value) => value == null ? 'Vui lòng chọn Quận/Huyện' : null,
+              ),
+              const SizedBox(height: 12),
+              
+              // Phường/Xã dropdown
+              DropdownButtonFormField<dvhcvn.Level3>(
+                value: _selectedWard,
+                decoration: const InputDecoration(
+                  labelText: 'Phường/Xã *',
+                  prefixIcon: Icon(Icons.house),
+                  border: OutlineInputBorder(),
+                ),
+                isExpanded: true,
+                items: _wards.map((w) => DropdownMenuItem(
+                  value: w,
+                  child: Text(w.name, overflow: TextOverflow.ellipsis),
+                )).toList(),
+                onChanged: (value) => setState(() => _selectedWard = value),
+                validator: (value) => value == null ? 'Vui lòng chọn Phường/Xã' : null,
+              ),
+              const SizedBox(height: 16),
+              
+              // === THÔNG TIN KINH DOANH ===
+              const Text(
+                '💼 Thông tin kinh doanh',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.teal),
+              ),
+              const SizedBox(height: 8),
+              
+              // Kênh bán hàng
+              DropdownButtonFormField<String>(
+                value: _selectedChannel,
+                decoration: const InputDecoration(
+                  labelText: 'Kênh',
+                  prefixIcon: Icon(Icons.store),
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'Horeca', child: Text('Horeca')),
+                  DropdownMenuItem(value: 'GT Sỉ', child: Text('GT Sỉ')),
+                  DropdownMenuItem(value: 'GT Lẻ', child: Text('GT Lẻ')),
+                ],
+                onChanged: (value) => setState(() => _selectedChannel = value!),
               ),
               const SizedBox(height: 12),
               

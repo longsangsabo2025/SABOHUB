@@ -352,8 +352,8 @@ class _OrderCard extends ConsumerWidget {
                       backgroundColor: Colors.green,
                     ),
                   );
-                  ref.refresh(salesOrdersProvider(const OrderFilters()));
-                  ref.refresh(pendingApprovalsProvider);
+                  ref.invalidate(salesOrdersProvider(const OrderFilters()));
+                  ref.invalidate(pendingApprovalsProvider);
                 }
               } catch (e) {
                 if (context.mounted) {
@@ -398,8 +398,8 @@ class _OrderCard extends ConsumerWidget {
                       backgroundColor: Colors.orange,
                     ),
                   );
-                  ref.refresh(salesOrdersProvider(const OrderFilters()));
-                  ref.refresh(pendingApprovalsProvider);
+                  ref.invalidate(salesOrdersProvider(const OrderFilters()));
+                  ref.invalidate(pendingApprovalsProvider);
                 }
               } catch (e) {
                 if (context.mounted) {
@@ -444,7 +444,7 @@ class _OrderCard extends ConsumerWidget {
                       backgroundColor: Colors.blue,
                     ),
                   );
-                  ref.refresh(salesOrdersProvider(const OrderFilters()));
+                  ref.invalidate(salesOrdersProvider(const OrderFilters()));
                 }
               } catch (e) {
                 if (context.mounted) {

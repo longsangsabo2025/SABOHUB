@@ -462,7 +462,7 @@ class _CustomerSelectionSheetState extends ConsumerState<_CustomerSelectionSheet
                     : allCustomers.where((c) => 
                         c.name.toLowerCase().contains(_searchText) ||
                         (c.phone?.toLowerCase().contains(_searchText) ?? false) ||
-                        (c.code?.toLowerCase().contains(_searchText) ?? false)
+                        c.code.toLowerCase().contains(_searchText)
                       ).toList();
                       
                 if (customers.isEmpty) {
@@ -585,7 +585,7 @@ class _ProductSelectionSheetState extends ConsumerState<_ProductSelectionSheet> 
                     ? allProducts 
                     : allProducts.where((p) => 
                         p.name.toLowerCase().contains(_searchText) ||
-                        (p.sku?.toLowerCase().contains(_searchText) ?? false) ||
+                        p.sku.toLowerCase().contains(_searchText) ||
                         (p.barcode?.toLowerCase().contains(_searchText) ?? false)
                       ).toList();
                       

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/sell_in_sell_out_service.dart';
+import '../../providers/auth_provider.dart';
 
 /// Sell-In/Sell-Out Dashboard Page
 class SellInSellOutPage extends ConsumerStatefulWidget {
@@ -455,13 +457,6 @@ class _SellInSellOutPageState extends ConsumerState<SellInSellOutPage>
                   ),
                 ],
               ),
-              if (tx.poNumber != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'PO: ${tx.poNumber}',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                ),
-              ],
             ],
           ),
         ),
@@ -725,16 +720,40 @@ class _SellInSellOutPageState extends ConsumerState<SellInSellOutPage>
   }
 
   void _showRecordSellInDialog() {
-    // TODO: Implement sell-in recording form
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Form ghi nhận Sell-in đang phát triển')),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: _RecordSellInSheet(
+          onSaved: () {
+            ref.invalidate(recentSellInProvider);
+            ref.invalidate(salesSummaryProvider);
+          },
+        ),
+      ),
     );
   }
 
   void _showRecordSellOutDialog() {
-    // TODO: Implement sell-out recording form
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Form ghi nhận Sell-out đang phát triển')),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: _RecordSellOutSheet(
+          onSaved: () {
+            ref.invalidate(recentSellOutProvider);
+            ref.invalidate(salesSummaryProvider);
+          },
+        ),
+      ),
     );
   }
 
@@ -749,6 +768,922 @@ class _SellInSellOutPageState extends ConsumerState<SellInSellOutPage>
     // TODO: Navigate to sell-out detail page
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Chi tiết Sell-out: $transactionId')),
+    );
+  }
+}
+
+/// Form ghi nhận Sell-in (Công ty → NPP)
+class _RecordSellInSheet extends ConsumerStatefulWidget {
+  final VoidCallback onSaved;
+  const _RecordSellInSheet({required this.onSaved});
+  
+  @override
+  ConsumerState<_RecordSellInSheet> createState() => _RecordSellInSheetState();
+}
+
+class _RecordSellInSheetState extends ConsumerState<_RecordSellInSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
+  
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _distributors = [];
+  List<Map<String, dynamic>> _warehouses = [];
+  List<Map<String, dynamic>> _products = [];
+  
+  String? _selectedDistributorId;
+  String? _selectedWarehouseId;
+  final List<Map<String, dynamic>> _items = [];
+  final _notesController = TextEditingController();
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+  
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+  
+  Future<void> _loadData() async {
+    final authState = ref.read(authProvider);
+    final companyId = authState.user?.companyId;
+    if (companyId == null) return;
+    
+    final supabase = Supabase.instance.client;
+    
+    // Load distributors (NPP) - customers with type = 'distributor' OR name contains 'NPP'
+    final distResponse = await supabase
+        .from('customers')
+        .select('id, name, code')
+        .eq('company_id', companyId)
+        .or('type.eq.distributor,name.ilike.%npp%')
+        .order('name');
+    
+    // Load warehouses
+    final whResponse = await supabase
+        .from('warehouses')
+        .select('id, name')
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .order('name');
+    
+    // Load products
+    final prodResponse = await supabase
+        .from('products')
+        .select('id, name, sku, unit, selling_price')
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .order('name');
+    
+    setState(() {
+      _distributors = List<Map<String, dynamic>>.from(distResponse);
+      _warehouses = List<Map<String, dynamic>>.from(whResponse);
+      _products = List<Map<String, dynamic>>.from(prodResponse);
+    });
+  }
+  
+  void _addItem() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _ProductSelectorSheet(
+        products: _products,
+        onSelected: (product, qty) {
+          setState(() {
+            final existingIndex = _items.indexWhere((i) => i['product_id'] == product['id']);
+            if (existingIndex >= 0) {
+              _items[existingIndex]['quantity'] += qty;
+              _items[existingIndex]['total_amount'] = 
+                  _items[existingIndex]['quantity'] * _items[existingIndex]['unit_price'];
+            } else {
+              _items.add({
+                'product_id': product['id'],
+                'product_name': product['name'],
+                'sku': product['sku'],
+                'unit': product['unit'] ?? 'pcs',
+                'quantity': qty,
+                'unit_price': (product['selling_price'] ?? 0).toDouble(),
+                'total_amount': qty * (product['selling_price'] ?? 0).toDouble(),
+              });
+            }
+          });
+        },
+      ),
+    );
+  }
+  
+  void _removeItem(int index) {
+    setState(() => _items.removeAt(index));
+  }
+  
+  Future<void> _saveSellIn() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedDistributorId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn NPP'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    if (_items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng thêm sản phẩm'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      final authState = ref.read(authProvider);
+      final companyId = authState.user?.companyId;
+      final userId = authState.user?.id;
+      
+      final supabase = Supabase.instance.client;
+      
+      // Generate transaction code
+      final now = DateTime.now();
+      final txCode = 'SI${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}${now.millisecondsSinceEpoch.toString().substring(9)}';
+      
+      final totalQty = _items.fold<int>(0, (sum, i) => sum + (i['quantity'] as int));
+      final totalAmount = _items.fold<double>(0, (sum, i) => sum + (i['total_amount'] as double));
+      
+      // Insert transaction
+      final txResponse = await supabase
+          .from('sell_in_transactions')
+          .insert({
+            'company_id': companyId,
+            'transaction_code': txCode,
+            'transaction_date': now.toIso8601String().split('T')[0],
+            'from_warehouse_id': _selectedWarehouseId,
+            'distributor_id': _selectedDistributorId,
+            'total_quantity': totalQty,
+            'total_amount': totalAmount,
+            'status': 'pending',
+            'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+            'created_by': userId,
+          })
+          .select('id')
+          .single();
+      
+      final txId = txResponse['id'];
+      
+      // Insert items
+      for (final item in _items) {
+        await supabase.from('sell_in_items').insert({
+          'sell_in_id': txId,
+          'product_id': item['product_id'],
+          'quantity': item['quantity'],
+          'unit': item['unit'],
+          'unit_price': item['unit_price'],
+          'total_amount': item['total_amount'],
+        });
+      }
+      
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã ghi nhận Sell-in: $txCode'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        widget.onSaved();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final totalAmount = _items.fold<double>(0, (sum, i) => sum + (i['total_amount'] as double));
+    
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+      padding: const EdgeInsets.all(20),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.input, color: Colors.blue, size: 28),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Ghi nhận Sell-in', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      Text('Công ty → NPP', style: TextStyle(color: Colors.grey.shade600)),
+                    ],
+                  ),
+                ),
+                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // Dropdowns
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // NPP Selector
+                    DropdownButtonFormField<String>(
+                      value: _selectedDistributorId,
+                      decoration: InputDecoration(
+                        labelText: 'Nhà phân phối (NPP) *',
+                        prefixIcon: const Icon(Icons.business),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                      ),
+                      items: _distributors.isEmpty 
+                          ? [const DropdownMenuItem(value: null, child: Text('Chưa có NPP - Thêm khách hàng type=distributor'))]
+                          : _distributors.map((d) => DropdownMenuItem(
+                              value: d['id'] as String,
+                              child: Text(d['name'] ?? 'N/A'),
+                            )).toList(),
+                      onChanged: (v) => setState(() => _selectedDistributorId = v),
+                      validator: (v) => v == null ? 'Chọn NPP' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Warehouse Selector
+                    DropdownButtonFormField<String>(
+                      value: _selectedWarehouseId,
+                      decoration: InputDecoration(
+                        labelText: 'Kho xuất',
+                        prefixIcon: const Icon(Icons.warehouse),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                      ),
+                      items: _warehouses.map((w) => DropdownMenuItem(
+                        value: w['id'] as String,
+                        child: Text(w['name'] ?? 'N/A'),
+                      )).toList(),
+                      onChanged: (v) => setState(() => _selectedWarehouseId = v),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Notes
+                    TextFormField(
+                      controller: _notesController,
+                      decoration: InputDecoration(
+                        labelText: 'Ghi chú',
+                        prefixIcon: const Icon(Icons.note),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Items Header
+                    Row(
+                      children: [
+                        const Text('Sản phẩm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: _addItem,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Thêm SP'),
+                        ),
+                      ],
+                    ),
+                    
+                    // Items List
+                    if (_items.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Center(child: Text('Chưa có sản phẩm')),
+                      )
+                    else
+                      ...List.generate(_items.length, (index) {
+                        final item = _items[index];
+                        return Card(
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.blue.shade50,
+                              child: Text('${item['quantity']}'),
+                            ),
+                            title: Text(item['product_name'] ?? 'SP', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text('${item['sku']} • ${_currencyFormat.format(item['unit_price'])}/${item['unit']}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(_currencyFormat.format(item['total_amount']), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _removeItem(index),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Total & Save
+            const Divider(),
+            Row(
+              children: [
+                const Text('Tổng:', style: TextStyle(fontSize: 16)),
+                const Spacer(),
+                Text(_currencyFormat.format(totalAmount), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _saveSellIn,
+                icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
+                label: Text(_isLoading ? 'Đang lưu...' : 'Ghi nhận Sell-in'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Form ghi nhận Sell-out (NPP → Điểm bán)
+class _RecordSellOutSheet extends ConsumerStatefulWidget {
+  final VoidCallback onSaved;
+  const _RecordSellOutSheet({required this.onSaved});
+  
+  @override
+  ConsumerState<_RecordSellOutSheet> createState() => _RecordSellOutSheetState();
+}
+
+class _RecordSellOutSheetState extends ConsumerState<_RecordSellOutSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
+  
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _distributors = [];
+  List<Map<String, dynamic>> _outlets = [];
+  List<Map<String, dynamic>> _products = [];
+  
+  String? _selectedDistributorId;
+  String? _selectedOutletId;
+  final List<Map<String, dynamic>> _items = [];
+  final _outletNameController = TextEditingController();
+  final _outletAddressController = TextEditingController();
+  final _notesController = TextEditingController();
+  String _outletChannel = 'GT Lẻ';
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+  
+  @override
+  void dispose() {
+    _outletNameController.dispose();
+    _outletAddressController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+  
+  Future<void> _loadData() async {
+    final authState = ref.read(authProvider);
+    final companyId = authState.user?.companyId;
+    if (companyId == null) return;
+    
+    final supabase = Supabase.instance.client;
+    
+    // Load distributors (NPP)
+    final distResponse = await supabase
+        .from('customers')
+        .select('id, name, code')
+        .eq('company_id', companyId)
+        .or('type.eq.distributor,name.ilike.%npp%')
+        .order('name');
+    
+    // Load outlets (retail customers)
+    final outletResponse = await supabase
+        .from('customers')
+        .select('id, name, code, address, channel')
+        .eq('company_id', companyId)
+        .or('type.eq.retail,type.is.null,type.eq.other')
+        .order('name')
+        .limit(100);
+    
+    // Load products
+    final prodResponse = await supabase
+        .from('products')
+        .select('id, name, sku, unit, selling_price')
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .order('name');
+    
+    setState(() {
+      _distributors = List<Map<String, dynamic>>.from(distResponse);
+      _outlets = List<Map<String, dynamic>>.from(outletResponse);
+      _products = List<Map<String, dynamic>>.from(prodResponse);
+    });
+  }
+  
+  void _addItem() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _ProductSelectorSheet(
+        products: _products,
+        onSelected: (product, qty) {
+          setState(() {
+            final existingIndex = _items.indexWhere((i) => i['product_id'] == product['id']);
+            if (existingIndex >= 0) {
+              _items[existingIndex]['quantity'] += qty;
+              _items[existingIndex]['total_amount'] = 
+                  _items[existingIndex]['quantity'] * _items[existingIndex]['unit_price'];
+            } else {
+              _items.add({
+                'product_id': product['id'],
+                'product_name': product['name'],
+                'sku': product['sku'],
+                'unit': product['unit'] ?? 'pcs',
+                'quantity': qty,
+                'unit_price': (product['selling_price'] ?? 0).toDouble(),
+                'total_amount': qty * (product['selling_price'] ?? 0).toDouble(),
+              });
+            }
+          });
+        },
+      ),
+    );
+  }
+  
+  void _removeItem(int index) {
+    setState(() => _items.removeAt(index));
+  }
+  
+  Future<void> _saveSellOut() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng thêm sản phẩm'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    
+    // Validate outlet info
+    if (_selectedOutletId == null && _outletNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn hoặc nhập thông tin điểm bán'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      final authState = ref.read(authProvider);
+      final companyId = authState.user?.companyId;
+      final userId = authState.user?.id;
+      
+      final supabase = Supabase.instance.client;
+      
+      // Generate transaction code
+      final now = DateTime.now();
+      final txCode = 'SO${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}${now.millisecondsSinceEpoch.toString().substring(9)}';
+      
+      final totalQty = _items.fold<int>(0, (sum, i) => sum + (i['quantity'] as int));
+      final totalAmount = _items.fold<double>(0, (sum, i) => sum + (i['total_amount'] as double));
+      
+      // Insert transaction
+      final txResponse = await supabase
+          .from('sell_out_transactions')
+          .insert({
+            'company_id': companyId,
+            'transaction_code': txCode,
+            'transaction_date': now.toIso8601String().split('T')[0],
+            'distributor_id': _selectedDistributorId,
+            'outlet_id': _selectedOutletId,
+            'outlet_name': _selectedOutletId != null 
+                ? _outlets.firstWhere((o) => o['id'] == _selectedOutletId)['name']
+                : _outletNameController.text.trim(),
+            'outlet_address': _selectedOutletId != null
+                ? _outlets.firstWhere((o) => o['id'] == _selectedOutletId)['address']
+                : _outletAddressController.text.trim(),
+            'outlet_channel': _outletChannel,
+            'total_quantity': totalQty,
+            'total_amount': totalAmount,
+            'status': 'recorded',
+            'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+            'created_by': userId,
+            'reported_by_id': userId,
+          })
+          .select('id')
+          .single();
+      
+      final txId = txResponse['id'];
+      
+      // Insert items
+      for (final item in _items) {
+        await supabase.from('sell_out_items').insert({
+          'sell_out_id': txId,
+          'product_id': item['product_id'],
+          'quantity': item['quantity'],
+          'unit': item['unit'],
+          'unit_price': item['unit_price'],
+          'total_amount': item['total_amount'],
+        });
+      }
+      
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã ghi nhận Sell-out: $txCode'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        widget.onSaved();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final totalAmount = _items.fold<double>(0, (sum, i) => sum + (i['total_amount'] as double));
+    
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+      padding: const EdgeInsets.all(20),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.output, color: Colors.green, size: 28),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Ghi nhận Sell-out', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      Text('NPP/Sales → Điểm bán', style: TextStyle(color: Colors.grey.shade600)),
+                    ],
+                  ),
+                ),
+                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // NPP Selector (optional for sell-out)
+                    DropdownButtonFormField<String>(
+                      value: _selectedDistributorId,
+                      decoration: InputDecoration(
+                        labelText: 'Nhà phân phối (NPP) - tùy chọn',
+                        prefixIcon: const Icon(Icons.business),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('-- Không qua NPP --')),
+                        ..._distributors.map((d) => DropdownMenuItem(
+                          value: d['id'] as String,
+                          child: Text(d['name'] ?? 'N/A'),
+                        )),
+                      ],
+                      onChanged: (v) => setState(() => _selectedDistributorId = v),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Outlet Section
+                    const Text('Điểm bán *', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    
+                    // Outlet Selector
+                    DropdownButtonFormField<String>(
+                      value: _selectedOutletId,
+                      decoration: InputDecoration(
+                        labelText: 'Chọn điểm bán có sẵn',
+                        prefixIcon: const Icon(Icons.store),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('-- Nhập mới --')),
+                        ..._outlets.map((o) => DropdownMenuItem(
+                          value: o['id'] as String,
+                          child: Text('${o['name']} ${o['channel'] != null ? "(${o['channel']})" : ""}'),
+                        )),
+                      ],
+                      onChanged: (v) => setState(() => _selectedOutletId = v),
+                    ),
+                    
+                    if (_selectedOutletId == null) ...[
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _outletNameController,
+                        decoration: InputDecoration(
+                          labelText: 'Tên điểm bán *',
+                          prefixIcon: const Icon(Icons.store),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          filled: true,
+                        ),
+                        validator: (v) => _selectedOutletId == null && (v?.trim().isEmpty ?? true) ? 'Nhập tên điểm bán' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _outletAddressController,
+                        decoration: InputDecoration(
+                          labelText: 'Địa chỉ điểm bán',
+                          prefixIcon: const Icon(Icons.location_on),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          filled: true,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _outletChannel,
+                        decoration: InputDecoration(
+                          labelText: 'Kênh',
+                          prefixIcon: const Icon(Icons.category),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          filled: true,
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'Horeca', child: Text('Horeca')),
+                          DropdownMenuItem(value: 'GT Sỉ', child: Text('GT Sỉ')),
+                          DropdownMenuItem(value: 'GT Lẻ', child: Text('GT Lẻ')),
+                        ],
+                        onChanged: (v) => setState(() => _outletChannel = v!),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    
+                    // Notes
+                    TextFormField(
+                      controller: _notesController,
+                      decoration: InputDecoration(
+                        labelText: 'Ghi chú',
+                        prefixIcon: const Icon(Icons.note),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Items Header
+                    Row(
+                      children: [
+                        const Text('Sản phẩm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: _addItem,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Thêm SP'),
+                        ),
+                      ],
+                    ),
+                    
+                    // Items List
+                    if (_items.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Center(child: Text('Chưa có sản phẩm')),
+                      )
+                    else
+                      ...List.generate(_items.length, (index) {
+                        final item = _items[index];
+                        return Card(
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.green.shade50,
+                              child: Text('${item['quantity']}'),
+                            ),
+                            title: Text(item['product_name'] ?? 'SP', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text('${item['sku']} • ${_currencyFormat.format(item['unit_price'])}/${item['unit']}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(_currencyFormat.format(item['total_amount']), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _removeItem(index),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Total & Save
+            const Divider(),
+            Row(
+              children: [
+                const Text('Tổng:', style: TextStyle(fontSize: 16)),
+                const Spacer(),
+                Text(_currencyFormat.format(totalAmount), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _saveSellOut,
+                icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
+                label: Text(_isLoading ? 'Đang lưu...' : 'Ghi nhận Sell-out'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Product Selector Sheet
+class _ProductSelectorSheet extends StatefulWidget {
+  final List<Map<String, dynamic>> products;
+  final Function(Map<String, dynamic> product, int quantity) onSelected;
+  
+  const _ProductSelectorSheet({required this.products, required this.onSelected});
+  
+  @override
+  State<_ProductSelectorSheet> createState() => _ProductSelectorSheetState();
+}
+
+class _ProductSelectorSheetState extends State<_ProductSelectorSheet> {
+  final _searchController = TextEditingController();
+  final _qtyController = TextEditingController(text: '1');
+  final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
+  String _searchQuery = '';
+  Map<String, dynamic>? _selectedProduct;
+  
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _qtyController.dispose();
+    super.dispose();
+  }
+  
+  List<Map<String, dynamic>> get _filteredProducts {
+    if (_searchQuery.isEmpty) return widget.products;
+    final query = _searchQuery.toLowerCase();
+    return widget.products.where((p) =>
+      (p['name']?.toLowerCase().contains(query) ?? false) ||
+      (p['sku']?.toLowerCase().contains(query) ?? false)
+    ).toList();
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Chọn sản phẩm', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Tìm kiếm sản phẩm...',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+            ),
+            onChanged: (v) => setState(() => _searchQuery = v),
+          ),
+          const SizedBox(height: 12),
+          
+          Expanded(
+            child: ListView.builder(
+              itemCount: _filteredProducts.length,
+              itemBuilder: (context, index) {
+                final product = _filteredProducts[index];
+                final isSelected = _selectedProduct?['id'] == product['id'];
+                
+                return Card(
+                  color: isSelected ? Colors.blue.shade50 : null,
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      child: Text(product['name']?[0] ?? 'P'),
+                    ),
+                    title: Text(product['name'] ?? 'N/A'),
+                    subtitle: Text('${product['sku']} • ${_currencyFormat.format(product['selling_price'] ?? 0)}/${product['unit'] ?? 'pcs'}'),
+                    trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.blue) : null,
+                    onTap: () => setState(() => _selectedProduct = product),
+                  ),
+                );
+              },
+            ),
+          ),
+          
+          if (_selectedProduct != null) ...[
+            const Divider(),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _qtyController,
+                    decoration: InputDecoration(
+                      labelText: 'Số lượng',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    final qty = int.tryParse(_qtyController.text) ?? 1;
+                    widget.onSelected(_selectedProduct!, qty);
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Thêm'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

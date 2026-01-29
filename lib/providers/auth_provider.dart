@@ -8,6 +8,7 @@ import 'package:crypto/crypto.dart';
 import 'dart:math';
 
 import '../models/user.dart' as app_user;
+import '../models/business_type.dart';
 import '../services/account_storage_service.dart';
 import '../constants/roles.dart';
 import '../utils/app_logger.dart';
@@ -130,12 +131,32 @@ class AuthNotifier extends Notifier<AuthState> {
 
         try {
           // 2. Fetch user profile from database WITH company data for businessType
-          final response = await _supabaseClient
+          var response = await _supabaseClient
               .from('users')
               .select(
                   'id, full_name, email, role, department, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at, companies(name, business_type)')
               .eq('id', session.user.id)
               .maybeSingle();
+
+          // If not found in users table, try employees table
+          if (response == null) {
+            print('🔄 [AUTH] Session restore: Not found in users, checking employees...');
+            final employeeResponse = await _supabaseClient
+                .from('employees')
+                .select(
+                    'id, full_name, email, role, department, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at, companies(name, business_type)')
+                .eq('auth_user_id', session.user.id)
+                .maybeSingle();
+            
+            if (employeeResponse != null) {
+              response = {
+                ...employeeResponse,
+                'id': session.user.id, // Use auth user id as primary id
+                'employee_id': employeeResponse['id'],
+              };
+              print('✅ [AUTH] Session restore: Found employee profile');
+            }
+          }
 
           if (response != null) {
             // Use User.fromJson to properly parse company data and businessType
@@ -243,13 +264,29 @@ class AuthNotifier extends Notifier<AuthState> {
         return;
       }
 
-      // Fetch fresh data from database - specify columns to avoid relationship ambiguity
-      final response = await _supabaseClient
+      // Fetch fresh data from database - try users table first
+      var response = await _supabaseClient
           .from('users')
           .select(
               'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
           .eq('id', currentUser.id)
           .maybeSingle();
+
+      // Fallback to employees table
+      if (response == null) {
+        final employeeResponse = await _supabaseClient
+            .from('employees')
+            .select(
+                'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
+            .eq('auth_user_id', currentUser.id)
+            .maybeSingle();
+        if (employeeResponse != null) {
+          response = {
+            ...employeeResponse,
+            'id': currentUser.id,
+          };
+        }
+      }
 
       if (response == null) {
         return;
@@ -329,13 +366,34 @@ class AuthNotifier extends Notifier<AuthState> {
 
       print('🔄 [AUTH] Fetching user profile...');
 
-      // 4. Fetch user profile from database in parallel with save operations
-      final response = await _supabaseClient
+      // 4. Fetch user profile from database - try users table first, then employees
+      var response = await _supabaseClient
           .from('users')
           .select(
               'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
           .eq('id', authResponse.user!.id)
           .maybeSingle();
+
+      // If not found in users table, try employees table (for CEO/employee accounts)
+      if (response == null) {
+        print('🔄 [AUTH] Not found in users, checking employees table...');
+        final employeeResponse = await _supabaseClient
+            .from('employees')
+            .select(
+                'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
+            .eq('auth_user_id', authResponse.user!.id)
+            .maybeSingle();
+        
+        if (employeeResponse != null) {
+          // Use employee data but keep auth user id for consistency
+          response = {
+            ...employeeResponse,
+            'id': authResponse.user!.id, // Use auth user id as primary id
+            'employee_id': employeeResponse['id'], // Store actual employee id
+          };
+          print('✅ [AUTH] Found employee profile: ${response['full_name']}');
+        }
+      }
 
       print('📊 [AUTH] Profile response: ${response != null ? "found" : "not found"}');
 
@@ -351,17 +409,53 @@ class AuthNotifier extends Notifier<AuthState> {
 
       print('✅ [AUTH] User profile loaded: ${response['full_name']}');
 
-      // 5. Create User object from database
+      // 5. Fetch company info if user has company_id
+      String? companyName;
+      BusinessType? businessType;
+      final companyId = response['company_id'] as String?;
+      
+      if (companyId != null) {
+        print('🔄 [AUTH] Fetching company info for: $companyId');
+        final companyResponse = await _supabaseClient
+            .from('companies')
+            .select('name, business_type')
+            .eq('id', companyId)
+            .maybeSingle();
+        
+        if (companyResponse != null) {
+          companyName = companyResponse['name'] as String?;
+          final businessTypeStr = companyResponse['business_type'] as String?;
+          if (businessTypeStr != null) {
+            // Parse business_type string to enum
+            try {
+              businessType = BusinessType.values.firstWhere(
+                (e) => e.name == businessTypeStr,
+                orElse: () => BusinessType.distribution,
+              );
+            } catch (e) {
+              print('⚠️ [AUTH] Unknown business type: $businessTypeStr');
+              businessType = BusinessType.distribution;
+            }
+          }
+          print('✅ [AUTH] Company: $companyName, BusinessType: $businessType');
+        }
+      }
+
+      // 6. Create User object from database with company info
       final user = app_user.User(
         id: response['id'] as String,
         name: response['full_name'] as String,
         email: response['email'] as String,
         role: SaboRole.fromString(response['role'] as String),
         phone: response['phone'] as String? ?? '',
-        companyId: response['company_id'] as String?,
+        companyId: companyId,
+        companyName: companyName,
+        businessType: businessType,
       );
+      
+      print('✅ [AUTH] User created - Role: ${user.role}, BusinessType: ${user.businessType}');
 
-      // 6. Batch all save operations (don't await each one)
+      // 7. Batch all save operations (don't await each one)
       final saveOperations = Future.wait([
         _saveUser(user, isDemoMode: false),
         AccountStorageService.saveAccount(user),
@@ -370,7 +464,7 @@ class AuthNotifier extends Notifier<AuthState> {
       // Reset session timer
       _resetSessionTimer();
 
-      // 7. Update state ONCE with final result (don't wait for save to complete)
+      // 8. Update state ONCE with final result (don't wait for save to complete)
       state = state.copyWith(
         user: user,
         isDemoMode: false,
@@ -560,12 +654,27 @@ class AuthNotifier extends Notifier<AuthState> {
         return false;
       }
 
-      // Check if user exists in database
-      final response = await _supabaseClient
+      // Check if user exists in database - try users table first
+      var response = await _supabaseClient
           .from('users')
           .select()
           .eq('id', authResponse.user!.id)
           .maybeSingle();
+
+      // Also check employees table
+      if (response == null) {
+        final employeeResponse = await _supabaseClient
+            .from('employees')
+            .select()
+            .eq('auth_user_id', authResponse.user!.id)
+            .maybeSingle();
+        if (employeeResponse != null) {
+          response = {
+            ...employeeResponse,
+            'id': authResponse.user!.id,
+          };
+        }
+      }
 
       app_user.User user;
       if (response == null) {

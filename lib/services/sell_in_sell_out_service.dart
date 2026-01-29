@@ -2,46 +2,45 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Sell-In Transaction Model (Company → Distributor)
+/// Flow: Công ty xuất hàng → NPP nhập hàng
 class SellInTransaction {
   final String id;
   final String companyId;
   final String distributorId;
-  final String transactionNumber;
+  final String transactionCode; // DB uses transaction_code
   final DateTime transactionDate;
   final String status;
-  final String? poNumber;
-  final DateTime? deliveryDate;
-  final double subtotal;
-  final double discount;
-  final double tax;
+  final String? fromWarehouseId;
+  final String? salesOrderId;
+  final String? deliveryId;
+  final int totalQuantity;
   final double totalAmount;
   final String? notes;
-  final String? createdById;
+  final String? createdBy;
   final DateTime createdAt;
   
   // Joined data
   final String? distributorName;
-  final String? createdByName;
+  final String? warehouseName;
   final List<SellInItem>? items;
 
   SellInTransaction({
     required this.id,
     required this.companyId,
     required this.distributorId,
-    required this.transactionNumber,
+    required this.transactionCode,
     required this.transactionDate,
-    this.status = 'draft',
-    this.poNumber,
-    this.deliveryDate,
-    this.subtotal = 0,
-    this.discount = 0,
-    this.tax = 0,
+    this.status = 'pending',
+    this.fromWarehouseId,
+    this.salesOrderId,
+    this.deliveryId,
+    this.totalQuantity = 0,
     this.totalAmount = 0,
     this.notes,
-    this.createdById,
+    this.createdBy,
     required this.createdAt,
     this.distributorName,
-    this.createdByName,
+    this.warehouseName,
     this.items,
   });
 
@@ -50,22 +49,19 @@ class SellInTransaction {
       id: json['id'],
       companyId: json['company_id'],
       distributorId: json['distributor_id'],
-      transactionNumber: json['transaction_number'],
+      transactionCode: json['transaction_code'] ?? '',
       transactionDate: DateTime.parse(json['transaction_date']),
-      status: json['status'] ?? 'draft',
-      poNumber: json['po_number'],
-      deliveryDate: json['delivery_date'] != null 
-          ? DateTime.parse(json['delivery_date']) 
-          : null,
-      subtotal: (json['subtotal'] ?? 0).toDouble(),
-      discount: (json['discount'] ?? 0).toDouble(),
-      tax: (json['tax'] ?? 0).toDouble(),
+      status: json['status'] ?? 'pending',
+      fromWarehouseId: json['from_warehouse_id'],
+      salesOrderId: json['sales_order_id'],
+      deliveryId: json['delivery_id'],
+      totalQuantity: json['total_quantity'] ?? 0,
       totalAmount: (json['total_amount'] ?? 0).toDouble(),
       notes: json['notes'],
-      createdById: json['created_by_id'],
+      createdBy: json['created_by'],
       createdAt: DateTime.parse(json['created_at']),
-      distributorName: json['customers']?['name'],
-      createdByName: json['employees']?['full_name'],
+      distributorName: json['customers']?['name'] ?? json['distributor']?['name'],
+      warehouseName: json['warehouses']?['name'],
       items: json['sell_in_items'] != null
           ? (json['sell_in_items'] as List)
               .map((i) => SellInItem.fromJson(i))
@@ -75,18 +71,22 @@ class SellInTransaction {
   }
 
   int get itemCount => items?.length ?? 0;
+  
+  // Alias for backward compatibility
+  String get transactionNumber => transactionCode;
 }
 
 /// Sell-In Item Model
 class SellInItem {
   final String id;
-  final String transactionId;
+  final String sellInId; // DB uses sell_in_id
   final String productId;
   final int quantity;
   final String unit;
   final double unitPrice;
-  final double discount;
-  final double totalPrice;
+  final double discountPercent;
+  final double discountAmount;
+  final double totalAmount;
   final String? batchNumber;
   final DateTime? expiryDate;
   
@@ -96,29 +96,34 @@ class SellInItem {
 
   SellInItem({
     required this.id,
-    required this.transactionId,
+    required this.sellInId,
     required this.productId,
     required this.quantity,
     this.unit = 'pcs',
     required this.unitPrice,
-    this.discount = 0,
-    required this.totalPrice,
+    this.discountPercent = 0,
+    this.discountAmount = 0,
+    required this.totalAmount,
     this.batchNumber,
     this.expiryDate,
     this.productName,
     this.productSku,
   });
+  
+  // Alias for transactionId
+  String get transactionId => sellInId;
 
   factory SellInItem.fromJson(Map<String, dynamic> json) {
     return SellInItem(
       id: json['id'],
-      transactionId: json['transaction_id'],
+      sellInId: json['sell_in_id'] ?? '',
       productId: json['product_id'],
       quantity: json['quantity'],
       unit: json['unit'] ?? 'pcs',
       unitPrice: (json['unit_price'] ?? 0).toDouble(),
-      discount: (json['discount'] ?? 0).toDouble(),
-      totalPrice: (json['total_price'] ?? 0).toDouble(),
+      discountPercent: (json['discount_percent'] ?? 0).toDouble(),
+      discountAmount: (json['discount_amount'] ?? 0).toDouble(),
+      totalAmount: (json['total_amount'] ?? 0).toDouble(),
       batchNumber: json['batch_number'],
       expiryDate: json['expiry_date'] != null 
           ? DateTime.parse(json['expiry_date']) 
@@ -127,57 +132,62 @@ class SellInItem {
       productSku: json['products']?['sku'],
     );
   }
+  
+  // Alias for totalPrice
+  double get totalPrice => totalAmount;
+  double get discount => discountAmount;
 }
 
 /// Sell-Out Transaction Model (Distributor → Outlet)
+/// Flow: NPP bán hàng → Điểm bán lẻ
 class SellOutTransaction {
   final String id;
   final String companyId;
-  final String distributorId;
-  final String outletId;
-  final String transactionNumber;
+  final String? distributorId;
+  final String? outletId;
+  final String transactionCode; // DB uses transaction_code
   final DateTime transactionDate;
   final String status;
-  final String? invoiceNumber;
-  final double subtotal;
-  final double discount;
-  final double tax;
-  final double totalAmount;
-  final String? paymentStatus;
-  final String? paymentMethod;
-  final String? notes;
-  final String? recordedById;
+  final String? outletName; // Direct field in DB
+  final String? outletAddress;
+  final String? outletChannel;
+  final String? reportedById;
   final String? storeVisitId;
+  final int totalQuantity;
+  final double totalAmount;
+  final String? verifiedBy;
+  final DateTime? verifiedAt;
+  final String? notes;
+  final String? createdBy;
   final DateTime createdAt;
   
   // Joined data
   final String? distributorName;
-  final String? outletName;
-  final String? recordedByName;
+  final String? reportedByName;
   final List<SellOutItem>? items;
 
   SellOutTransaction({
     required this.id,
     required this.companyId,
-    required this.distributorId,
-    required this.outletId,
-    required this.transactionNumber,
+    this.distributorId,
+    this.outletId,
+    required this.transactionCode,
     required this.transactionDate,
     this.status = 'recorded',
-    this.invoiceNumber,
-    this.subtotal = 0,
-    this.discount = 0,
-    this.tax = 0,
-    this.totalAmount = 0,
-    this.paymentStatus,
-    this.paymentMethod,
-    this.notes,
-    this.recordedById,
+    this.outletName,
+    this.outletAddress,
+    this.outletChannel,
+    this.reportedById,
     this.storeVisitId,
+    this.totalQuantity = 0,
+    this.totalAmount = 0,
+    this.verifiedBy,
+    this.verifiedAt,
+    this.notes,
+    this.createdBy,
     required this.createdAt,
     this.distributorName,
-    this.outletName,
-    this.recordedByName,
+    this.reportedByName,
     this.items,
   });
 
@@ -187,23 +197,25 @@ class SellOutTransaction {
       companyId: json['company_id'],
       distributorId: json['distributor_id'],
       outletId: json['outlet_id'],
-      transactionNumber: json['transaction_number'],
+      transactionCode: json['transaction_code'] ?? '',
       transactionDate: DateTime.parse(json['transaction_date']),
       status: json['status'] ?? 'recorded',
-      invoiceNumber: json['invoice_number'],
-      subtotal: (json['subtotal'] ?? 0).toDouble(),
-      discount: (json['discount'] ?? 0).toDouble(),
-      tax: (json['tax'] ?? 0).toDouble(),
-      totalAmount: (json['total_amount'] ?? 0).toDouble(),
-      paymentStatus: json['payment_status'],
-      paymentMethod: json['payment_method'],
-      notes: json['notes'],
-      recordedById: json['recorded_by_id'],
+      outletName: json['outlet_name'],
+      outletAddress: json['outlet_address'],
+      outletChannel: json['outlet_channel'],
+      reportedById: json['reported_by_id'],
       storeVisitId: json['store_visit_id'],
+      totalQuantity: json['total_quantity'] ?? 0,
+      totalAmount: (json['total_amount'] ?? 0).toDouble(),
+      verifiedBy: json['verified_by'],
+      verifiedAt: json['verified_at'] != null 
+          ? DateTime.parse(json['verified_at']) 
+          : null,
+      notes: json['notes'],
+      createdBy: json['created_by'],
       createdAt: DateTime.parse(json['created_at']),
-      distributorName: json['distributor']?['name'],
-      outletName: json['outlet']?['name'],
-      recordedByName: json['employees']?['full_name'],
+      distributorName: json['distributor']?['name'] ?? json['customers']?['name'],
+      reportedByName: json['employees']?['full_name'],
       items: json['sell_out_items'] != null
           ? (json['sell_out_items'] as List)
               .map((i) => SellOutItem.fromJson(i))
@@ -213,18 +225,22 @@ class SellOutTransaction {
   }
 
   int get itemCount => items?.length ?? 0;
+  
+  // Alias for backward compatibility
+  String get transactionNumber => transactionCode;
+  String? get invoiceNumber => transactionCode;
+  String? get paymentStatus => status;
 }
 
 /// Sell-Out Item Model
 class SellOutItem {
   final String id;
-  final String transactionId;
+  final String sellOutId; // DB uses sell_out_id
   final String productId;
   final int quantity;
   final String unit;
   final double unitPrice;
-  final double discount;
-  final double totalPrice;
+  final double totalAmount;
   
   // Joined data
   final String? productName;
@@ -232,27 +248,29 @@ class SellOutItem {
 
   SellOutItem({
     required this.id,
-    required this.transactionId,
+    required this.sellOutId,
     required this.productId,
     required this.quantity,
     this.unit = 'pcs',
     required this.unitPrice,
-    this.discount = 0,
-    required this.totalPrice,
+    required this.totalAmount,
     this.productName,
     this.productSku,
   });
+  
+  // Alias
+  String get transactionId => sellOutId;
+  double get totalPrice => totalAmount;
 
   factory SellOutItem.fromJson(Map<String, dynamic> json) {
     return SellOutItem(
       id: json['id'],
-      transactionId: json['transaction_id'],
+      sellOutId: json['sell_out_id'] ?? '',
       productId: json['product_id'],
       quantity: json['quantity'],
       unit: json['unit'] ?? 'pcs',
       unitPrice: (json['unit_price'] ?? 0).toDouble(),
-      discount: (json['discount'] ?? 0).toDouble(),
-      totalPrice: (json['total_price'] ?? 0).toDouble(),
+      totalAmount: (json['total_amount'] ?? 0).toDouble(),
       productName: json['products']?['name'],
       productSku: json['products']?['sku'],
     );
@@ -416,7 +434,8 @@ class SellInSellOutService {
         .from('sell_in_transactions')
         .select('''
           *,
-          customers!distributor_id(name)
+          customers!distributor_id(name),
+          warehouses:from_warehouse_id(name)
         ''');
     
     if (startDate != null) {
@@ -499,8 +518,7 @@ class SellInSellOutService {
         .from('sell_out_transactions')
         .select('''
           *,
-          distributor:customers!distributor_id(name),
-          outlet:customers!outlet_id(name)
+          distributor:customers!distributor_id(name)
         ''');
     
     if (startDate != null) {
@@ -530,7 +548,6 @@ class SellInSellOutService {
         .select('''
           *,
           distributor:customers!distributor_id(name),
-          outlet:customers!outlet_id(name),
           sell_out_items(
             *,
             products(name, sku)

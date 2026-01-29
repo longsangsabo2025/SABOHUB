@@ -297,12 +297,16 @@ class AnalyticsService {
             .eq('company_id', companyId);
         final tableCount = (tablesResponse as List).length;
 
-        // Get employee count
-        final employeesResponse = await _supabase
+        // Get employee count from both users and employees tables
+        final usersResponse = await _supabase
             .from('users')
             .select('id')
             .eq('company_id', companyId);
-        final employeeCount = (employeesResponse as List).length;
+        final employeesResponse = await _supabase
+            .from('employees')
+            .select('id')
+            .eq('company_id', companyId);
+        final employeeCount = (usersResponse as List).length + (employeesResponse as List).length;
 
         // Calculate revenue from daily_revenue table
         double revenue = 0.0;

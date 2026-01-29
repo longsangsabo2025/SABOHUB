@@ -20,8 +20,17 @@ class EmployeeService {
   /// Check if email already exists
   Future<bool> emailExists(String email) async {
     try {
-      final result = await _supabase
+      // Check users table first
+      var result = await _supabase
           .from('users')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle();
+      if (result != null) return true;
+
+      // Also check employees table
+      result = await _supabase
+          .from('employees')
           .select('id')
           .eq('email', email)
           .maybeSingle();
@@ -34,9 +43,18 @@ class EmployeeService {
   /// Get existing user by email
   Future<Map<String, dynamic>?> getUserByEmail(String email) async {
     try {
-      final result = await _supabase
+      // Check users table first
+      var result = await _supabase
           .from('users')
           .select('id, email, name, role, is_active')
+          .eq('email', email)
+          .maybeSingle();
+      if (result != null) return result;
+
+      // Fallback to employees table
+      result = await _supabase
+          .from('employees')
+          .select('id, email, full_name, role, is_active')
           .eq('email', email)
           .maybeSingle();
       return result;

@@ -1,7 +1,7 @@
 name: flutter_sabohub
 description: 'SABOHUB - Quản lý quán bida chuyên nghiệp'
 publish_to: 'none'
-version: 1.0.3+5
+version: 1.0.5+7
 
 environment:
   sdk: ^3.5.0
@@ -35,6 +35,7 @@ dependencies:
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
   flutter_polyline_points: ^2.1.0
+  google_maps_flutter: ^2.10.0  # Google Maps integration
 
   # Supabase
   supabase_flutter: ^2.10.3
@@ -79,13 +80,17 @@ dependencies:
   # PDF & Printing
   pdf: ^3.11.2
   printing: ^5.13.4
+  
+  # Vietnam Address Picker
+  dvhcvn: 2.1.20250301
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  integration_test:
-    sdk: flutter
+  # Temporarily disabled for release builds - integration_test causes native build issues
+  # integration_test:
+  #   sdk: flutter
 
 flutter:
   uses-material-design: true

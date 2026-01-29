@@ -28,7 +28,6 @@ class _DistributionCustomerServiceLayoutState
     const _CSKHDashboardPage(),
     const _TicketsPage(),
     const _CustomersPage(),
-    const _CSKHProfilePage(),
   ];
 
   @override
@@ -67,11 +66,6 @@ class _DistributionCustomerServiceLayoutState
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
             label: 'Khách hàng',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Tài khoản',
           ),
         ],
       ),

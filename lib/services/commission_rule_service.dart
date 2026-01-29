@@ -130,14 +130,22 @@ class CommissionRuleService {
     final date = billDate ?? DateTime.now();
     final dateStr = date.toIso8601String().split('T')[0];
 
-    // Get employee info
-    final employeeData = await _supabase
+    // Get employee info - check users table first, then employees
+    var employeeData = await _supabase
         .from('users')
         .select('role')
         .eq('id', employeeId)
-        .single();
+        .maybeSingle();
+    
+    if (employeeData == null) {
+      employeeData = await _supabase
+          .from('employees')
+          .select('role')
+          .eq('id', employeeId)
+          .maybeSingle();
+    }
 
-    final employeeRole = employeeData['role'] as String;
+    final employeeRole = employeeData?['role'] as String? ?? 'staff';
 
     // Query rules with priority ordering
     final response = await _supabase

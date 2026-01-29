@@ -218,6 +218,8 @@ class JourneyPlanStop {
   final String? customerName;
   final String? customerAddress;
   final String? customerPhone;
+  final double? latitude;
+  final double? longitude;
 
   JourneyPlanStop({
     required this.id,
@@ -237,6 +239,8 @@ class JourneyPlanStop {
     this.customerName,
     this.customerAddress,
     this.customerPhone,
+    this.latitude,
+    this.longitude,
   });
 
   factory JourneyPlanStop.fromJson(Map<String, dynamic> json) {
@@ -262,6 +266,8 @@ class JourneyPlanStop {
       customerName: json['customers']?['name'],
       customerAddress: json['customers']?['address'],
       customerPhone: json['customers']?['phone'],
+      latitude: json['customers']?['lat']?.toDouble(),  // DB uses 'lat' not 'latitude'
+      longitude: json['customers']?['lng']?.toDouble(),  // DB uses 'lng' not 'longitude'
     );
   }
 }
@@ -439,7 +445,7 @@ class SalesRouteService {
           employees(full_name),
           journey_plan_stops(
             *,
-            customers(name, address, phone)
+            customers(name, address, phone, latitude, longitude)
           )
         ''')
         .eq('plan_date', today)
@@ -459,7 +465,7 @@ class SalesRouteService {
           employees(full_name),
           journey_plan_stops(
             *,
-            customers(name, address, phone)
+            customers(name, address, phone, latitude, longitude)
           )
         ''')
         .eq('id', planId)

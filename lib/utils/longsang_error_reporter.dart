@@ -8,9 +8,14 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+
+String _getPlatformName() {
+  if (kIsWeb) return 'web';
+  // For non-web, we can't use dart:io on web, so just return 'unknown'
+  return 'unknown';
+}
 
 class LongSangErrorReporter {
   static const String _adminUrl = 'https://longsang-admin.vercel.app';
@@ -85,7 +90,7 @@ class LongSangErrorReporter {
       'line': line ?? 0,
       'stack': stack,
       'timestamp': DateTime.now().toIso8601String(),
-      'platform': Platform.operatingSystem,
+      'platform': _getPlatformName(),
     });
   }
 

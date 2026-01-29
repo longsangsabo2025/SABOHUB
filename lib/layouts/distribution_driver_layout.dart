@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_map/flutter_map.dart';
+import '../pages/staff/staff_profile_page.dart';
+import '../pages/driver/google_maps_route_page.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'dart:async';
+import 'dart:math';
 
 import '../widgets/bug_report_dialog.dart';
 import '../widgets/realtime_notification_widgets.dart';
@@ -36,10 +40,10 @@ class _DistributionDriverLayoutState
       body: IndexedStack(
         index: _selectedIndex,
         children: const [
+          _DriverRoutePage(),
           _MyDeliveriesPage(),
           _DriverJourneyMapPage(),
           _DeliveryHistoryPage(),
-          _DriverProfilePage(),
         ],
       ),
       bottomNavigationBar: Container(
@@ -61,14 +65,26 @@ class _DistributionDriverLayoutState
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           destinations: [
             NavigationDestination(
-              icon: Icon(Icons.local_shipping_outlined, color: Colors.grey.shade600),
+              icon: Icon(Icons.space_dashboard_outlined, color: Colors.grey.shade600),
               selectedIcon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.local_shipping, color: Colors.blue.shade700),
+                child: Icon(Icons.space_dashboard, color: Colors.blue.shade700),
+              ),
+              label: 'Tổng quan',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.local_shipping_outlined, color: Colors.grey.shade600),
+              selectedIcon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.local_shipping, color: Colors.orange.shade700),
               ),
               label: 'Giao hàng',
             ),
@@ -77,10 +93,10 @@ class _DistributionDriverLayoutState
               selectedIcon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
+                  color: Colors.teal.shade50,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.map, color: Colors.orange.shade700),
+                child: Icon(Icons.map, color: Colors.teal.shade700),
               ),
               label: 'Hành trình',
             ),
@@ -95,18 +111,6 @@ class _DistributionDriverLayoutState
                 child: Icon(Icons.history, color: Colors.green.shade700),
               ),
               label: 'Lịch sử',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline, color: Colors.grey.shade600),
-              selectedIcon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.purple.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.person, color: Colors.purple.shade700),
-              ),
-              label: 'Tài khoản',
             ),
           ],
         ),
@@ -141,9 +145,9 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
     try {
       final authState = ref.read(authProvider);
       final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final driverId = authState.user?.id;
 
-      if (companyId == null || userId == null) {
+      if (companyId == null || driverId == null) {
         setState(() => _isLoading = false);
         return;
       }
@@ -152,43 +156,84 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
       final today = DateTime.now();
       final startOfDay = DateTime(today.year, today.month, today.day);
 
-      // Get pending deliveries (ready for driver to pick up)
+      // Get pending deliveries from sales_orders (awaiting_pickup - ready for any driver)
       final pendingResp = await supabase
           .from('sales_orders')
           .select('id')
           .eq('company_id', companyId)
-          .eq('delivery_status', 'pending')
+          .eq('delivery_status', 'awaiting_pickup')
           .count();
 
-      // Get in-progress deliveries (driver is delivering)
+      // Get in-progress deliveries (this driver is delivering) from deliveries table
       final inProgressResp = await supabase
-          .from('sales_orders')
+          .from('deliveries')
           .select('id')
           .eq('company_id', companyId)
-          .eq('delivery_status', 'delivering')
+          .eq('driver_id', driverId)
+          .eq('status', 'in_progress')
           .count();
 
-      // Get today's completed deliveries
+      // Get today's completed deliveries from deliveries table
       final completedResp = await supabase
-          .from('sales_orders')
-          .select('id, total')
+          .from('deliveries')
+          .select('id, sales_orders:order_id(total)')
           .eq('company_id', companyId)
-          .eq('delivery_status', 'delivered')
-          .gte('updated_at', startOfDay.toIso8601String());
+          .eq('driver_id', driverId)
+          .eq('status', 'completed')
+          .gte('completed_at', startOfDay.toIso8601String());
 
       double todayRevenue = 0;
-      for (var order in completedResp) {
-        todayRevenue += (order['total'] as num?)?.toDouble() ?? 0;
+      for (var delivery in completedResp) {
+        final order = delivery['sales_orders'] as Map<String, dynamic>?;
+        todayRevenue += (order?['total'] as num?)?.toDouble() ?? 0;
       }
 
-      // Get today's delivery list (pending + delivering)
-      final deliveries = await supabase
+      // Get pending orders from sales_orders (awaiting_pickup)
+      final pendingOrders = await supabase
           .from('sales_orders')
           .select('*, customers(name, phone, address), sales_order_items(id, product_name, quantity, unit, unit_price, line_total)')
           .eq('company_id', companyId)
-          .inFilter('delivery_status', ['pending', 'delivering'])
+          .eq('delivery_status', 'awaiting_pickup')
           .order('created_at', ascending: true)
           .limit(20);
+
+      // Get in-progress deliveries from deliveries table (assigned to this driver)
+      final inProgressDeliveries = await supabase
+          .from('deliveries')
+          .select('''
+            *,
+            sales_orders:order_id(
+              id, order_number, total, customer_name,
+              customers(name, phone, address),
+              sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
+            )
+          ''')
+          .eq('company_id', companyId)
+          .eq('driver_id', driverId)
+          .eq('status', 'in_progress')
+          .order('created_at', ascending: true)
+          .limit(20);
+
+      // Combine both lists - pending orders first, then in-progress
+      final allDeliveries = <Map<String, dynamic>>[];
+      
+      // Add pending orders with a marker
+      for (var order in pendingOrders) {
+        allDeliveries.add({
+          ...order,
+          '_source': 'sales_orders',
+          '_isPending': true,
+        });
+      }
+      
+      // Add in-progress deliveries with a marker
+      for (var delivery in inProgressDeliveries) {
+        allDeliveries.add({
+          ...delivery,
+          '_source': 'deliveries',
+          '_isPending': false,
+        });
+      }
 
       setState(() {
         _stats = {
@@ -197,7 +242,7 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
           'completedToday': completedResp.length,
           'todayRevenue': todayRevenue,
         };
-        _todayDeliveries = List<Map<String, dynamic>>.from(deliveries);
+        _todayDeliveries = allDeliveries;
         _isLoading = false;
       });
     } catch (e) {
@@ -284,6 +329,56 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
                                     ),
                                   ),
                                   const RealtimeNotificationBell(iconColor: Colors.white),
+                                  PopupMenuButton<String>(
+                                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                                    onSelected: (value) async {
+                                      if (value == 'profile') {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) => const Scaffold(body: StaffProfilePage()),
+                                          ),
+                                        );
+                                      } else if (value == 'bug_report') {
+                                        BugReportDialog.show(context);
+                                      } else if (value == 'logout') {
+                                        await ref.read(authProvider.notifier).logout();
+                                        if (context.mounted) context.go('/login');
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(
+                                        value: 'profile',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.person_outline, size: 20),
+                                            SizedBox(width: 8),
+                                            Text('Tài khoản'),
+                                          ],
+                                        ),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'bug_report',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.bug_report_outlined, size: 20, color: Colors.red.shade400),
+                                            const SizedBox(width: 8),
+                                            const Text('Báo cáo lỗi'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuDivider(),
+                                      const PopupMenuItem(
+                                        value: 'logout',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.logout, size: 20, color: Colors.red),
+                                            SizedBox(width: 8),
+                                            Text('Đăng xuất', style: TextStyle(color: Colors.red)),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
 
@@ -530,38 +625,106 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
   }
 
   Widget _buildDeliveryCard(Map<String, dynamic> delivery) {
-    final customer = delivery['customers'] as Map<String, dynamic>?;
-    final status = delivery['status'] as String;
-    final orderNumber = delivery['order_number']?.toString() ?? delivery['id'].toString().substring(0, 8).toUpperCase();
-    final total = (delivery['total'] as num?)?.toDouble() ?? 0;
-    final customerName = delivery['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
-    final customerAddress = delivery['delivery_address'] ?? delivery['customer_address'] ?? customer?['address'];
-    final customerPhone = delivery['customer_phone'] ?? customer?['phone'];
+    // Check data source: from sales_orders or deliveries table
+    final isFromSalesOrders = delivery['_source'] == 'sales_orders';
+    final isPendingMarker = delivery['_isPending'] == true;
+    
+    // Extract data based on source
+    Map<String, dynamic>? customer;
+    String orderNumber;
+    double total;
+    String customerName;
+    String? customerAddress;
+    String? customerPhone;
+    String deliveryStatus;
+    
+    if (isFromSalesOrders) {
+      // Data from sales_orders table directly
+      customer = delivery['customers'] as Map<String, dynamic>?;
+      orderNumber = delivery['order_number']?.toString() ?? delivery['id'].toString().substring(0, 8).toUpperCase();
+      total = (delivery['total'] as num?)?.toDouble() ?? (delivery['total_amount'] as num?)?.toDouble() ?? 0;
+      customerName = delivery['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
+      customerAddress = delivery['delivery_address'] ?? delivery['customer_address'] ?? customer?['address'];
+      customerPhone = delivery['customer_phone'] ?? customer?['phone'];
+      deliveryStatus = delivery['delivery_status'] as String? ?? 'awaiting_pickup';
+    } else {
+      // Data from deliveries table with joined sales_orders
+      final salesOrder = delivery['sales_orders'] as Map<String, dynamic>?;
+      customer = salesOrder?['customers'] as Map<String, dynamic>?;
+      orderNumber = salesOrder?['order_number']?.toString() ?? 
+                    delivery['delivery_number']?.toString() ?? 
+                    delivery['id'].toString().substring(0, 8).toUpperCase();
+      // sales_orders uses 'total' not 'total_amount', also check delivery's total_amount
+      total = (salesOrder?['total'] as num?)?.toDouble() ?? 
+              (delivery['total_amount'] as num?)?.toDouble() ?? 0;
+      customerName = salesOrder?['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
+      customerAddress = delivery['delivery_address'] ?? customer?['address'];
+      customerPhone = customer?['phone'];
+      deliveryStatus = delivery['status'] as String? ?? 'planned';
+    }
 
     Color statusColor;
     String statusText;
     IconData statusIcon;
-    bool isPending;
+    bool isPending = isPendingMarker;
 
-    switch (status) {
-      case 'ready_for_delivery':
-      case 'processing':
-        statusColor = Colors.orange;
-        statusText = 'Chờ nhận';
-        statusIcon = Icons.pending_actions;
-        isPending = true;
-        break;
-      case 'shipping':
-        statusColor = Colors.blue;
-        statusText = 'Đang giao';
-        statusIcon = Icons.local_shipping;
-        isPending = false;
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusText = status;
-        statusIcon = Icons.help_outline;
-        isPending = true;
+    // Determine status display based on delivery_status or status
+    if (isFromSalesOrders) {
+      // From sales_orders - check delivery_status
+      switch (deliveryStatus) {
+        case 'awaiting_pickup':
+          statusColor = Colors.orange;
+          statusText = 'Chờ nhận';
+          statusIcon = Icons.pending_actions;
+          isPending = true;
+          break;
+        case 'delivering':
+          statusColor = Colors.blue;
+          statusText = 'Đang giao';
+          statusIcon = Icons.local_shipping;
+          isPending = false;
+          break;
+        default:
+          statusColor = Colors.grey;
+          statusText = deliveryStatus;
+          statusIcon = Icons.help_outline;
+          isPending = true;
+      }
+    } else {
+      // From deliveries table - check status
+      // Valid statuses: planned, loading, in_progress, completed, cancelled
+      switch (deliveryStatus) {
+        case 'planned':
+        case 'loading':
+          statusColor = Colors.orange;
+          statusText = 'Chờ nhận';
+          statusIcon = Icons.pending_actions;
+          isPending = true;
+          break;
+        case 'in_progress':
+          statusColor = Colors.blue;
+          statusText = 'Đang giao';
+          statusIcon = Icons.local_shipping;
+          isPending = false;
+          break;
+        case 'completed':
+          statusColor = Colors.green;
+          statusText = 'Đã giao';
+          statusIcon = Icons.check_circle;
+          isPending = false;
+          break;
+        case 'cancelled':
+          statusColor = Colors.red;
+          statusText = 'Đã hủy';
+          statusIcon = Icons.cancel;
+          isPending = false;
+          break;
+        default:
+          statusColor = Colors.grey;
+          statusText = deliveryStatus;
+          statusIcon = Icons.help_outline;
+          isPending = true;
+      }
     }
 
     return Container(
@@ -700,9 +863,19 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () => isPending
-                        ? _pickupDelivery(delivery['id'])
-                        : _completeDelivery(delivery['id']),
+                    onPressed: () {
+                      final isFromSalesOrders = delivery['_source'] == 'sales_orders';
+                      final deliveryId = isFromSalesOrders ? null : (delivery['id'] as String?);
+                      final orderId = (delivery['id'] as String?) ?? 
+                                     (delivery['order_id'] as String?) ?? 
+                                     (delivery['sales_orders'] as Map<String, dynamic>?)?['id'] as String? ?? 
+                                     '';
+                      if (isPending) {
+                        _pickupDelivery(deliveryId, orderId, isFromSalesOrders);
+                      } else {
+                        _completeDelivery(deliveryId ?? '', orderId);
+                      }
+                    },
                     icon: Icon(isPending ? Icons.play_arrow : Icons.check_circle, size: 20),
                     label: Text(isPending ? 'Nhận đơn giao' : 'Xác nhận đã giao'),
                     style: ElevatedButton.styleFrom(
@@ -725,6 +898,11 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
   }
 
   void _showDeliveryDetail(Map<String, dynamic> delivery) {
+    // Determine if this is a sales_orders record (no deliveryId yet)
+    final isFromSalesOrders = delivery['_source'] == 'sales_orders';
+    final orderId = (delivery['id'] as String?) ?? (delivery['order_id'] as String?) ?? '';
+    final deliveryId = isFromSalesOrders ? null : (delivery['id'] as String?);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -732,21 +910,110 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
       builder: (context) => _DeliveryDetailSheet(
         delivery: delivery,
         currencyFormat: currencyFormat,
-        onPickup: () => _pickupDelivery(delivery['id']),
-        onComplete: () => _completeDelivery(delivery['id']),
+        onPickup: () => _pickupDelivery(deliveryId, orderId, isFromSalesOrders),
+        onComplete: () => _completeDelivery(deliveryId ?? '', orderId),
         onCall: _callCustomer,
         onNavigate: _openMaps,
+        onFailDelivery: () => _failDelivery(deliveryId ?? '', orderId),
+        onCollectPayment: () => _collectPayment(orderId),
       ),
     );
   }
 
-  Future<void> _pickupDelivery(String orderId) async {
+  Future<void> _failDelivery(String deliveryId, String orderId) async {
+    final reasons = [
+      'Khách không có nhà',
+      'Khách từ chối nhận hàng',
+      'Địa chỉ không chính xác',
+      'Không liên lạc được',
+      'Khách hẹn giao lại',
+      'Lý do khác',
+    ];
+    
+    String? selectedReason;
+    String? otherReason;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.cancel, color: Colors.red.shade600),
+              ),
+              const SizedBox(width: 12),
+              const Text('Không giao được'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Chọn lý do không giao được:'),
+                const SizedBox(height: 12),
+                ...reasons.map((reason) => RadioListTile<String>(
+                  title: Text(reason, style: const TextStyle(fontSize: 14)),
+                  value: reason,
+                  groupValue: selectedReason,
+                  onChanged: (value) => setState(() => selectedReason = value),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                )),
+                if (selectedReason == 'Lý do khác') ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Nhập lý do...',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      isDense: true,
+                    ),
+                    onChanged: (value) => otherReason = value,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: selectedReason == null ? null : () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Xác nhận'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || selectedReason == null) return;
+
     try {
       final supabase = Supabase.instance.client;
+      final reason = selectedReason == 'Lý do khác' ? otherReason : selectedReason;
 
-      // Set to awaiting_pickup - warehouse needs to confirm handover
+      // Update delivery record
+      await supabase.from('deliveries').update({
+        'status': 'failed',
+        'notes': reason,
+        'completed_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', deliveryId);
+
+      // Update sales_order record
       await supabase.from('sales_orders').update({
-        'delivery_status': 'awaiting_pickup',
+        'delivery_status': 'failed',
+        'delivery_failed_reason': reason,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', orderId);
 
@@ -755,9 +1022,9 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.hourglass_empty, color: Colors.white),
+                Icon(Icons.info, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Đã gửi yêu cầu! Chờ kho xác nhận giao hàng.'),
+                Text('Đã báo cáo không giao được'),
               ],
             ),
             backgroundColor: Colors.orange,
@@ -766,6 +1033,389 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
           ),
         );
         _loadDashboardData();
+      }
+    } catch (e) {
+      AppLogger.error('Failed to mark delivery as failed', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _collectPayment(String orderId) async {
+    // Lấy thông tin đơn hàng
+    final supabase = Supabase.instance.client;
+    final orderData = await supabase
+        .from('sales_orders')
+        .select('total, customer_id, payment_method, customers(name, total_debt)')
+        .eq('id', orderId)
+        .maybeSingle();
+    
+    if (orderData == null) return;
+    
+    final total = (orderData['total'] as num?)?.toDouble() ?? 0;
+    final customerId = orderData['customer_id'];
+    final customerName = orderData['customers']?['name'] ?? 'Khách hàng';
+    final currentDebt = (orderData['customers']?['total_debt'] as num?)?.toDouble() ?? 0;
+    final paymentMethod = orderData['payment_method']?.toString().toLowerCase() ?? 'cod';
+    
+    String? selectedOption;
+    
+    final confirmed = await showDialog<String>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.payments, color: Colors.green.shade600),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(child: Text('Xác nhận thanh toán')),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Thông tin đơn hàng
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Số tiền:'),
+                          Text(
+                            currencyFormat.format(total),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Colors.orange.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Khách hàng:'),
+                          Text(customerName, style: const TextStyle(fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                const Text('Chọn phương thức:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                
+                // Option 1: Thu tiền mặt
+                RadioListTile<String>(
+                  title: const Row(
+                    children: [
+                      Text('💵', style: TextStyle(fontSize: 20)),
+                      SizedBox(width: 8),
+                      Text('Thu tiền mặt (COD)'),
+                    ],
+                  ),
+                  subtitle: const Text('Khách trả tiền mặt ngay'),
+                  value: 'cash',
+                  groupValue: selectedOption,
+                  onChanged: (v) => setState(() => selectedOption = v),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+                
+                // Option 2: Chuyển khoản
+                RadioListTile<String>(
+                  title: const Row(
+                    children: [
+                      Text('🏦', style: TextStyle(fontSize: 20)),
+                      SizedBox(width: 8),
+                      Text('Chuyển khoản'),
+                    ],
+                  ),
+                  subtitle: const Text('Chờ Finance xác nhận'),
+                  value: 'transfer',
+                  groupValue: selectedOption,
+                  onChanged: (v) => setState(() => selectedOption = v),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+                
+                // Option 3: Ghi nợ
+                RadioListTile<String>(
+                  title: const Row(
+                    children: [
+                      Text('📝', style: TextStyle(fontSize: 20)),
+                      SizedBox(width: 8),
+                      Text('Ghi nợ'),
+                    ],
+                  ),
+                  subtitle: Text('Công nợ hiện tại: ${currencyFormat.format(currentDebt)}'),
+                  value: 'debt',
+                  groupValue: selectedOption,
+                  onChanged: (v) => setState(() => selectedOption = v),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+                
+                if (selectedOption == 'debt')
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Công nợ sau giao dịch: ${currencyFormat.format(currentDebt + total)}',
+                            style: TextStyle(
+                              color: Colors.orange.shade800,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: selectedOption == null ? null : () => Navigator.pop(context, selectedOption),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: selectedOption == 'debt' 
+                    ? Colors.orange 
+                    : selectedOption == 'transfer' 
+                        ? Colors.blue 
+                        : Colors.green,
+              ),
+              child: Text(
+                selectedOption == 'debt' 
+                    ? 'Ghi nợ' 
+                    : selectedOption == 'transfer' 
+                        ? 'Chờ xác nhận' 
+                        : 'Xác nhận',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed == null) return;
+
+    try {
+      if (confirmed == 'cash') {
+        // Thu tiền mặt - đánh dấu đã thanh toán
+        await supabase.from('sales_orders').update({
+          'payment_status': 'paid',
+          'payment_method': 'cash',
+          'payment_collected_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', orderId);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('💰 Đã xác nhận thu tiền mặt!'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      } else if (confirmed == 'transfer') {
+        // Chuyển khoản - chờ Finance xác nhận
+        await supabase.from('sales_orders').update({
+          'payment_status': 'pending_transfer',
+          'payment_method': 'transfer',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', orderId);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.schedule, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(child: Text('🏦 Đã ghi nhận chuyển khoản. Chờ Finance xác nhận.')),
+                ],
+              ),
+              backgroundColor: Colors.blue,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      } else if (confirmed == 'debt') {
+        // Ghi nợ - cập nhật công nợ khách hàng
+        await supabase.from('sales_orders').update({
+          'payment_status': 'debt',
+          'payment_method': 'debt',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', orderId);
+
+        // Cập nhật công nợ khách hàng
+        if (customerId != null) {
+          await supabase.from('customers').update({
+            'total_debt': currentDebt + total,
+            'updated_at': DateTime.now().toIso8601String(),
+          }).eq('id', customerId);
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.receipt_long, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('📝 Đã ghi nợ ${currencyFormat.format(total)}')),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      }
+
+      if (mounted) _loadDashboardData();
+    } catch (e) {
+      AppLogger.error('Failed to process payment', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickupDelivery(String? deliveryId, String orderId, bool isFromSalesOrders) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final authState = ref.read(authProvider);
+      final companyId = authState.user?.companyId;
+      final driverId = authState.user?.id;
+
+      if (isFromSalesOrders) {
+        // Create new delivery record and assign to driver
+        final now = DateTime.now().toIso8601String();
+        final insertResult = await supabase.from('deliveries').insert({
+          'company_id': companyId,
+          'order_id': orderId,
+          'driver_id': driverId,
+          'delivery_number': 'DL-${DateTime.now().millisecondsSinceEpoch}',
+          'delivery_date': DateTime.now().toIso8601String().split('T')[0],
+          'status': 'in_progress',
+          'started_at': now,
+          'updated_at': now,
+        }).select().single();
+
+        // Update sales_orders delivery_status
+        if (orderId.isNotEmpty) {
+          await supabase.from('sales_orders').update({
+            'delivery_status': 'delivering',
+            'updated_at': now,
+          }).eq('id', orderId);
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.local_shipping, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Đã nhận đơn! Bắt đầu giao hàng.'),
+                ],
+              ),
+              backgroundColor: Colors.blue,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+          _loadDashboardData();
+        }
+      } else if (deliveryId != null) {
+        // Update delivery status to in_progress
+        await supabase.from('deliveries').update({
+          'status': 'in_progress',
+          'started_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', deliveryId);
+
+        // Also update sales_orders delivery_status for consistency
+        if (orderId.isNotEmpty) {
+          await supabase.from('sales_orders').update({
+            'delivery_status': 'delivering',
+            'updated_at': DateTime.now().toIso8601String(),
+          }).eq('id', orderId);
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.local_shipping, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text('Đã nhận đơn! Bắt đầu giao hàng.'),
+                ],
+              ),
+              backgroundColor: Colors.blue,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+          _loadDashboardData();
+        }
       }
     } catch (e) {
       AppLogger.error('Failed to pickup delivery', e);
@@ -781,58 +1431,106 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
     }
   }
 
-  Future<void> _completeDelivery(String orderId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.check_circle, color: Colors.green.shade600),
-            ),
-            const SizedBox(width: 12),
-            const Text('Xác nhận giao hàng'),
-          ],
-        ),
-        content: const Text('Bạn đã giao hàng thành công cho khách?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+  Future<void> _completeDelivery(String deliveryId, String orderId) async {
+    // Debug log
+    AppLogger.info('🚛 [Dashboard] _completeDelivery called with deliveryId: "$deliveryId", orderId: "$orderId"');
+    
+    // Validate orderId is a valid UUID (not empty, not null string)
+    if (orderId.isEmpty || orderId == 'null') {
+      AppLogger.error('Invalid orderId: $orderId');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lỗi: Không tìm thấy mã đơn hàng'),
+            backgroundColor: Colors.red,
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Xác nhận'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
+        );
+      }
+      return;
+    }
 
     try {
       final supabase = Supabase.instance.client;
+      
+      // Get order info to check payment status
+      final orderResponse = await supabase
+          .from('sales_orders')
+          .select('payment_method, payment_status, total, customer_id, customers(name, total_debt)')
+          .eq('id', orderId)
+          .single();
 
-      await supabase.from('sales_orders').update({
+      final paymentMethod = orderResponse['payment_method']?.toString().toLowerCase() ?? 'cod';
+      final paymentStatus = orderResponse['payment_status']?.toString().toLowerCase() ?? 'unpaid';
+      final total = (orderResponse['total'] ?? 0).toDouble();
+      final customerId = orderResponse['customer_id'];
+      final customerData = orderResponse['customers'] as Map<String, dynamic>?;
+      final customerName = customerData?['name'] ?? 'Khách hàng';
+      final currentDebt = (customerData?['total_debt'] as num?)?.toDouble() ?? 0;
+
+      // Show delivery completion with payment options
+      final result = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (context) => _buildDeliveryCompletionDialog(
+          orderId: orderId,
+          customerName: customerName,
+          paymentMethod: paymentMethod,
+          paymentStatus: paymentStatus,
+          totalAmount: total,
+        ),
+      );
+
+      if (result == null) return;
+
+      // Update delivery record - use 'completed' status (valid: planned, loading, in_progress, completed, cancelled)
+      await supabase.from('deliveries').update({
+        'status': 'completed',
+        'completed_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', deliveryId);
+
+      // Update sales_orders delivery status and payment if needed
+      Map<String, dynamic> updateData = {
         'delivery_status': 'delivered',
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', orderId);
+      };
+
+      if (result['updatePayment'] == true) {
+        updateData['payment_status'] = result['paymentStatus'];
+        updateData['payment_method'] = result['paymentMethod'];
+        if (result['paymentStatus'] == 'paid') {
+          updateData['payment_collected_at'] = DateTime.now().toIso8601String();
+        }
+        
+        // Nếu ghi nợ, cập nhật công nợ khách hàng
+        if (result['paymentStatus'] == 'debt' && customerId != null) {
+          await supabase.from('customers').update({
+            'total_debt': currentDebt + total,
+            'updated_at': DateTime.now().toIso8601String(),
+          }).eq('id', customerId);
+          AppLogger.info('📝 [Dashboard] Updated customer debt: $customerId += $total (new total: ${currentDebt + total})');
+        }
+      }
+
+      AppLogger.info('🔄 [Dashboard] Updating sales_orders: $updateData where id=$orderId');
+
+      await supabase.from('sales_orders').update(updateData).eq('id', orderId);
+      
+      AppLogger.info('✅ [Dashboard] Update completed for orderId: $orderId');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.celebration, color: Colors.white),
-                SizedBox(width: 12),
-                Text('🎉 Giao hàng thành công!'),
+                const Icon(Icons.celebration, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    result['updatePayment'] == true 
+                        ? '🎉 Giao hàng và thanh toán thành công!'
+                        : '🎉 Giao hàng thành công!',
+                  ),
+                ),
               ],
             ),
             backgroundColor: Colors.green,
@@ -864,8 +1562,16 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
       return;
     }
 
+    // Clean address: remove notes after '--' (e.g., "123 ABC -- Chị Trúc" -> "123 ABC")
+    String cleanAddress = address;
+    if (address.contains('--')) {
+      cleanAddress = address.split('--').first.trim();
+    }
+
+    // Use Google Maps Directions API with current location as origin
+    // travelmode=driving for car navigation
     final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}',
+      'https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${Uri.encodeComponent(cleanAddress)}&travelmode=driving',
     );
 
     if (await canLaunchUrl(uri)) {
@@ -886,6 +1592,186 @@ class _DriverRoutePageState extends ConsumerState<_DriverRoutePage> {
       await launchUrl(uri);
     }
   }
+
+  Widget _buildDeliveryCompletionDialog({
+    required String orderId,
+    required String customerName,
+    required String paymentMethod,
+    required String paymentStatus,
+    required double totalAmount,
+  }) {
+    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
+    String selectedPaymentOption = 'delivered_only'; // delivered_only, cash_collected, transfer_confirmed, debt_added
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(Icons.local_shipping, color: Colors.green.shade600, size: 32),
+              ),
+              const SizedBox(height: 12),
+              Text('Hoàn thành giao hàng', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Order info
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('📋 Mã đơn: $orderId', style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text('👤 Khách hàng: $customerName'),
+                    Text('💰 Tổng tiền: ${currencyFormat.format(totalAmount)}'),
+                    Text('💳 Hình thức: ${_getPaymentMethodLabel(paymentMethod)}'),
+                    Text('📊 Trạng thái: ${_getPaymentStatusLabel(paymentStatus)}'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Payment options
+              const Text('Xử lý thanh toán:', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              
+              // Option 1: Chỉ giao hàng
+              RadioListTile<String>(
+                value: 'delivered_only',
+                groupValue: selectedPaymentOption,
+                onChanged: (value) => setState(() => selectedPaymentOption = value!),
+                title: const Text('Chỉ xác nhận giao hàng'),
+                subtitle: Text('Giữ nguyên trạng thái thanh toán: ${_getPaymentStatusLabel(paymentStatus)}'),
+                dense: true,
+              ),
+              
+              // Option 2: Thu tiền mặt (nếu COD)
+              if (paymentMethod == 'cod' && paymentStatus != 'paid')
+                RadioListTile<String>(
+                  value: 'cash_collected',
+                  groupValue: selectedPaymentOption,
+                  onChanged: (value) => setState(() => selectedPaymentOption = value!),
+                  title: const Text('💵 Thu tiền mặt'),
+                  subtitle: Text('Xác nhận đã thu ${currencyFormat.format(totalAmount)}'),
+                  dense: true,
+                ),
+              
+              // Option 3: Xác nhận chuyển khoản
+              if (paymentMethod == 'transfer' && paymentStatus != 'paid')
+                RadioListTile<String>(
+                  value: 'transfer_confirmed',
+                  groupValue: selectedPaymentOption,
+                  onChanged: (value) => setState(() => selectedPaymentOption = value!),
+                  title: const Text('🏦 Xác nhận chuyển khoản'),
+                  subtitle: const Text('Khách hàng đã chuyển khoản'),
+                  dense: true,
+                ),
+              
+              // Option 4: Ghi nợ
+              if (paymentStatus != 'paid')
+                RadioListTile<String>(
+                  value: 'debt_added',
+                  groupValue: selectedPaymentOption,
+                  onChanged: (value) => setState(() => selectedPaymentOption = value!),
+                  title: const Text('📝 Ghi nợ'),
+                  subtitle: const Text('Khách hàng sẽ thanh toán sau'),
+                  dense: true,
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Map<String, dynamic> result = {'updatePayment': false};
+                
+                switch (selectedPaymentOption) {
+                  case 'delivered_only':
+                    // Chỉ cập nhật delivery status
+                    break;
+                    
+                  case 'cash_collected':
+                    result = {
+                      'updatePayment': true,
+                      'paymentStatus': 'paid',
+                      'paymentMethod': 'cash',
+                    };
+                    break;
+                    
+                  case 'transfer_confirmed':
+                    result = {
+                      'updatePayment': true,
+                      'paymentStatus': 'paid', 
+                      'paymentMethod': 'transfer',
+                    };
+                    break;
+                    
+                  case 'debt_added':
+                    result = {
+                      'updatePayment': true,
+                      'paymentStatus': 'debt',
+                      'paymentMethod': paymentMethod, // Giữ nguyên payment method
+                    };
+                    break;
+                }
+                
+                Navigator.pop(context, result);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text('Xác nhận'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _getPaymentMethodLabel(String method) {
+    switch (method.toLowerCase()) {
+      case 'cod':
+        return 'Tiền mặt (COD)';
+      case 'cash':
+        return 'Tiền mặt';
+      case 'transfer':
+        return 'Chuyển khoản';
+      case 'card':
+        return 'Thẻ tín dụng';
+      default:
+        return method;
+    }
+  }
+
+  String _getPaymentStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return 'Đã thanh toán';
+      case 'unpaid':
+        return 'Chưa thanh toán';
+      case 'partial':
+        return 'Thanh toán một phần';
+      case 'debt':
+        return 'Ghi nợ';
+      default:
+        return status;
+    }
+  }
 }
 
 // ============================================================================
@@ -898,6 +1784,8 @@ class _DeliveryDetailSheet extends StatelessWidget {
   final VoidCallback onComplete;
   final Function(String?) onCall;
   final Function(String?) onNavigate;
+  final VoidCallback onFailDelivery;
+  final VoidCallback onCollectPayment;
 
   const _DeliveryDetailSheet({
     required this.delivery,
@@ -906,12 +1794,15 @@ class _DeliveryDetailSheet extends StatelessWidget {
     required this.onComplete,
     required this.onCall,
     required this.onNavigate,
+    required this.onFailDelivery,
+    required this.onCollectPayment,
   });
 
   @override
   Widget build(BuildContext context) {
     final customer = delivery['customers'] as Map<String, dynamic>?;
     final status = delivery['status'] as String;
+    final deliveryStatus = delivery['delivery_status'] as String?;
     final orderNumber = delivery['order_number']?.toString() ?? delivery['id'].toString().substring(0, 8).toUpperCase();
     final total = (delivery['total'] as num?)?.toDouble() ?? 0;
     final customerName = delivery['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
@@ -919,6 +1810,13 @@ class _DeliveryDetailSheet extends StatelessWidget {
     final customerPhone = delivery['customer_phone'] ?? customer?['phone'];
     final notes = delivery['notes'] ?? delivery['delivery_notes'];
     final isPending = status == 'ready_for_delivery' || status == 'processing';
+    final isDelivering = deliveryStatus == 'delivering';
+    
+    // Payment info
+    final paymentMethod = delivery['payment_method']?.toString().toLowerCase() ?? 'cod';
+    final paymentStatus = delivery['payment_status'] ?? 'pending';
+    // Show payment button for all unpaid orders when delivering
+    final needsPaymentCollection = paymentStatus != 'paid' && isDelivering;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
@@ -1115,42 +2013,95 @@ class _DeliveryDetailSheet extends StatelessWidget {
                 ),
               ],
             ),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                if (customerAddress != null)
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => onNavigate(customerAddress),
-                      icon: const Icon(Icons.directions),
-                      label: const Text('Chỉ đường'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                // Row 1: Navigation + Main action
+                Row(
+                  children: [
+                    if (customerAddress != null)
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => onNavigate(customerAddress),
+                          icon: const Icon(Icons.directions),
+                          label: const Text('Chỉ đường'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (customerAddress != null) const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          isPending ? onPickup() : onComplete();
+                        },
+                        icon: Icon(isPending ? Icons.play_arrow : Icons.check_circle),
+                        label: Text(isPending ? 'Nhận đơn giao' : 'Đã giao'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isPending ? Colors.orange : Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                if (customerAddress != null) const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      isPending ? onPickup() : onComplete();
-                    },
-                    icon: Icon(isPending ? Icons.play_arrow : Icons.check_circle),
-                    label: Text(isPending ? 'Nhận đơn giao' : 'Xác nhận đã giao'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isPending ? Colors.orange : Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
+                // Row 2: Collect payment + Failed delivery (only when delivering)
+                if (isDelivering) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      // Collect payment button (for all unpaid orders)
+                      if (needsPaymentCollection)
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              onCollectPayment();
+                            },
+                            icon: const Icon(Icons.payments),
+                            label: const Text('Xác nhận thanh toán'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (needsPaymentCollection) const SizedBox(width: 12),
+                      // Failed delivery button
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            onFailDelivery();
+                          },
+                          icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+                          label: const Text('Không giao được', style: TextStyle(color: Colors.red)),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: const BorderSide(color: Colors.red),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -1275,17 +2226,19 @@ class _DeliveryDetailSheet extends StatelessWidget {
     final total = (delivery['total'] as num?)?.toDouble() ?? 0;
     final paymentMethod = delivery['payment_method'] ?? 'COD';
     final paymentStatus = delivery['payment_status'] ?? 'pending';
+    final orderNumber = delivery['order_number']?.toString() ?? delivery['id'].toString().substring(0, 8).toUpperCase();
     
     final isPaid = paymentStatus == 'paid';
     final isCOD = paymentMethod.toString().toLowerCase() == 'cod' || paymentMethod.toString().toLowerCase() == 'cash';
+    final isTransfer = paymentMethod.toString().toLowerCase() == 'transfer' || paymentMethod.toString().toLowerCase() == 'bank';
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isCOD && !isPaid ? Colors.orange.shade50 : Colors.green.shade50,
+        color: isPaid ? Colors.green.shade50 : (isTransfer ? Colors.blue.shade50 : Colors.orange.shade50),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isCOD && !isPaid ? Colors.orange.shade200 : Colors.green.shade200,
+          color: isPaid ? Colors.green.shade200 : (isTransfer ? Colors.blue.shade200 : Colors.orange.shade200),
         ),
       ),
       child: Column(
@@ -1297,14 +2250,14 @@ class _DeliveryDetailSheet extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isCOD ? Colors.orange.shade100 : Colors.blue.shade100,
+                  color: isTransfer ? Colors.blue.shade100 : (isCOD ? Colors.orange.shade100 : Colors.grey.shade100),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  isCOD ? '💵 COD (Thu hộ)' : '💳 Đã thanh toán',
+                  isTransfer ? '🏦 Chuyển khoản' : (isCOD ? '💵 COD (Thu hộ)' : '💳 Đã thanh toán'),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isCOD ? Colors.orange.shade800 : Colors.blue.shade800,
+                    color: isTransfer ? Colors.blue.shade800 : (isCOD ? Colors.orange.shade800 : Colors.green.shade800),
                     fontSize: 13,
                   ),
                 ),
@@ -1338,11 +2291,11 @@ class _DeliveryDetailSheet extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isCOD && !isPaid ? '💰 CẦN THU:' : 'Tổng tiền:',
+                !isPaid ? '💰 CẦN THU:' : 'Tổng tiền:',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: isCOD && !isPaid ? Colors.orange.shade800 : Colors.black87,
+                  color: !isPaid ? Colors.orange.shade800 : Colors.black87,
                 ),
               ),
               Text(
@@ -1350,14 +2303,234 @@ class _DeliveryDetailSheet extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
-                  color: isCOD && !isPaid ? Colors.orange.shade800 : Colors.green.shade700,
+                  color: !isPaid ? Colors.orange.shade800 : Colors.green.shade700,
                 ),
               ),
             ],
           ),
+          
+          // QR Button for transfer payments
+          if (!isPaid) ...[
+            const SizedBox(height: 16),
+            Builder(
+              builder: (btnContext) => SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showQRTransferDialog(
+                    btnContext,
+                    total,
+                    orderNumber,
+                  ),
+                  icon: const Icon(Icons.qr_code),
+                  label: const Text('Hiện QR chuyển khoản'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.blue.shade700,
+                    side: BorderSide(color: Colors.blue.shade300),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+  
+  void _showQRTransferDialog(BuildContext context, double amount, String orderNumber) async {
+    // Fetch company bank info
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      if (user == null) return;
+      
+      // Get employee's company
+      final empData = await supabase
+          .from('employees')
+          .select('company_id')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+      
+      if (empData == null || empData['company_id'] == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không tìm thấy thông tin công ty')),
+          );
+        }
+        return;
+      }
+      
+      // Get company bank info
+      final companyData = await supabase
+          .from('companies')
+          .select('bank_name, bank_account_number, bank_account_name, bank_bin')
+          .eq('id', empData['company_id'])
+          .maybeSingle();
+      
+      if (companyData == null || 
+          companyData['bank_bin'] == null || 
+          companyData['bank_account_number'] == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Công ty chưa cấu hình tài khoản ngân hàng. Liên hệ Manager/CEO để cấu hình.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+      
+      final bankBin = companyData['bank_bin'];
+      final accountNumber = companyData['bank_account_number'];
+      final accountName = companyData['bank_account_name'] ?? '';
+      final bankName = companyData['bank_name'] ?? 'Ngân hàng';
+      
+      // Build VietQR URL
+      final amountInt = amount.toInt();
+      final content = 'TT $orderNumber';
+      final qrUrl = 'https://img.vietqr.io/image/$bankBin-$accountNumber-compact2.png?amount=$amountInt&addInfo=${Uri.encodeComponent(content)}&accountName=${Uri.encodeComponent(accountName)}';
+      
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.qr_code, color: Colors.blue.shade700),
+                const SizedBox(width: 8),
+                const Text('QR Chuyển khoản'),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Column(
+                      children: [
+                        Image.network(
+                          qrUrl,
+                          width: 250,
+                          height: 250,
+                          loadingBuilder: (_, child, progress) {
+                            if (progress == null) return child;
+                            return const SizedBox(
+                              width: 250,
+                              height: 250,
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          },
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 250,
+                            height: 250,
+                            color: Colors.grey.shade100,
+                            child: const Center(
+                              child: Text('Không thể tải QR'),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          bankName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          accountNumber,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          accountName,
+                          style: TextStyle(color: Colors.grey.shade700),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text('Số tiền:', style: TextStyle(fontSize: 12)),
+                        Text(
+                          currencyFormat.format(amount),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text('Nội dung:', style: TextStyle(fontSize: 12)),
+                        Text(
+                          content,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '⚠️ Sau khi khách chuyển khoản, Manager sẽ xác nhận',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Đóng'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 }
 
@@ -1378,6 +2551,7 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
   bool _isEditingLocation = false;
   bool _isUpdatingLocation = false;
   bool _mapReady = false; // Track when map is ready
+  bool _isRouteOptimized = false; // Track if route has been optimized
   LatLng? _currentLocation;
   LatLng? _pickedLocation; // Vị trí được chọn để cập nhật
   String? _pickedAddress; // Địa chỉ từ reverse geocoding
@@ -1620,25 +2794,37 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
     try {
       final authState = ref.read(authProvider);
       final companyId = authState.user?.companyId;
+      final driverId = authState.user?.id;
 
-      if (companyId == null) {
+      if (companyId == null || driverId == null) {
         setState(() => _isLoading = false);
         return;
       }
 
       final supabase = Supabase.instance.client;
 
+      // Query from deliveries table filtered by driver_id
+      // Valid statuses: planned, loading, in_progress, completed, cancelled
       final deliveries = await supabase
-          .from('sales_orders')
-          .select('*, customers(id, name, phone, address, latitude, longitude)')
+          .from('deliveries')
+          .select('''
+            *,
+            sales_orders:order_id(
+              id, order_number, total, customer_name, delivery_address,
+              delivery_status, payment_method, payment_status,
+              customers(id, name, phone, address, lat, lng)
+            )
+          ''')
           .eq('company_id', companyId)
-          .inFilter('delivery_status', ['delivering', 'pending', 'awaiting_pickup'])
+          .eq('driver_id', driverId)
+          .inFilter('status', ['planned', 'loading', 'in_progress'])
           .order('created_at', ascending: true)
           .limit(20);
 
       setState(() {
         _deliveryStops = List<Map<String, dynamic>>.from(deliveries);
         _isLoading = false;
+        _isRouteOptimized = false; // Reset khi load lại dữ liệu
       });
 
       if (_deliveryStops.isNotEmpty) {
@@ -1661,9 +2847,11 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
     }
 
     for (final stop in _deliveryStops) {
-      final customer = stop['customers'] as Map<String, dynamic>?;
-      final lat = customer?['latitude'] as double?;
-      final lng = customer?['longitude'] as double?;
+      // New structure: delivery -> sales_orders -> customers
+      final salesOrder = stop['sales_orders'] as Map<String, dynamic>?;
+      final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+      final lat = customer?['lat'] as double?;
+      final lng = customer?['lng'] as double?;
       if (lat != null && lng != null) {
         points.add(LatLng(lat, lng));
       }
@@ -1753,7 +2941,8 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
     if (_selectedStopIndex < 0 || _pickedLocation == null) return;
 
     final stop = _deliveryStops[_selectedStopIndex];
-    final customer = stop['customers'] as Map<String, dynamic>?;
+    final salesOrder = stop['sales_orders'] as Map<String, dynamic>?;
+    final customer = salesOrder?['customers'] as Map<String, dynamic>?;
     final customerId = customer?['id'];
 
     if (customerId == null) {
@@ -1771,12 +2960,11 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
     try {
       final supabase = Supabase.instance.client;
 
-      // Update customer location
+      // Update customer location - CHỈ cập nhật tọa độ, không cập nhật địa chỉ
+      // (theo yêu cầu: cập nhật vị trí chỉ thay đổi tọa độ, địa chỉ giữ nguyên)
       await supabase.from('customers').update({
-        'latitude': _pickedLocation!.latitude,
-        'longitude': _pickedLocation!.longitude,
-        if (_pickedAddress != null && _pickedAddress != 'Không tìm thấy địa chỉ')
-          'address': _pickedAddress,
+        'lat': _pickedLocation!.latitude,
+        'lng': _pickedLocation!.longitude,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', customerId);
 
@@ -1831,6 +3019,77 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
     }
   }
 
+  // Tối ưu và sắp xếp lại danh sách điểm giao hàng
+  void _optimizeAndReorderStops() {
+    if (_deliveryStops.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không có điểm giao hàng để tối ưu')),
+      );
+      return;
+    }
+
+    // Kiểm tra xem có bao nhiêu điểm có tọa độ
+    int stopsWithCoords = 0;
+    for (final stop in _deliveryStops) {
+      final salesOrder = stop['sales_orders'] as Map<String, dynamic>?;
+      final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+      final lat = customer?['lat'] as num?;
+      final lng = customer?['lng'] as num?;
+      if (lat != null && lng != null) {
+        stopsWithCoords++;
+      }
+    }
+
+    if (stopsWithCoords < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cần ít nhất 2 điểm có tọa độ để tối ưu')),
+      );
+      return;
+    }
+
+    // Optimize route using Nearest Neighbor algorithm
+    final optimizedStops = _optimizeRouteNearestNeighbor(
+      _deliveryStops,
+      _currentLocation?.latitude,
+      _currentLocation?.longitude,
+    );
+
+    setState(() {
+      _deliveryStops = optimizedStops;
+      _isRouteOptimized = true;
+      _selectedStopIndex = -1; // Reset selection
+    });
+
+    // Tính tổng khoảng cách sau khi tối ưu
+    double totalDistance = 0;
+    double? prevLat = _currentLocation?.latitude;
+    double? prevLng = _currentLocation?.longitude;
+    
+    for (final stop in optimizedStops) {
+      final salesOrder = stop['sales_orders'] as Map<String, dynamic>?;
+      final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+      final lat = (customer?['lat'] as num?)?.toDouble();
+      final lng = (customer?['lng'] as num?)?.toDouble();
+      
+      if (lat != null && lng != null && prevLat != null && prevLng != null) {
+        totalDistance += _calculateDistance(prevLat, prevLng, lat, lng);
+        prevLat = lat;
+        prevLng = lng;
+      }
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Đã tối ưu tuyến đường! Tổng: ${totalDistance.toStringAsFixed(1)} km'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    // Fit map to show all optimized stops
+    _fitMapToMarkers();
+  }
+
   // Mở Google Maps để điều hướng
   Future<void> _openGoogleMapsNavigation(double lat, double lng) async {
     final uri = Uri.parse(
@@ -1839,6 +3098,171 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  // Tính khoảng cách giữa 2 điểm (Haversine formula)
+  double _calculateDistance(double lat1, double lng1, double lat2, double lng2) {
+    const double earthRadius = 6371; // km
+    final dLat = _toRadians(lat2 - lat1);
+    final dLng = _toRadians(lng2 - lng1);
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_toRadians(lat1)) * cos(_toRadians(lat2)) *
+        sin(dLng / 2) * sin(dLng / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return earthRadius * c;
+  }
+
+  double _toRadians(double degree) => degree * pi / 180;
+
+  // Thuật toán Nearest Neighbor để optimize tuyến đường
+  List<Map<String, dynamic>> _optimizeRouteNearestNeighbor(
+    List<Map<String, dynamic>> stops,
+    double? startLat,
+    double? startLng,
+  ) {
+    if (stops.length <= 2) return stops;
+
+    final List<Map<String, dynamic>> optimized = [];
+    final List<Map<String, dynamic>> remaining = List.from(stops);
+
+    // Điểm bắt đầu: vị trí hiện tại hoặc điểm đầu tiên
+    double currentLat = startLat ?? 10.8;
+    double currentLng = startLng ?? 106.7;
+
+    while (remaining.isNotEmpty) {
+      int nearestIndex = 0;
+      double nearestDistance = double.infinity;
+
+      for (int i = 0; i < remaining.length; i++) {
+        final stop = remaining[i];
+        final salesOrder = stop['sales_orders'] as Map<String, dynamic>?;
+        final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+        final lat = (customer?['lat'] as num?)?.toDouble();
+        final lng = (customer?['lng'] as num?)?.toDouble();
+
+        if (lat != null && lng != null) {
+          final distance = _calculateDistance(currentLat, currentLng, lat, lng);
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestIndex = i;
+          }
+        }
+      }
+
+      final nearest = remaining.removeAt(nearestIndex);
+      optimized.add(nearest);
+
+      // Cập nhật vị trí hiện tại
+      final salesOrder = nearest['sales_orders'] as Map<String, dynamic>?;
+      final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+      currentLat = (customer?['lat'] as num?)?.toDouble() ?? currentLat;
+      currentLng = (customer?['lng'] as num?)?.toDouble() ?? currentLng;
+    }
+
+    return optimized;
+  }
+
+  // Mở Google Maps với toàn bộ tuyến đường giao hàng (ĐÃ OPTIMIZE)
+  Future<void> _openFullRouteInGoogleMaps() async {
+    if (_deliveryStops.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không có điểm giao hàng')),
+      );
+      return;
+    }
+
+    // Optimize route using Nearest Neighbor algorithm
+    final optimizedStops = _optimizeRouteNearestNeighbor(
+      _deliveryStops,
+      _currentLocation?.latitude,
+      _currentLocation?.longitude,
+    );
+
+    // Collect all waypoints (prefer address text over coordinates for Google Maps display)
+    final List<String> waypoints = [];
+    for (final stop in optimizedStops) {
+      final salesOrder = stop['sales_orders'] as Map<String, dynamic>?;
+      final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+      
+      // Use delivery_address or customer address first, fallback to coordinates
+      final deliveryAddress = salesOrder?['delivery_address'] as String?;
+      final customerAddress = customer?['address'] as String?;
+      final lat = customer?['lat'] as num?;
+      final lng = customer?['lng'] as num?;
+      
+      // Prefer text address for better Google Maps display
+      if (deliveryAddress != null && deliveryAddress.isNotEmpty) {
+        waypoints.add(deliveryAddress);
+      } else if (customerAddress != null && customerAddress.isNotEmpty) {
+        waypoints.add(customerAddress);
+      } else if (lat != null && lng != null) {
+        waypoints.add('$lat,$lng');
+      }
+    }
+
+    if (waypoints.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Các điểm giao hàng chưa có tọa độ')),
+      );
+      return;
+    }
+
+    // Build Google Maps URL with optimized waypoints
+    String url;
+    if (waypoints.length == 1) {
+      // Single destination - use simple navigation
+      url = 'https://www.google.com/maps/dir/?api=1'
+          '&destination=${waypoints.first}'
+          '&travelmode=driving';
+    } else {
+      // Multiple waypoints: origin (current location or first stop), waypoints (middle), destination (last)
+      final origin = _currentLocation != null
+          ? '${_currentLocation!.latitude},${_currentLocation!.longitude}'
+          : waypoints.first;
+      
+      final destination = waypoints.last;
+      
+      // Middle waypoints (exclude first if using current location, exclude last always)
+      final middleWaypoints = _currentLocation != null
+          ? waypoints.sublist(0, waypoints.length - 1) // All except last
+          : waypoints.sublist(1, waypoints.length - 1); // Exclude first and last
+      
+      url = 'https://www.google.com/maps/dir/?api=1'
+          '&origin=${Uri.encodeComponent(origin)}'
+          '&destination=${Uri.encodeComponent(destination)}'
+          '&travelmode=driving';
+      
+      if (middleWaypoints.isNotEmpty) {
+        // Google Maps supports up to 9 waypoints in URL
+        final waypointsStr = middleWaypoints.take(9).join('|');
+        url += '&waypoints=${Uri.encodeComponent(waypointsStr)}';
+      }
+    }
+
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  // Mở trang Google Maps Route với bản đồ tích hợp
+  void _openGoogleMapsRoutePage() {
+    if (_deliveryStops.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không có điểm giao hàng')),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => GoogleMapsRoutePage(
+          deliveryStops: _deliveryStops,
+          currentLat: _currentLocation?.latitude,
+          currentLng: _currentLocation?.longitude,
+        ),
+      ),
+    );
   }
 
   @override
@@ -2053,6 +3477,36 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
             bottom: _selectedStopIndex >= 0 ? 280 : 120,
             child: Column(
               children: [
+                // Optimize route button
+                FloatingActionButton.small(
+                  heroTag: 'optimize_route',
+                  onPressed: _optimizeAndReorderStops,
+                  backgroundColor: _isRouteOptimized ? Colors.green : Colors.white,
+                  tooltip: 'Tối ưu tuyến đường',
+                  child: Icon(
+                    Icons.route,
+                    color: _isRouteOptimized ? Colors.white : Colors.orange.shade700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Open full route in Google Maps (embedded view)
+                FloatingActionButton.small(
+                  heroTag: 'google_maps_route',
+                  onPressed: () => _openGoogleMapsRoutePage(),
+                  backgroundColor: Colors.white,
+                  tooltip: 'Xem tuyến đường Google Maps',
+                  child: Icon(Icons.map_outlined, color: Colors.red.shade700),
+                ),
+                const SizedBox(height: 8),
+                // Open in external Google Maps app
+                FloatingActionButton.small(
+                  heroTag: 'google_maps_external',
+                  onPressed: _openFullRouteInGoogleMaps,
+                  backgroundColor: Colors.white,
+                  tooltip: 'Mở Google Maps App',
+                  child: Icon(Icons.navigation_outlined, color: Colors.blue.shade700),
+                ),
+                const SizedBox(height: 8),
                 // GPS tracking toggle
                 FloatingActionButton.small(
                   heroTag: 'gps_toggle',
@@ -2118,9 +3572,10 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
     }
 
     for (final stop in _deliveryStops) {
-      final customer = stop['customers'] as Map<String, dynamic>?;
-      final lat = customer?['latitude'] as double?;
-      final lng = customer?['longitude'] as double?;
+      final salesOrder = stop['sales_orders'] as Map<String, dynamic>?;
+      final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+      final lat = customer?['lat'] as double?;
+      final lng = customer?['lng'] as double?;
       if (lat != null && lng != null) {
         points.add(LatLng(lat, lng));
       }
@@ -2177,21 +3632,30 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
     // Delivery stop markers
     for (int i = 0; i < _deliveryStops.length; i++) {
       final stop = _deliveryStops[i];
-      final customer = stop['customers'] as Map<String, dynamic>?;
-      final lat = customer?['latitude'] as double?;
-      final lng = customer?['longitude'] as double?;
+      final salesOrder = stop['sales_orders'] as Map<String, dynamic>?;
+      final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+      final lat = customer?['lat'] as double?;
+      final lng = customer?['lng'] as double?;
 
       if (lat != null && lng != null) {
-        final deliveryStatus = stop['delivery_status'] as String? ?? 'pending';
+        // Use delivery status from deliveries table
+        // Valid statuses: planned, loading, in_progress, completed, cancelled
+        final deliveryStatus = stop['status'] as String? ?? 'planned';
         final isSelected = _selectedStopIndex == i;
         
         Color markerColor;
         switch (deliveryStatus) {
-          case 'delivering':
+          case 'in_progress':
             markerColor = Colors.blue;
             break;
-          case 'awaiting_pickup':
+          case 'loading':
             markerColor = Colors.purple;
+            break;
+          case 'planned':
+            markerColor = Colors.orange;
+            break;
+          case 'completed':
+            markerColor = Colors.green;
             break;
           default:
             markerColor = Colors.orange;
@@ -2243,7 +3707,7 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
 
   Widget _buildStopsList() {
     return Container(
-      height: 100,
+      height: 120,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -2264,32 +3728,62 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
                 )
-              : ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  itemCount: _deliveryStops.length,
-                  itemBuilder: (context, index) {
-                    final stop = _deliveryStops[index];
-                    final isSelected = _selectedStopIndex == index;
-                    return _buildStopChip(stop, index, isSelected);
-                  },
+              : Column(
+                  children: [
+                    // Counter indicator
+                    Container(
+                      padding: const EdgeInsets.only(top: 8, right: 16),
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${_deliveryStops.length} điểm giao',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: _deliveryStops.length,
+                        itemBuilder: (context, index) {
+                          final stop = _deliveryStops[index];
+                          final isSelected = _selectedStopIndex == index;
+                          return _buildStopChip(stop, index, isSelected);
+                        },
+                      ),
+                    ),
+                  ],
                 ),
     );
   }
 
   Widget _buildStopChip(Map<String, dynamic> stop, int index, bool isSelected) {
-    final customer = stop['customers'] as Map<String, dynamic>?;
-    final customerName = stop['customer_name'] ?? customer?['name'] ?? 'KH ${index + 1}';
-    final deliveryStatus = stop['delivery_status'] as String? ?? 'pending';
-    final hasLocation = customer?['latitude'] != null && customer?['longitude'] != null;
+    final salesOrder = stop['sales_orders'] as Map<String, dynamic>?;
+    final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+    final customerName = salesOrder?['customer_name'] ?? customer?['name'] ?? 'KH ${index + 1}';
+    final deliveryStatus = stop['status'] as String? ?? 'planned';
+    final hasLocation = customer?['lat'] != null && customer?['lng'] != null;
     
+    // Valid statuses: planned, loading, in_progress, completed, cancelled
     Color statusColor;
     switch (deliveryStatus) {
-      case 'delivering':
+      case 'in_progress':
         statusColor = Colors.blue;
         break;
-      case 'awaiting_pickup':
+      case 'loading':
         statusColor = Colors.purple;
+        break;
+      case 'planned':
+        statusColor = Colors.orange;
+        break;
+      case 'completed':
+        statusColor = Colors.green;
+        break;
+      case 'cancelled':
+        statusColor = Colors.red;
         break;
       default:
         statusColor = Colors.orange;
@@ -2299,8 +3793,8 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
       onTap: () {
         setState(() => _selectedStopIndex = index);
         
-        final lat = customer?['latitude'] as double?;
-        final lng = customer?['longitude'] as double?;
+        final lat = customer?['lat'] as double?;
+        final lng = customer?['lng'] as double?;
         if (lat != null && lng != null) {
           _mapController.move(LatLng(lat, lng), 16);
         }
@@ -2373,26 +3867,37 @@ class _DriverJourneyMapPageState extends ConsumerState<_DriverJourneyMapPage> {
   String _getStatusText(String status) {
     switch (status) {
       case 'delivering':
+      case 'in_progress':
         return 'Đang giao';
       case 'awaiting_pickup':
-        return 'Chờ lấy hàng';
-      case 'pending':
+      case 'planned':
         return 'Chờ giao';
+      case 'loading':
+        return 'Đang lấy hàng';
+      case 'completed':
+        return 'Đã giao';
+      case 'cancelled':
+        return 'Đã hủy';
       default:
         return status;
     }
   }
 
   Widget _buildSelectedStopCard(Map<String, dynamic> stop) {
-    final customer = stop['customers'] as Map<String, dynamic>?;
-    final customerName = stop['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
-    final customerAddress = stop['delivery_address'] ?? customer?['address'] ?? 'Chưa có địa chỉ';
-    final customerPhone = stop['customer_phone'] ?? customer?['phone'];
-    final total = (stop['total'] as num?)?.toDouble() ?? 0;
-    final orderNumber = stop['order_number']?.toString() ?? stop['id'].toString().substring(0, 8).toUpperCase();
-    final hasLocation = customer?['latitude'] != null && customer?['longitude'] != null;
-    final lat = customer?['latitude'] as double?;
-    final lng = customer?['longitude'] as double?;
+    final salesOrder = stop['sales_orders'] as Map<String, dynamic>?;
+    final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+    final customerName = salesOrder?['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
+    final customerAddress = salesOrder?['delivery_address'] ?? customer?['address'] ?? 'Chưa có địa chỉ';
+    final customerPhone = customer?['phone'];
+    // sales_orders uses 'total' not 'total_amount'
+    final total = (salesOrder?['total'] as num?)?.toDouble() ?? 
+                  (stop['total_amount'] as num?)?.toDouble() ?? 0;
+    final orderNumber = salesOrder?['order_number']?.toString() ?? 
+                        stop['delivery_number']?.toString() ?? 
+                        stop['id'].toString().substring(0, 8).toUpperCase();
+    final hasLocation = customer?['lat'] != null && customer?['lng'] != null;
+    final lat = customer?['lat'] as double?;
+    final lng = customer?['lng'] as double?;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -2622,9 +4127,10 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = true;
-  List<Map<String, dynamic>> _pendingDeliveries = [];
-  List<Map<String, dynamic>> _awaitingDeliveries = [];
-  List<Map<String, dynamic>> _inProgressDeliveries = [];
+  List<Map<String, dynamic>> _pendingDeliveries = [];  // Chờ nhận (pending)
+  List<Map<String, dynamic>> _awaitingDeliveries = [];  // Chờ kho (awaiting_pickup)
+  List<Map<String, dynamic>> _inProgressDeliveries = [];  // Đang giao (delivering)
+  List<Map<String, dynamic>> _deliveredDeliveries = [];  // Đã giao (delivered)
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
@@ -2632,7 +4138,7 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadDeliveries();
   }
 
@@ -2647,54 +4153,107 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
     try {
       final authState = ref.read(authProvider);
       final companyId = authState.user?.companyId;
+      final driverId = authState.user?.id;
 
-      if (companyId == null) return;
+      if (companyId == null || driverId == null) return;
 
       final supabase = Supabase.instance.client;
 
-      // Get pending (ready for pickup) - orders with delivery_status = 'pending'
-      var pendingQuery = supabase
+      // ===== TAB 1: CHỜ NHẬN - Query từ sales_orders (awaiting_pickup) =====
+      // Chỉ lấy những đơn chưa có delivery record nào
+      final pendingOrders = await supabase
           .from('sales_orders')
-          .select('*, customers(name, phone, address), sales_order_items(id, product_name, quantity, unit, unit_price, line_total)')
+          .select('''
+            *, 
+            customers(name, phone, address, lat, lng), 
+            sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
+          ''')
           .eq('company_id', companyId)
-          .eq('delivery_status', 'pending');
+          .eq('delivery_status', 'awaiting_pickup')
+          .order('created_at', ascending: true)
+          .limit(100);
 
-      if (_searchQuery.isNotEmpty) {
-        pendingQuery = pendingQuery.or('order_number.ilike.%$_searchQuery%,customer_name.ilike.%$_searchQuery%');
+      // Lấy danh sách order_id đã có delivery
+      final existingDeliveries = await supabase
+          .from('deliveries')
+          .select('order_id')
+          .eq('company_id', companyId);
+      
+      final deliveredOrderIds = (existingDeliveries as List)
+          .map((d) => d['order_id'] as String?)
+          .where((id) => id != null)
+          .toSet();
+
+      // Filter ra những đơn chưa có delivery
+      final pendingList = <Map<String, dynamic>>[];
+      for (var order in pendingOrders) {
+        final orderId = order['id'] as String?;
+        if (orderId != null && !deliveredOrderIds.contains(orderId)) {
+          pendingList.add({
+            ...order,
+            '_source': 'sales_orders',
+            '_isPending': true,
+          });
+        }
       }
 
-      final pending = await pendingQuery.order('updated_at', ascending: false).limit(100);
-
-      // Get awaiting pickup (driver requested, waiting for warehouse confirmation)
+      // ===== TAB 2: CHỜ KHO - Query từ deliveries (loading) =====
+      // Đơn đã nhận, đang chờ kho xác nhận giao hàng
       var awaitingQuery = supabase
-          .from('sales_orders')
-          .select('*, customers(name, phone, address), sales_order_items(id, product_name, quantity, unit, unit_price, line_total)')
+          .from('deliveries')
+          .select('''
+            *,
+            sales_orders:order_id(
+              id, order_number, total, customer_name, payment_status, payment_method,
+              customers(name, phone, address, lat, lng),
+              sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
+            )
+          ''')
           .eq('company_id', companyId)
-          .eq('delivery_status', 'awaiting_pickup');
-
-      if (_searchQuery.isNotEmpty) {
-        awaitingQuery = awaitingQuery.or('order_number.ilike.%$_searchQuery%,customer_name.ilike.%$_searchQuery%');
-      }
+          .eq('driver_id', driverId)
+          .eq('status', 'loading');
 
       final awaiting = await awaitingQuery.order('updated_at', ascending: false).limit(100);
 
-      // Get in-progress (currently being delivered) - delivery_status = 'delivering'
+      // ===== TAB 3: ĐANG GIAO - Query từ deliveries (in_progress) =====
       var inProgressQuery = supabase
-          .from('sales_orders')
-          .select('*, customers(name, phone, address), sales_order_items(id, product_name, quantity, unit, unit_price, line_total)')
+          .from('deliveries')
+          .select('''
+            *,
+            sales_orders:order_id(
+              id, order_number, total, customer_name, payment_status, payment_method,
+              customers(name, phone, address, lat, lng),
+              sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
+            )
+          ''')
           .eq('company_id', companyId)
-          .eq('delivery_status', 'delivering');
-
-      if (_searchQuery.isNotEmpty) {
-        inProgressQuery = inProgressQuery.or('order_number.ilike.%$_searchQuery%,customer_name.ilike.%$_searchQuery%');
-      }
+          .eq('driver_id', driverId)
+          .eq('status', 'in_progress');
 
       final inProgress = await inProgressQuery.order('updated_at', ascending: false).limit(100);
 
+      // ===== TAB 4: ĐÃ GIAO - Query từ deliveries (completed) =====
+      var deliveredQuery = supabase
+          .from('deliveries')
+          .select('''
+            *,
+            sales_orders:order_id(
+              id, order_number, total, customer_name, payment_status, payment_method,
+              customers(name, phone, address, lat, lng),
+              sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
+            )
+          ''')
+          .eq('company_id', companyId)
+          .eq('driver_id', driverId)
+          .eq('status', 'completed');
+
+      final delivered = await deliveredQuery.order('updated_at', ascending: false).limit(100);
+
       setState(() {
-        _pendingDeliveries = List<Map<String, dynamic>>.from(pending);
-        _awaitingDeliveries = List<Map<String, dynamic>>.from(awaiting);
-        _inProgressDeliveries = List<Map<String, dynamic>>.from(inProgress);
+        _pendingDeliveries = pendingList;  // Từ sales_orders (awaiting_pickup)
+        _awaitingDeliveries = List<Map<String, dynamic>>.from(awaiting);  // Chờ kho (loading)
+        _inProgressDeliveries = List<Map<String, dynamic>>.from(inProgress);  // Đang giao
+        _deliveredDeliveries = List<Map<String, dynamic>>.from(delivered);  // Đã giao
         _isLoading = false;
       });
     } catch (e) {
@@ -2866,6 +4425,30 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
                             ],
                           ),
                         ),
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.check_circle, size: 16),
+                              const SizedBox(width: 4),
+                              const Text('Đã giao'),
+                              if (_deliveredDeliveries.isNotEmpty) ...[
+                                const SizedBox(width: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    '${_deliveredDeliveries.length}',
+                                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -2883,11 +4466,238 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
                         _buildDeliveryList(_pendingDeliveries, isPending: true),
                         _buildAwaitingList(_awaitingDeliveries),
                         _buildDeliveryList(_inProgressDeliveries, isPending: false),
+                        _buildDeliveredList(_deliveredDeliveries),
                       ],
                     ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDeliveredList(List<Map<String, dynamic>> deliveries) {
+    if (deliveries.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle_outline,
+                size: 48,
+                color: Colors.green.shade300,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Chưa có đơn đã giao',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Các đơn bạn đã giao thành công\nsẽ hiển thị ở đây',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadDeliveries,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: deliveries.length,
+        itemBuilder: (context, index) {
+          final delivery = deliveries[index];
+          // Get sales_orders data from nested query
+          final salesOrder = delivery['sales_orders'] as Map<String, dynamic>?;
+          final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+          
+          final orderNumber = salesOrder?['order_number'] ?? delivery['order_number'] ?? 'N/A';
+          final customerName = salesOrder?['customer_name'] ?? customer?['name'] ?? 'Không có tên';
+          final customerAddress = customer?['address'] ?? '';
+          // Get total from sales_orders, fallback to delivery total_amount
+          final totalAmount = (salesOrder?['total'] ?? delivery['total_amount'] ?? 0).toDouble();
+          final updatedAt = delivery['updated_at'] != null 
+              ? DateTime.parse(delivery['updated_at']).toLocal() 
+              : DateTime.now();
+          // Payment status from sales_orders, not deliveries
+          final paymentStatus = salesOrder?['payment_status'] ?? delivery['payment_status'] ?? 'pending';
+          final paymentMethod = salesOrder?['payment_method'] ?? delivery['payment_method'] ?? '';
+
+          // Helper to get payment method display text
+          String getPaymentMethodText() {
+            if (paymentStatus != 'paid') return 'Chưa thu';
+            switch (paymentMethod) {
+              case 'cash': return 'Thu tiền mặt';
+              case 'transfer': return 'Chuyển khoản';
+              case 'debt': return 'Ghi công nợ';
+              default: return 'Đã thu tiền';
+            }
+          }
+
+          // Helper to get payment icon
+          IconData getPaymentIcon() {
+            if (paymentStatus != 'paid') return Icons.pending;
+            switch (paymentMethod) {
+              case 'cash': return Icons.payments;
+              case 'transfer': return Icons.qr_code;
+              case 'debt': return Icons.receipt_long;
+              default: return Icons.check_circle;
+            }
+          }
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Text(
+                          '#$orderNumber',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        currencyFormat.format(totalAmount),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline, size: 16, color: Colors.grey.shade500),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          customerName,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (customerAddress.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.location_on_outlined, size: 16, color: Colors.grey.shade500),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            customerAddress,
+                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle, size: 14, color: Colors.green.shade700),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Đã giao',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.green.shade700),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: paymentStatus == 'paid' ? Colors.blue.shade100 : Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              getPaymentIcon(),
+                              size: 14,
+                              color: paymentStatus == 'paid' ? Colors.blue.shade700 : Colors.orange.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              getPaymentMethodText(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: paymentStatus == 'paid' ? Colors.blue.shade700 : Colors.orange.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${updatedAt.hour.toString().padLeft(2, '0')}:${updatedAt.minute.toString().padLeft(2, '0')} - ${updatedAt.day}/${updatedAt.month}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -2940,9 +4750,12 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
         itemCount: deliveries.length,
         itemBuilder: (context, index) {
           final delivery = deliveries[index];
-          final customer = delivery['customers'] as Map<String, dynamic>?;
-          final orderNumber = delivery['order_number'] ?? 'N/A';
-          final total = (delivery['total_amount'] ?? 0).toDouble();
+          // Data từ deliveries table có nested sales_orders
+          final salesOrder = delivery['sales_orders'] as Map<String, dynamic>?;
+          final customer = salesOrder?['customers'] as Map<String, dynamic>?;
+          final orderNumber = salesOrder?['order_number'] ?? delivery['delivery_number'] ?? 'N/A';
+          // Use 'total' first, then fallback to 'total_amount'
+          final total = (salesOrder?['total'] ?? delivery['total_amount'] ?? 0).toDouble();
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
@@ -2995,34 +4808,32 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
                   const Divider(height: 1),
                   const SizedBox(height: 12),
 
-                  // Customer info
-                  if (customer != null) ...[
-                    Row(
-                      children: [
-                        Icon(Icons.person, size: 18, color: Colors.grey.shade600),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            customer['name'] ?? delivery['customer_name'] ?? 'N/A',
-                            style: const TextStyle(fontWeight: FontWeight.w500),
-                          ),
+                  // Customer info - luôn hiển thị dù có customer hay không
+                  Row(
+                    children: [
+                      Icon(Icons.person, size: 18, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          customer?['name'] ?? salesOrder?['customer_name'] ?? 'Khách hàng',
+                          style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on, size: 18, color: Colors.grey.shade600),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            customer['address'] ?? 'Chưa có địa chỉ',
-                            style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
-                          ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, size: 18, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          customer?['address'] ?? delivery['delivery_address'] ?? 'Chưa có địa chỉ',
+                          style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
 
                   const SizedBox(height: 12),
 
@@ -3128,12 +4939,33 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
   }
 
   Widget _buildDeliveryCard(Map<String, dynamic> delivery, {required bool isPending}) {
-    final customer = delivery['customers'] as Map<String, dynamic>?;
-    final orderNumber = delivery['order_number']?.toString() ?? delivery['id'].toString().substring(0, 8).toUpperCase();
-    final total = (delivery['total'] as num?)?.toDouble() ?? 0;
-    final customerName = delivery['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
-    final customerAddress = delivery['delivery_address'] ?? delivery['customer_address'] ?? customer?['address'];
-    final customerPhone = delivery['customer_phone'] ?? customer?['phone'];
+    // Check if data comes from sales_orders directly or from deliveries table
+    final isFromSalesOrders = delivery['_source'] == 'sales_orders';
+    
+    // Data structure depends on source:
+    // - From sales_orders: data is flat with nested 'customers'
+    // - From deliveries: data has nested 'sales_orders' with 'customers'
+    final Map<String, dynamic>? salesOrder;
+    final Map<String, dynamic>? customer;
+    
+    if (isFromSalesOrders) {
+      // Data is the sales order itself
+      salesOrder = delivery;
+      customer = delivery['customers'] as Map<String, dynamic>?;
+    } else {
+      // Data is from deliveries table with nested sales_orders
+      salesOrder = delivery['sales_orders'] as Map<String, dynamic>?;
+      customer = salesOrder?['customers'] as Map<String, dynamic>?;
+    }
+    
+    final orderNumber = salesOrder?['order_number']?.toString() ?? 
+                        delivery['delivery_number']?.toString() ?? 
+                        delivery['id'].toString().substring(0, 8).toUpperCase();
+    final total = (salesOrder?['total'] as num?)?.toDouble() ?? 
+                  (salesOrder?['total_amount'] as num?)?.toDouble() ?? 0;
+    final customerName = salesOrder?['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
+    final customerAddress = delivery['delivery_address'] ?? customer?['address'];
+    final customerPhone = customer?['phone'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -3251,9 +5083,27 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
                 Expanded(
                   flex: isPending ? 1 : 1,
                   child: ElevatedButton.icon(
-                    onPressed: () => isPending
-                        ? _pickupDelivery(delivery['id'])
-                        : _completeDelivery(delivery['id']),
+                    onPressed: () {
+                      if (isPending) {
+                        // For pending orders from sales_orders, we need to create delivery record
+                        if (isFromSalesOrders) {
+                          final orderId = delivery['id'] as String;
+                          _acceptOrder(orderId, delivery);
+                        } else {
+                          final deliveryId = delivery['id'] as String;
+                          final orderId = delivery['order_id'] as String? ?? 
+                                         (delivery['sales_orders'] as Map<String, dynamic>?)?['id'] as String? ?? 
+                                         deliveryId;
+                          _pickupDelivery(deliveryId, orderId);
+                        }
+                      } else {
+                        final deliveryId = delivery['id'] as String;
+                        final orderId = delivery['order_id'] as String? ?? 
+                                       (delivery['sales_orders'] as Map<String, dynamic>?)?['id'] as String? ?? 
+                                       deliveryId;
+                        _completeDelivery(deliveryId, orderId);
+                      }
+                    },
                     icon: Icon(isPending ? Icons.play_arrow : Icons.check_circle, size: 18),
                     label: Text(isPending ? 'Nhận đơn' : 'Đã giao'),
                     style: ElevatedButton.styleFrom(
@@ -3275,15 +5125,34 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
     );
   }
 
-  Future<void> _pickupDelivery(String orderId) async {
+  Future<void> _acceptOrder(String orderId, Map<String, dynamic> orderData) async {
     try {
       final supabase = Supabase.instance.client;
+      
+      // Get driver ID and company ID from auth provider (same as dashboard)
+      final authState = ref.read(authProvider);
+      final driverId = authState.user?.id;
+      final companyId = authState.user?.companyId;
+      
+      if (driverId == null || companyId == null) {
+        throw Exception('Chưa đăng nhập hoặc thiếu thông tin công ty');
+      }
 
-      // Set to awaiting_pickup - warehouse needs to confirm handover
-      await supabase.from('sales_orders').update({
-        'delivery_status': 'awaiting_pickup',
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', orderId);
+      // Create new delivery record with status = 'loading' (chờ kho xác nhận)
+      final now = DateTime.now().toIso8601String();
+      await supabase.from('deliveries').insert({
+        'company_id': companyId,
+        'order_id': orderId,
+        'driver_id': driverId,
+        'delivery_number': 'DL-${DateTime.now().millisecondsSinceEpoch}',
+        'delivery_date': DateTime.now().toIso8601String().split('T')[0],
+        'status': 'loading',  // Chờ kho xác nhận
+        'updated_at': now,
+      }).select().single();
+
+      // Update sales_orders - giữ nguyên awaiting_pickup vì chưa thực sự giao
+      // Chỉ cập nhật khi kho xác nhận xong mới chuyển sang 'delivering'
+      // Không cần update sales_orders ở đây vì delivery đã track status riêng
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -3292,10 +5161,58 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
               children: [
                 Icon(Icons.hourglass_empty, color: Colors.white),
                 SizedBox(width: 12),
-                Text('Đã gửi yêu cầu! Chờ kho xác nhận giao hàng.'),
+                Text('Đã nhận đơn! Chờ kho xác nhận giao hàng.'),
               ],
             ),
-            backgroundColor: Colors.orange,
+            backgroundColor: Colors.purple,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        _loadDeliveries();
+      }
+    } catch (e) {
+      AppLogger.error('Failed to accept order', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickupDelivery(String deliveryId, String orderId) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Update delivery status to in_progress (valid: planned, loading, in_progress, completed, cancelled)
+      await supabase.from('deliveries').update({
+        'status': 'in_progress',
+        'started_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', deliveryId);
+
+      // Also update sales_orders delivery_status for consistency
+      await supabase.from('sales_orders').update({
+        'delivery_status': 'delivering',
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', orderId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.local_shipping, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Đã nhận đơn! Bắt đầu giao hàng.'),
+              ],
+            ),
+            backgroundColor: Colors.blue,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -3316,45 +5233,103 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
     }
   }
 
-  Future<void> _completeDelivery(String orderId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Xác nhận giao hàng'),
-        content: const Text('Bạn đã giao hàng thành công cho khách?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+  Future<void> _completeDelivery(String deliveryId, String orderId) async {
+    // Debug log
+    AppLogger.info('🚛 _completeDelivery called with deliveryId: "$deliveryId", orderId: "$orderId"');
+    
+    // Validate orderId is a valid UUID (not empty, not null string)
+    if (orderId.isEmpty || orderId == 'null') {
+      AppLogger.error('Invalid orderId: $orderId');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lỗi: Không tìm thấy mã đơn hàng'),
+            backgroundColor: Colors.red,
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Xác nhận'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
+        );
+      }
+      return;
+    }
 
     try {
       final supabase = Supabase.instance.client;
+      
+      // Get order info to check payment status
+      final orderResponse = await supabase
+          .from('sales_orders')
+          .select('payment_method, payment_status, total, customer_id, customers(name, total_debt)')
+          .eq('id', orderId)
+          .single();
 
-      await supabase.from('sales_orders').update({
+      final paymentMethod = orderResponse['payment_method']?.toString().toLowerCase() ?? 'cod';
+      final paymentStatus = orderResponse['payment_status']?.toString().toLowerCase() ?? 'unpaid';
+      final total = (orderResponse['total'] ?? 0).toDouble();
+      final customerId = orderResponse['customer_id'];
+      final customerData = orderResponse['customers'] as Map<String, dynamic>?;
+      final customerName = customerData?['name'] ?? 'Khách hàng';
+      final currentDebt = (customerData?['total_debt'] as num?)?.toDouble() ?? 0;
+
+      // Show payment method selection dialog
+      final result = await _showPaymentMethodDialog(
+        orderId: orderId,
+        customerName: customerName,
+        paymentMethod: paymentMethod,
+        paymentStatus: paymentStatus,
+        totalAmount: total,
+      );
+
+      if (result == null) return;
+
+      AppLogger.info('🔄 Updating deliveries and sales_orders with payment: $result');
+
+      // Update delivery record - use 'completed' (valid: planned, loading, in_progress, completed, cancelled)
+      await supabase.from('deliveries').update({
+        'status': 'completed',
+        'completed_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', deliveryId);
+
+      // Update sales_orders delivery status and payment if needed
+      Map<String, dynamic> updateData = {
         'delivery_status': 'delivered',
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', orderId);
+      };
+
+      if (result['updatePayment'] == true) {
+        updateData['payment_status'] = result['paymentStatus'];
+        updateData['payment_method'] = result['paymentMethod'];
+        if (result['paymentStatus'] == 'paid') {
+          updateData['payment_collected_at'] = DateTime.now().toIso8601String();
+        }
+        
+        // Nếu ghi nợ, cập nhật công nợ khách hàng
+        if (result['paymentStatus'] == 'debt' && customerId != null) {
+          await supabase.from('customers').update({
+            'total_debt': currentDebt + total,
+            'updated_at': DateTime.now().toIso8601String(),
+          }).eq('id', customerId);
+          AppLogger.info('📝 Updated customer debt: $customerId += $total (new total: ${currentDebt + total})');
+        }
+      }
+
+      await supabase.from('sales_orders').update(updateData).eq('id', orderId);
+      
+      AppLogger.info('✅ Update completed for deliveryId: $deliveryId, orderId: $orderId');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.celebration, color: Colors.white),
-                SizedBox(width: 12),
-                Text('🎉 Giao hàng thành công!'),
+                const Icon(Icons.celebration, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    result['updatePayment'] == true 
+                        ? '🎉 Giao hàng và thanh toán thành công!'
+                        : '🎉 Giao hàng thành công!',
+                  ),
+                ),
               ],
             ),
             backgroundColor: Colors.green,
@@ -3378,11 +5353,224 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
     }
   }
 
+  /// Dialog chọn phương thức thanh toán khi hoàn thành giao hàng
+  Future<Map<String, dynamic>?> _showPaymentMethodDialog({
+    required String orderId,
+    required String customerName,
+    required String paymentMethod,
+    required String paymentStatus,
+    required double totalAmount,
+  }) async {
+    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+    String selectedOption = 'delivered_only';
+    
+    return showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.check_circle, color: Colors.green, size: 28),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Xác nhận giao hàng', style: TextStyle(fontSize: 18)),
+                    Text(customerName, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Order info
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Tổng tiền:', style: TextStyle(fontWeight: FontWeight.w500)),
+                      Text(
+                        currencyFormat.format(totalAmount),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Payment status info
+                if (paymentStatus == 'paid')
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        SizedBox(width: 8),
+                        Text('Đơn hàng đã thanh toán', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  )
+                else ...[
+                  const Text('Chọn phương thức:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  
+                  // Option 1: Just deliver
+                  RadioListTile<String>(
+                    value: 'delivered_only',
+                    groupValue: selectedOption,
+                    onChanged: (v) => setState(() => selectedOption = v!),
+                    title: const Text('Chỉ xác nhận giao hàng'),
+                    subtitle: const Text('Chưa thu tiền', style: TextStyle(fontSize: 12)),
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  
+                  // Option 2: Cash
+                  RadioListTile<String>(
+                    value: 'cash',
+                    groupValue: selectedOption,
+                    onChanged: (v) => setState(() => selectedOption = v!),
+                    title: const Text('💵 Thu tiền mặt'),
+                    subtitle: Text(currencyFormat.format(totalAmount), style: const TextStyle(fontSize: 12)),
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  
+                  // Option 3: Transfer
+                  RadioListTile<String>(
+                    value: 'transfer',
+                    groupValue: selectedOption,
+                    onChanged: (v) => setState(() => selectedOption = v!),
+                    title: const Text('🏦 Chuyển khoản'),
+                    subtitle: const Text('Hiện QR cho khách quét', style: TextStyle(fontSize: 12)),
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  
+                  // Show QR button when transfer is selected
+                  if (selectedOption == 'transfer')
+                    Container(
+                      margin: const EdgeInsets.only(left: 16, bottom: 8),
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          // Lưu parent context trước khi pop dialog
+                          final parentContext = this.context;
+                          Navigator.pop(context); // Close current dialog
+                          // Delay nhỏ để đảm bảo dialog đã đóng
+                          Future.delayed(const Duration(milliseconds: 100), () {
+                            _showQRTransferDialog(parentContext, totalAmount, orderId);
+                          });
+                        },
+                        icon: const Icon(Icons.qr_code, size: 20),
+                        label: const Text('Hiện QR cho khách quét'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.blue.shade700,
+                          side: BorderSide(color: Colors.blue.shade300),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                      ),
+                    ),
+                  
+                  // Option 4: Debt
+                  RadioListTile<String>(
+                    value: 'debt',
+                    groupValue: selectedOption,
+                    onChanged: (v) => setState(() => selectedOption = v!),
+                    title: const Text('📝 Ghi nợ'),
+                    subtitle: const Text('Thêm vào công nợ khách hàng', style: TextStyle(fontSize: 12)),
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Map<String, dynamic> result = {'updatePayment': false};
+                
+                switch (selectedOption) {
+                  case 'cash':
+                    result = {
+                      'updatePayment': true,
+                      'paymentStatus': 'paid',
+                      'paymentMethod': 'cash',
+                    };
+                    break;
+                  case 'transfer':
+                    result = {
+                      'updatePayment': true,
+                      'paymentStatus': 'paid',
+                      'paymentMethod': 'transfer',
+                    };
+                    break;
+                  case 'debt':
+                    result = {
+                      'updatePayment': true,
+                      'paymentStatus': 'unpaid',
+                      'paymentMethod': 'debt',
+                    };
+                    break;
+                  default:
+                    result = {'updatePayment': false};
+                }
+                
+                Navigator.pop(context, result);
+              },
+              icon: const Icon(Icons.check),
+              label: const Text('Xác nhận'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _openMaps(String? address) async {
     if (address == null || address.isEmpty) return;
 
+    // Clean address: remove notes after '--' (e.g., "123 ABC -- Chị Trúc" -> "123 ABC")
+    String cleanAddress = address;
+    if (address.contains('--')) {
+      cleanAddress = address.split('--').first.trim();
+    }
+
+    // Use Google Maps Directions API with current location as origin
+    // travelmode=driving for car navigation
     final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}',
+      'https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${Uri.encodeComponent(cleanAddress)}&travelmode=driving',
     );
 
     if (await canLaunchUrl(uri)) {
@@ -3396,6 +5584,203 @@ class _MyDeliveriesPageState extends ConsumerState<_MyDeliveriesPage>
     final uri = Uri.parse('tel:$phone');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
+    }
+  }
+
+  /// Hiển thị QR VietQR để khách quét chuyển khoản
+  void _showQRTransferDialog(BuildContext context, double amount, String orderId) async {
+    debugPrint('🔷 _showQRTransferDialog called with amount: $amount, orderId: $orderId');
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      debugPrint('🔷 Current user: ${user?.id} - ${user?.email}');
+      if (user == null) {
+        debugPrint('❌ User is null, returning');
+        return;
+      }
+      
+      // Get employee's company
+      final empData = await supabase
+          .from('employees')
+          .select('company_id')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+      
+      debugPrint('🔷 Employee data: $empData');
+      
+      if (empData == null || empData['company_id'] == null) {
+        debugPrint('❌ Employee or company_id is null');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không tìm thấy thông tin công ty')),
+          );
+        }
+        return;
+      }
+      
+      // Get company bank info
+      final companyData = await supabase
+          .from('companies')
+          .select('bank_name, bank_account_number, bank_account_name, bank_bin')
+          .eq('id', empData['company_id'])
+          .maybeSingle();
+      
+      debugPrint('🔷 Company data: $companyData');
+      
+      if (companyData == null || 
+          companyData['bank_bin'] == null || 
+          companyData['bank_account_number'] == null) {
+        debugPrint('❌ Company bank info incomplete: bank_bin=${companyData?['bank_bin']}, account=${companyData?['bank_account_number']}');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Công ty chưa cấu hình tài khoản ngân hàng. Liên hệ Manager/CEO để cấu hình.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+      
+      final bankBin = companyData['bank_bin'];
+      final accountNumber = companyData['bank_account_number'];
+      final accountName = companyData['bank_account_name'] ?? '';
+      final bankName = companyData['bank_name'] ?? 'Ngân hàng';
+      
+      // Build VietQR URL
+      final amountInt = amount.toInt();
+      final content = 'TT $orderId';
+      final qrUrl = 'https://img.vietqr.io/image/$bankBin-$accountNumber-compact2.png?amount=$amountInt&addInfo=${Uri.encodeComponent(content)}&accountName=${Uri.encodeComponent(accountName)}';
+      
+      debugPrint('✅ QR URL generated: $qrUrl');
+      debugPrint('🔷 Context mounted: ${context.mounted}');
+      
+      if (context.mounted) {
+        debugPrint('🔷 Showing QR dialog...');
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Icon(Icons.qr_code, color: Colors.blue.shade700),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('QR Chuyển khoản', style: TextStyle(fontSize: 18))),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Image.network(
+                      qrUrl,
+                      width: 220,
+                      height: 220,
+                      loadingBuilder: (_, child, progress) {
+                        if (progress == null) return child;
+                        return const SizedBox(
+                          width: 220,
+                          height: 220,
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 220,
+                        height: 220,
+                        color: Colors.grey.shade100,
+                        child: const Center(child: Text('Không thể tải QR')),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          bankName,
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade800),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          accountNumber,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(accountName, style: TextStyle(color: Colors.grey.shade700)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text('Số tiền:', style: TextStyle(fontSize: 12)),
+                        Text(
+                          currencyFormat.format(amount),
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.orange.shade800),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text('Nội dung:', style: TextStyle(fontSize: 12)),
+                        Text(content, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '⚠️ Sau khi khách chuyển, nhấn Xác nhận để hoàn thành',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Đóng'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx, true);
+                },
+                icon: const Icon(Icons.check),
+                label: const Text('Xác nhận đã chuyển'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ).then((confirmed) async {
+          if (confirmed == true && context.mounted) {
+            // TODO: Handle confirmation - update payment status
+          }
+        });
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: ${e.toString()}')),
+        );
+      }
     }
   }
 }
@@ -3448,17 +5833,30 @@ class _DeliveryHistoryPageState extends ConsumerState<_DeliveryHistoryPage> {
           startDate = DateTime(now.year, now.month, now.day);
       }
 
+      // Query deliveries của driver này, join với sales_orders
       final data = await supabase
-          .from('sales_orders')
-          .select('*, customers(name, phone, address)')
-          .eq('company_id', companyId)
-          .eq('delivery_status', 'delivered')
-          .gte('updated_at', startDate.toIso8601String())
-          .order('updated_at', ascending: false)
+          .from('deliveries')
+          .select('*, sales_orders(*, customers(name, phone, address))')
+          .eq('driver_id', userId)
+          .eq('status', 'completed')
+          .gte('completed_at', startDate.toIso8601String())
+          .order('completed_at', ascending: false)
           .limit(100);
 
+      // Transform data to match expected format
+      final historyList = (data as List).map((delivery) {
+        final order = delivery['sales_orders'] as Map<String, dynamic>?;
+        if (order == null) return null;
+        
+        return {
+          ...order,
+          'delivery_id': delivery['id'],
+          'completed_at': delivery['completed_at'],
+        };
+      }).whereType<Map<String, dynamic>>().toList();
+
       setState(() {
-        _history = List<Map<String, dynamic>>.from(data);
+        _history = historyList;
         _isLoading = false;
       });
     } catch (e) {
@@ -3673,10 +6071,19 @@ class _DeliveryHistoryPageState extends ConsumerState<_DeliveryHistoryPage> {
     final customer = order['customers'] as Map<String, dynamic>?;
     final orderNumber = order['order_number']?.toString() ?? order['id'].toString().substring(0, 8).toUpperCase();
     final total = (order['total'] as num?)?.toDouble() ?? 0;
-    final deliveredAt = order['delivery_date'] != null
-        ? DateTime.tryParse(order['delivery_date'])
+    final completedAt = order['completed_at'] != null
+        ? DateTime.tryParse(order['completed_at'])
         : null;
     final customerName = order['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
+    final customerAddress = order['delivery_address'] ?? customer?['address'] ?? '';
+    final paymentStatus = order['payment_status']?.toString().toLowerCase() ?? 'unpaid';
+    final paymentMethod = order['payment_method']?.toString().toLowerCase() ?? '';
+    
+    // Determine payment status display
+    final isPaid = paymentStatus == 'paid';
+    final paymentLabel = isPaid 
+        ? (paymentMethod == 'transfer' ? 'Chuyển khoản' : paymentMethod == 'cash' ? 'Tiền mặt' : 'Đã thu')
+        : 'Chưa thu';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -3692,46 +6099,135 @@ class _DeliveryHistoryPageState extends ConsumerState<_DeliveryHistoryPage> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.check_circle, color: Colors.green.shade600, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '#$orderNumber',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          // Header row: Order number + Amount
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(height: 2),
-                Text(
+                child: Text(
+                  '#$orderNumber',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ),
+              Text(
+                currencyFormat.format(total),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade700,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          
+          // Customer name
+          Row(
+            children: [
+              Icon(Icons.person_outline, size: 16, color: Colors.grey.shade500),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
                   customerName,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (deliveredAt != null)
-                  Text(
-                    DateFormat('HH:mm - dd/MM/yyyy').format(deliveredAt),
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+              ),
+            ],
+          ),
+          
+          // Address
+          if (customerAddress.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.location_on_outlined, size: 16, color: Colors.grey.shade500),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    customerAddress,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                ),
               ],
             ),
-          ),
-          Text(
-            currencyFormat.format(total),
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.green.shade700,
-              fontSize: 14,
-            ),
+          ],
+          
+          const SizedBox(height: 10),
+          
+          // Footer: Status + Time
+          Row(
+            children: [
+              // Delivery status
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle, size: 14, color: Colors.green.shade600),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Đã giao',
+                      style: TextStyle(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Payment status
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isPaid ? Colors.blue.shade50 : Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isPaid ? Icons.payments : Icons.pending,
+                      size: 14,
+                      color: isPaid ? Colors.blue.shade600 : Colors.orange.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      paymentLabel,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isPaid ? Colors.blue.shade700 : Colors.orange.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              // Time
+              if (completedAt != null)
+                Text(
+                  DateFormat('HH:mm - dd/M').format(completedAt),
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                ),
+            ],
           ),
         ],
       ),
@@ -4039,5 +6535,185 @@ class _DriverProfilePage extends ConsumerWidget {
       endIndent: 16,
       color: Colors.grey.shade200,
     );
+  }
+
+  Widget _buildDeliveryCompletionDialog({
+    required String orderId,
+    required String customerName,
+    required String paymentMethod,
+    required String paymentStatus,
+    required double totalAmount,
+  }) {
+    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
+    String selectedPaymentOption = 'delivered_only'; // delivered_only, cash_collected, transfer_confirmed, debt_added
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(Icons.local_shipping, color: Colors.green.shade600, size: 32),
+              ),
+              const SizedBox(height: 12),
+              Text('Hoàn thành giao hàng', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Order info
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('📋 Mã đơn: $orderId', style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text('👤 Khách hàng: $customerName'),
+                    Text('💰 Tổng tiền: ${currencyFormat.format(totalAmount)}'),
+                    Text('💳 Hình thức: ${_getPaymentMethodLabel(paymentMethod)}'),
+                    Text('📊 Trạng thái: ${_getPaymentStatusLabel(paymentStatus)}'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Payment options
+              const Text('Xử lý thanh toán:', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              
+              // Option 1: Chỉ giao hàng
+              RadioListTile<String>(
+                value: 'delivered_only',
+                groupValue: selectedPaymentOption,
+                onChanged: (value) => setState(() => selectedPaymentOption = value!),
+                title: const Text('Chỉ xác nhận giao hàng'),
+                subtitle: Text('Giữ nguyên trạng thái thanh toán: ${_getPaymentStatusLabel(paymentStatus)}'),
+                dense: true,
+              ),
+              
+              // Option 2: Thu tiền mặt (nếu COD)
+              if (paymentMethod == 'cod' && paymentStatus != 'paid')
+                RadioListTile<String>(
+                  value: 'cash_collected',
+                  groupValue: selectedPaymentOption,
+                  onChanged: (value) => setState(() => selectedPaymentOption = value!),
+                  title: const Text('💵 Thu tiền mặt'),
+                  subtitle: Text('Xác nhận đã thu ${currencyFormat.format(totalAmount)}'),
+                  dense: true,
+                ),
+              
+              // Option 3: Xác nhận chuyển khoản
+              if (paymentMethod == 'transfer' && paymentStatus != 'paid')
+                RadioListTile<String>(
+                  value: 'transfer_confirmed',
+                  groupValue: selectedPaymentOption,
+                  onChanged: (value) => setState(() => selectedPaymentOption = value!),
+                  title: const Text('🏦 Xác nhận chuyển khoản'),
+                  subtitle: const Text('Khách hàng đã chuyển khoản'),
+                  dense: true,
+                ),
+              
+              // Option 4: Ghi nợ
+              if (paymentStatus != 'paid')
+                RadioListTile<String>(
+                  value: 'debt_added',
+                  groupValue: selectedPaymentOption,
+                  onChanged: (value) => setState(() => selectedPaymentOption = value!),
+                  title: const Text('📝 Ghi nợ'),
+                  subtitle: const Text('Khách hàng sẽ thanh toán sau'),
+                  dense: true,
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Map<String, dynamic> result = {'updatePayment': false};
+                
+                switch (selectedPaymentOption) {
+                  case 'delivered_only':
+                    // Chỉ cập nhật delivery status
+                    break;
+                    
+                  case 'cash_collected':
+                    result = {
+                      'updatePayment': true,
+                      'paymentStatus': 'paid',
+                      'paymentMethod': 'cash',
+                    };
+                    break;
+                    
+                  case 'transfer_confirmed':
+                    result = {
+                      'updatePayment': true,
+                      'paymentStatus': 'paid', 
+                      'paymentMethod': 'transfer',
+                    };
+                    break;
+                    
+                  case 'debt_added':
+                    result = {
+                      'updatePayment': true,
+                      'paymentStatus': 'debt',
+                      'paymentMethod': paymentMethod, // Giữ nguyên payment method
+                    };
+                    break;
+                }
+                
+                Navigator.pop(context, result);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text('Xác nhận'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _getPaymentMethodLabel(String method) {
+    switch (method.toLowerCase()) {
+      case 'cod':
+        return 'Tiền mặt (COD)';
+      case 'cash':
+        return 'Tiền mặt';
+      case 'transfer':
+        return 'Chuyển khoản';
+      case 'card':
+        return 'Thẻ tín dụng';
+      default:
+        return method;
+    }
+  }
+
+  String _getPaymentStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return 'Đã thanh toán';
+      case 'unpaid':
+        return 'Chưa thanh toán';
+      case 'partial':
+        return 'Thanh toán một phần';
+      case 'debt':
+        return 'Ghi nợ';
+      default:
+        return status;
+    }
   }
 }

@@ -102,22 +102,7 @@ class _ManagerMainLayoutState extends ConsumerState<ManagerMainLayout>
                 const ManagerStaffPage(),
               ],
             ),
-            // 🔥 DEBUG BANNER - Shows why wrong layout is displayed
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                color: Colors.red.withValues(alpha: 0.9),
-                child: Text(
-                  '⚠️ DEBUG: businessType = ${user?.businessType?.toString() ?? "NULL"} | '
-                  'Expected: distribution for Odori',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
+            // Debug banner removed - Musk fix applied 🚀
           ],
         ),
         bottomNavigationBar: UnifiedBottomNavigation(

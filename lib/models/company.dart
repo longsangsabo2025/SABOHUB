@@ -20,6 +20,12 @@ class Company {
   final double? checkInLatitude;
   final double? checkInLongitude;
   final double? checkInRadius; // in meters
+  
+  // Bank account for VietQR
+  final String? bankName;
+  final String? bankAccountNumber;
+  final String? bankAccountName;
+  final String? bankBin;
 
   const Company({
     required this.id,
@@ -39,6 +45,10 @@ class Company {
     this.checkInLatitude,
     this.checkInLongitude,
     this.checkInRadius,
+    this.bankName,
+    this.bankAccountNumber,
+    this.bankAccountName,
+    this.bankBin,
   });
 
   // Getter alias for businessType
@@ -84,6 +94,10 @@ class Company {
       checkInLatitude: json['check_in_latitude'] as double?,
       checkInLongitude: json['check_in_longitude'] as double?,
       checkInRadius: json['check_in_radius'] as double?,
+      bankName: json['bank_name'] as String?,
+      bankAccountNumber: json['bank_account_number'] as String?,
+      bankAccountName: json['bank_account_name'] as String?,
+      bankBin: json['bank_bin'] as String?,
     );
   }
 
@@ -125,6 +139,10 @@ class Company {
     double? checkInLatitude,
     double? checkInLongitude,
     double? checkInRadius,
+    String? bankName,
+    String? bankAccountNumber,
+    String? bankAccountName,
+    String? bankBin,
   }) {
     return Company(
       id: id ?? this.id,
@@ -144,6 +162,10 @@ class Company {
       checkInLatitude: checkInLatitude ?? this.checkInLatitude,
       checkInLongitude: checkInLongitude ?? this.checkInLongitude,
       checkInRadius: checkInRadius ?? this.checkInRadius,
+      bankName: bankName ?? this.bankName,
+      bankAccountNumber: bankAccountNumber ?? this.bankAccountNumber,
+      bankAccountName: bankAccountName ?? this.bankAccountName,
+      bankBin: bankBin ?? this.bankBin,
     );
   }
 }

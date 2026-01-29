@@ -52,7 +52,8 @@ class _OdoriReceivablesPageState extends ConsumerState<OdoriReceivablesPage>
       status: _statusFilter,
     )));
     final overdueAsync = ref.watch(overdueReceivablesProvider);
-    final paymentsAsync = ref.watch(paymentsProvider(const PaymentFilters()));
+    // Payments provider is watched for future features
+    ref.watch(paymentsProvider(const PaymentFilters()));
 
     return Scaffold(
       appBar: AppBar(

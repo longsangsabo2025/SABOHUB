@@ -20,6 +20,7 @@ import 'manager_provider.dart';
 import 'staff_provider.dart';
 
 /// Cached Companies Provider with auto-refresh
+/// Uses getMyCompanies() to ensure CEO only sees their own companies
 final cachedCompaniesProvider =
     FutureProvider.autoDispose<List<Company>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
@@ -31,9 +32,9 @@ final cachedCompaniesProvider =
     return cached;
   }
 
-  // Fetch from service
+  // Fetch from service - using getMyCompanies for data isolation
   final service = ref.watch(companyServiceProvider);
-  final companies = await service.getAllCompanies();
+  final companies = await service.getMyCompanies();
 
   // Cache result
   memoryCache.set('companies', companies, config.defaultTTL);

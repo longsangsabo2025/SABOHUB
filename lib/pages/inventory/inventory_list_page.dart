@@ -266,9 +266,9 @@ class _InventoryListPageState extends ConsumerState<InventoryListPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildQuantityInfo('Trước', movement.beforeQuantity ?? 0),
+                _buildQuantityInfo('Trước', movement.beforeQuantity),
                 Icon(Icons.arrow_forward, color: Colors.grey[400]),
-                _buildQuantityInfo('Sau', movement.afterQuantity ?? 0),
+                _buildQuantityInfo('Sau', movement.afterQuantity),
               ],
             ),
           ],

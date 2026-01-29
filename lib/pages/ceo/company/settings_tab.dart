@@ -1,10 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../../models/business_type.dart';
 import '../../../models/company.dart';
+import '../../../models/manager_permissions.dart';
 import '../../../providers/company_provider.dart';
+import '../../../providers/manager_permissions_provider.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../../services/company_service.dart';
 import '../company_details_page.dart' show companyDetailsProvider;
 import 'package:go_router/go_router.dart';
@@ -24,6 +28,19 @@ class SettingsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Get current user info
+    final currentUser = supabase.client.auth.currentUser;
+    final isUserCEO = currentUser?.userMetadata?['role'] == 'ceo';
+    final currentUserId = currentUser?.id;
+    
+    // For managers, check permissions
+    final managerPermissionsAsync = isUserCEO || currentUserId == null
+        ? null 
+        : ref.watch(managerPermissionsByCompanyProvider({
+            'managerId': currentUserId,
+            'companyId': companyId,
+          }));
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -93,6 +110,29 @@ class SettingsTab extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
+          
+          // Bank Account Section - Show for CEO or Manager with permission
+          if (_canManageBankAccount(isUserCEO, managerPermissionsAsync))
+            ...[
+              _buildSettingSection(
+                title: 'Tài khoản ngân hàng (Chuyển khoản)',
+                items: [
+                  _SettingItem(
+                    icon: Icons.account_balance,
+                    title: 'Cấu hình tài khoản nhận tiền',
+                    subtitle: company.bankAccountNumber != null && company.bankAccountNumber!.isNotEmpty
+                        ? '${company.bankName ?? "Ngân hàng"} - ${company.bankAccountNumber}'
+                        : 'Chưa cấu hình (cần thiết cho tính năng QR chuyển khoản)',
+                    onTap: () => _showBankAccountDialog(context, ref, company),
+                    color: company.bankAccountNumber != null && company.bankAccountNumber!.isNotEmpty
+                        ? Colors.green
+                        : Colors.orange,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          
           _buildSettingSection(
             title: 'Trạng thái',
             items: [
@@ -344,6 +384,261 @@ class SettingsTab extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Check if current user can manage bank account
+  bool _canManageBankAccount(bool isUserCEO, AsyncValue<ManagerPermissions?>? managerPermissionsAsync) {
+    // CEO always has access
+    if (isUserCEO) return true;
+    
+    // For managers, check permissions
+    if (managerPermissionsAsync != null) {
+      return managerPermissionsAsync.when(
+        data: (permissions) => permissions?.canManageBankAccount ?? false,
+        loading: () => false,
+        error: (_, __) => false,
+      );
+    }
+    
+    return false;
+  }
+
+  void _showBankAccountDialog(BuildContext context, WidgetRef ref, Company company) {
+    final bankNameController = TextEditingController(text: company.bankName ?? '');
+    final accountNumberController = TextEditingController(text: company.bankAccountNumber ?? '');
+    final accountNameController = TextEditingController(text: company.bankAccountName ?? '');
+    final bankBinController = TextEditingController(text: company.bankBin ?? '');
+    
+    // Common banks with BIN codes
+    final banks = [
+      {'name': 'Vietcombank', 'bin': '970436'},
+      {'name': 'BIDV', 'bin': '970418'},
+      {'name': 'VietinBank', 'bin': '970415'},
+      {'name': 'Techcombank', 'bin': '970407'},
+      {'name': 'MB Bank', 'bin': '970422'},
+      {'name': 'ACB', 'bin': '970416'},
+      {'name': 'Sacombank', 'bin': '970403'},
+      {'name': 'VPBank', 'bin': '970432'},
+      {'name': 'TPBank', 'bin': '970423'},
+      {'name': 'Agribank', 'bin': '970405'},
+      {'name': 'SHB', 'bin': '970443'},
+      {'name': 'HDBank', 'bin': '970437'},
+      {'name': 'OCB', 'bin': '970448'},
+      {'name': 'SeABank', 'bin': '970440'},
+      {'name': 'VIB', 'bin': '970441'},
+    ];
+    
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.account_balance, color: Colors.blue.shade700),
+              ),
+              const SizedBox(width: 12),
+              const Text('Tài khoản ngân hàng'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Cấu hình tài khoản để tạo QR chuyển khoản cho khách hàng',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 20),
+                
+                // Bank dropdown
+                DropdownButtonFormField<Map<String, String>>(
+                  decoration: const InputDecoration(
+                    labelText: 'Ngân hàng *',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.business),
+                  ),
+                  value: banks.cast<Map<String, String>?>().firstWhere(
+                    (b) => b?['bin'] == bankBinController.text,
+                    orElse: () => null,
+                  ),
+                  items: banks.map((bank) => DropdownMenuItem(
+                    value: bank.cast<String, String>(),
+                    child: Text(bank['name']!),
+                  )).toList(),
+                  onChanged: (bank) {
+                    if (bank != null) {
+                      bankNameController.text = bank['name']!;
+                      bankBinController.text = bank['bin']!;
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                // Account number
+                TextField(
+                  controller: accountNumberController,
+                  decoration: const InputDecoration(
+                    labelText: 'Số tài khoản *',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.credit_card),
+                    hintText: 'VD: 0123456789',
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+                
+                // Account holder name
+                TextField(
+                  controller: accountNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Tên chủ tài khoản *',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                    hintText: 'VD: NGUYEN VAN A',
+                  ),
+                  textCapitalization: TextCapitalization.characters,
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Preview QR (if configured)
+                if (bankBinController.text.isNotEmpty && accountNumberController.text.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text('Xem trước QR:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Image.network(
+                          'https://img.vietqr.io/image/${bankBinController.text}-${accountNumberController.text}-compact.png?amount=100000&addInfo=Test',
+                          width: 150,
+                          height: 150,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.qr_code, size: 100, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${bankNameController.text} - ${accountNumberController.text}',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                debugPrint('🔵 Save button pressed');
+                debugPrint('🔵 Bank: ${bankNameController.text}, BIN: ${bankBinController.text}');
+                debugPrint('🔵 Account: ${accountNumberController.text}, Name: ${accountNameController.text}');
+                
+                if (bankBinController.text.isEmpty || 
+                    accountNumberController.text.isEmpty || 
+                    accountNameController.text.isEmpty) {
+                  debugPrint('🔵 Validation failed - empty fields');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
+                  );
+                  return;
+                }
+                
+                // Save values before closing dialog
+                final bankName = bankNameController.text;
+                final accountNumber = accountNumberController.text;
+                final accountName = accountNameController.text;
+                final bankBin = bankBinController.text;
+                
+                debugPrint('🔵 Closing dialog and saving...');
+                Navigator.pop(context);
+                
+                await _saveBankAccount(
+                  context, 
+                  ref, 
+                  company,
+                  bankName,
+                  accountNumber,
+                  accountName,
+                  bankBin,
+                );
+              },
+              icon: const Icon(Icons.save),
+              label: const Text('Lưu'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Future<void> _saveBankAccount(
+    BuildContext context,
+    WidgetRef ref,
+    Company company,
+    String bankName,
+    String accountNumber,
+    String accountName,
+    String bankBin,
+  ) async {
+    debugPrint('🏦 _saveBankAccount called');
+    debugPrint('🏦 Company ID: ${company.id}');
+    debugPrint('🏦 Bank: $bankName, Account: $accountNumber, Name: $accountName, BIN: $bankBin');
+    
+    try {
+      final service = CompanyService();
+      debugPrint('🏦 Calling updateCompany...');
+      final result = await service.updateCompany(company.id, {
+        'bank_name': bankName,
+        'bank_account_number': accountNumber,
+        'bank_account_name': accountName,
+        'bank_bin': bankBin,
+      });
+      debugPrint('🏦 Update result: bank_name=${result.bankName}, account=${result.bankAccountNumber}');
+      
+      // Refresh company data
+      debugPrint('🏦 Invalidating providers...');
+      ref.invalidate(companyDetailsProvider(company.id));
+      ref.invalidate(companiesProvider);
+      debugPrint('🏦 Providers invalidated');
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Đã lưu tài khoản ngân hàng'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('🏦 ERROR: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   void _showDeleteDialog(BuildContext context, WidgetRef ref, Company company) {

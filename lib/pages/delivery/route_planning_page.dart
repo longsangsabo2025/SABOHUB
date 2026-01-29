@@ -91,8 +91,8 @@ class RouteDelivery {
       customerName: customer?['name'],
       customerAddress: customer?['address'],
       customerPhone: customer?['phone'],
-      latitude: customer?['latitude']?.toDouble(),
-      longitude: customer?['longitude']?.toDouble(),
+      latitude: customer?['lat']?.toDouble(),  // DB uses 'lat' not 'latitude'
+      longitude: customer?['lng']?.toDouble(),  // DB uses 'lng' not 'longitude'
       deliveryDate: DateTime.parse(json['delivery_date']),
     );
   }
@@ -421,7 +421,7 @@ class _RoutePlanningPageState extends ConsumerState<RoutePlanningPage>
             backgroundColor: Colors.green,
           ),
         );
-        ref.refresh(routeDeliveriesProvider);
+        ref.invalidate(routeDeliveriesProvider);
       }
     } catch (e) {
       if (mounted) {
@@ -452,7 +452,7 @@ class _RoutePlanningPageState extends ConsumerState<RoutePlanningPage>
             backgroundColor: Colors.green,
           ),
         );
-        ref.refresh(routeDeliveriesProvider);
+        ref.invalidate(routeDeliveriesProvider);
       }
     } catch (e) {
       if (mounted) {

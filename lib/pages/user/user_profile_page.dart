@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
 
 /// User Profile Page
@@ -23,7 +24,9 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
 
   bool _isLoading = true;
   bool _isEditing = false;
+  bool _isUploadingAvatar = false;
   Map<String, dynamic>? _userData;
+  String? _avatarUrl;
 
   @override
   void initState() {
@@ -50,19 +53,31 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       }
 
       // Fetch user data from users table
-      final response = await _supabase
+      var response = await _supabase
           .from('users')
           .select(
               'id, full_name, email, phone, avatar_url, role, branch_id, company_id, companies!company_id(name), branches!branch_id(name)')
           .eq('id', user.id)
           .maybeSingle();
 
+      // Fallback to employees table if not found in users
+      if (response == null) {
+        response = await _supabase
+            .from('employees')
+            .select(
+                'id, full_name, email, phone, avatar_url, role, branch_id, company_id, companies!company_id(name), branches!branch_id(name)')
+            .eq('auth_user_id', user.id)
+            .maybeSingle();
+      }
+
       if (response != null) {
+        final data = response;
         setState(() {
-          _userData = response;
-          _fullNameController.text = response['full_name'] ?? '';
-          _emailController.text = response['email'] ?? user.email ?? '';
-          _phoneController.text = response['phone'] ?? '';
+          _userData = data;
+          _fullNameController.text = data['full_name'] ?? '';
+          _emailController.text = data['email'] ?? user.email ?? '';
+          _phoneController.text = data['phone'] ?? '';
+          _avatarUrl = data['avatar_url'];
         });
       }
     } catch (e) {
@@ -85,7 +100,8 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       final user = _supabase.auth.currentUser;
       if (user == null) throw Exception('Chưa đăng nhập');
 
-      /*final response = */await _supabase
+      // Try updating users table first
+      final usersResult = await _supabase
           .from('users')
           .update({
             'full_name': _fullNameController.text.trim(),
@@ -93,8 +109,19 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', user.id)
-          .select(
-              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at');
+          .select();
+
+      // If no rows updated in users, try employees table
+      if (usersResult.isEmpty) {
+        await _supabase
+            .from('employees')
+            .update({
+              'full_name': _fullNameController.text.trim(),
+              'phone': _phoneController.text.trim(),
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('auth_user_id', user.id);
+      }
 
       // Reload user data to update UI
       await _loadUserData();
@@ -227,6 +254,267 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
     }
   }
 
+  // === Avatar Methods ===
+  void _showAvatarOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Đổi ảnh đại diện',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildAvatarOptionButton(
+                  icon: Icons.camera_alt,
+                  label: 'Chụp ảnh',
+                  color: Colors.blue,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                _buildAvatarOptionButton(
+                  icon: Icons.photo_library,
+                  label: 'Thư viện',
+                  color: Colors.green,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+                if (_avatarUrl != null)
+                  _buildAvatarOptionButton(
+                    icon: Icons.delete,
+                    label: 'Xóa ảnh',
+                    color: Colors.red,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _removeAvatar();
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarOptionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+
+      if (image == null) return;
+
+      await _uploadAvatar(image);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi chọn ảnh: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadAvatar(XFile image) async {
+    setState(() => _isUploadingAvatar = true);
+
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Chưa đăng nhập');
+
+      final bytes = await image.readAsBytes();
+      final fileExt = image.path.split('.').last;
+      final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final filePath = 'avatars/$fileName';
+
+      // Upload to Supabase Storage
+      await _supabase.storage.from('public').uploadBinary(
+        filePath,
+        bytes,
+        fileOptions: FileOptions(
+          contentType: 'image/$fileExt',
+          upsert: true,
+        ),
+      );
+
+      // Get public URL
+      final publicUrl = _supabase.storage.from('public').getPublicUrl(filePath);
+
+      // Try updating users table first
+      final usersResult = await _supabase.from('users').update({
+        'avatar_url': publicUrl,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', user.id).select();
+
+      // If no rows updated in users, try employees table
+      if (usersResult.isEmpty) {
+        await _supabase.from('employees').update({
+          'avatar_url': publicUrl,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('auth_user_id', user.id);
+      }
+
+      setState(() => _avatarUrl = publicUrl);
+
+      // Reload user
+      await ref.read(authProvider.notifier).reloadUserFromDatabase();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Đã cập nhật ảnh đại diện!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi upload ảnh: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
+    }
+  }
+
+  Future<void> _removeAvatar() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xóa ảnh đại diện?'),
+        content: const Text('Bạn có chắc muốn xóa ảnh đại diện không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isUploadingAvatar = true);
+
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Chưa đăng nhập');
+
+      // Try updating users table first
+      final usersResult = await _supabase.from('users').update({
+        'avatar_url': null,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', user.id).select();
+
+      // If no rows updated in users, try employees table
+      if (usersResult.isEmpty) {
+        await _supabase.from('employees').update({
+          'avatar_url': null,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('auth_user_id', user.id);
+      }
+
+      setState(() => _avatarUrl = null);
+
+      await ref.read(authProvider.notifier).reloadUserFromDatabase();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Đã xóa ảnh đại diện!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi xóa ảnh: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -292,43 +580,58 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
 
     return Column(
       children: [
-        Stack(
-          children: [
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: _getRoleColor(role),
-              child: Text(
-                initials.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            if (_isEditing)
+        GestureDetector(
+          onTap: _showAvatarOptions,
+          child: Stack(
+            children: [
+              _isUploadingAvatar
+                  ? Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _getRoleColor(role).withValues(alpha: 0.2),
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : CircleAvatar(
+                      radius: 60,
+                      backgroundColor: _getRoleColor(role),
+                      backgroundImage: _avatarUrl != null
+                          ? NetworkImage(_avatarUrl!)
+                          : null,
+                      child: _avatarUrl == null
+                          ? Text(
+                              initials.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            )
+                          : null,
+                    ),
               Positioned(
                 bottom: 0,
                 right: 0,
-                child: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: Colors.blue,
-                  child: IconButton(
-                    icon: const Icon(Icons.camera_alt, size: 18),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt,
                     color: Colors.white,
-                    onPressed: () {
-                      // TODO: Implement avatar upload
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Tính năng đang phát triển'),
-                        ),
-                      );
-                    },
-                    padding: EdgeInsets.zero,
+                    size: 18,
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         Text(

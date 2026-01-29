@@ -7,7 +7,7 @@ import '../pages/super_admin/super_admin_main_layout.dart';
 import '../layouts/distribution_manager_layout.dart';
 import '../layouts/distribution_sales_layout.dart';
 import '../layouts/distribution_warehouse_layout.dart';
-import '../layouts/distribution_driver_layout.dart';
+import 'driver/distribution_driver_layout_refactored.dart';
 import '../layouts/distribution_customer_service_layout.dart';
 import '../layouts/distribution_finance_layout.dart';
 import '../layouts/shift_leader_main_layout.dart';

@@ -8,9 +8,17 @@ final companyServiceProvider = Provider<CompanyService>((ref) {
   return CompanyService();
 });
 
-/// All Companies Provider
-/// Fetches and caches all companies from Supabase
+/// CEO's Companies Provider
+/// Fetches only companies owned by the current logged-in CEO
+/// This ensures data isolation - each CEO only sees their own companies
 final companiesProvider = FutureProvider<List<Company>>((ref) async {
+  final service = ref.watch(companyServiceProvider);
+  return await service.getMyCompanies();
+});
+
+/// All Companies Provider (Admin/Platform only)
+/// Use this ONLY for platform-level admin views
+final allCompaniesAdminProvider = FutureProvider<List<Company>>((ref) async {
   final service = ref.watch(companyServiceProvider);
   return await service.getAllCompanies();
 });

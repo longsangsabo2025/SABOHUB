@@ -18,7 +18,6 @@ class _ProductionOrderFormPageState extends ConsumerState<ProductionOrderFormPag
   final _dateController = TextEditingController(text: DateTime.now().toIso8601String().split('T')[0]);
 
   String? _selectedProductId;
-  String? _selectedProductName;
   String? _selectedBomId; 
   DateTime _startDate = DateTime.now();
 
@@ -116,8 +115,6 @@ class _ProductionOrderFormPageState extends ConsumerState<ProductionOrderFormPag
                   onChanged: (val) {
                     setState(() {
                       _selectedProductId = val;
-                      final prod = products.firstWhere((p) => p.id == val);
-                      _selectedProductName = prod.name;
                       // Logic to fetch BOM for this product could go here
                       // _loadBomForProduct(val);
                     });

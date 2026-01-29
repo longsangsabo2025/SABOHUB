@@ -487,47 +487,96 @@ final dashboardStatsProvider = FutureProvider.autoDispose<OdoriDashboardStats>((
     // Get order stats
     final ordersResult = await supabase
         .from('sales_orders')
-        .select('id, status, total, created_at')
+        .select('id, status, delivery_status, payment_status, total, created_at, updated_at')
         .eq('company_id', companyId);
     final orders = ordersResult as List;
     
-    final pendingOrders = orders.where((o) => o['status'] == 'pending_approval').length;
+    // Đơn chờ xử lý: delivery_status = pending hoặc null (chưa giao)
+    final pendingOrders = orders.where((o) {
+      final status = o['status']?.toString() ?? '';
+      final deliveryStatus = o['delivery_status']?.toString() ?? '';
+      // Không tính đơn đã hủy
+      if (status == 'cancelled') return false;
+      // Đơn chờ xử lý = chưa giao hoặc đang chờ
+      return deliveryStatus.isEmpty || 
+             deliveryStatus == 'pending' || 
+             deliveryStatus == 'null' ||
+             deliveryStatus == 'awaiting_pickup';
+    }).length;
     
     final today = DateTime.now();
-    final todayStr = today.toIso8601String().split('T')[0];
-    final completedToday = orders.where((o) => 
-        o['status'] == 'delivered' && 
-        (o['created_at'] as String).startsWith(todayStr)
-    ).length;
+    // Lấy ngày bắt đầu của hôm nay (00:00:00 UTC)
+    final todayStart = DateTime.utc(today.year, today.month, today.day);
+    // Cho phép lệch timezone (VN = UTC+7), check trong 24h gần nhất
+    final yesterdayStart = todayStart.subtract(const Duration(hours: 7));
+    
+    // Hoàn thành hôm nay: delivery_status = delivered và updated_at trong 24h
+    final completedToday = orders.where((o) {
+      final deliveryStatus = o['delivery_status']?.toString() ?? '';
+      final updatedAtStr = o['updated_at']?.toString() ?? '';
+      if (deliveryStatus != 'delivered' || updatedAtStr.isEmpty) return false;
+      
+      try {
+        final updatedAt = DateTime.parse(updatedAtStr);
+        return updatedAt.isAfter(yesterdayStart);
+      } catch (_) {
+        return false;
+      }
+    }).length;
 
-    // Calculate revenue
+    // Calculate revenue - chỉ tính đơn đã giao và đã thanh toán
     double todayRevenue = 0;
     double monthRevenue = 0;
-    final monthStart = DateTime(today.year, today.month, 1);
+    final monthStart = DateTime.utc(today.year, today.month, 1);
     
     for (final order in orders) {
-      if (order['status'] == 'delivered') {
+      final deliveryStatus = order['delivery_status']?.toString() ?? '';
+      final paymentStatus = order['payment_status']?.toString() ?? '';
+      
+      // Tính doanh thu cho đơn đã giao và đã thu tiền (cash hoặc transfer đã xác nhận)
+      if (deliveryStatus == 'delivered' && paymentStatus == 'paid') {
         final total = (order['total'] as num?)?.toDouble() ?? 0;
-        final createdAt = DateTime.parse(order['created_at'] as String);
+        final updatedAtStr = order['updated_at']?.toString() ?? order['created_at']?.toString() ?? '';
         
-        if (createdAt.year == today.year && 
-            createdAt.month == today.month && 
-            createdAt.day == today.day) {
-          todayRevenue += total;
-        }
-        if (createdAt.isAfter(monthStart.subtract(const Duration(days: 1)))) {
-          monthRevenue += total;
+        if (updatedAtStr.isEmpty) continue;
+        
+        try {
+          final updatedAt = DateTime.parse(updatedAtStr);
+          
+          // Doanh thu hôm nay (trong 24h gần nhất, tính timezone VN)
+          if (updatedAt.isAfter(yesterdayStart)) {
+            todayRevenue += total;
+          }
+          // Doanh thu tháng này
+          if (updatedAt.isAfter(monthStart.subtract(const Duration(days: 1)))) {
+            monthRevenue += total;
+          }
+        } catch (_) {
+          continue;
         }
       }
     }
 
-    // Get delivery stats
+    // Get delivery stats - từ cả deliveries table và sales_orders
     final deliveriesResult = await supabase
         .from('deliveries')
         .select('id, status')
         .eq('company_id', companyId);
     final deliveries = deliveriesResult as List;
-    final inProgressDeliveries = deliveries.where((d) => d['status'] == 'in_progress').length;
+    final inProgressFromDeliveries = deliveries.where((d) => 
+        d['status'] == 'in_progress' || d['status'] == 'loading'
+    ).length;
+    
+    // Cũng đếm từ sales_orders có delivery_status = delivering
+    final inProgressFromOrders = orders.where((o) {
+      final deliveryStatus = o['delivery_status']?.toString() ?? '';
+      return deliveryStatus == 'delivering' || deliveryStatus == 'awaiting_pickup';
+    }).length;
+    
+    // Lấy số lớn hơn (tránh đếm trùng)
+    final inProgressDeliveries = inProgressFromDeliveries > inProgressFromOrders 
+        ? inProgressFromDeliveries 
+        : inProgressFromOrders;
 
     // Get receivables
     final receivablesResult = await supabase

@@ -712,12 +712,12 @@ class DriverDeliveryCache {
       deliveryNumber: json['delivery_number'] as String? ?? 'DL-???',
       status: json['status'] as String,
       orderNumber: order?['order_number'] as String?,
-      totalAmount: (order?['total_amount'] as num?)?.toDouble(),
+      totalAmount: (order?['total'] as num?)?.toDouble() ?? (json['total_amount'] as num?)?.toDouble(),
       customerName: customer?['name'] as String?,
       customerAddress: customer?['address'] as String?,
       customerPhone: customer?['phone'] as String?,
-      latitude: (customer?['latitude'] as num?)?.toDouble(),
-      longitude: (customer?['longitude'] as num?)?.toDouble(),
+      latitude: (customer?['lat'] as num?)?.toDouble(),
+      longitude: (customer?['lng'] as num?)?.toDouble(),
       deliveryDate: DateTime.parse(json['delivery_date'] as String),
       startedAt: json['started_at'] != null 
           ? DateTime.parse(json['started_at'] as String) 
@@ -773,12 +773,12 @@ final cachedDriverDeliveriesProvider =
         *,
         sales_orders(
           order_number,
-          total_amount,
-          customers(name, address, phone, latitude, longitude)
+          total,
+          customers(name, address, phone, lat, lng)
         )
       ''')
       .eq('driver_id', employeeId)
-      .inFilter('status', ['assigned', 'in_progress'])
+      .inFilter('status', ['planned', 'loading', 'in_progress'])
       .order('delivery_date', ascending: true);
 
   final deliveries = (response as List)
@@ -817,8 +817,8 @@ final cachedDriverDeliveryHistoryProvider =
         *,
         sales_orders(
           order_number,
-          total_amount,
-          customers(name, address, phone, latitude, longitude)
+          total,
+          customers(name, address, phone, lat, lng)
         )
       ''')
       .eq('driver_id', employeeId)

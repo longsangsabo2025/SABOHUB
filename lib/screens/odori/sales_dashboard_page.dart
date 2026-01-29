@@ -25,7 +25,6 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
   
   // Chart data
   List<DailySalesData> _dailySales = [];
-  List<TopProductData> _topProducts = [];
   List<AgingBucket> _agingReport = [];
 
   final _currencyFormat = NumberFormat.currency(
@@ -112,7 +111,6 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
       ];
 
       // TODO: Fetch top products (need to aggregate from order items)
-      _topProducts = [];
 
     } catch (e) {
       debugPrint('Error loading dashboard data: $e');

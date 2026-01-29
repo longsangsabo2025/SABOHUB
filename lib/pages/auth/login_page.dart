@@ -646,63 +646,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Quick Login Button - CEO Account
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.purple.shade200),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.flash_on,
-                                color: Colors.purple.shade700, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Đăng nhập nhanh',
-                              style: TextStyle(
-                                color: Colors.purple.shade700,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // CEO Account - longsangsabo1@gmail.com
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _isLoading
-                                ? null
-                                : () => _quickLogin('longsangsabo1@gmail.com',
-                                    'Acookingoil123@'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.purple.shade600,
-                              foregroundColor: Colors.white,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            icon: const Icon(Icons.business, size: 20),
-                            label: const Text(
-                              'CEO - longsangsabo1@gmail.com',
-                              style: TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
                   // 🍎 Apple Sign In Button
                   SizedBox(
                     width: double.infinity,

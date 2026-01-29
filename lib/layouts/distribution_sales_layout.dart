@@ -220,7 +220,7 @@ class _SalesDashboardPageState extends ConsumerState<_SalesDashboardPage> {
       int completedCount = 0;
       for (var order in monthOrders) {
         monthRevenue += (order['total'] ?? 0).toDouble();
-        if (order['status'] == 'pending' || order['status'] == 'pending_approval') {
+        if (order['status'] == 'pending_approval' || order['status'] == 'draft') {
           pendingCount++;
         }
         if (order['status'] == 'completed') {
@@ -1948,16 +1948,18 @@ class _SalesOrderListState extends ConsumerState<_SalesOrderList> {
     Color deliveryColor = Colors.grey;
     switch (deliveryStatus) {
       case 'pending':
+      case 'planned':  // deliveries table uses 'planned'
         deliveryText = 'Chưa giao';
         deliveryIcon = Icons.schedule;
         deliveryColor = Colors.grey;
         break;
-      case 'in_transit':
+      case 'in_progress':  // was 'in_transit'
+      case 'loading':
         deliveryText = 'Đang giao';
         deliveryIcon = Icons.local_shipping;
         deliveryColor = Colors.blue;
         break;
-      case 'delivered':
+      case 'completed':  // was 'delivered'
         deliveryText = 'Đã giao';
         deliveryIcon = Icons.check_circle;
         deliveryColor = Colors.green;
@@ -2975,7 +2977,7 @@ class _SalesCreateOrderFormPageState extends ConsumerState<_SalesCreateOrderForm
             'order_date': DateTime.now().toIso8601String().split('T')[0],
             'total': _orderTotal,
             'subtotal': _orderTotal,
-            'status': 'pending',
+            'status': 'pending_approval',
             'payment_status': 'unpaid',
             'delivery_status': 'pending',
             'notes': _notesController.text.isNotEmpty ? _notesController.text : null,
@@ -3421,6 +3423,7 @@ class _SalesCustomerFormSheetState extends ConsumerState<_SalesCustomerFormSheet
   final _paymentTermsController = TextEditingController();
   
   String _selectedChannel = 'GT Sỉ';
+  String _selectedType = 'retail'; // retail, distributor, agent, direct
   String _selectedStatus = 'active';
   bool _isLoading = false;
 
@@ -3436,6 +3439,7 @@ class _SalesCustomerFormSheetState extends ConsumerState<_SalesCustomerFormSheet
       _creditLimitController.text = (widget.customer!['credit_limit'] ?? 0).toString();
       _paymentTermsController.text = (widget.customer!['payment_terms'] ?? 0).toString();
       _selectedChannel = widget.customer!['channel'] ?? 'GT Sỉ';
+      _selectedType = widget.customer!['type'] ?? 'retail';
       _selectedStatus = widget.customer!['status'] ?? 'active';
     } else {
       _creditLimitController.text = '0';
@@ -3479,6 +3483,7 @@ class _SalesCustomerFormSheetState extends ConsumerState<_SalesCustomerFormSheet
         'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
         'district': _districtController.text.trim().isEmpty ? null : _districtController.text.trim(),
         'channel': _selectedChannel,
+        'type': _selectedType,
         'status': _selectedStatus,
         'credit_limit': double.tryParse(_creditLimitController.text) ?? 0,
         'payment_terms': int.tryParse(_paymentTermsController.text) ?? 0,
@@ -3667,6 +3672,35 @@ class _SalesCustomerFormSheetState extends ConsumerState<_SalesCustomerFormSheet
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              
+              // Loại khách hàng
+              DropdownButtonFormField<String>(
+                value: _selectedType,
+                decoration: InputDecoration(
+                  labelText: 'Loại khách hàng',
+                  prefixIcon: Icon(
+                    _selectedType == 'distributor' ? Icons.business : 
+                    _selectedType == 'agent' ? Icons.handshake :
+                    _selectedType == 'direct' ? Icons.person_pin :
+                    Icons.shopping_bag,
+                    color: _selectedType == 'distributor' ? Colors.purple : 
+                           _selectedType == 'agent' ? Colors.orange :
+                           _selectedType == 'direct' ? Colors.teal :
+                           Colors.blue,
+                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'retail', child: Text('🛒 Khách lẻ')),
+                  DropdownMenuItem(value: 'distributor', child: Text('🏢 Nhà phân phối (NPP)')),
+                  DropdownMenuItem(value: 'agent', child: Text('🤝 Đại lý')),
+                  DropdownMenuItem(value: 'direct', child: Text('📍 Trực tiếp')),
+                ],
+                onChanged: (value) => setState(() => _selectedType = value!),
               ),
               const SizedBox(height: 12),
               

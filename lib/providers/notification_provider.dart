@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/realtime_notification_service.dart';
 import 'auth_provider.dart';
@@ -12,11 +13,17 @@ final notificationsProvider = StreamProvider<List<AppNotification>>((ref) {
   final service = ref.watch(realtimeNotificationServiceProvider);
   final authState = ref.watch(authProvider);
   
+  debugPrint('🔔 [PROVIDER] notificationsProvider rebuild - isAuth: ${authState.isAuthenticated}, user: ${authState.user?.id}');
+  
   // Initialize service when user is authenticated
   if (authState.isAuthenticated && authState.user != null) {
+    debugPrint('🔔 [PROVIDER] Calling service.initialize with userId: ${authState.user!.id}');
     service.initialize(authState.user!.id);
+  } else {
+    debugPrint('🔔 [PROVIDER] Not authenticated or user is null, skipping initialize');
   }
   
+  debugPrint('🔔 [PROVIDER] Returning notificationsStream');
   return service.notificationsStream;
 });
 

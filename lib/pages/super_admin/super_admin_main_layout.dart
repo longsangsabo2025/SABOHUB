@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/services/supabase_service.dart';
 import '../../utils/app_logger.dart';
+import '../../widgets/realtime_notification_widgets.dart';
 import '../admin/bug_reports_management_page.dart';
 
 /// Super Admin Main Layout
@@ -97,6 +98,7 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
             icon: const Icon(Icons.notifications_outlined, color: Colors.white70),
             onPressed: () => _showSystemNotifications(context),
           ),
+          const RealtimeNotificationBell(iconColor: Colors.white70),
           PopupMenuButton<String>(
             icon: CircleAvatar(
               radius: 16,
@@ -325,6 +327,10 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
     return RefreshIndicator(
       onRefresh: _loadDashboardData,
       child: SingleChildScrollView(

@@ -299,13 +299,13 @@ class OdoriNotificationService {
       OdoriNotificationPriority priority;
       
       switch (status) {
-        case 'in_transit':
+        case 'in_progress':  // Valid: planned, loading, in_progress, completed, cancelled
           type = OdoriNotificationType.deliveryStarted;
           title = 'Bắt đầu giao hàng';
           message = 'Đơn $orderNumber đang được giao';
           priority = OdoriNotificationPriority.normal;
           break;
-        case 'delivered':
+        case 'completed':  // was 'delivered'
           type = OdoriNotificationType.deliveryCompleted;
           title = 'Giao hàng thành công';
           message = 'Đơn $orderNumber đã giao xong';

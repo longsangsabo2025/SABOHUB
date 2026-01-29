@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/sales_route_service.dart';
 import '../../services/store_visit_service.dart';
 import 'package:geolocator/geolocator.dart';
@@ -623,17 +624,41 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
             ListTile(
               leading: const Icon(Icons.phone, color: Colors.teal),
               title: const Text('Gọi điện'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                // TODO: Call customer
+                if (stop.customerPhone != null && stop.customerPhone!.isNotEmpty) {
+                  final uri = Uri.parse('tel:${stop.customerPhone}');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri);
+                  }
+                }
               },
             ),
             ListTile(
               leading: const Icon(Icons.directions, color: Colors.indigo),
               title: const Text('Chỉ đường'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                // TODO: Open maps
+                // Use coordinates if available, otherwise use address
+                String destination;
+                if (stop.latitude != null && stop.longitude != null) {
+                  destination = '${stop.latitude},${stop.longitude}';
+                } else if (stop.customerAddress != null && stop.customerAddress!.isNotEmpty) {
+                  // Clean address: remove notes after '--'
+                  String cleanAddress = stop.customerAddress!;
+                  if (cleanAddress.contains('--')) {
+                    cleanAddress = cleanAddress.split('--').first.trim();
+                  }
+                  destination = Uri.encodeComponent(cleanAddress);
+                } else {
+                  return;
+                }
+                final uri = Uri.parse(
+                  'https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=$destination&travelmode=driving',
+                );
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
               },
             ),
           ],

@@ -426,7 +426,7 @@ class _WarehousePickingPageState extends ConsumerState<WarehousePickingPage> {
             backgroundColor: Colors.green,
           ),
         );
-        ref.refresh(warehouseOrdersProvider);
+        ref.invalidate(warehouseOrdersProvider);
       }
     } catch (e) {
       if (mounted) {

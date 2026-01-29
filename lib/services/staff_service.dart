@@ -119,7 +119,8 @@ class StaffService {
   /// Delete staff member (soft delete by setting status to inactive)
   Future<void> deleteStaff(String id) async {
     try {
-      await _supabase.from('users').update({'status': 'inactive'}).eq('id', id);
+      // Update in employees table (not users)
+      await _supabase.from('employees').update({'is_active': false}).eq('id', id);
     } catch (e) {
       throw Exception('Failed to delete staff: $e');
     }

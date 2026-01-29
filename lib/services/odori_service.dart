@@ -340,7 +340,7 @@ class OdoriService {
       query = query.eq('driver_id', driverId);
     }
     if (status != null) {
-      query = query.eq('status', status.name.replaceAll('inTransit', 'in_transit'));
+      query = query.eq('status', status.name.replaceAll('inTransit', 'in_progress'));
     }
     if (date != null) {
       query = query.eq('expected_date', date.toIso8601String().split('T')[0]);
@@ -357,7 +357,7 @@ class OdoriService {
     final response = await _supabase
         .from('deliveries')
         .update({
-          'status': 'in_transit',
+          'status': 'in_progress',  // Valid: planned, loading, in_progress, completed, cancelled
           'started_at': DateTime.now().toIso8601String(),
           'start_latitude': latitude,
           'start_longitude': longitude,
@@ -378,7 +378,7 @@ class OdoriService {
     final response = await _supabase
         .from('deliveries')
         .update({
-          'status': 'delivered',
+          'status': 'completed',  // valid: planned, loading, in_progress, completed, cancelled
           'completed_at': DateTime.now().toIso8601String(),
           'end_latitude': latitude,
           'end_longitude': longitude,

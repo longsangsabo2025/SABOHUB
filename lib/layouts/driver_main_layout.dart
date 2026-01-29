@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../pages/driver/driver_dashboard_page.dart';
-import '../pages/driver/driver_delivery_history_page.dart';
-import '../pages/staff/staff_profile_page.dart';
+import '../pages/driver/driver_route_page.dart';
+import '../pages/driver/driver_history_page.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/realtime_notification_widgets.dart';
 
@@ -19,9 +18,8 @@ class _DriverMainLayoutState extends ConsumerState<DriverMainLayout> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
-    DriverDashboardPage(),
-    DriverDeliveryHistoryPage(),
-    StaffProfilePage(),
+    DriverRoutePage(),
+    DriverHistoryPage(),
   ];
 
   final List<NavigationDestination> _destinations = const [
@@ -34,11 +32,6 @@ class _DriverMainLayoutState extends ConsumerState<DriverMainLayout> {
       icon: Icon(Icons.history_outlined),
       selectedIcon: Icon(Icons.history),
       label: 'Lịch sử',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.person_outline),
-      selectedIcon: Icon(Icons.person),
-      label: 'Tài khoản',
     ),
   ];
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../pages/warehouse/warehouse_picking_page.dart';
 import '../pages/warehouse/warehouse_stock_view_page.dart';
-import '../pages/staff/staff_profile_page.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/realtime_notification_widgets.dart';
 
@@ -21,7 +20,6 @@ class _WarehouseMainLayoutState extends ConsumerState<WarehouseMainLayout> {
   final List<Widget> _pages = const [
     WarehousePickingPage(),
     WarehouseStockViewPage(),
-    StaffProfilePage(),
   ];
 
   final List<NavigationDestination> _destinations = const [
@@ -34,11 +32,6 @@ class _WarehouseMainLayoutState extends ConsumerState<WarehouseMainLayout> {
       icon: Icon(Icons.warehouse_outlined),
       selectedIcon: Icon(Icons.warehouse),
       label: 'Tồn kho',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.person_outline),
-      selectedIcon: Icon(Icons.person),
-      label: 'Tài khoản',
     ),
   ];
 

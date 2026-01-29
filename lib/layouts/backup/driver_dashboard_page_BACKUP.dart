@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../providers/auth_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/cached_providers.dart';
 
 final supabase = Supabase.instance.client;
@@ -53,12 +53,12 @@ class DriverDelivery {
       deliveryNumber: json['delivery_number'] ?? 'DL-???',
       status: json['status'],
       orderNumber: order?['order_number'],
-      totalAmount: order?['total_amount']?.toDouble(),
+      totalAmount: order?['total']?.toDouble() ?? json['total_amount']?.toDouble(),
       customerName: customer?['name'],
       customerAddress: customer?['address'],
       customerPhone: customer?['phone'],
-      latitude: customer?['latitude']?.toDouble(),
-      longitude: customer?['longitude']?.toDouble(),
+      latitude: customer?['lat']?.toDouble(),  // DB uses 'lat' not 'latitude'
+      longitude: customer?['lng']?.toDouble(),  // DB uses 'lng' not 'longitude'
       deliveryDate: DateTime.parse(json['delivery_date']),
       startedAt: json['started_at'] != null ? DateTime.parse(json['started_at']) : null,
     );
@@ -98,7 +98,8 @@ class _DriverDashboardPageState extends ConsumerState<DriverDashboardPage> {
     // 🔥 PHASE 4: Use CACHED provider with realtime listener
     ref.watch(driverDeliveryListenerProvider); // Enable realtime updates
     final deliveriesAsync = ref.watch(cachedDriverDeliveriesProvider);
-    final statsAsync = ref.watch(cachedDriverDashboardStatsProvider);
+    // Stats are available but not displayed in current UI
+    ref.watch(cachedDriverDashboardStatsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -152,7 +153,7 @@ class _DriverDashboardPageState extends ConsumerState<DriverDashboardPage> {
           }
 
           final inProgress = deliveries.where((d) => d.status == 'in_progress').toList();
-          final pending = deliveries.where((d) => d.status == 'assigned').toList();
+          final pending = deliveries.where((d) => d.status == 'planned' || d.status == 'loading').toList();
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -203,9 +204,9 @@ class _DriverDashboardPageState extends ConsumerState<DriverDashboardPage> {
       0, 
       (sum, d) => sum + (d.totalAmount ?? 0),
     );
-    final completed = deliveries.where((d) => d.status == 'delivered').length;
+    final completed = deliveries.where((d) => d.status == 'completed').length;
     final inProgress = deliveries.where((d) => d.status == 'in_progress').length;
-    final pending = deliveries.where((d) => d.status == 'assigned').length;
+    final pending = deliveries.where((d) => d.status == 'planned' || d.status == 'loading').length;
 
     return Card(
       color: Colors.blue.shade50,
@@ -349,7 +350,7 @@ class _DriverDashboardPageState extends ConsumerState<DriverDashboardPage> {
 
     try {
       await supabase.from('deliveries').update({
-        'status': 'delivered',
+        'status': 'completed',
         'completed_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', delivery.id);
@@ -363,7 +364,7 @@ class _DriverDashboardPageState extends ConsumerState<DriverDashboardPage> {
       
       if (orderResponse['order_id'] != null) {
         await supabase.from('sales_orders').update({
-          'status': 'delivered',
+          'delivery_status': 'delivered',
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', orderResponse['order_id']);
       }
@@ -512,8 +513,11 @@ class _DeliveryCard extends StatelessWidget {
             if (delivery.customerPhone != null) ...[
               const SizedBox(height: 8),
               InkWell(
-                onTap: () {
-                  // TODO: Launch phone call
+                onTap: () async {
+                  final uri = Uri.parse('tel:${delivery.customerPhone}');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri);
+                  }
                 },
                 child: Row(
                   children: [
@@ -536,11 +540,13 @@ class _DeliveryCard extends StatelessWidget {
                 if (delivery.latitude != null)
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        // TODO: Open Google Maps
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Mở Google Maps...')),
-                        );
+                      onPressed: () async {
+                        // Use coordinates if available, otherwise use address
+                        final destination = 'https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${delivery.latitude},${delivery.longitude}&travelmode=driving';
+                        final uri = Uri.parse(destination);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        }
                       },
                       icon: const Icon(Icons.map, size: 18),
                       label: const Text('Chỉ đường'),

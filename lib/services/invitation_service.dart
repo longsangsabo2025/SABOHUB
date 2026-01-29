@@ -128,12 +128,21 @@ class InvitationService {
         throw Exception('Link mời không hợp lệ hoặc đã hết hạn');
       }
 
-      // Check if email already exists
-      final existingUser = await _supabase
+      // Check if email already exists in users table
+      var existingUser = await _supabase
           .from('users')
           .select('id')
           .eq('email', email)
           .maybeSingle();
+
+      // Also check employees table
+      if (existingUser == null) {
+        existingUser = await _supabase
+            .from('employees')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
+      }
 
       if (existingUser != null) {
         throw Exception('Email này đã được sử dụng');
