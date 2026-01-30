@@ -3,12 +3,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dvhcvn/dvhcvn.dart' as dvhcvn;
 import 'package:geocoding/geocoding.dart';
 import '../../models/odori_product.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/image_upload_service.dart';
+import '../../widgets/sabo_image_picker.dart';
 
 final supabase = Supabase.instance.client;
 final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
@@ -2766,6 +2769,10 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
   late final TextEditingController _descriptionController;
   String? _selectedCategory;
   bool _isLoading = false;
+  
+  // Image handling
+  XFile? _selectedImage;
+  String? _currentImageUrl;
 
   @override
   void initState() {
@@ -2777,6 +2784,7 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
     _unitController = TextEditingController(text: widget.product.unit);
     _descriptionController = TextEditingController(text: widget.product.description ?? '');
     _selectedCategory = widget.product.categoryName;
+    _currentImageUrl = widget.product.imageUrl;
   }
 
   @override
@@ -2796,6 +2804,21 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
     setState(() => _isLoading = true);
 
     try {
+      final authState = ref.read(authProvider);
+      final companyId = authState.user?.companyId;
+      
+      // Upload image if selected
+      String? imageUrl = _currentImageUrl;
+      
+      if (_selectedImage != null && companyId != null) {
+        final uploadService = ImageUploadService();
+        imageUrl = await uploadService.uploadProductImage(
+          imageFile: _selectedImage!,
+          companyId: companyId,
+          productId: widget.product.id,
+        );
+      }
+      
       await supabase.from('products').update({
         'name': _nameController.text.trim(),
         'sku': _skuController.text.trim(),
@@ -2805,6 +2828,7 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
         'description': _descriptionController.text.trim().isEmpty 
             ? null 
             : _descriptionController.text.trim(),
+        'image_url': imageUrl,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', widget.product.id);
 
@@ -2886,6 +2910,49 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
                       ),
                       
                       const SizedBox(height: 20),
+                      
+                      // Image Picker
+                      Row(
+                        children: [
+                          SaboImagePicker(
+                            currentImageUrl: _currentImageUrl,
+                            onImageSelected: (image) {
+                              setState(() => _selectedImage = image);
+                            },
+                            width: 80,
+                            height: 80,
+                            borderRadius: 12,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Hình ảnh sản phẩm',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _selectedImage != null 
+                                      ? 'Ảnh mới đã chọn'
+                                      : _currentImageUrl != null 
+                                          ? 'Nhấn để thay đổi' 
+                                          : 'Nhấn để thêm ảnh',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: _selectedImage != null 
+                                        ? Colors.green 
+                                        : Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 16),
                       
                       TextFormField(
                         controller: _nameController,

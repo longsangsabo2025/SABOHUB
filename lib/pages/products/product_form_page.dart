@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/odori_product.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/odori_providers.dart';
+import '../../services/image_upload_service.dart';
+import '../../widgets/sabo_image_picker.dart';
 
 class ProductFormPage extends ConsumerStatefulWidget {
   final OdoriProduct? product;
@@ -36,6 +39,10 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
   bool _isActive = true;
   bool _isLoading = false;
   bool _isDeleting = false;
+  
+  // Image handling
+  XFile? _selectedImage;
+  String? _currentImageUrl;
 
   final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '', decimalDigits: 0);
 
@@ -59,6 +66,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
       _selectedCategoryId = p.categoryId;
       _weightUnit = p.weightUnit ?? 'kg';
       _isActive = p.isActive;
+      _currentImageUrl = p.imageUrl;
     }
   }
 
@@ -90,6 +98,21 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
 
       if (companyId == null) throw Exception('User context not found');
 
+      // Upload image if selected
+      String? imageUrl = _imageUrlController.text.trim().isNotEmpty 
+          ? _imageUrlController.text.trim() 
+          : null;
+      
+      if (_selectedImage != null) {
+        final uploadService = ImageUploadService();
+        final productId = widget.product?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+        imageUrl = await uploadService.uploadProductImage(
+          imageFile: _selectedImage!,
+          companyId: companyId,
+          productId: productId,
+        );
+      }
+
       final productData = {
         'company_id': companyId,
         'category_id': _selectedCategoryId,
@@ -106,7 +129,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
         'min_wholesale_qty': _minWholesaleQtyController.text.isNotEmpty 
             ? int.tryParse(_minWholesaleQtyController.text) 
             : null,
-        'image_url': _imageUrlController.text.trim().isNotEmpty ? _imageUrlController.text.trim() : null,
+        'image_url': imageUrl,
         'weight': _weightController.text.isNotEmpty ? double.tryParse(_weightController.text) : null,
         'weight_unit': _weightController.text.isNotEmpty ? _weightUnit : null,
         'min_stock': _minStockController.text.isNotEmpty ? int.tryParse(_minStockController.text) : null,
@@ -459,34 +482,51 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   ),
                   const SizedBox(height: 16),
+                  // Image Picker Section
+                  const Text(
+                    'Hình ảnh sản phẩm',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 8),
+                  ProductImagePicker(
+                    currentImageUrl: _currentImageUrl,
+                    onImageSelected: (image) {
+                      setState(() {
+                        _selectedImage = image;
+                        if (image == null) {
+                          _imageUrlController.clear();
+                          _currentImageUrl = null;
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  // Keep URL field as backup option
                   TextFormField(
                     controller: _imageUrlController,
-                    decoration: const InputDecoration(
-                      labelText: 'Link ảnh sản phẩm',
-                      prefixIcon: Icon(Icons.image_outlined),
+                    decoration: InputDecoration(
+                      labelText: 'Hoặc nhập link ảnh',
+                      prefixIcon: const Icon(Icons.link),
                       hintText: 'https://...',
+                      suffixIcon: _imageUrlController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                setState(() {
+                                  _imageUrlController.clear();
+                                  _currentImageUrl = null;
+                                });
+                              },
+                            )
+                          : null,
                     ),
                     keyboardType: TextInputType.url,
+                    onChanged: (value) {
+                      setState(() {
+                        _currentImageUrl = value.isNotEmpty ? value : null;
+                      });
+                    },
                   ),
-                  if (_imageUrlController.text.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          _imageUrlController.text,
-                          height: 100,
-                          width: 100,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            height: 100,
-                            width: 100,
-                            color: Colors.grey[200],
-                            child: const Icon(Icons.broken_image, color: Colors.grey),
-                          ),
-                        ),
-                      ),
-                    ),
                   const SizedBox(height: 16),
                   SwitchListTile(
                     title: const Text('Đang kinh doanh'),
