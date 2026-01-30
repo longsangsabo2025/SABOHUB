@@ -241,9 +241,19 @@ workflows:
           EOF
       - name: Build Android release
         script: |
+          # Get version from pubspec.yaml
+          PUBSPEC_VERSION=$(grep "^version:" pubspec.yaml | cut -d' ' -f2)
+          VERSION_NAME=$(echo $PUBSPEC_VERSION | cut -d'+' -f1)
+          VERSION_CODE=$(echo $PUBSPEC_VERSION | cut -d'+' -f2)
+          
+          echo "📱 Building Android AAB: $VERSION_NAME+$VERSION_CODE"
+          
           flutter build appbundle --release \
-            --build-name=1.0.0 \
-            --build-number=$BUILD_NUMBER
+            --build-name=$VERSION_NAME \
+            --build-number=$VERSION_CODE \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+            --dart-define=SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
     artifacts:
       - build/**/outputs/**/*.aab
       - build/**/outputs/**/mapping.txt
