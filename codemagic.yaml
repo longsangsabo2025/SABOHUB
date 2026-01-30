@@ -47,17 +47,25 @@ workflows:
     cache:
       cache_paths:
         - $HOME/.pub-cache
-        - $HOME/Library/Caches/CocoaPods
+        # Disable CocoaPods cache to avoid stale pods issue
+        # - $HOME/Library/Caches/CocoaPods
     
     scripts:
-      # 1. Clean iOS dependencies (avoid Podfile.lock conflicts)
+      # 1. Clean iOS dependencies completely
       - name: Clean iOS dependencies
         script: |
-          echo "🧹 Cleaning iOS artifacts..."
+          echo "🧹 Cleaning iOS artifacts completely..."
           cd ios
           rm -rf Pods
           rm -rf Podfile.lock
+          rm -rf .symlinks
+          rm -rf Flutter/Flutter.framework
+          rm -rf Flutter/Flutter.podspec
+          xcodebuild clean -workspace Runner.xcworkspace -scheme Runner || true
           cd ..
+          # Clean DerivedData
+          rm -rf ~/Library/Developer/Xcode/DerivedData/*
+          echo "✅ iOS cleaned"
       
       # 2. Set up environment file
       - name: Set up .env file
@@ -78,13 +86,18 @@ workflows:
       - name: Get Flutter packages
         script: |
           echo "📦 Getting Flutter packages..."
-          flutter packages pub get
+          flutter pub get
       
-      # 4. Install CocoaPods
+      # 4. Install CocoaPods properly
       - name: Install pods
         script: |
           echo "☕ Installing CocoaPods dependencies..."
-          find . -name "Podfile" -execdir pod install \;
+          cd ios
+          pod deintegrate || true
+          pod cache clean --all
+          pod repo update
+          pod install --repo-update --verbose
+          cd ..
           echo "✅ Pods installed"
       
       # 5. Auto-increment build number (avoid duplicate version errors)
