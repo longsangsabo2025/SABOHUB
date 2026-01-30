@@ -46,27 +46,37 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
     setState(() => _isLoading = true);
 
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) {
+      // Get user from auth provider (works for both CEO and Employee)
+      final authState = ref.read(authProvider);
+      final appUser = authState.user;
+      
+      if (appUser == null) {
         setState(() => _isLoading = false);
         return;
       }
 
-      // Fetch user data from users table
-      var response = await _supabase
-          .from('users')
-          .select(
-              'id, full_name, email, phone, avatar_url, role, branch_id, company_id, companies!company_id(name), branches!branch_id(name)')
-          .eq('id', user.id)
-          .maybeSingle();
-
-      // Fallback to employees table if not found in users
+      // Check if this is a Supabase Auth user (CEO)
+      final supabaseUser = _supabase.auth.currentUser;
+      
+      Map<String, dynamic>? response;
+      
+      if (supabaseUser != null) {
+        // CEO: Fetch from users table using Supabase auth ID
+        response = await _supabase
+            .from('users')
+            .select(
+                'id, full_name, email, phone, avatar_url, role, branch_id, company_id, companies!company_id(name), branches!branch_id(name)')
+            .eq('id', supabaseUser.id)
+            .maybeSingle();
+      }
+      
+      // If not found or employee login, try employees table with app user ID
       if (response == null) {
         response = await _supabase
             .from('employees')
             .select(
                 'id, full_name, email, phone, avatar_url, role, branch_id, company_id, companies!company_id(name), branches!branch_id(name)')
-            .eq('auth_user_id', user.id)
+            .eq('id', appUser.id)
             .maybeSingle();
       }
 
@@ -74,10 +84,18 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
         final data = response;
         setState(() {
           _userData = data;
-          _fullNameController.text = data['full_name'] ?? '';
-          _emailController.text = data['email'] ?? user.email ?? '';
+          _fullNameController.text = data['full_name'] ?? appUser.name ?? '';
+          _emailController.text = data['email'] ?? appUser.email ?? '';
           _phoneController.text = data['phone'] ?? '';
           _avatarUrl = data['avatar_url'];
+        });
+      } else {
+        // Fallback to auth provider data
+        setState(() {
+          _userData = {'id': appUser.id, 'role': appUser.role.toString()};
+          _fullNameController.text = appUser.name ?? '';
+          _emailController.text = appUser.email ?? '';
+          _phoneController.text = '';
         });
       }
     } catch (e) {
@@ -97,22 +115,34 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
     setState(() => _isLoading = true);
 
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) throw Exception('Chưa đăng nhập');
+      // Get user from auth provider (works for both CEO and Employee)
+      final authState = ref.read(authProvider);
+      final appUser = authState.user;
+      
+      if (appUser == null) throw Exception('Chưa đăng nhập');
+      
+      // Check if this is a Supabase Auth user (CEO)
+      final supabaseUser = _supabase.auth.currentUser;
+      
+      bool updated = false;
+      
+      if (supabaseUser != null) {
+        // CEO: Try updating users table first
+        final usersResult = await _supabase
+            .from('users')
+            .update({
+              'full_name': _fullNameController.text.trim(),
+              'phone': _phoneController.text.trim(),
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', supabaseUser.id)
+            .select();
+        
+        updated = usersResult.isNotEmpty;
+      }
 
-      // Try updating users table first
-      final usersResult = await _supabase
-          .from('users')
-          .update({
-            'full_name': _fullNameController.text.trim(),
-            'phone': _phoneController.text.trim(),
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', user.id)
-          .select();
-
-      // If no rows updated in users, try employees table
-      if (usersResult.isEmpty) {
+      // If not updated (employee or CEO not in users table), update employees table
+      if (!updated) {
         await _supabase
             .from('employees')
             .update({
@@ -120,7 +150,7 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
               'phone': _phoneController.text.trim(),
               'updated_at': DateTime.now().toIso8601String(),
             })
-            .eq('auth_user_id', user.id);
+            .eq('id', appUser.id);
       }
 
       // Reload user data to update UI
@@ -385,12 +415,16 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
     setState(() => _isUploadingAvatar = true);
 
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) throw Exception('Chưa đăng nhập');
+      // Support both CEO (Supabase Auth) and Employee (custom auth)
+      final appUser = ref.read(authProvider).user;
+      final authUser = _supabase.auth.currentUser;
+      final userId = appUser?.id ?? authUser?.id;
+      
+      if (userId == null) throw Exception('Chưa đăng nhập');
 
       final bytes = await image.readAsBytes();
       final fileExt = image.path.split('.').last;
-      final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
       final filePath = 'avatars/$fileName';
 
       // Upload to Supabase Storage
@@ -406,18 +440,19 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       // Get public URL
       final publicUrl = _supabase.storage.from('public').getPublicUrl(filePath);
 
-      // Try updating users table first
-      final usersResult = await _supabase.from('users').update({
-        'avatar_url': publicUrl,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', user.id).select();
-
-      // If no rows updated in users, try employees table
-      if (usersResult.isEmpty) {
+      // Update based on user type
+      if (appUser?.role == 'employee' || appUser?.role == 'driver' || appUser?.role == 'sales' || appUser?.role == 'manager') {
+        // Employee - update employees table
         await _supabase.from('employees').update({
           'avatar_url': publicUrl,
           'updated_at': DateTime.now().toIso8601String(),
-        }).eq('auth_user_id', user.id);
+        }).eq('id', userId);
+      } else {
+        // CEO/Admin - update users table
+        await _supabase.from('users').update({
+          'avatar_url': publicUrl,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', userId);
       }
 
       setState(() => _avatarUrl = publicUrl);
@@ -472,21 +507,26 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
     setState(() => _isUploadingAvatar = true);
 
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) throw Exception('Chưa đăng nhập');
+      // Support both CEO (Supabase Auth) and Employee (custom auth)
+      final appUser = ref.read(authProvider).user;
+      final authUser = _supabase.auth.currentUser;
+      final userId = appUser?.id ?? authUser?.id;
+      
+      if (userId == null) throw Exception('Chưa đăng nhập');
 
-      // Try updating users table first
-      final usersResult = await _supabase.from('users').update({
-        'avatar_url': null,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', user.id).select();
-
-      // If no rows updated in users, try employees table
-      if (usersResult.isEmpty) {
+      // Update based on user type
+      if (appUser?.role == 'employee' || appUser?.role == 'driver' || appUser?.role == 'sales' || appUser?.role == 'manager') {
+        // Employee - update employees table
         await _supabase.from('employees').update({
           'avatar_url': null,
           'updated_at': DateTime.now().toIso8601String(),
-        }).eq('auth_user_id', user.id);
+        }).eq('id', userId);
+      } else {
+        // CEO/Admin - update users table
+        await _supabase.from('users').update({
+          'avatar_url': null,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', userId);
       }
 
       setState(() => _avatarUrl = null);
