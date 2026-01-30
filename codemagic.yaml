@@ -17,7 +17,7 @@ workflows:
       groups:
         - app_store # Group contains: APP_STORE_CONNECT_PRIVATE_KEY, BUNDLE_ID, ISSUER_ID, KEY_IDENTIFIER
       flutter: stable
-      xcode: 16.2  # Xcode 16.2 stable
+      xcode: latest
       cocoapods: default
       ios_signing:
         distribution_type: app_store
@@ -78,16 +78,13 @@ workflows:
       - name: Get Flutter packages
         script: |
           echo "📦 Getting Flutter packages..."
-          flutter pub get
+          flutter packages pub get
       
       # 4. Install CocoaPods
       - name: Install pods
         script: |
           echo "☕ Installing CocoaPods dependencies..."
-          cd ios
-          pod repo update
-          pod install --repo-update
-          cd ..
+          find . -name "Podfile" -execdir pod install \;
           echo "✅ Pods installed"
       
       # 5. Auto-increment build number (avoid duplicate version errors)
