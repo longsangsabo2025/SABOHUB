@@ -151,10 +151,12 @@ class AuthNotifier extends Notifier<AuthState> {
             if (employeeResponse != null) {
               response = {
                 ...employeeResponse,
-                'id': session.user.id, // Use auth user id as primary id
-                'employee_id': employeeResponse['id'],
+                // CRITICAL FIX: Use employee's actual UUID for sale_id foreign key
+                // The employee's id is what's referenced in sales_orders.sale_id
+                'id': employeeResponse['id'], // Use employee UUID (exists in employees table)
+                'auth_user_id': session.user.id, // Keep auth id for reference
               };
-              print('✅ [AUTH] Session restore: Found employee profile');
+              print('✅ [AUTH] Session restore: Found employee profile with id: ${employeeResponse['id']}');
             }
           }
 
@@ -283,7 +285,9 @@ class AuthNotifier extends Notifier<AuthState> {
         if (employeeResponse != null) {
           response = {
             ...employeeResponse,
-            'id': currentUser.id,
+            // CRITICAL FIX: Use employee's actual UUID for foreign key references
+            'id': employeeResponse['id'], // Use employee UUID
+            'auth_user_id': currentUser.id,
           };
         }
       }
@@ -385,13 +389,13 @@ class AuthNotifier extends Notifier<AuthState> {
             .maybeSingle();
         
         if (employeeResponse != null) {
-          // Use employee data but keep auth user id for consistency
+          // CRITICAL FIX: Use employee's actual UUID for foreign key references
           response = {
             ...employeeResponse,
-            'id': authResponse.user!.id, // Use auth user id as primary id
-            'employee_id': employeeResponse['id'], // Store actual employee id
+            'id': employeeResponse['id'], // Use employee UUID (exists in employees table)
+            'auth_user_id': authResponse.user!.id, // Keep auth id for reference
           };
-          print('✅ [AUTH] Found employee profile: ${response['full_name']}');
+          print('✅ [AUTH] Found employee profile: ${response['full_name']} with id: ${employeeResponse['id']}');
         }
       }
 
@@ -671,7 +675,9 @@ class AuthNotifier extends Notifier<AuthState> {
         if (employeeResponse != null) {
           response = {
             ...employeeResponse,
-            'id': authResponse.user!.id,
+            // CRITICAL FIX: Use employee's actual UUID for foreign key references
+            'id': employeeResponse['id'], // Use employee UUID
+            'auth_user_id': authResponse.user!.id,
           };
         }
       }
