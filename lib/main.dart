@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -20,8 +21,14 @@ void main() {
   LongSangErrorReporter.init(() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
-  await dotenv.load(fileName: '.env.local');
+  // Load environment variables with fallback
+  // Production apps use .env, development uses .env.local
+  try {
+    await dotenv.load(fileName: '.env.local');
+  } catch (_) {
+    // Fallback to .env if .env.local not found (production)
+    await dotenv.load(fileName: '.env');
+  }
   
   // Initialize Vietnamese locale for date formatting
   await initializeDateFormatting('vi', null);
@@ -43,8 +50,8 @@ void main() {
       // Auto refresh token khi sắp hết hạn
       autoRefreshToken: true,
     ),
-    // Debug để xem session storage
-    debug: true,
+    // Only enable debug in non-release builds
+    debug: !kReleaseMode,
   );
 
   runApp(const ProviderScope(child: SaboHubApp()));

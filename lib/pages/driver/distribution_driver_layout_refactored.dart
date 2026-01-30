@@ -5,16 +5,14 @@ import 'driver_route_page.dart';
 import 'driver_deliveries_page.dart';
 import 'driver_journey_map_page.dart';
 import 'driver_history_page.dart';
-import 'driver_profile_page.dart';
 
 /// Main Distribution Driver Layout - Refactored version
 /// 
-/// This layout manages 5 main pages for the driver interface:
+/// This layout manages 4 main pages for the driver interface:
 /// - Trang chủ: Dashboard with daily stats and current deliveries
 /// - Giao hàng: Delivery management with 4 tabs (Chờ nhận, Chờ kho, Đang giao, Đã giao)
 /// - Hành trình: Journey map with GPS tracking and route optimization
 /// - Lịch sử: Delivery history with date filters
-/// - Cá nhân: Driver profile and settings
 class DistributionDriverLayout extends ConsumerStatefulWidget {
   const DistributionDriverLayout({super.key});
 
@@ -30,7 +28,6 @@ class _DistributionDriverLayoutState extends ConsumerState<DistributionDriverLay
     DriverDeliveriesPage(),  // Giao hàng
     DriverJourneyMapPage(),  // Hành trình
     DriverHistoryPage(),     // Lịch sử
-    DriverProfilePage(),     // Cá nhân
   ];
 
   @override
@@ -61,7 +58,6 @@ class _DistributionDriverLayoutState extends ConsumerState<DistributionDriverLay
                 _buildNavItem(1, Icons.local_shipping_outlined, Icons.local_shipping, 'Giao hàng'),
                 _buildNavItem(2, Icons.map_outlined, Icons.map, 'Hành trình'),
                 _buildNavItem(3, Icons.history_outlined, Icons.history, 'Lịch sử'),
-                _buildNavItem(4, Icons.person_outline, Icons.person, 'Cá nhân'),
               ],
             ),
           ),

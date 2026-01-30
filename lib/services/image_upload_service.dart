@@ -1,6 +1,5 @@
-import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -227,9 +226,10 @@ class ImageUploadService {
     }
   }
 
-  /// Debug print for non-release builds
+  /// Debug print for non-release builds only
   void debugPrint(String message) {
-    if (!kIsWeb) {
+    // Only print in debug mode, not in production
+    if (!kReleaseMode) {
       // ignore: avoid_print
       print('[ImageUploadService] $message');
     }

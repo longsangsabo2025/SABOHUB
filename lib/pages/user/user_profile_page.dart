@@ -228,9 +228,42 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
               final messenger = ScaffoldMessenger.of(context);
 
               try {
-                await _supabase.auth.updateUser(
-                  UserAttributes(password: passwordController.text),
-                );
+                // Support both CEO (Supabase Auth) and Employee (custom auth)
+                final appUser = ref.read(authProvider).user;
+                final authUser = _supabase.auth.currentUser;
+                
+                // Check if user is an employee (not CEO)
+                // Employee roles: employee, driver, sales, manager, warehouse_staff, etc.
+                final isEmployee = appUser != null && authUser == null;
+                
+                if (isEmployee) {
+                  // Employee - use RPC to hash password properly
+                  final result = await _supabase.rpc('change_employee_password', params: {
+                    'p_employee_id': appUser.id,
+                    'p_new_password': passwordController.text,
+                  });
+                  
+                  if (result['success'] != true) {
+                    throw Exception(result['error'] ?? 'Không thể đổi mật khẩu');
+                  }
+                } else if (authUser != null) {
+                  // CEO/Admin - use Supabase Auth
+                  await _supabase.auth.updateUser(
+                    UserAttributes(password: passwordController.text),
+                  );
+                } else if (appUser != null) {
+                  // Fallback: use RPC to hash password properly
+                  final result = await _supabase.rpc('change_employee_password', params: {
+                    'p_employee_id': appUser.id,
+                    'p_new_password': passwordController.text,
+                  });
+                  
+                  if (result['success'] != true) {
+                    throw Exception(result['error'] ?? 'Không thể đổi mật khẩu');
+                  }
+                } else {
+                  throw Exception('Không thể xác định loại tài khoản');
+                }
 
                 if (mounted) {
                   navigator.pop();
@@ -458,8 +491,8 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       final fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
       final filePath = 'avatars/$fileName';
 
-      // Upload to Supabase Storage
-      await _supabase.storage.from('public').uploadBinary(
+      // Upload to Supabase Storage (bucket: uploads)
+      await _supabase.storage.from('uploads').uploadBinary(
         filePath,
         bytes,
         fileOptions: FileOptions(
@@ -469,7 +502,7 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       );
 
       // Get public URL
-      final publicUrl = _supabase.storage.from('public').getPublicUrl(filePath);
+      final publicUrl = _supabase.storage.from('uploads').getPublicUrl(filePath);
 
       // Update based on user type
       if (appUser?.role == 'employee' || appUser?.role == 'driver' || appUser?.role == 'sales' || appUser?.role == 'manager') {

@@ -207,14 +207,15 @@ class _DistributionManagerLayoutState
                 context.push('/profile');
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: const Text('Cài đặt'),
-              onTap: () {
-                Navigator.pop(ctx);
-                context.push('/company/settings');
-              },
-            ),
+            // TODO: Tạm ẩn Cài đặt - uncomment khi cần
+            // ListTile(
+            //   leading: const Icon(Icons.settings_outlined),
+            //   title: const Text('Cài đặt'),
+            //   onTap: () {
+            //     Navigator.pop(ctx);
+            //     context.push('/company/settings');
+            //   },
+            // ),
             ListTile(
               leading: Icon(Icons.bug_report_outlined, color: Colors.red.shade400),
               title: const Text('Báo cáo lỗi'),
