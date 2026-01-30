@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../widgets/sabo_refresh_button.dart';
 
 /// Network connectivity state
 enum NetworkStatus {
@@ -163,8 +164,11 @@ class OfflineAwareWidget extends ConsumerWidget {
                 // Just check - the provider listener will update UI
                 await Connectivity().checkConnectivity();
               },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Thử lại'),
+              icon: Icon(Icons.refresh, color: SaboRefreshButton.refreshColor),
+              label: Text('Thử lại', style: TextStyle(color: SaboRefreshButton.refreshColor)),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: SaboRefreshButton.refreshColor),
+              ),
             ),
           ],
         ),

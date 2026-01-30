@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'sabo_refresh_button.dart';
 
 /// Enhanced error display widget with retry functionality
 class ErrorDisplay extends StatelessWidget {
@@ -69,7 +70,7 @@ class ErrorDisplay extends StatelessWidget {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Thử lại'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: SaboRefreshButton.refreshColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
@@ -109,7 +110,7 @@ class ErrorDisplay extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.refresh, size: 20),
               onPressed: onRetry,
-              color: Colors.red.shade400,
+              color: SaboRefreshButton.refreshColor,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
@@ -281,8 +282,8 @@ class EmptyStateDisplay extends StatelessWidget {
       action: onRefresh != null
           ? TextButton.icon(
               onPressed: onRefresh,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Làm mới'),
+              icon: Icon(Icons.refresh, color: SaboRefreshButton.refreshColor),
+              label: Text('Làm mới', style: TextStyle(color: SaboRefreshButton.refreshColor)),
             )
           : null,
     );

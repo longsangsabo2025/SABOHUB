@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'sabo_refresh_button.dart';
 
 /// Empty state widget with icon, title, and optional action
 class SaboEmptyState extends StatelessWidget {
@@ -253,8 +254,11 @@ class SaboErrorState extends StatelessWidget {
               const SizedBox(height: 24),
               OutlinedButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Thử lại'),
+                icon: Icon(Icons.refresh, color: SaboRefreshButton.refreshColor),
+                label: Text('Thử lại', style: TextStyle(color: SaboRefreshButton.refreshColor)),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: SaboRefreshButton.refreshColor),
+                ),
               ),
             ],
           ],

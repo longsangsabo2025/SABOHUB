@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/cached_providers.dart';
+import '../widgets/sabo_refresh_button.dart';
 
 /// RefreshableListView - A ListView that supports pull-to-refresh
 /// Automatically invalidates the provided providers on refresh
@@ -125,6 +126,10 @@ class RefreshableListView<T> extends ConsumerWidget {
                   onPressed: onRefresh,
                   icon: const Icon(Icons.refresh),
                   label: const Text('Thử lại'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: SaboRefreshButton.refreshColor,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ],
             ),

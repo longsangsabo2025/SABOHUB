@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/errors/app_errors.dart';
 import '../core/errors/error_handler.dart';
+import 'sabo_refresh_button.dart';
 
 /// Global error boundary widget that catches and handles errors
 class ErrorBoundary extends ConsumerStatefulWidget {
@@ -200,6 +201,10 @@ class _DefaultErrorWidget extends StatelessWidget {
                   onPressed: onRetry,
                   icon: const Icon(Icons.refresh),
                   label: const Text('Thử lại'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: SaboRefreshButton.refreshColor,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
             ],
           ),
