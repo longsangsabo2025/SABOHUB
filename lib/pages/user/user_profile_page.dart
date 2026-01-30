@@ -423,7 +423,38 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       if (userId == null) throw Exception('Chưa đăng nhập');
 
       final bytes = await image.readAsBytes();
-      final fileExt = image.path.split('.').last;
+      
+      // Determine file extension and content type
+      // On web, image.path may be a blob URL, so we need to handle it properly
+      String fileExt = 'jpg'; // Default extension
+      String contentType = 'image/jpeg'; // Default content type
+      
+      // Try to get extension from mimeType first (more reliable on web)
+      final mimeType = image.mimeType;
+      if (mimeType != null && mimeType.startsWith('image/')) {
+        final mimeExt = mimeType.split('/').last;
+        if (mimeExt == 'jpeg' || mimeExt == 'jpg') {
+          fileExt = 'jpg';
+          contentType = 'image/jpeg';
+        } else if (mimeExt == 'png') {
+          fileExt = 'png';
+          contentType = 'image/png';
+        } else if (mimeExt == 'gif') {
+          fileExt = 'gif';
+          contentType = 'image/gif';
+        } else if (mimeExt == 'webp') {
+          fileExt = 'webp';
+          contentType = 'image/webp';
+        }
+      } else if (!image.path.startsWith('blob:')) {
+        // Fallback to path extension if not a blob URL
+        final pathExt = image.path.split('.').last.toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(pathExt)) {
+          fileExt = pathExt == 'jpeg' ? 'jpg' : pathExt;
+          contentType = pathExt == 'jpeg' || pathExt == 'jpg' ? 'image/jpeg' : 'image/$pathExt';
+        }
+      }
+      
       final fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
       final filePath = 'avatars/$fileName';
 
@@ -432,7 +463,7 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
         filePath,
         bytes,
         fileOptions: FileOptions(
-          contentType: 'image/$fileExt',
+          contentType: contentType,
           upsert: true,
         ),
       );
