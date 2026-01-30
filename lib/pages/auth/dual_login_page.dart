@@ -209,10 +209,15 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
   // Keys for SharedPreferences
   static const String _rememberKey = '@employee_remember_me';
   static const String _savedCredentialsKey = '@employee_saved_credentials';
+  static const String _savedAccountsKey = '@employee_saved_accounts'; // NEW: Multi-account storage
+  
+  // List of saved accounts
+  List<Map<String, String>> _savedAccounts = [];
 
   @override
   void initState() {
     super.initState();
+    _loadSavedAccounts();
     _loadSavedCredentials();
   }
 
@@ -222,6 +227,78 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  /// Load all saved accounts from SharedPreferences
+  Future<void> _loadSavedAccounts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedJson = prefs.getString(_savedAccountsKey);
+      if (savedJson != null) {
+        final List<dynamic> decoded = jsonDecode(savedJson);
+        setState(() {
+          _savedAccounts = decoded.map((e) => Map<String, String>.from(e)).toList();
+        });
+        AppLogger.auth('📥 Loaded ${_savedAccounts.length} saved accounts');
+      }
+    } catch (e) {
+      AppLogger.error('Failed to load saved accounts', e);
+    }
+  }
+
+  /// Save account to the list of saved accounts
+  Future<void> _saveAccountToList() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      final newAccount = {
+        'company': _companyController.text.trim(),
+        'username': _usernameController.text.trim(),
+        'password': _passwordController.text,
+      };
+      
+      // Remove existing account with same username@company to avoid duplicates
+      _savedAccounts.removeWhere((acc) => 
+        acc['username'] == newAccount['username'] && 
+        acc['company'] == newAccount['company']
+      );
+      
+      // Add new account at the beginning
+      _savedAccounts.insert(0, newAccount);
+      
+      // Keep only last 10 accounts
+      if (_savedAccounts.length > 10) {
+        _savedAccounts = _savedAccounts.sublist(0, 10);
+      }
+      
+      await prefs.setString(_savedAccountsKey, jsonEncode(_savedAccounts));
+      AppLogger.auth('💾 Saved account ${newAccount['username']}@${newAccount['company']}');
+    } catch (e) {
+      AppLogger.error('Failed to save account to list', e);
+    }
+  }
+
+  /// Delete a saved account
+  Future<void> _deleteAccount(int index) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final removed = _savedAccounts.removeAt(index);
+      await prefs.setString(_savedAccountsKey, jsonEncode(_savedAccounts));
+      setState(() {});
+      AppLogger.auth('🗑️ Deleted account ${removed['username']}@${removed['company']}');
+    } catch (e) {
+      AppLogger.error('Failed to delete account', e);
+    }
+  }
+
+  /// Select a saved account
+  void _selectAccount(Map<String, String> account) {
+    setState(() {
+      _companyController.text = account['company'] ?? '';
+      _usernameController.text = account['username'] ?? '';
+      _passwordController.text = account['password'] ?? '';
+      _rememberMe = true;
+    });
   }
 
   /// Load saved credentials from SharedPreferences
@@ -260,6 +337,8 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
           'username': _usernameController.text.trim(),
           'password': _passwordController.text,
         }));
+        // Also save to multi-account list
+        await _saveAccountToList();
         AppLogger.auth('💾 Saved credentials for ${_usernameController.text}');
       } else {
         await prefs.setBool(_rememberKey, false);
@@ -366,6 +445,149 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
     );
   }
 
+  /// Build saved accounts section with horizontal scroll
+  Widget _buildSavedAccountsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.history, size: 16, color: Colors.grey.shade600),
+            const SizedBox(width: 6),
+            Text(
+              'Tài khoản đã lưu',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 80,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _savedAccounts.length,
+            itemBuilder: (context, index) {
+              final account = _savedAccounts[index];
+              return Padding(
+                padding: EdgeInsets.only(right: index < _savedAccounts.length - 1 ? 10 : 0),
+                child: _buildAccountCard(account, index),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build individual account card
+  Widget _buildAccountCard(Map<String, String> account, int index) {
+    final username = account['username'] ?? '';
+    final company = account['company'] ?? '';
+    
+    return GestureDetector(
+      onTap: () => _selectAccount(account),
+      onLongPress: () => _showDeleteAccountDialog(index, username, company),
+      child: Container(
+        width: 140,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: AppTheme.primaryPurple.withValues(alpha: 0.1),
+                  child: Text(
+                    username.isNotEmpty ? username[0].toUpperCase() : '?',
+                    style: TextStyle(
+                      color: AppTheme.primaryPurple,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    username,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              company,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Show dialog to confirm account deletion
+  void _showDeleteAccountDialog(int index, String username, String company) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Xóa tài khoản?'),
+          ],
+        ),
+        content: Text('Bạn có muốn xóa tài khoản "$username" khỏi danh sách đã lưu không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteAccount(index);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -413,6 +635,12 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
               ],
             ),
             const SizedBox(height: 28),
+
+            // Saved accounts section
+            if (_savedAccounts.isNotEmpty) ...[
+              _buildSavedAccountsSection(),
+              const SizedBox(height: 20),
+            ],
 
             // Company autocomplete field
             Consumer(
