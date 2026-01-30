@@ -78,13 +78,16 @@ workflows:
       - name: Get Flutter packages
         script: |
           echo "📦 Getting Flutter packages..."
-          flutter packages pub get
+          flutter pub get
       
       # 4. Install CocoaPods
       - name: Install pods
         script: |
           echo "☕ Installing CocoaPods dependencies..."
-          find . -name "Podfile" -execdir pod install \;
+          cd ios
+          pod repo update
+          pod install --repo-update
+          cd ..
           echo "✅ Pods installed"
       
       # 5. Auto-increment build number (avoid duplicate version errors)
