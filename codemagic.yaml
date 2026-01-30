@@ -17,7 +17,7 @@ workflows:
       groups:
         - app_store # Group contains: APP_STORE_CONNECT_PRIVATE_KEY, BUNDLE_ID, ISSUER_ID, KEY_IDENTIFIER
       flutter: stable
-      xcode: latest
+      xcode: 15.4  # Use stable Xcode version, not latest/beta
       cocoapods: default
       ios_signing:
         distribution_type: app_store
