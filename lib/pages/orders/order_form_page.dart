@@ -350,7 +350,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
         'product_id': item.product.id,
         'product_name': item.product.name,
         'product_sku': item.product.sku,
-        'quantity': item.quantity,
+        'quantity': item.quantity.toInt(), // Must be integer for database
         'unit': item.product.unit,
         'unit_price': item.price,
         'line_total': item.total,
@@ -511,20 +511,33 @@ class _CustomerListTile extends StatelessWidget {
     required this.onTap,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    // Build address display
-    final addressParts = <String>[];
-    if (customer.address != null && customer.address!.isNotEmpty) {
-      addressParts.add(customer.address!);
+  /// Build full address from structured fields (same as customers_page.dart)
+  String _buildFullAddress() {
+    final parts = <String>[];
+    if (customer.streetNumber != null && customer.streetNumber!.isNotEmpty) {
+      parts.add(customer.streetNumber!);
+    }
+    if (customer.street != null && customer.street!.isNotEmpty) {
+      parts.add(customer.street!);
     }
     if (customer.ward != null && customer.ward!.isNotEmpty) {
-      addressParts.add(customer.ward!);
+      // Add "Phường" prefix if it's a number
+      final isNumber = int.tryParse(customer.ward!) != null;
+      parts.add(isNumber ? 'Phường ${customer.ward}' : customer.ward!);
     }
     if (customer.district != null && customer.district!.isNotEmpty) {
-      addressParts.add(customer.district!);
+      // Add "Quận" prefix if it's a number
+      final isNumber = int.tryParse(customer.district!) != null;
+      parts.add(isNumber ? 'Quận ${customer.district}' : customer.district!);
     }
-    final addressDisplay = addressParts.isNotEmpty ? addressParts.join(', ') : null;
+    return parts.join(', ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Build address display using standard format
+    final addressDisplay = _buildFullAddress();
+    final hasAddress = addressDisplay.isNotEmpty;
 
     // Customer type label and color
     String typeLabel = '';
@@ -672,7 +685,7 @@ class _CustomerListTile extends StatelessWidget {
                       ],
                     ),
                   // Address
-                  if (addressDisplay != null)
+                  if (hasAddress)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Row(
