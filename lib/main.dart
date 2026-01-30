@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -11,6 +12,7 @@ import 'providers/auth_provider.dart';
 import 'utils/error_tracker.dart' as tracker;
 import 'utils/longsang_error_reporter.dart'; // 🔴 LONGSANG AUTO-FIX
 import 'widgets/error_boundary.dart';
+import 'widgets/keyboard_dismisser.dart';
 // import 'utils/debug_utils.dart' if (dart.library.html) 'utils/debug_utils.dart';
 
 void main() {
@@ -63,18 +65,52 @@ class _SaboHubAppState extends ConsumerState<SaboHubApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(authProvider.notifier).loadUser();
     });
+    
+    // Set preferred orientations (portrait only for better UX)
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    
+    // Set system UI overlay style
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
 
-    return ErrorBoundary(
-      child: MaterialApp.router(
-        title: 'SABOHUB Flutter',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        routerConfig: router,
+    // Wrap entire app with KeyboardDismisser for auto-hide keyboard on tap outside
+    return KeyboardDismisser(
+      child: ErrorBoundary(
+        child: MaterialApp.router(
+          title: 'SABOHUB Flutter',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          routerConfig: router,
+          // Scroll behavior for better UX
+          scrollBehavior: const MaterialScrollBehavior().copyWith(
+            // Enable scroll physics that feel native on both platforms
+            physics: const BouncingScrollPhysics(),
+          ),
+          builder: (context, child) {
+            // Apply global UI improvements
+            return MediaQuery(
+              // Prevent text scaling from breaking UI
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(
+                  MediaQuery.of(context).textScaler.scale(1.0).clamp(0.8, 1.2),
+                ),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+        ),
       ),
     );
   }
