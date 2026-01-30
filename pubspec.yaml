@@ -1,7 +1,7 @@
 name: flutter_sabohub
 description: 'SABOHUB - Quản lý quán bida chuyên nghiệp'
 publish_to: 'none'
-version: 1.0.5+7
+version: 1.0.7+9
 
 environment:
   sdk: ^3.5.0
