@@ -486,26 +486,8 @@ class _CustomerSelectionSheetState extends ConsumerState<_CustomerSelectionSheet
                   itemCount: customers.length,
                   itemBuilder: (context, index) {
                     final customer = customers[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.blue.shade100,
-                        child: Text(
-                          customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?',
-                          style: TextStyle(color: Colors.blue.shade900),
-                        ),
-                      ),
-                      title: Text(customer.name),
-                      subtitle: Text(customer.phone ?? customer.address ?? 'Không có thông tin'),
-                      trailing: customer.type != null 
-                          ? Chip(
-                              label: Text(
-                                customer.type == 'distributor' ? 'NPP' : 'ĐL',
-                                style: const TextStyle(fontSize: 10),
-                              ),
-                              padding: EdgeInsets.zero,
-                              visualDensity: VisualDensity.compact,
-                            )
-                          : null,
+                    return _CustomerListTile(
+                      customer: customer,
                       onTap: () => widget.onSelect(customer),
                     );
                   },
@@ -514,6 +496,247 @@ class _CustomerSelectionSheetState extends ConsumerState<_CustomerSelectionSheet
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Enhanced Customer List Tile with more information
+class _CustomerListTile extends StatelessWidget {
+  final OdoriCustomer customer;
+  final VoidCallback onTap;
+
+  const _CustomerListTile({
+    required this.customer,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Build address display
+    final addressParts = <String>[];
+    if (customer.address != null && customer.address!.isNotEmpty) {
+      addressParts.add(customer.address!);
+    }
+    if (customer.ward != null && customer.ward!.isNotEmpty) {
+      addressParts.add(customer.ward!);
+    }
+    if (customer.district != null && customer.district!.isNotEmpty) {
+      addressParts.add(customer.district!);
+    }
+    final addressDisplay = addressParts.isNotEmpty ? addressParts.join(', ') : null;
+
+    // Customer type label and color
+    String typeLabel = '';
+    Color typeColor = Colors.grey;
+    if (customer.type != null) {
+      switch (customer.type) {
+        case 'distributor':
+          typeLabel = 'NPP';
+          typeColor = Colors.purple;
+          break;
+        case 'agent':
+          typeLabel = 'ĐL';
+          typeColor = Colors.blue;
+          break;
+        case 'direct':
+          typeLabel = 'TT';
+          typeColor = Colors.green;
+          break;
+        default:
+          typeLabel = customer.type!.toUpperCase();
+          typeColor = Colors.grey;
+      }
+    }
+
+    // Channel display
+    String? channelLabel;
+    if (customer.channel != null) {
+      switch (customer.channel) {
+        case 'horeca':
+          channelLabel = 'HoReCa';
+          break;
+        case 'retail':
+          channelLabel = 'Bán lẻ';
+          break;
+        case 'wholesale':
+          channelLabel = 'Sỉ';
+          break;
+        default:
+          channelLabel = customer.channel;
+      }
+    }
+
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Colors.grey.shade200),
+          ),
+        ),
+        child: Row(
+          children: [
+            // Avatar with type indicator
+            Stack(
+              children: [
+                CircleAvatar(
+                  backgroundColor: typeColor.withValues(alpha: 0.15),
+                  radius: 24,
+                  child: Text(
+                    customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?',
+                    style: TextStyle(
+                      color: typeColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+                if (customer.hasLocation)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: const Icon(Icons.location_on, size: 10, color: Colors.white),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            // Customer info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Name and code
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          customer.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (customer.code.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            customer.code,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Phone
+                  if (customer.phone != null && customer.phone!.isNotEmpty)
+                    Row(
+                      children: [
+                        Icon(Icons.phone_outlined, size: 14, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          customer.phone!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        if (customer.phone2 != null && customer.phone2!.isNotEmpty)
+                          Text(
+                            ' • ${customer.phone2}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                      ],
+                    ),
+                  // Address
+                  if (addressDisplay != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        children: [
+                          Icon(Icons.location_on_outlined, size: 14, color: Colors.grey.shade600),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              addressDisplay,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  // Tags row: Type, Channel, Payment Terms
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        if (typeLabel.isNotEmpty)
+                          _buildTag(typeLabel, typeColor),
+                        if (channelLabel != null)
+                          _buildTag(channelLabel, Colors.orange),
+                        if (customer.paymentTerms > 0)
+                          _buildTag('${customer.paymentTerms} ngày', Colors.teal),
+                        if (customer.assignedSaleName != null)
+                          _buildTag('NV: ${customer.assignedSaleName}', Colors.indigo),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTag(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
