@@ -39,6 +39,10 @@ class OdoriCustomer {
   final String? productLaundry;
   final String? productBleach;
   final String? productSoftener;
+  final String tier; // diamond, gold, silver, bronze
+  final double? tierRevenueThreshold;
+  final String? referrerId; // Người giới thiệu
+  final String? referrerName; // Tên người giới thiệu (joined)
   final String? createdBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -84,6 +88,10 @@ class OdoriCustomer {
     this.productLaundry,
     this.productBleach,
     this.productSoftener,
+    this.tier = 'bronze',
+    this.tierRevenueThreshold,
+    this.referrerId,
+    this.referrerName,
     this.createdBy,
     required this.createdAt,
     this.updatedAt,
@@ -152,6 +160,10 @@ class OdoriCustomer {
       productLaundry: json['product_laundry'] as String?,
       productBleach: json['product_bleach'] as String?,
       productSoftener: json['product_softener'] as String?,
+      tier: json['tier'] as String? ?? 'bronze',
+      tierRevenueThreshold: (json['tier_revenue_threshold'] as num?)?.toDouble(),
+      referrerId: json['referrer_id'] as String?,
+      referrerName: json['referrers']?['name'] as String?,
       createdBy: json['created_by'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: json['updated_at'] != null 
@@ -201,6 +213,9 @@ class OdoriCustomer {
       'product_laundry': productLaundry,
       'product_bleach': productBleach,
       'product_softener': productSoftener,
+      'tier': tier,
+      'tier_revenue_threshold': tierRevenueThreshold,
+      'referrer_id': referrerId,
     };
   }
 
@@ -244,6 +259,10 @@ class OdoriCustomer {
     String? productLaundry,
     String? productBleach,
     String? productSoftener,
+    String? tier,
+    double? tierRevenueThreshold,
+    String? referrerId,
+    String? referrerName,
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -289,6 +308,10 @@ class OdoriCustomer {
       productLaundry: productLaundry ?? this.productLaundry,
       productBleach: productBleach ?? this.productBleach,
       productSoftener: productSoftener ?? this.productSoftener,
+      tier: tier ?? this.tier,
+      tierRevenueThreshold: tierRevenueThreshold ?? this.tierRevenueThreshold,
+      referrerId: referrerId ?? this.referrerId,
+      referrerName: referrerName ?? this.referrerName,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

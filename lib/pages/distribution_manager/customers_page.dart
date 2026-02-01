@@ -8,7 +8,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dvhcvn/dvhcvn.dart' as dvhcvn;
 import '../../models/odori_customer.dart';
+import '../../models/customer_tier.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/odori_providers.dart';
+import '../../services/customer_revenue_service.dart';
+import '../../widgets/customer_tier_widgets.dart';
 import '../orders/order_form_page.dart';
 
 final supabase = Supabase.instance.client;
@@ -41,12 +45,19 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   int _activeCustomers = 0;
   int _newCustomersThisMonth = 0;
   double _totalCreditLimit = 0;
+  
+  // Customer Tier
+  CustomerTier? _selectedTier;
+  Map<String, CustomerRevenue> _revenueData = {};
+  Map<CustomerTier, int> _tierStats = {};
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     _loadStatistics();
+    _loadRevenueData();
+    _loadTierStats();
     _loadInitial();
   }
 
@@ -108,6 +119,98 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     } catch (e) {
       debugPrint('❌ Error loading statistics: $e');
     }
+  }
+
+  /// Load revenue data và tier statistics
+  Future<void> _loadRevenueData() async {
+    try {
+      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      if (companyId.isEmpty) return;
+
+      final revenueMap = await CustomerRevenueService.getRevenueByCompany(companyId);
+
+      if (mounted) {
+        setState(() {
+          _revenueData = revenueMap;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading revenue data: $e');
+    }
+  }
+
+  /// Load tier statistics từ database (đếm theo trường tier của customers)
+  Future<void> _loadTierStats() async {
+    try {
+      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      if (companyId.isEmpty) return;
+
+      // Query đếm số lượng customers theo từng tier
+      final response = await supabase
+          .from('customers')
+          .select('tier')
+          .eq('company_id', companyId);
+
+      final Map<CustomerTier, int> stats = {
+        CustomerTier.diamond: 0,
+        CustomerTier.gold: 0,
+        CustomerTier.silver: 0,
+        CustomerTier.bronze: 0,
+        CustomerTier.none: 0,
+      };
+
+      for (var customer in (response as List)) {
+        final tier = _stringToTier(customer['tier'] ?? 'bronze');
+        if (tier != null) {
+          stats[tier] = (stats[tier] ?? 0) + 1;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _tierStats = stats;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading tier stats: $e');
+    }
+  }
+
+  /// Lấy tier của khách hàng - ưu tiên tier từ database, sau đó mới dùng tier tính từ doanh số
+  CustomerTier _getCustomerTier(String customerId) {
+    // Tìm customer để lấy tier từ database
+    final customer = _allCustomers.where((c) => c.id == customerId).firstOrNull;
+    if (customer != null) {
+      // Nếu tier đã được set thủ công (không phải bronze mặc định), ưu tiên dùng
+      final dbTier = _stringToTier(customer.tier);
+      if (dbTier != null) {
+        return dbTier;
+      }
+    }
+    // Fallback: dùng tier tính từ doanh số
+    final revenue = _revenueData[customerId];
+    return revenue?.tier ?? CustomerTier.none;
+  }
+
+  /// Convert string tier từ database sang CustomerTier enum
+  CustomerTier? _stringToTier(String tier) {
+    switch (tier.toLowerCase()) {
+      case 'diamond':
+        return CustomerTier.diamond;
+      case 'gold':
+        return CustomerTier.gold;
+      case 'silver':
+        return CustomerTier.silver;
+      case 'bronze':
+        return CustomerTier.bronze;
+      default:
+        return null;
+    }
+  }
+
+  /// Lấy revenue info của khách hàng
+  CustomerRevenue? _getCustomerRevenue(String customerId) {
+    return _revenueData[customerId];
   }
 
   Future<void> _loadInitial() async {
@@ -296,6 +399,10 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                   Navigator.pop(context);
                   _showEditCustomerDialog(customer);
                 }),
+                _buildActionButton(Icons.delete_outline, 'Xóa', Colors.red, () {
+                  Navigator.pop(context);
+                  _confirmDeleteCustomer(customer);
+                }),
               ],
             ),
           ],
@@ -396,6 +503,95 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDeleteCustomer(OdoriCustomer customer) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red.shade400, size: 28),
+            const SizedBox(width: 12),
+            const Text('Xác nhận xóa'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Bạn có chắc muốn xóa khách hàng:'),
+            const SizedBox(height: 8),
+            Text(
+              customer.name,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            if (customer.code != null && customer.code!.isNotEmpty)
+              Text('Mã: ${customer.code}', style: TextStyle(color: Colors.grey.shade600)),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.red.shade400, size: 20),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Hành động này không thể hoàn tác!',
+                      style: TextStyle(fontSize: 13, color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await supabase.from('customers').delete().eq('id', customer.id);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Đã xóa khách hàng "${customer.name}"'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        _loadStatistics();
+        _loadInitial();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Lỗi xóa khách hàng: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onTap) {
@@ -555,6 +751,20 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      tooltip: 'Làm mới',
+                      onPressed: () {
+                        _loadInitial();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('✓ Đã làm mới danh sách khách hàng'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 4),
                     Material(
                       color: Colors.teal.shade50,
                       borderRadius: BorderRadius.circular(12),
@@ -607,6 +817,26 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                       ],
                     ),
                   ),
+                  // Tier Filter
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    child: Row(
+                      children: [
+                        _buildTierChip(null, _selectedTier == null),
+                        const SizedBox(width: 6),
+                        _buildTierChip(CustomerTier.diamond, _selectedTier == CustomerTier.diamond),
+                        const SizedBox(width: 6),
+                        _buildTierChip(CustomerTier.gold, _selectedTier == CustomerTier.gold),
+                        const SizedBox(width: 6),
+                        _buildTierChip(CustomerTier.silver, _selectedTier == CustomerTier.silver),
+                        const SizedBox(width: 6),
+                        _buildTierChip(CustomerTier.bronze, _selectedTier == CustomerTier.bronze),
+                        const SizedBox(width: 6),
+                        _buildTierChip(CustomerTier.none, _selectedTier == CustomerTier.none),
+                      ],
+                    ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     child: Row(
@@ -645,20 +875,48 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                       },
                       child: RefreshIndicator(
                         onRefresh: () async {
+                          CustomerRevenueService.clearCache();
                           await _loadStatistics();
+                          await _loadRevenueData();
+                          await _loadTierStats();
                           await _loadInitial();
                         },
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          itemCount: _allCustomers.length + (_isLoadingMore ? 1 : 0),
-                          itemBuilder: (BuildContext ctx, int index) {
-                            if (index >= _allCustomers.length) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 16),
-                                child: Center(child: CircularProgressIndicator()),
+                        child: Builder(
+                          builder: (context) {
+                            // Filter theo tier nếu có chọn
+                            final filteredCustomers = _selectedTier != null
+                                ? _allCustomers.where((c) => _getCustomerTier(c.id) == _selectedTier).toList()
+                                : _allCustomers;
+                            
+                            if (filteredCustomers.isEmpty && _selectedTier != null) {
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(_selectedTier!.emoji, style: const TextStyle(fontSize: 48)),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Không có khách hàng ${_selectedTier!.displayName}',
+                                      style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                                    ),
+                                  ],
+                                ),
                               );
                             }
-                            return _buildCustomerCard(_allCustomers[index]);
+                            
+                            return ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              itemCount: filteredCustomers.length + (_isLoadingMore ? 1 : 0),
+                              itemBuilder: (BuildContext ctx, int index) {
+                                if (index >= filteredCustomers.length) {
+                                  return const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 16),
+                                    child: Center(child: CircularProgressIndicator()),
+                                  );
+                                }
+                                return _buildCustomerCard(filteredCustomers[index]);
+                              },
+                            );
                           },
                         ),
                       ),
@@ -753,6 +1011,35 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     );
   }
 
+  Widget _buildTierChip(CustomerTier? tier, bool isSelected) {
+    final label = tier?.displayName ?? 'Tất cả';
+    final emoji = tier?.emoji ?? '👥';
+    final color = tier?.color ?? Colors.teal;
+    // Tính count: nếu tier = null thì lấy tổng, ngược lại lấy từ _tierStats
+    final count = tier != null ? (_tierStats[tier] ?? 0) : _tierStats.values.fold(0, (a, b) => a + b);
+
+    return FilterChip(
+      avatar: Text(emoji, style: const TextStyle(fontSize: 12)),
+      label: Text(
+        '$label ($count)',
+        style: TextStyle(
+          color: isSelected ? Colors.white : color,
+          fontSize: 11,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      selected: isSelected,
+      selectedColor: color,
+      backgroundColor: color.withOpacity(0.1),
+      checkmarkColor: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      onSelected: (_) {
+        setState(() => _selectedTier = isSelected ? null : tier);
+      },
+    );
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -775,6 +1062,8 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     final needsAddress = customer.address == null || customer.address!.isEmpty;
     final needsCoords = customer.lat == null || customer.lng == null;
     final hasWarning = needsAddress || needsCoords;
+    final customerTier = _getCustomerTier(customer.id);
+    final customerRevenue = _getCustomerRevenue(customer.id);
     
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -850,6 +1139,12 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text('VIP', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.orange)),
+                              ),
+                            // Tier Badge
+                            if (customerTier != CustomerTier.none)
+                              Container(
+                                margin: const EdgeInsets.only(right: 6),
+                                child: CustomerTierBadge(tier: customerTier, showLabel: false, size: 16),
                               ),
                             Expanded(
                               child: Text(
@@ -941,6 +1236,28 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                 children: [
                   Expanded(
                     child: _buildKPIItem(
+                      customerTier.emoji,
+                      customerRevenue != null 
+                          ? NumberFormat.compact(locale: 'vi').format(customerRevenue.totalRevenue)
+                          : '0',
+                      'Doanh số',
+                      customerTier.color,
+                    ),
+                  ),
+                  Container(width: 1, height: 30, color: Colors.grey.shade200),
+                  Expanded(
+                    child: _buildKPIItem(
+                      '📦',
+                      customerRevenue != null 
+                          ? '${customerRevenue.completedOrders}'
+                          : '0',
+                      'Đơn hàng',
+                      Colors.blue,
+                    ),
+                  ),
+                  Container(width: 1, height: 30, color: Colors.grey.shade200),
+                  Expanded(
+                    child: _buildKPIItem(
                       '📅',
                       _formatLastOrder(customer.lastOrderDate),
                       'Lần mua',
@@ -950,28 +1267,8 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                   Container(width: 1, height: 30, color: Colors.grey.shade200),
                   Expanded(
                     child: _buildKPIItem(
-                      '💳',
-                      customer.creditLimit > 0 
-                          ? NumberFormat.compact(locale: 'vi').format(customer.creditLimit)
-                          : '0',
-                      'Hạn mức',
-                      Colors.blue,
-                    ),
-                  ),
-                  Container(width: 1, height: 30, color: Colors.grey.shade200),
-                  Expanded(
-                    child: _buildKPIItem(
-                      '⏱️',
-                      '${customer.paymentTerms}',
-                      'Ngày TT',
-                      Colors.purple,
-                    ),
-                  ),
-                  Container(width: 1, height: 30, color: Colors.grey.shade200),
-                  Expanded(
-                    child: _buildKPIItem(
                       customer.status == 'active' ? '✅' : '⛔',
-                      customer.status == 'active' ? 'Hoạt động' : 'Ngưng',
+                      customer.status == 'active' ? 'HĐ' : 'Ngưng',
                       'Trạng thái',
                       customer.status == 'active' ? Colors.green : Colors.red,
                     ),
@@ -1155,6 +1452,8 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
   
   String _selectedChannel = 'GT Sỉ';
   String _selectedStatus = 'active';
+  String _selectedTier = 'bronze';
+  String? _selectedReferrerId;
   bool _isLoading = false;
 
   @override
@@ -1171,6 +1470,8 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
       _paymentTermsController.text = widget.customer!.paymentTerms.toString();
       _selectedChannel = widget.customer!.channel ?? 'GT Sỉ';
       _selectedStatus = widget.customer!.status;
+      _selectedTier = widget.customer!.tier;
+      _selectedReferrerId = widget.customer!.referrerId;
       
       // Try to match existing address to dropdowns
       _matchExistingAddress();
@@ -1278,6 +1579,8 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
         'address': fullAddress.isEmpty ? null : fullAddress,
         'channel': _selectedChannel,
         'status': _selectedStatus,
+        'tier': _selectedTier,
+        'referrer_id': _selectedReferrerId,
         'credit_limit': double.tryParse(_creditLimitController.text) ?? 0,
         'payment_terms': int.tryParse(_paymentTermsController.text) ?? 0,
         'company_id': companyId,
@@ -1495,6 +1798,94 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
               ),
               const SizedBox(height: 12),
               
+              // Phân loại khách hàng
+              DropdownButtonFormField<String>(
+                value: _selectedTier,
+                decoration: const InputDecoration(
+                  labelText: 'Phân loại khách hàng',
+                  prefixIcon: Icon(Icons.star),
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: 'diamond',
+                    child: Row(
+                      children: [
+                        Icon(Icons.diamond, color: Colors.blue[300], size: 20),
+                        const SizedBox(width: 8),
+                        const Text('💎 Kim cương'),
+                      ],
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'gold',
+                    child: Row(
+                      children: [
+                        Icon(Icons.workspace_premium, color: Colors.amber[600], size: 20),
+                        const SizedBox(width: 8),
+                        const Text('🥇 Vàng'),
+                      ],
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'silver',
+                    child: Row(
+                      children: [
+                        Icon(Icons.workspace_premium, color: Colors.grey[400], size: 20),
+                        const SizedBox(width: 8),
+                        const Text('🥈 Bạc'),
+                      ],
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'bronze',
+                    child: Row(
+                      children: [
+                        Icon(Icons.workspace_premium, color: Colors.brown[300], size: 20),
+                        const SizedBox(width: 8),
+                        const Text('🥉 Đồng'),
+                      ],
+                    ),
+                  ),
+                ],
+                onChanged: (value) => setState(() => _selectedTier = value!),
+              ),
+              const SizedBox(height: 12),
+              
+              // Người giới thiệu
+              Consumer(
+                builder: (context, ref, _) {
+                  final referrersAsync = ref.watch(activeReferrersProvider);
+                  return referrersAsync.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, _) => Text('Lỗi: $e'),
+                    data: (referrers) {
+                      if (referrers.isEmpty) return const SizedBox.shrink();
+                      return DropdownButtonFormField<String?>(
+                        value: _selectedReferrerId,
+                        decoration: const InputDecoration(
+                          labelText: 'Người giới thiệu',
+                          prefixIcon: Icon(Icons.person_add_alt_1),
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('-- Không có --'),
+                          ),
+                          ...referrers.map((r) => DropdownMenuItem(
+                            value: r.id,
+                            child: Text('${r.name} (${r.commissionRate}%)'),
+                          )),
+                        ],
+                        onChanged: (value) => setState(() => _selectedReferrerId = value),
+                      );
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              
               Row(
                 children: [
                   Expanded(
@@ -1606,7 +1997,7 @@ class _CustomerOrderHistorySheetState extends State<CustomerOrderHistorySheet> {
     try {
       final response = await supabase
           .from('sales_orders')
-          .select('id, order_code, total_amount, status, created_at')
+          .select('id, order_number, total, status, created_at')
           .eq('customer_id', widget.customer.id)
           .order('created_at', ascending: false)
           .limit(50);
@@ -1709,7 +2100,7 @@ class _CustomerOrderHistorySheetState extends State<CustomerOrderHistorySheet> {
                                 child: Icon(Icons.receipt, color: _getStatusColor(status)),
                               ),
                               title: Text(
-                                order['order_code'] ?? 'N/A',
+                                order['order_number'] ?? 'N/A',
                                 style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                               subtitle: Text(
@@ -1722,7 +2113,7 @@ class _CustomerOrderHistorySheetState extends State<CustomerOrderHistorySheet> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    currencyFormat.format(order['total_amount'] ?? 0),
+                                    currencyFormat.format(order['total'] ?? 0),
                                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal),
                                   ),
                                   Container(

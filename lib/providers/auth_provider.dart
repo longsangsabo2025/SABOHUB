@@ -144,7 +144,7 @@ class AuthNotifier extends Notifier<AuthState> {
             final employeeResponse = await _supabaseClient
                 .from('employees')
                 .select(
-                    'id, full_name, email, role, department, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at, companies(name, business_type)')
+                    'id, full_name, email, role, department, phone, avatar_url, branch_id, company_id, warehouse_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at, companies(name, business_type)')
                 .eq('auth_user_id', session.user.id)
                 .maybeSingle();
             
@@ -279,7 +279,7 @@ class AuthNotifier extends Notifier<AuthState> {
         final employeeResponse = await _supabaseClient
             .from('employees')
             .select(
-                'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
+                'id, full_name, email, role, phone, avatar_url, branch_id, company_id, warehouse_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
             .eq('auth_user_id', currentUser.id)
             .maybeSingle();
         if (employeeResponse != null) {
@@ -384,7 +384,7 @@ class AuthNotifier extends Notifier<AuthState> {
         final employeeResponse = await _supabaseClient
             .from('employees')
             .select(
-                'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
+                'id, full_name, email, role, phone, avatar_url, branch_id, company_id, warehouse_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
             .eq('auth_user_id', authResponse.user!.id)
             .maybeSingle();
         

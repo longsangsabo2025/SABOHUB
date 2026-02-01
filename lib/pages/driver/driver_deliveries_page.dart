@@ -982,16 +982,15 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     try {
       final supabase = Supabase.instance.client;
 
-      await supabase.from('deliveries').update({
-        'status': 'in_progress',
-        'started_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', deliveryId);
-
-      await supabase.from('sales_orders').update({
-        'delivery_status': 'delivering',
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', orderId);
+      // Use RPC for transaction-safe update
+      final result = await supabase.rpc('start_delivery', params: {
+        'p_delivery_id': deliveryId,
+        'p_order_id': orderId,
+      });
+      
+      if (result != null && result['success'] == false) {
+        throw Exception(result['error'] ?? 'Unknown error');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1068,38 +1067,29 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
 
       if (result == null) return;
 
-      AppLogger.info('🔄 Updating deliveries and sales_orders with payment: $result');
+      AppLogger.info('🔄 Completing delivery with RPC: $result');
 
-      await supabase.from('deliveries').update({
-        'status': 'completed',
-        'completed_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', deliveryId);
-
-      Map<String, dynamic> updateData = {
-        'delivery_status': 'delivered',
-        'updated_at': DateTime.now().toIso8601String(),
-      };
-
-      if (result['updatePayment'] == true) {
-        updateData['payment_status'] = result['paymentStatus'];
-        updateData['payment_method'] = result['paymentMethod'];
-        if (result['paymentStatus'] == 'paid') {
-          updateData['payment_collected_at'] = DateTime.now().toIso8601String();
-        }
-        
-        // Nếu ghi nợ, cập nhật total_debt của khách hàng
-        if (result['paymentMethod'] == 'debt' && customerId != null) {
-          final newDebt = currentDebt + total;
-          await supabase.from('customers').update({
-            'total_debt': newDebt,
-            'updated_at': DateTime.now().toIso8601String(),
-          }).eq('id', customerId);
-          AppLogger.info('📝 Updated customer debt: $currentDebt -> $newDebt');
-        }
+      // Use RPC for transaction-safe update
+      final rpcResult = await supabase.rpc('complete_delivery', params: {
+        'p_delivery_id': deliveryId,
+        'p_order_id': orderId,
+        'p_payment_status': result['updatePayment'] == true ? result['paymentStatus'] : null,
+        'p_payment_method': result['updatePayment'] == true ? result['paymentMethod'] : null,
+      });
+      
+      if (rpcResult != null && rpcResult['success'] == false) {
+        throw Exception(rpcResult['error'] ?? 'Unknown error');
       }
 
-      await supabase.from('sales_orders').update(updateData).eq('id', orderId);
+      // Handle debt update separately (customer balance)
+      if (result['updatePayment'] == true && result['paymentMethod'] == 'debt' && customerId != null) {
+        final newDebt = currentDebt + total;
+        await supabase.from('customers').update({
+          'total_debt': newDebt,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', customerId);
+        AppLogger.info('📝 Updated customer debt: $currentDebt -> $newDebt');
+      }
       
       AppLogger.info('✅ Update completed for deliveryId: $deliveryId, orderId: $orderId');
 
@@ -1512,20 +1502,14 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         if (confirmed == true) {
           debugPrint('✅ User confirmed transfer, updating database...');
           
-          // Update deliveries
-          await supabase.from('deliveries').update({
-            'status': 'completed',
-            'completed_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
-          }).eq('id', deliveryId);
-
-          // Update sales_orders - chuyển khoản cần kế toán xác nhận
-          await supabase.from('sales_orders').update({
-            'delivery_status': 'delivered',
-            'payment_status': 'pending_transfer',
-            'payment_method': 'transfer',
-            'updated_at': DateTime.now().toIso8601String(),
-          }).eq('id', orderId);
+          // Use RPC for transaction-safe update
+          final result = await supabase.rpc('complete_delivery_transfer', params: {
+            'p_delivery_id': deliveryId,
+            'p_order_id': orderId,
+          });
+          if (result != null && result['success'] == false) {
+            throw Exception(result['error'] ?? 'Unknown error');
+          }
 
           debugPrint('✅ Database updated successfully!');
 

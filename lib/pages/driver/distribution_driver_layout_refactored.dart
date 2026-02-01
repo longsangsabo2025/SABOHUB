@@ -22,12 +22,13 @@ class DistributionDriverLayout extends ConsumerStatefulWidget {
 
 class _DistributionDriverLayoutState extends ConsumerState<DistributionDriverLayout> {
   int _currentIndex = 0;
+  final GlobalKey<DriverRoutePageState> _homeKey = GlobalKey<DriverRoutePageState>();
 
-  final List<Widget> _pages = const [
-    DriverRoutePage(),       // Trang chủ
-    DriverDeliveriesPage(),  // Giao hàng
-    DriverJourneyMapPage(),  // Hành trình
-    DriverHistoryPage(),     // Lịch sử
+  late final List<Widget> _pages = [
+    DriverRoutePage(key: _homeKey),       // Trang chủ
+    const DriverDeliveriesPage(),  // Giao hàng
+    const DriverJourneyMapPage(),  // Hành trình
+    const DriverHistoryPage(),     // Lịch sử
   ];
 
   @override
@@ -69,7 +70,12 @@ class _DistributionDriverLayoutState extends ConsumerState<DistributionDriverLay
   Widget _buildNavItem(int index, IconData outlinedIcon, IconData filledIcon, String label) {
     final isSelected = _currentIndex == index;
     return InkWell(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        setState(() => _currentIndex = index);
+        if (index == 0) {
+          _homeKey.currentState?.refresh();
+        }
+      },
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

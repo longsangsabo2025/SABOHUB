@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/odori_providers.dart';
@@ -10,11 +11,13 @@ import '../widgets/error_boundary.dart';
 import '../widgets/notification_center.dart';
 import '../widgets/bug_report_dialog.dart';
 import '../services/odori_notification_service.dart';
+import '../services/employee_auth_service.dart';
 // Extracted pages
 import '../pages/distribution_manager/orders_management_page.dart';
 import '../pages/distribution_manager/customers_page.dart';
 import '../pages/distribution_manager/inventory_page.dart';
 import '../pages/distribution_manager/reports_page.dart';
+import '../pages/distribution_manager/referrers_page.dart';
 // Distribution-specific layouts
 import 'distribution_warehouse_layout.dart';
 import '../pages/driver/distribution_driver_layout_refactored.dart';
@@ -119,6 +122,21 @@ class _DistributionManagerLayoutState
             ],
           ),
           actions: [
+            // Refresh button
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Làm mới',
+              onPressed: () {
+                setState(() {});
+                // Refresh current page data
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã làm mới dữ liệu'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+            ),
             // Notification icon with badge
             Stack(
               children: [
@@ -242,6 +260,121 @@ class _DistributionManagerLayoutState
     );
   }
 
+  /// Switch to employee role by auto-login and navigate to their layout
+  /// Hardcoded accounts: driver1, ketoan1
+  Future<void> _switchToRole(BuildContext context, WidgetRef ref, String role) async {
+    debugPrint('🔄 [SWITCH ROLE] Starting switch to role: $role');
+    
+    // Hardcoded accounts with passwords for testing
+    // Employee login uses: companyName, username, password
+    final accountMap = {
+      'driver': {
+        'company': 'Odori',
+        'username': 'driver1',
+        'password': 'Odori@2026',
+      },
+      'finance': {
+        'company': 'Odori', 
+        'username': 'ketoan1',
+        'password': 'Odori@2026',
+      },
+    };
+
+    final account = accountMap[role];
+    if (account == null) {
+      debugPrint('❌ [SWITCH ROLE] Account not found for role: $role');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không tìm thấy tài khoản cho role "$role"')),
+      );
+      return;
+    }
+
+    debugPrint('📧 [SWITCH ROLE] Will login with: ${account['username']}@${account['company']}');
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text('Đang chuyển sang ${role == 'driver' ? 'Tài xế' : 'Kế toán'}...'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      debugPrint('🔐 [SWITCH ROLE] Calling EmployeeAuthService.login()...');
+      
+      // Use EmployeeAuthService for employee login
+      final employeeAuthService = EmployeeAuthService();
+      final result = await employeeAuthService.login(
+        companyName: account['company']!,
+        username: account['username']!,
+        password: account['password']!,
+      );
+
+      debugPrint('✅ [SWITCH ROLE] Login result: success=${result.success}, error=${result.error}');
+
+      if (!context.mounted) {
+        debugPrint('⚠️ [SWITCH ROLE] Context not mounted after login');
+        return;
+      }
+      Navigator.of(context).pop(); // Close loading dialog
+
+      if (result.success && result.employee != null) {
+        debugPrint('👤 [SWITCH ROLE] Employee: ${result.employee!.fullName}, role: ${result.employee!.role}');
+        
+        // Convert to User and update auth state
+        final user = result.employee!.toUser();
+        debugPrint('🔄 [SWITCH ROLE] Calling loginWithUser...');
+        await ref.read(authProvider.notifier).loginWithUser(user);
+        debugPrint('✅ [SWITCH ROLE] Auth state updated!');
+        
+        // Navigate directly to the appropriate layout
+        if (role == 'driver') {
+          debugPrint('🚚 [SWITCH ROLE] Navigating to DistributionDriverLayout...');
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const DistributionDriverLayout()),
+          );
+        } else if (role == 'finance') {
+          debugPrint('💰 [SWITCH ROLE] Navigating to DistributionFinanceLayout...');
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const DistributionFinanceLayout()),
+          );
+        }
+      } else {
+        debugPrint('❌ [SWITCH ROLE] Login failed: ${result.error}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đăng nhập thất bại: ${result.error ?? 'Unknown error'}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e, stack) {
+      debugPrint('💥 [SWITCH ROLE] Exception: $e');
+      debugPrint('💥 [SWITCH ROLE] Stack: $stack');
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   /// Build the role switcher drawer
   Widget _buildRoleSwitcherDrawer(BuildContext context, String userName, String companyName) {
     return Drawer(
@@ -343,24 +476,24 @@ class _DistributionManagerLayoutState
                   ),
                 ),
 
-                // Warehouse
-                _buildRoleSection(
-                  icon: Icons.warehouse,
-                  title: 'Kho (Warehouse)',
-                  subtitle: 'Xuất kho, tồn kho, nhập hàng',
-                  color: Colors.brown,
-                  isActive: false,
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const DistributionWarehouseLayout(),
-                      ),
-                    );
-                  },
-                ),
+                // Warehouse - TẠM ẨN
+                // _buildRoleSection(
+                //   icon: Icons.warehouse,
+                //   title: 'Kho (Warehouse)',
+                //   subtitle: 'Xuất kho, tồn kho, nhập hàng',
+                //   color: Colors.brown,
+                //   isActive: false,
+                //   onTap: () {
+                //     Navigator.pop(context);
+                //     Navigator.of(context).push(
+                //       MaterialPageRoute(
+                //         builder: (_) => const DistributionWarehouseLayout(),
+                //       ),
+                //     );
+                //   },
+                // ),
 
-                // Driver
+                // Driver - Login vào tài khoản driver
                 _buildRoleSection(
                   icon: Icons.local_shipping,
                   title: 'Giao hàng (Driver)',
@@ -369,32 +502,28 @@ class _DistributionManagerLayoutState
                   isActive: false,
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const DistributionDriverLayout(),
-                      ),
-                    );
+                    _switchToRole(context, ref, 'driver');
                   },
                 ),
 
-                // Customer Service
-                _buildRoleSection(
-                  icon: Icons.support_agent,
-                  title: 'CSKH (Support)',
-                  subtitle: 'Ticket, phản hồi, hỗ trợ',
-                  color: Colors.purple,
-                  isActive: false,
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const DistributionCustomerServiceLayout(),
-                      ),
-                    );
-                  },
-                ),
+                // Customer Service - TẠM ẨN
+                // _buildRoleSection(
+                //   icon: Icons.support_agent,
+                //   title: 'CSKH (Support)',
+                //   subtitle: 'Ticket, phản hồi, hỗ trợ',
+                //   color: Colors.purple,
+                //   isActive: false,
+                //   onTap: () {
+                //     Navigator.pop(context);
+                //     Navigator.of(context).push(
+                //       MaterialPageRoute(
+                //         builder: (_) => const DistributionCustomerServiceLayout(),
+                //       ),
+                //     );
+                //   },
+                // ),
 
-                // Finance
+                // Finance - Login vào tài khoản finance
                 _buildRoleSection(
                   icon: Icons.account_balance_wallet,
                   title: 'Tài chính (Finance)',
@@ -403,9 +532,38 @@ class _DistributionManagerLayoutState
                   isActive: false,
                   onTap: () {
                     Navigator.pop(context);
+                    _switchToRole(context, ref, 'finance');
+                  },
+                ),
+
+                const Divider(height: 1),
+                
+                // Section header - Quản lý khác
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    'QUẢN LÝ KHÁC',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade600,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+
+                // Referrers - Người giới thiệu
+                _buildRoleSection(
+                  icon: Icons.person_add_alt_1,
+                  title: 'Người giới thiệu',
+                  subtitle: 'Hoa hồng, CTV giới thiệu',
+                  color: Colors.orange,
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pop(context);
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const DistributionFinanceLayout(),
+                        builder: (_) => const ReferrersPage(),
                       ),
                     );
                   },
@@ -746,6 +904,9 @@ class _DistributionDashboardPageWithRoleSwitcher extends ConsumerWidget {
   }
 
   Widget _buildRevenueSummary(OdoriDashboardStats stats, NumberFormat currencyFormat) {
+    final unpaidToday = stats.todaySales - stats.todayRevenue;
+    final unpaidMonth = stats.monthSales - stats.monthRevenue;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -757,26 +918,95 @@ class _DistributionDashboardPageWithRoleSwitcher extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Main: Total Sales Today
           Row(
             children: [
               const Icon(Icons.trending_up, color: Colors.white, size: 20),
               const SizedBox(width: 8),
-              const Text('Doanh thu hôm nay', style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const Text('Doanh số hôm nay', style: TextStyle(color: Colors.white70, fontSize: 14)),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            currencyFormat.format(stats.todayRevenue),
+            currencyFormat.format(stats.todaySales),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 12),
+          
+          // Row: Collected + Pending
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.green.shade200, size: 14),
+                        const SizedBox(width: 4),
+                        const Text('Đã thu', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      currencyFormat.format(stats.todayRevenue),
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.schedule, color: Colors.orange.shade200, size: 14),
+                        const SizedBox(width: 4),
+                        const Text('Chưa thu', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      currencyFormat.format(unpaidToday),
+                      style: TextStyle(
+                        color: unpaidToday > 0 ? Colors.orange.shade200 : Colors.white,
+                        fontSize: 14, 
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          // Divider
+          Container(
+            height: 1,
+            color: Colors.white.withOpacity(0.2),
+          ),
           const SizedBox(height: 8),
-          Text(
-            'Tháng này: ${currencyFormat.format(stats.monthRevenue)}',
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          
+          // Month summary
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Tháng này: ${currencyFormat.format(stats.monthSales)}',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              if (unpaidMonth > 0)
+                Text(
+                  '(chưa thu: ${currencyFormat.format(unpaidMonth)})',
+                  style: TextStyle(color: Colors.orange.shade200, fontSize: 11),
+                ),
+            ],
           ),
         ],
       ),

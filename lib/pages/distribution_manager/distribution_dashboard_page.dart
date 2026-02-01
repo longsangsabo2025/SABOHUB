@@ -188,8 +188,11 @@ class DistributionDashboardPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Doanh thu', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                    Text(format.format(stats.monthRevenue), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('Doanh số', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                    Text(format.format(stats.monthSales), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    if (stats.monthSales > stats.monthRevenue)
+                      Text('Đã thu: ${format.format(stats.monthRevenue)}', 
+                        style: TextStyle(color: Colors.green.shade700, fontSize: 10)),
                   ],
                 ),
               ),
@@ -534,8 +537,11 @@ class DistributionDashboardPageWithRoleSwitcher extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Doanh thu', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                    Text(currencyFormat.format(stats.monthRevenue), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    Text('Doanh số', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                    Text(currencyFormat.format(stats.monthSales), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    if (stats.monthSales > stats.monthRevenue)
+                      Text('Đã thu: ${currencyFormat.format(stats.monthRevenue)}', 
+                        style: TextStyle(color: Colors.green.shade700, fontSize: 10)),
                   ],
                 ),
               ),

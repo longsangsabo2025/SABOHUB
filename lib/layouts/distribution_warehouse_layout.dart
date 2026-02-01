@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../widgets/bug_report_dialog.dart';
 import '../pages/staff/staff_profile_page.dart';
 import '../widgets/realtime_notification_widgets.dart';
+import '../pages/distribution_manager/inventory/warehouse_detail_page.dart';
+import '../pages/distribution_manager/inventory/inventory_constants.dart';
 
 import '../providers/auth_provider.dart';
 import '../utils/app_logger.dart';
@@ -839,7 +841,7 @@ class _PickingOrdersPageState extends ConsumerState<_PickingOrdersPage>
       // Get pending (confirmed, waiting for picking)
       final pending = await supabase
           .from('sales_orders')
-          .select('*, customers(name, phone, address), sales_order_items(id, product_id, quantity, products(name, sku))')
+          .select('*, customers(name, phone, address), sales_order_items(id, product_id, quantity, products(name, sku)), warehouses(id, name)')
           .eq('company_id', companyId)
           .inFilter('status', ['confirmed', 'pending_approval'])
           .order('created_at', ascending: true)
@@ -848,7 +850,7 @@ class _PickingOrdersPageState extends ConsumerState<_PickingOrdersPage>
       // Get picking (being picked by this user)
       final picking = await supabase
           .from('sales_orders')
-          .select('*, customers(name, phone, address), sales_order_items(id, product_id, quantity, products(name, sku))')
+          .select('*, customers(name, phone, address), sales_order_items(id, product_id, quantity, products(name, sku)), warehouses(id, name)')
           .eq('company_id', companyId)
           .eq('status', 'processing')
           .order('updated_at', ascending: true)
@@ -909,6 +911,30 @@ class _PickingOrdersPageState extends ConsumerState<_PickingOrdersPage>
     try {
       final supabase = Supabase.instance.client;
 
+      // 1. Deduct stock from warehouse using RPC
+      final deductResult = await supabase.rpc('deduct_stock_for_order', params: {
+        'p_order_id': orderId,
+      });
+      
+      if (deductResult != null && deductResult['success'] == false) {
+        throw Exception(deductResult['error'] ?? 'Không thể trừ kho');
+      }
+      
+      // Show warning if partial deduction
+      if (deductResult != null && deductResult['partial'] == true) {
+        final errors = deductResult['errors'] as List?;
+        if (mounted && errors != null && errors.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚠️ Cảnh báo: ${errors.join(", ")}'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+
+      // 2. Update order status
       await supabase.from('sales_orders').update({
         'status': 'ready',
         'updated_at': DateTime.now().toIso8601String(),
@@ -1123,6 +1149,8 @@ class _PickingOrdersPageState extends ConsumerState<_PickingOrdersPage>
     final customer = order['customers'] as Map<String, dynamic>?;
     final items = order['sales_order_items'] as List? ?? [];
     final orderNumber = order['order_number']?.toString() ?? order['id'].toString().substring(0, 8).toUpperCase();
+    final warehouse = order['warehouses'] as Map<String, dynamic>?;
+    final warehouseName = warehouse?['name'] ?? 'Kho chính';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1157,6 +1185,29 @@ class _PickingOrdersPageState extends ConsumerState<_PickingOrdersPage>
                       fontWeight: FontWeight.bold,
                       color: isPending ? Colors.orange.shade700 : Colors.blue.shade700,
                     ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.warehouse, size: 12, color: Colors.grey.shade600),
+                      const SizedBox(width: 4),
+                      Text(
+                        warehouseName,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const Spacer(),
@@ -1337,6 +1388,9 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
   List<Map<String, dynamic>> _packedOrders = [];
   List<Map<String, dynamic>> _readyForDriverOrders = [];
   List<Map<String, dynamic>> _awaitingPickupOrders = [];
+  
+  // Track which orders are being processed to prevent double-click
+  final Set<String> _processingOrders = {};
 
   @override
   void initState() {
@@ -1371,7 +1425,7 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
       // Orders packed and ready for driver to pickup (delivery_status = 'awaiting_pickup')
       final data = await supabase
           .from('sales_orders')
-          .select('*, customers(name, phone, address)')
+          .select('*, customers(name, phone, address), sales_order_items(*), warehouses(id, name)')
           .eq('company_id', companyId)
           .eq('delivery_status', 'awaiting_pickup')
           .order('updated_at', ascending: false)
@@ -1396,7 +1450,7 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
 
       final data = await supabase
           .from('sales_orders')
-          .select('*, customers(name, phone, address)')
+          .select('*, customers(name, phone, address), sales_order_items(*)')
           .eq('company_id', companyId)
           .eq('delivery_status', 'awaiting_pickup')
           .order('updated_at', ascending: false)
@@ -1423,7 +1477,7 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
       // status = 'ready' means picked and ready for packing
       final data = await supabase
           .from('sales_orders')
-          .select('*, customers(name, phone, address)')
+          .select('*, customers(name, phone, address), sales_order_items(*), warehouses(id, name)')
           .eq('company_id', companyId)
           .eq('status', 'ready')
           .eq('delivery_status', 'pending')
@@ -1441,6 +1495,11 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
   }
 
   Future<void> _markReadyForDelivery(String orderId) async {
+    // Prevent double-click
+    if (_processingOrders.contains(orderId)) return;
+    
+    setState(() => _processingOrders.add(orderId));
+    
     try {
       final supabase = Supabase.instance.client;
 
@@ -1469,24 +1528,46 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
       }
     } catch (e) {
       AppLogger.error('Failed to mark ready', e);
+    } finally {
+      if (mounted) {
+        setState(() => _processingOrders.remove(orderId));
+      }
     }
   }
 
   Future<void> _confirmHandoverToDriver(String orderId) async {
+    // Prevent double-click
+    if (_processingOrders.contains(orderId)) return;
+    
+    setState(() => _processingOrders.add(orderId));
+    
     try {
       final supabase = Supabase.instance.client;
 
-      // Confirm handover - change to delivering
-      await supabase.from('sales_orders').update({
-        'delivery_status': 'delivering',
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', orderId);
-
-      // Also update delivery record status to in_progress
-      await supabase.from('deliveries').update({
-        'status': 'in_progress',
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('order_id', orderId);
+      // First get delivery_id for this order
+      final deliveryResult = await supabase
+          .from('deliveries')
+          .select('id')
+          .eq('order_id', orderId)
+          .maybeSingle();
+      
+      if (deliveryResult != null && deliveryResult['id'] != null) {
+        // Use RPC for transaction-safe update
+        final result = await supabase.rpc('start_delivery', params: {
+          'p_delivery_id': deliveryResult['id'],
+          'p_order_id': orderId,
+        });
+        
+        if (result != null && result['success'] == false) {
+          throw Exception(result['error'] ?? 'Unknown error');
+        }
+      } else {
+        // No delivery record, just update sales_order
+        await supabase.from('sales_orders').update({
+          'delivery_status': 'delivering',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', orderId);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1514,6 +1595,10 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _processingOrders.remove(orderId));
       }
     }
   }
@@ -1878,6 +1963,8 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
   Widget _buildPackedOrderCard(Map<String, dynamic> order) {
     final customer = order['customers'] as Map<String, dynamic>?;
     final orderNumber = order['order_number']?.toString() ?? order['id'].toString().substring(0, 8).toUpperCase();
+    final warehouse = order['warehouses'] as Map<String, dynamic>?;
+    final warehouseName = warehouse?['name'] ?? 'Kho chính';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1912,9 +1999,36 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '#$orderNumber',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      Row(
+                        children: [
+                          Text(
+                            '#$orderNumber',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.warehouse, size: 10, color: Colors.grey.shade600),
+                                const SizedBox(width: 3),
+                                Text(
+                                  warehouseName,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       Text(
                         customer?['name'] ?? 'Khách hàng',
@@ -1964,16 +2078,91 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
               ),
             ],
 
+            // Product items
+            if (order['sales_order_items'] != null && (order['sales_order_items'] as List).isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade100),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.shopping_bag_outlined, size: 16, color: Colors.blue.shade700),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Sản phẩm (${(order['sales_order_items'] as List).length})',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Colors.blue.shade900,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...(order['sales_order_items'] as List).map((item) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade400,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '${item['product_name']} x${item['quantity']}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 16),
 
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => _markReadyForDelivery(order['id']),
-                icon: const Icon(Icons.local_shipping, size: 20),
-                label: const Text('Sẵn sàng giao cho tài xế'),
+                onPressed: _processingOrders.contains(order['id'])
+                    ? null
+                    : () => _markReadyForDelivery(order['id']),
+                icon: _processingOrders.contains(order['id'])
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.local_shipping, size: 20),
+                label: Text(_processingOrders.contains(order['id'])
+                    ? 'Đang xử lý...'
+                    : 'Sẵn sàng giao cho tài xế'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: _processingOrders.contains(order['id'])
+                      ? Colors.grey
+                      : Colors.blue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -2128,11 +2317,26 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => _confirmHandoverToDriver(order['id']),
-                      icon: const Icon(Icons.check_circle, size: 20),
-                      label: const Text('Xác nhận đã giao cho tài xế'),
+                      onPressed: _processingOrders.contains(order['id'])
+                          ? null
+                          : () => _confirmHandoverToDriver(order['id']),
+                      icon: _processingOrders.contains(order['id'])
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Icon(Icons.check_circle, size: 20),
+                      label: Text(_processingOrders.contains(order['id'])
+                          ? 'Đang xử lý...'
+                          : 'Xác nhận đã giao cho tài xế'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: _processingOrders.contains(order['id'])
+                            ? Colors.grey
+                            : Colors.green,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -2153,7 +2357,7 @@ class _PackingPageState extends ConsumerState<_PackingPage> with SingleTickerPro
 }
 
 // ============================================================================
-// INVENTORY PAGE - Modern UI with Stock Import Feature
+// INVENTORY PAGE WRAPPER - Auto-navigate to assigned warehouse
 // ============================================================================
 class _InventoryPage extends ConsumerStatefulWidget {
   const _InventoryPage();
@@ -2162,13 +2366,151 @@ class _InventoryPage extends ConsumerStatefulWidget {
   ConsumerState<_InventoryPage> createState() => _InventoryPageState();
 }
 
-class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTickerProviderStateMixin {
+class _InventoryPageState extends ConsumerState<_InventoryPage> {
+  bool _isLoading = true;
+  Map<String, dynamic>? _assignedWarehouse;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAssignedWarehouse();
+  }
+
+  Future<void> _loadAssignedWarehouse() async {
+    final authState = ref.read(authProvider);
+    final userId = authState.user?.id;
+    
+    if (userId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Query employee's warehouse_id directly from database
+      final employeeData = await supabase
+          .from('employees')
+          .select('warehouse_id')
+          .eq('id', userId)
+          .maybeSingle();
+      
+      final warehouseId = employeeData?['warehouse_id'] as String?;
+      
+      if (warehouseId != null) {
+        final warehouseData = await supabase
+            .from('warehouses')
+            .select('*')
+            .eq('id', warehouseId)
+            .single();
+        
+        setState(() {
+          _assignedWarehouse = warehouseData;
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      AppLogger.error('Failed to load assigned warehouse', e);
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // If user has assigned warehouse, show WarehouseDetailPage directly
+    if (_assignedWarehouse != null) {
+      final type = _assignedWarehouse!['type'] ?? 'main';
+      Color typeColor;
+      String typeLabel;
+      IconData typeIcon;
+      
+      switch (type) {
+        case 'main':
+          typeColor = Colors.blue;
+          typeLabel = 'Kho chính';
+          typeIcon = Icons.home_work;
+          break;
+        case 'transit':
+          typeColor = Colors.orange;
+          typeLabel = 'Trung chuyển';
+          typeIcon = Icons.local_shipping;
+          break;
+        case 'vehicle':
+          typeColor = Colors.green;
+          typeLabel = 'Xe tải';
+          typeIcon = Icons.local_shipping_outlined;
+          break;
+        case 'virtual':
+          typeColor = Colors.purple;
+          typeLabel = 'Ảo';
+          typeIcon = Icons.cloud_outlined;
+          break;
+        default:
+          typeColor = Colors.grey;
+          typeLabel = type;
+          typeIcon = Icons.warehouse;
+      }
+
+      return WarehouseDetailPage(
+        warehouse: _assignedWarehouse!,
+        typeColor: typeColor,
+        typeLabel: typeLabel,
+        typeIcon: typeIcon,
+        isEmbedded: true,
+      );
+    }
+
+    // If no assigned warehouse, show message
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.warehouse_outlined, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              'Chưa được phân công kho',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Vui lòng liên hệ quản lý để được phân công',
+              style: TextStyle(color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// FULL INVENTORY PAGE - For users without assigned warehouse (REMOVED - not needed)
+// ============================================================================
+class _FullInventoryPage extends ConsumerStatefulWidget {
+  const _FullInventoryPage();
+
+  @override
+  ConsumerState<_FullInventoryPage> createState() => _FullInventoryPageState();
+}
+
+class _FullInventoryPageState extends ConsumerState<_FullInventoryPage> with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   List<Map<String, dynamic>> _inventory = [];
   List<Map<String, dynamic>> _movements = [];
   List<Map<String, dynamic>> _warehouses = [];
   String _searchQuery = '';
   bool _showLowStockOnly = false;
+  String? _selectedWarehouseId; // null = All warehouses (Tất cả kho)
   final TextEditingController _searchController = TextEditingController();
   late TabController _tabController;
 
@@ -2242,7 +2584,7 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
 
       var query = supabase
           .from('inventory')
-          .select('*, products(id, name, sku, unit)')
+          .select('*, products(id, name, sku, unit, image_url), warehouses(id, name, code, type)')
           .eq('company_id', companyId);
 
       if (_showLowStockOnly) {
@@ -2262,14 +2604,25 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
   }
 
   List<Map<String, dynamic>> get _filteredInventory {
-    if (_searchQuery.isEmpty) return _inventory;
-    return _inventory.where((item) {
-      final product = item['products'] as Map<String, dynamic>?;
-      final name = (product?['name'] ?? '').toString().toLowerCase();
-      final sku = (product?['sku'] ?? '').toString().toLowerCase();
-      return name.contains(_searchQuery.toLowerCase()) ||
-          sku.contains(_searchQuery.toLowerCase());
-    }).toList();
+    var result = _inventory.toList();
+    
+    // Filter by warehouse if selected
+    if (_selectedWarehouseId != null) {
+      result = result.where((item) => item['warehouse_id'] == _selectedWarehouseId).toList();
+    }
+    
+    // Filter by search query
+    if (_searchQuery.isNotEmpty) {
+      result = result.where((item) {
+        final product = item['products'] as Map<String, dynamic>?;
+        final name = (product?['name'] ?? '').toString().toLowerCase();
+        final sku = (product?['sku'] ?? '').toString().toLowerCase();
+        return name.contains(_searchQuery.toLowerCase()) ||
+            sku.contains(_searchQuery.toLowerCase());
+      }).toList();
+    }
+    
+    return result;
   }
 
   void _showStockImportSheet() {
@@ -2283,6 +2636,30 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
           _loadInventory();
           _loadMovements();
         },
+      ),
+    );
+  }
+
+  Widget _buildWarehouseFilterChip(String? warehouseId, String label) {
+    final isSelected = _selectedWarehouseId == warehouseId;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (_) {
+          setState(() => _selectedWarehouseId = warehouseId);
+        },
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.white : Colors.grey.shade700,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          fontSize: 12,
+        ),
+        backgroundColor: Colors.grey.shade100,
+        selectedColor: Colors.teal,
+        checkmarkColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }
@@ -2309,6 +2686,7 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'warehouseStockImport',
         onPressed: _showStockImportSheet,
         backgroundColor: Colors.teal,
         icon: const Icon(Icons.add_circle_outline, color: Colors.white),
@@ -2369,10 +2747,17 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
                       const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(Icons.refresh),
+                        tooltip: 'Làm mới',
                         onPressed: () {
                           setState(() => _isLoading = true);
                           _loadInventory();
                           _loadMovements();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✓ Đã làm mới kho'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
                         },
                       ),
                     ],
@@ -2407,6 +2792,24 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
                       onChanged: (value) => setState(() => _searchQuery = value),
                     ),
                   ),
+
+                  // Warehouse filter chips
+                  if (_warehouses.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 36,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          _buildWarehouseFilterChip(null, 'Tất cả kho'),
+                          ..._warehouses.map((wh) => _buildWarehouseFilterChip(
+                            wh['id'], 
+                            wh['name'] ?? 'Kho',
+                          )),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 12),
 
@@ -2683,8 +3086,11 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
 
   Widget _buildInventoryCard(Map<String, dynamic> item) {
     final product = item['products'] as Map<String, dynamic>?;
+    final warehouse = item['warehouses'] as Map<String, dynamic>?;
     final quantity = item['quantity'] as int? ?? 0;
     final isLowStock = quantity < 10;
+    final warehouseName = warehouse?['name'] ?? 'Kho mặc định';
+    final isMainWarehouse = warehouse?['type'] == 'main';
 
     return GestureDetector(
       onTap: () => _showStockAdjustSheet(item),
@@ -2705,23 +3111,24 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
         ),
         child: Row(
           children: [
+            // Product image
             Container(
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: isLowStock ? Colors.orange.shade50 : Colors.green.shade50,
+                color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Center(
-                child: Text(
-                  '$quantity',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    color: isLowStock ? Colors.orange.shade700 : Colors.green.shade700,
-                  ),
-                ),
-              ),
+              child: product?['image_url'] != null && (product!['image_url'] as String).isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.network(
+                        product['image_url'],
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(Icons.inventory_2, color: Colors.grey.shade400, size: 28),
+                      ),
+                    )
+                  : Icon(Icons.inventory_2, color: Colors.grey.shade400, size: 28),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -2753,32 +3160,53 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
                       ),
                     ],
                   ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        isMainWarehouse ? Icons.home_work : Icons.warehouse,
+                        size: 12,
+                        color: isMainWarehouse ? Colors.blue.shade400 : Colors.orange.shade400,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        warehouseName,
+                        style: TextStyle(
+                          color: isMainWarehouse ? Colors.blue.shade600 : Colors.orange.shade600,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-            // Quick actions
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isLowStock)
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 18),
-                  ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.edit_outlined, color: Colors.grey.shade600, size: 18),
+            // Quantity display
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isLowStock ? Colors.orange.shade50 : Colors.green.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$quantity',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: isLowStock ? Colors.orange.shade700 : Colors.green.shade700,
                 ),
-              ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Edit button
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.edit_outlined, color: Colors.grey.shade600, size: 18),
             ),
           ],
         ),
@@ -2839,6 +3267,7 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
                   bottom: 16,
                   right: 16,
                   child: FloatingActionButton.extended(
+                    heroTag: 'addWarehouse',
                     onPressed: () => _showAddWarehouseSheet(),
                     backgroundColor: Colors.teal,
                     icon: const Icon(Icons.add, color: Colors.white),
@@ -2906,7 +3335,7 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => _showEditWarehouseSheet(warehouse),
+          onTap: () => _openWarehouseDetail(warehouse, typeColor, typeLabel, typeIcon),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -3026,6 +3455,32 @@ class _InventoryPageState extends ConsumerState<_InventoryPage> with SingleTicke
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _openWarehouseDetail(Map<String, dynamic> warehouse, Color typeColor, String typeLabel, IconData typeIcon) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WarehouseDetailPage(
+          warehouse: warehouse,
+          warehouseName: warehouse['name'] ?? 'Kho',
+          warehouseCode: warehouse['code'] ?? '',
+          warehouseAddress: warehouse['address'] ?? '',
+          typeColor: typeColor,
+          typeLabel: typeLabel,
+          typeIcon: typeIcon,
+          onStockIn: () {},
+          onStockOut: () {},
+          onTransfer: () {},
+          onEdit: () => _showEditWarehouseSheet(warehouse),
+          allWarehouses: _warehouses,
+          onRefresh: () {
+            _loadInventory();
+            _loadMovements();
+          },
         ),
       ),
     );
@@ -3204,14 +3659,19 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           // Drag handle
           Container(
             margin: const EdgeInsets.only(top: 12),
@@ -3460,6 +3920,7 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -3471,9 +3932,14 @@ class _WarehouseFormSheetState extends State<_WarehouseFormSheet> {
     try {
       final supabase = Supabase.instance.client;
 
+      // Auto-generate code if empty (required NOT NULL field)
+      final warehouseCode = _codeController.text.trim().isNotEmpty 
+          ? _codeController.text.trim()
+          : 'KHO${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+      
       final data = {
         'name': _nameController.text.trim(),
-        'code': _codeController.text.trim().isEmpty ? null : _codeController.text.trim(),
+        'code': warehouseCode,
         'type': _selectedType,
         'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
         'is_active': _isActive,
@@ -3537,9 +4003,11 @@ class _StockImportSheetState extends ConsumerState<_StockImportSheet> {
   
   String? _selectedProductId;
   Map<String, dynamic>? _selectedProduct;
+  String? _selectedWarehouseId; // NEW: Allow user to select warehouse
   String _reason = 'Nhập hàng từ nhà cung cấp';
   bool _isLoading = false;
   List<Map<String, dynamic>> _products = [];
+  List<Map<String, dynamic>> _warehouses = [];
   String _searchQuery = '';
 
   final List<String> _commonReasons = [
@@ -3555,6 +4023,7 @@ class _StockImportSheetState extends ConsumerState<_StockImportSheet> {
   void initState() {
     super.initState();
     _loadProducts();
+    _loadWarehouses();
   }
 
   @override
@@ -3563,6 +4032,38 @@ class _StockImportSheetState extends ConsumerState<_StockImportSheet> {
     _notesController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadWarehouses() async {
+    try {
+      final authState = ref.read(authProvider);
+      final companyId = authState.user?.companyId;
+      if (companyId == null) return;
+
+      final supabase = Supabase.instance.client;
+      final data = await supabase
+          .from('warehouses')
+          .select('*')
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .order('name');
+
+      if (mounted) {
+        setState(() {
+          _warehouses = List<Map<String, dynamic>>.from(data);
+          // Auto-select first warehouse (preferably main)
+          final mainWarehouse = _warehouses.firstWhere(
+            (w) => w['type'] == 'main',
+            orElse: () => _warehouses.isNotEmpty ? _warehouses.first : {},
+          );
+          if (mainWarehouse.isNotEmpty) {
+            _selectedWarehouseId = mainWarehouse['id'];
+          }
+        });
+      }
+    } catch (e) {
+      AppLogger.error('Failed to load warehouses', e);
+    }
   }
 
   Future<void> _loadProducts() async {
@@ -3610,6 +4111,17 @@ class _StockImportSheetState extends ConsumerState<_StockImportSheet> {
       return;
     }
 
+    if (_selectedWarehouseId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn kho nhập'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -3622,43 +4134,19 @@ class _StockImportSheetState extends ConsumerState<_StockImportSheet> {
       final supabase = Supabase.instance.client;
       final quantity = int.parse(_quantityController.text);
 
-      // Get default warehouse
-      final warehouses = await supabase
-          .from('warehouses')
-          .select('id')
-          .eq('company_id', companyId)
-          .limit(1);
+      // Use selected warehouse instead of fetching default
+      final warehouseId = _selectedWarehouseId!;
 
-      String? warehouseId;
-      if (warehouses.isNotEmpty) {
-        warehouseId = warehouses[0]['id'];
-      } else {
-        // Create default warehouse if none exists
-        final newWarehouse = await supabase
-            .from('warehouses')
-            .insert({
-              'company_id': companyId,
-              'code': 'MAIN',
-              'name': 'Kho chính',
-              'type': 'main',
-              'is_active': true,
-            })
-            .select()
-            .single();
-        warehouseId = newWarehouse['id'];
-      }
+      final selectedWarehouse = _warehouses.firstWhere(
+        (w) => w['id'] == warehouseId, 
+        orElse: () => {'name': 'Kho'}
+      );
 
-      // Get current stock for before_quantity
-      final currentStock = await supabase
-          .from('inventory')
-          .select('quantity')
-          .eq('company_id', companyId)
-          .eq('product_id', _selectedProductId!)
-          .maybeSingle();
-
-      final beforeQty = currentStock?['quantity'] as int? ?? 0;
-
-      // Insert inventory movement
+      // Insert inventory movement - trigger will auto-update inventory table
+      // Note: Trigger 'process_inventory_movement' handles:
+      // 1. Setting before_quantity from current inventory
+      // 2. Updating/inserting inventory record
+      // 3. Setting after_quantity
       await supabase.from('inventory_movements').insert({
         'company_id': companyId,
         'warehouse_id': warehouseId,
@@ -3666,34 +4154,13 @@ class _StockImportSheetState extends ConsumerState<_StockImportSheet> {
         'type': 'in',
         'reason': _reason,
         'quantity': quantity,
-        'before_quantity': beforeQty,
-        'after_quantity': beforeQty + quantity,
+        // Note: before_quantity and after_quantity are set by trigger
         'notes': _notesController.text.isNotEmpty ? _notesController.text : null,
         'created_by': userId,
       });
 
-      // Update or insert inventory
-      final existingInventory = await supabase
-          .from('inventory')
-          .select('id, quantity')
-          .eq('company_id', companyId)
-          .eq('product_id', _selectedProductId!)
-          .eq('warehouse_id', warehouseId!)
-          .maybeSingle();
-
-      if (existingInventory != null) {
-        await supabase
-            .from('inventory')
-            .update({'quantity': (existingInventory['quantity'] as int) + quantity})
-            .eq('id', existingInventory['id']);
-      } else {
-        await supabase.from('inventory').insert({
-          'company_id': companyId,
-          'warehouse_id': warehouseId,
-          'product_id': _selectedProductId,
-          'quantity': quantity,
-        });
-      }
+      // DO NOT manually update inventory - trigger already does this!
+      // Previous code was doubling the quantity.
 
       if (mounted) {
         Navigator.pop(context);
@@ -3704,7 +4171,9 @@ class _StockImportSheetState extends ConsumerState<_StockImportSheet> {
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('Đã nhập $quantity ${_selectedProduct?['unit'] ?? 'đơn vị'} vào kho'),
+                Expanded(
+                  child: Text('Đã nhập $quantity ${_selectedProduct?['unit'] ?? 'đơn vị'} vào ${selectedWarehouse['name']}'),
+                ),
               ],
             ),
             backgroundColor: Colors.green,
@@ -3925,6 +4394,63 @@ class _StockImportSheetState extends ConsumerState<_StockImportSheet> {
                       ),
                     ),
                   ],
+
+                  const SizedBox(height: 20),
+
+                  // Warehouse selection - NEW
+                  const Text(
+                    'Chọn kho nhập *',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey.shade50,
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedWarehouseId,
+                        isExpanded: true,
+                        hint: const Text('Chọn kho'),
+                        icon: const Icon(Icons.arrow_drop_down),
+                        items: _warehouses.map((wh) {
+                          final isMain = wh['type'] == 'main';
+                          return DropdownMenuItem<String>(
+                            value: wh['id'],
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isMain ? Icons.home_work : Icons.warehouse,
+                                  size: 20,
+                                  color: isMain ? Colors.blue : Colors.orange,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(wh['name'] ?? 'Kho'),
+                                if (isMain) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade100,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Kho chính',
+                                      style: TextStyle(fontSize: 10, color: Colors.blue.shade800),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) => setState(() => _selectedWarehouseId = value),
+                      ),
+                    ),
+                  ),
 
                   const SizedBox(height: 20),
 

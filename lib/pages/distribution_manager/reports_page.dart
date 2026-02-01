@@ -42,17 +42,36 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
         // Tab Bar
         Container(
           color: Colors.white,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: Colors.blue.shade700,
-            unselectedLabelColor: Colors.grey.shade600,
-            indicatorColor: Colors.blue.shade700,
-            indicatorWeight: 3,
-            tabs: const [
-              Tab(icon: Icon(Icons.trending_up, size: 20), text: 'Doanh thu'),
-              Tab(icon: Icon(Icons.account_balance_wallet, size: 20), text: 'Công nợ'),
-              Tab(icon: Icon(Icons.inventory_2, size: 20), text: 'Tồn kho'),
-              Tab(icon: Icon(Icons.receipt_long, size: 20), text: 'Đơn hàng'),
+          child: Row(
+            children: [
+              Expanded(
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: Colors.blue.shade700,
+                  unselectedLabelColor: Colors.grey.shade600,
+                  indicatorColor: Colors.blue.shade700,
+                  indicatorWeight: 3,
+                  tabs: const [
+                    Tab(icon: Icon(Icons.trending_up, size: 20), text: 'Doanh thu'),
+                    Tab(icon: Icon(Icons.account_balance_wallet, size: 20), text: 'Công nợ'),
+                    Tab(icon: Icon(Icons.inventory_2, size: 20), text: 'Tồn kho'),
+                    Tab(icon: Icon(Icons.receipt_long, size: 20), text: 'Đơn hàng'),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Làm mới',
+                onPressed: () {
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✓ Đã làm mới báo cáo'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -107,16 +126,17 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
       final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
       final startOfDay = DateTime(now.year, now.month, now.day);
 
-      // Get today's revenue
+      // Get today's revenue - use created_at for more accurate timing
       final todayOrders = await supabase
           .from('sales_orders')
-          .select('total')
+          .select('total, delivery_status, payment_status')
           .eq('company_id', companyId)
-          .gte('order_date', startOfDay.toIso8601String().split('T')[0])
-          .inFilter('status', ['confirmed', 'processing', 'completed']);
+          .gte('created_at', startOfDay.toIso8601String())
+          .neq('status', 'cancelled');
 
       double todayRevenue = 0;
       for (var order in todayOrders) {
+        // Count all orders for today (not just confirmed/completed)
         todayRevenue += (order['total'] ?? 0).toDouble();
       }
 
@@ -125,8 +145,8 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
           .from('sales_orders')
           .select('total')
           .eq('company_id', companyId)
-          .gte('order_date', startOfWeek.toIso8601String().split('T')[0])
-          .inFilter('status', ['confirmed', 'processing', 'completed']);
+          .gte('created_at', startOfWeek.toIso8601String())
+          .neq('status', 'cancelled');
 
       double weekRevenue = 0;
       for (var order in weekOrders) {
@@ -138,8 +158,8 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
           .from('sales_orders')
           .select('total')
           .eq('company_id', companyId)
-          .gte('order_date', startOfMonth.toIso8601String().split('T')[0])
-          .inFilter('status', ['confirmed', 'processing', 'completed']);
+          .gte('created_at', startOfMonth.toIso8601String())
+          .neq('status', 'cancelled');
 
       double monthRevenue = 0;
       int monthOrderCount = monthOrders.length;
@@ -151,11 +171,11 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
       final last7Days = now.subtract(const Duration(days: 6));
       final dailyOrders = await supabase
           .from('sales_orders')
-          .select('order_date, total')
+          .select('created_at, total')
           .eq('company_id', companyId)
-          .gte('order_date', last7Days.toIso8601String().split('T')[0])
-          .inFilter('status', ['confirmed', 'processing', 'completed'])
-          .order('order_date');
+          .gte('created_at', last7Days.toIso8601String())
+          .neq('status', 'cancelled')
+          .order('created_at');
 
       // Group by date
       final Map<String, double> dailyMap = {};
@@ -166,7 +186,8 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
       }
 
       for (var order in dailyOrders) {
-        final date = order['order_date'] as String;
+        final createdAt = order['created_at'] as String;
+        final date = DateFormat('yyyy-MM-dd').format(DateTime.parse(createdAt));
         final total = (order['total'] ?? 0).toDouble();
         if (dailyMap.containsKey(date)) {
           dailyMap[date] = (dailyMap[date] ?? 0) + total;
@@ -182,8 +203,8 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
           .from('sales_orders')
           .select('customer_id, total, customers(name, phone)')
           .eq('company_id', companyId)
-          .gte('order_date', startOfMonth.toIso8601String().split('T')[0])
-          .inFilter('status', ['confirmed', 'processing', 'completed']);
+          .gte('created_at', startOfMonth.toIso8601String())
+          .neq('status', 'cancelled');
 
       final Map<String, Map<String, dynamic>> customerMap = {};
       for (var order in topCustomers) {
@@ -565,12 +586,13 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
       final supabase = Supabase.instance.client;
 
       // Get all unpaid/partial orders with customer info
+      // Include pending_transfer as it's also unpaid
       final unpaidOrders = await supabase
           .from('sales_orders')
-          .select('id, customer_id, total, order_date, payment_status, customers(name, phone, company_name)')
+          .select('id, customer_id, total, created_at, payment_status, customers(name, phone, contact_person)')
           .eq('company_id', companyId)
-          .inFilter('payment_status', ['unpaid', 'partial'])
-          .order('order_date', ascending: false);
+          .inFilter('payment_status', ['unpaid', 'partial', 'pending_transfer', 'pending'])
+          .order('created_at', ascending: false);
 
       double totalReceivables = 0;
       double overdueAmount = 0;
@@ -582,15 +604,18 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
         totalReceivables += total;
 
         // Check if overdue (> 30 days)
-        final orderDate = DateTime.parse(order['order_date'] as String);
-        if (now.difference(orderDate).inDays > 30) {
-          overdueAmount += total;
+        final createdAtStr = order['created_at'] as String?;
+        if (createdAtStr != null) {
+          final orderDate = DateTime.parse(createdAtStr);
+          if (now.difference(orderDate).inDays > 30) {
+            overdueAmount += total;
+          }
         }
 
         // Group by customer
         final custId = order['customer_id'] as String?;
         final customerData = order['customers'] as Map<String, dynamic>?;
-        final custName = customerData?['company_name'] as String? ?? 
+        final custName = customerData?['contact_person'] as String? ?? 
                         customerData?['name'] as String? ?? 
                         customerData?['phone'] as String? ?? 
                         'Khách hàng #${custId?.substring(0, 8) ?? 'N/A'}';
@@ -600,7 +625,7 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
               'name': custName,
               'total': 0.0,
               'count': 0,
-              'oldestDate': order['order_date'],
+              'oldestDate': order['created_at'],
             };
           }
           customerDebtMap[custId]!['total'] += total;
@@ -860,31 +885,49 @@ class _InventoryReportTabState extends ConsumerState<_InventoryReportTab> {
 
       final supabase = Supabase.instance.client;
 
-      // Get all products with stock
-      final products = await supabase
-          .from('products')
-          .select('id, name, sku, unit, selling_price, stock_quantity, min_stock_level')
-          .eq('company_id', companyId)
-          .eq('status', 'active')
-          .order('stock_quantity', ascending: true);
+      // Get inventory data joined with products
+      final inventoryData = await supabase
+          .from('inventory')
+          .select('id, product_id, quantity, products(id, name, sku, unit, selling_price, min_stock, status)')
+          .eq('company_id', companyId);
 
-      int totalProducts = products.length;
+      int totalProducts = 0;
       int totalStock = 0;
       double totalValue = 0;
+      List<Map<String, dynamic>> productList = [];
       List<Map<String, dynamic>> lowStock = [];
 
-      for (var product in products) {
-        final qty = (product['stock_quantity'] ?? 0) as int;
-        final price = (product['selling_price'] ?? 0).toDouble();
-        final minLevel = (product['min_stock_level'] ?? 10) as int;
+      for (var inv in inventoryData) {
+        final productData = inv['products'] as Map<String, dynamic>?;
+        if (productData == null || productData['status'] != 'active') continue;
+        
+        final qty = (inv['quantity'] ?? 0) as int;
+        final price = (productData['selling_price'] ?? 0).toDouble();
+        final minLevel = (productData['min_stock'] ?? 10) as int;
 
+        totalProducts++;
         totalStock += qty;
         totalValue += qty * price;
 
+        final productWithStock = {
+          'id': productData['id'],
+          'name': productData['name'],
+          'sku': productData['sku'],
+          'unit': productData['unit'],
+          'selling_price': productData['selling_price'],
+          'quantity': qty,
+          'min_stock': minLevel,
+        };
+        
+        productList.add(productWithStock);
+        
         if (qty <= minLevel) {
-          lowStock.add(product);
+          lowStock.add(productWithStock);
         }
       }
+      
+      // Sort by quantity ascending (low stock first)
+      productList.sort((a, b) => (a['quantity'] as int).compareTo(b['quantity'] as int));
 
       setState(() {
         _inventoryData = {
@@ -893,7 +936,7 @@ class _InventoryReportTabState extends ConsumerState<_InventoryReportTab> {
           'totalValue': totalValue,
           'lowStockCount': lowStock.length,
         };
-        _products = List<Map<String, dynamic>>.from(products);
+        _products = productList;
         _lowStockProducts = lowStock;
         _isLoading = false;
       });
@@ -977,8 +1020,8 @@ class _InventoryReportTabState extends ConsumerState<_InventoryReportTab> {
               ),
               const SizedBox(height: 12),
               ..._lowStockProducts.take(5).map((product) {
-                final qty = product['stock_quantity'] ?? 0;
-                final minLevel = product['min_stock_level'] ?? 10;
+                final qty = product['quantity'] ?? 0;
+                final minLevel = product['min_stock'] ?? 10;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -1045,8 +1088,8 @@ class _InventoryReportTabState extends ConsumerState<_InventoryReportTab> {
             ),
             const SizedBox(height: 12),
             ..._products.take(10).map((product) {
-              final qty = product['stock_quantity'] ?? 0;
-              final isLow = qty <= (product['min_stock_level'] ?? 10);
+              final qty = product['quantity'] ?? 0;
+              final isLow = qty <= (product['min_stock'] ?? 10);
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -1176,12 +1219,12 @@ class _OrdersReportTabState extends ConsumerState<_OrdersReportTab> {
       final startOfMonth = DateTime(now.year, now.month, 1);
       final startOfDay = DateTime(now.year, now.month, now.day);
 
-      // Get all orders this month
+      // Get all orders this month - use created_at for reliable filtering
       final monthOrders = await supabase
           .from('sales_orders')
-          .select('id, status, total, order_date, customer_id, customers(name, company_name, phone)')
+          .select('id, status, total, created_at, customer_id, customers(name, contact_person, phone)')
           .eq('company_id', companyId)
-          .gte('order_date', startOfMonth.toIso8601String().split('T')[0])
+          .gte('created_at', startOfMonth.toIso8601String())
           .order('created_at', ascending: false);
 
       // Count by status
@@ -1196,15 +1239,20 @@ class _OrdersReportTabState extends ConsumerState<_OrdersReportTab> {
 
       double totalValue = 0;
       int todayCount = 0;
+      final todayStr = DateFormat('yyyy-MM-dd').format(startOfDay);
 
       for (var order in monthOrders) {
         final status = order['status'] as String? ?? 'draft';
         statusMap[status] = (statusMap[status] ?? 0) + 1;
         totalValue += (order['total'] ?? 0).toDouble();
 
-        final orderDate = order['order_date'] as String;
-        if (orderDate == startOfDay.toIso8601String().split('T')[0]) {
-          todayCount++;
+        // Check if order is from today using created_at
+        final createdAt = order['created_at'] as String?;
+        if (createdAt != null) {
+          final orderDateStr = DateFormat('yyyy-MM-dd').format(DateTime.parse(createdAt));
+          if (orderDateStr == todayStr) {
+            todayCount++;
+          }
         }
       }
 
@@ -1350,7 +1398,7 @@ class _OrdersReportTabState extends ConsumerState<_OrdersReportTab> {
                             Text(
                               () {
                                 final customerData = order['customers'] as Map<String, dynamic>?;
-                                return customerData?['company_name'] as String? ?? 
+                                return customerData?['contact_person'] as String? ?? 
                                        customerData?['name'] as String? ?? 
                                        customerData?['phone'] as String? ?? 
                                        'Khách hàng #${order['customer_id']?.toString().substring(0, 8) ?? 'N/A'}';
@@ -1359,7 +1407,13 @@ class _OrdersReportTabState extends ConsumerState<_OrdersReportTab> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              order['order_date'] as String? ?? '',
+                              () {
+                                final createdAt = order['created_at'] as String?;
+                                if (createdAt != null) {
+                                  return DateFormat('dd/MM/yyyy').format(DateTime.parse(createdAt));
+                                }
+                                return '';
+                              }(),
                               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                             ),
                           ],

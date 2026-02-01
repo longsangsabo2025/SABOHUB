@@ -246,7 +246,7 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
       final filePath = 'avatars/$fileName';
 
       // Upload to Supabase Storage
-      await _supabase.storage.from('public').uploadBinary(
+      await _supabase.storage.from('avatars').uploadBinary(
         filePath,
         bytes,
         fileOptions: FileOptions(
@@ -256,7 +256,7 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
       );
 
       // Get public URL
-      final publicUrl = _supabase.storage.from('public').getPublicUrl(filePath);
+      final publicUrl = _supabase.storage.from('avatars').getPublicUrl(filePath);
 
       // Update users table (CEO uses users table)
       await _supabase.from('users').update({

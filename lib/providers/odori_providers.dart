@@ -6,6 +6,8 @@ import '../models/odori_sales_order.dart';
 import '../models/odori_delivery.dart';
 import '../models/odori_receivable.dart';
 import '../models/inventory_movement.dart';
+import '../models/product_sample.dart';
+import '../models/referrer.dart';
 import 'auth_provider.dart';
 
 final supabase = Supabase.instance.client;
@@ -34,7 +36,7 @@ final customersProvider = FutureProvider.autoDispose
   try {
     var query = supabase
         .from('customers')
-        .select('*, employees(full_name)')
+        .select('*, employees(full_name), referrers(name)')
         .eq('company_id', companyId);
 
     if (filters.status != null) {
@@ -441,8 +443,10 @@ class OdoriDashboardStats {
   final int pendingOrders;
   final int inProgressDeliveries;
   final int completedOrdersToday;
-  final double todayRevenue;
-  final double monthRevenue;
+  final double todaySales;       // Tổng doanh số (tất cả đơn delivered)
+  final double todayRevenue;     // Doanh thu đã thu (delivered + paid)
+  final double monthSales;       // Doanh số tháng
+  final double monthRevenue;     // Doanh thu tháng đã thu
   final double totalReceivables;
   final double overdueReceivables;
 
@@ -453,7 +457,9 @@ class OdoriDashboardStats {
     this.pendingOrders = 0,
     this.inProgressDeliveries = 0,
     this.completedOrdersToday = 0,
+    this.todaySales = 0,
     this.todayRevenue = 0,
+    this.monthSales = 0,
     this.monthRevenue = 0,
     this.totalReceivables = 0,
     this.overdueReceivables = 0,
@@ -524,36 +530,47 @@ final dashboardStatsProvider = FutureProvider.autoDispose<OdoriDashboardStats>((
       }
     }).length;
 
-    // Calculate revenue - chỉ tính đơn đã giao và đã thanh toán
-    double todayRevenue = 0;
+    // Calculate revenue - tính cả doanh số (delivered) và doanh thu (delivered + paid)
+    double todaySales = 0;    // Tổng doanh số (tất cả đơn delivered)
+    double todayRevenue = 0;  // Doanh thu đã thu (delivered + paid)
+    double monthSales = 0;
     double monthRevenue = 0;
     final monthStart = DateTime.utc(today.year, today.month, 1);
     
     for (final order in orders) {
       final deliveryStatus = order['delivery_status']?.toString() ?? '';
       final paymentStatus = order['payment_status']?.toString() ?? '';
+      final total = (order['total'] as num?)?.toDouble() ?? 0;
+      final updatedAtStr = order['updated_at']?.toString() ?? order['created_at']?.toString() ?? '';
       
-      // Tính doanh thu cho đơn đã giao và đã thu tiền (cash hoặc transfer đã xác nhận)
-      if (deliveryStatus == 'delivered' && paymentStatus == 'paid') {
-        final total = (order['total'] as num?)?.toDouble() ?? 0;
-        final updatedAtStr = order['updated_at']?.toString() ?? order['created_at']?.toString() ?? '';
+      if (updatedAtStr.isEmpty) continue;
+      
+      try {
+        final updatedAt = DateTime.parse(updatedAtStr);
         
-        if (updatedAtStr.isEmpty) continue;
-        
-        try {
-          final updatedAt = DateTime.parse(updatedAtStr);
-          
-          // Doanh thu hôm nay (trong 24h gần nhất, tính timezone VN)
+        // Tính doanh số cho tất cả đơn đã giao (delivered)
+        if (deliveryStatus == 'delivered') {
+          // Doanh số hôm nay
           if (updatedAt.isAfter(yesterdayStart)) {
-            todayRevenue += total;
+            todaySales += total;
           }
-          // Doanh thu tháng này
+          // Doanh số tháng này
           if (updatedAt.isAfter(monthStart.subtract(const Duration(days: 1)))) {
-            monthRevenue += total;
+            monthSales += total;
           }
-        } catch (_) {
-          continue;
+          
+          // Doanh thu (chỉ tính đã thanh toán)
+          if (paymentStatus == 'paid') {
+            if (updatedAt.isAfter(yesterdayStart)) {
+              todayRevenue += total;
+            }
+            if (updatedAt.isAfter(monthStart.subtract(const Duration(days: 1)))) {
+              monthRevenue += total;
+            }
+          }
         }
+      } catch (_) {
+        continue;
       }
     }
 
@@ -610,7 +627,9 @@ final dashboardStatsProvider = FutureProvider.autoDispose<OdoriDashboardStats>((
       pendingOrders: pendingOrders,
       inProgressDeliveries: inProgressDeliveries,
       completedOrdersToday: completedToday,
+      todaySales: todaySales,
       todayRevenue: todayRevenue,
+      monthSales: monthSales,
       monthRevenue: monthRevenue,
       totalReceivables: totalReceivables,
       overdueReceivables: overdueReceivables,
@@ -668,3 +687,114 @@ final allProductsProvider = FutureProvider.autoDispose<List<OdoriProduct>>((ref)
 
   return (response as List).map((json) => OdoriProduct.fromJson(json)).toList();
 });
+
+// ============================================================================
+// PRODUCT SAMPLES PROVIDER
+// ============================================================================
+final productSamplesProvider = FutureProvider.autoDispose
+    .family<List<ProductSample>, ProductSampleFilters>((ref, filters) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  var query = supabase
+      .from('product_samples')
+      .select('*, customers(name), products(name, sku), employees(full_name)')
+      .eq('company_id', companyId);
+
+  if (filters.status != null) {
+    query = query.eq('status', filters.status!);
+  }
+  if (filters.customerId != null) {
+    query = query.eq('customer_id', filters.customerId!);
+  }
+  if (filters.productId != null) {
+    query = query.eq('product_id', filters.productId!);
+  }
+  if (filters.search != null && filters.search!.isNotEmpty) {
+    query = query.or('product_name.ilike.%${filters.search}%,notes.ilike.%${filters.search}%');
+  }
+
+  final response = await query.order('sent_date', ascending: false);
+  return (response as List).map((json) => ProductSample.fromJson(json)).toList();
+});
+
+// ============================================================================
+// REFERRERS PROVIDER - Người giới thiệu
+// ============================================================================
+final referrersProvider = FutureProvider.autoDispose
+    .family<List<Referrer>, ReferrerFilters>((ref, filters) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  var query = supabase
+      .from('referrers')
+      .select()
+      .eq('company_id', companyId);
+
+  if (filters.status != null) {
+    query = query.eq('status', filters.status!);
+  }
+  if (filters.search != null && filters.search!.isNotEmpty) {
+    query = query.or('name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%');
+  }
+
+  final response = await query.order('name');
+  return (response as List).map((json) => Referrer.fromJson(json)).toList();
+});
+
+class ReferrerFilters {
+  final String? status;
+  final String? search;
+
+  const ReferrerFilters({this.status, this.search});
+}
+
+/// Provider cho danh sách referrers active (dùng trong dropdown)
+final activeReferrersProvider = FutureProvider.autoDispose<List<Referrer>>((ref) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  final response = await supabase
+      .from('referrers')
+      .select()
+      .eq('company_id', companyId)
+      .eq('status', 'active')
+      .order('name');
+
+  return (response as List).map((json) => Referrer.fromJson(json)).toList();
+});
+
+// ============================================================================
+// COMMISSIONS PROVIDER - Hoa hồng
+// ============================================================================
+final commissionsProvider = FutureProvider.autoDispose
+    .family<List<Commission>, CommissionFilters>((ref, filters) async {
+  final authState = ref.watch(authProvider);
+  final companyId = authState.user?.companyId;
+  if (companyId == null) return [];
+
+  var query = supabase
+      .from('commissions')
+      .select('*, referrers(name), customers(name)')
+      .eq('company_id', companyId);
+
+  if (filters.status != null) {
+    query = query.eq('status', filters.status!);
+  }
+  if (filters.referrerId != null) {
+    query = query.eq('referrer_id', filters.referrerId!);
+  }
+
+  final response = await query.order('created_at', ascending: false);
+  return (response as List).map((json) => Commission.fromJson(json)).toList();
+});
+
+class CommissionFilters {
+  final String? status;
+  final String? referrerId;
+
+  const CommissionFilters({this.status, this.referrerId});
+}

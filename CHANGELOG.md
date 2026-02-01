@@ -2,6 +2,29 @@
 
 All notable changes to SaboHub project documented here.
 
+## [1.0.9] - February 2, 2026
+
+### 🚀 Distribution Manager Reports Fix
+
+**Reports Tab Fixes:**
+- ✅ Fixed "Công nợ" (Receivables) tab - now shows unpaid orders correctly
+- ✅ Fixed "Tồn kho" (Inventory) tab - now reads from inventory table properly
+- ✅ Fixed "Đơn hàng" (Orders) tab - now shows orders for current month
+- ✅ Fixed "Doanh thu" (Revenue) tab - corrected date filtering
+
+**Schema Compatibility:**
+- ✅ Updated queries to use `inventory.quantity` instead of non-existent `products.stock_quantity`
+- ✅ Updated queries to use `products.min_stock` instead of `min_stock_level`
+- ✅ Removed non-existent `customers.company_name` field from queries
+- ✅ Changed date filtering from `order_date` to `created_at` for reliable results
+
+**Dashboard Improvements:**
+- ✅ Added "Doanh số" (Sales) vs "Doanh thu" (Revenue) breakdown
+- ✅ Shows "Đã thu" (Collected) and "Chưa thu" (Outstanding) amounts
+- ✅ Corrected revenue calculation logic
+
+---
+
 ## [Unreleased]
 
 ### 🧹 Codebase Cleanup - October 30, 2025

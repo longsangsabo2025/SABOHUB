@@ -18,10 +18,10 @@ class DriverRoutePage extends ConsumerStatefulWidget {
   const DriverRoutePage({super.key});
 
   @override
-  ConsumerState<DriverRoutePage> createState() => _DriverRoutePageState();
+  ConsumerState<DriverRoutePage> createState() => DriverRoutePageState();
 }
 
-class _DriverRoutePageState extends ConsumerState<DriverRoutePage> {
+class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
   bool _isLoading = true;
   Map<String, dynamic> _stats = {};
   List<Map<String, dynamic>> _todayDeliveries = [];
@@ -30,6 +30,10 @@ class _DriverRoutePageState extends ConsumerState<DriverRoutePage> {
   @override
   void initState() {
     super.initState();
+    _loadDashboardData();
+  }
+
+  void refresh() {
     _loadDashboardData();
   }
 
@@ -917,30 +921,6 @@ class _DriverRoutePageState extends ConsumerState<DriverRoutePage> {
                     ),
                   ),
                 ],
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      final deliveryId = isFromSalesOrders ? null : (delivery['id'] as String?);
-                      final orderId = (delivery['id'] as String?) ?? (delivery['order_id'] as String?) ?? (delivery['sales_orders'] as Map<String, dynamic>?)?['id'] as String? ?? '';
-                      if (isPending) {
-                        _pickupDelivery(deliveryId, orderId, isFromSalesOrders);
-                      } else {
-                        _completeDelivery(deliveryId ?? '', orderId);
-                      }
-                    },
-                    icon: Icon(isPending ? Icons.play_arrow : Icons.check_circle, size: 20),
-                    label: Text(isPending ? 'Nhận đơn giao' : 'Xác nhận đã giao'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isPending ? Colors.orange : Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      elevation: 0,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -1029,18 +1009,15 @@ class _DriverRoutePageState extends ConsumerState<DriverRoutePage> {
       final supabase = Supabase.instance.client;
       final reason = selectedReason == 'Lý do khác' ? otherReason : selectedReason;
 
-      await supabase.from('deliveries').update({
-        'status': 'failed',
-        'notes': reason,
-        'completed_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', deliveryId);
-
-      await supabase.from('sales_orders').update({
-        'delivery_status': 'failed',
-        'delivery_failed_reason': reason,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', orderId);
+      // Use RPC for transaction-safe update
+      final result = await supabase.rpc('fail_delivery', params: {
+        'p_delivery_id': deliveryId,
+        'p_order_id': orderId,
+        'p_reason': reason,
+      });
+      if (result != null && result['success'] == false) {
+        throw Exception(result['error'] ?? 'Unknown error');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -1178,7 +1155,7 @@ class _DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
       if (isFromSalesOrders) {
         final now = DateTime.now().toIso8601String();
-        await supabase.from('deliveries').insert({
+        final newDelivery = await supabase.from('deliveries').insert({
           'company_id': companyId, 'order_id': orderId, 'driver_id': driverId,
           'delivery_number': 'DL-${DateTime.now().millisecondsSinceEpoch}',
           'delivery_date': DateTime.now().toIso8601String().split('T')[0],
@@ -1186,9 +1163,15 @@ class _DriverRoutePageState extends ConsumerState<DriverRoutePage> {
         }).select().single();
 
         if (orderId.isNotEmpty) await supabase.from('sales_orders').update({'delivery_status': 'delivering', 'updated_at': now}).eq('id', orderId);
-      } else if (deliveryId != null) {
-        await supabase.from('deliveries').update({'status': 'in_progress', 'started_at': DateTime.now().toIso8601String(), 'updated_at': DateTime.now().toIso8601String()}).eq('id', deliveryId);
-        if (orderId.isNotEmpty) await supabase.from('sales_orders').update({'delivery_status': 'delivering', 'updated_at': DateTime.now().toIso8601String()}).eq('id', orderId);
+      } else if (deliveryId != null && orderId.isNotEmpty) {
+        // Use RPC for transaction-safe update
+        final result = await supabase.rpc('start_delivery', params: {
+          'p_delivery_id': deliveryId,
+          'p_order_id': orderId,
+        });
+        if (result != null && result['success'] == false) {
+          throw Exception(result['error'] ?? 'Unknown error');
+        }
       }
 
       if (mounted) {
@@ -1229,16 +1212,17 @@ class _DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
       if (result == null) return;
 
-      await supabase.from('deliveries').update({'status': 'completed', 'completed_at': DateTime.now().toIso8601String(), 'updated_at': DateTime.now().toIso8601String()}).eq('id', deliveryId);
-
-      Map<String, dynamic> updateData = {'delivery_status': 'delivered', 'updated_at': DateTime.now().toIso8601String()};
-      if (result['updatePayment'] == true) {
-        updateData['payment_status'] = result['paymentStatus'];
-        updateData['payment_method'] = result['paymentMethod'];
-        if (result['paymentStatus'] == 'paid') updateData['payment_collected_at'] = DateTime.now().toIso8601String();
+      // Use RPC for transaction-safe update
+      final rpcResult = await supabase.rpc('complete_delivery', params: {
+        'p_delivery_id': deliveryId,
+        'p_order_id': orderId,
+        'p_payment_status': result['updatePayment'] == true ? result['paymentStatus'] : null,
+        'p_payment_method': result['updatePayment'] == true ? result['paymentMethod'] : null,
+      });
+      
+      if (rpcResult != null && rpcResult['success'] == false) {
+        throw Exception(rpcResult['error'] ?? 'Unknown error');
       }
-
-      await supabase.from('sales_orders').update(updateData).eq('id', orderId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

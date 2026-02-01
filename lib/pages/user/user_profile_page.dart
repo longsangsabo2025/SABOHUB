@@ -491,8 +491,12 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       final fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
       final filePath = 'avatars/$fileName';
 
-      // Upload to Supabase Storage (bucket: uploads)
-      await _supabase.storage.from('uploads').uploadBinary(
+      // Debug: Log Supabase URL
+      debugPrint('🔍 Supabase URL: ${_supabase.rest.url}');
+      debugPrint('🔍 Uploading to bucket: avatars, path: $filePath');
+
+      // Upload to Supabase Storage (bucket: avatars - dedicated for profile images)
+      await _supabase.storage.from('avatars').uploadBinary(
         filePath,
         bytes,
         fileOptions: FileOptions(
@@ -502,7 +506,8 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       );
 
       // Get public URL
-      final publicUrl = _supabase.storage.from('uploads').getPublicUrl(filePath);
+      final publicUrl = _supabase.storage.from('avatars').getPublicUrl(filePath);
+      debugPrint('✅ Upload success! URL: $publicUrl');
 
       // Update based on user type
       if (appUser?.role == 'employee' || appUser?.role == 'driver' || appUser?.role == 'sales' || appUser?.role == 'manager') {

@@ -508,7 +508,7 @@ class _DistributorPortalScreenState
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                title: Text('Đơn hàng #${order['order_code']}'),
+                title: Text('Đơn hàng #${order['order_number']}'),
                 subtitle: Text(
                   DateFormat('dd/MM/yyyy').format(
                     DateTime.parse(order['created_at']),

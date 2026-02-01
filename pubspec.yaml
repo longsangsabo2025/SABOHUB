@@ -1,7 +1,7 @@
 name: flutter_sabohub
 description: 'SABOHUB - Quản lý quán bida chuyên nghiệp'
 publish_to: 'none'
-version: 1.0.8+10
+version: 1.0.9+11
 
 environment:
   sdk: ^3.5.0
@@ -88,9 +88,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  # Temporarily disabled for release builds - integration_test causes native build issues
-  # integration_test:
-  #   sdk: flutter
+  integration_test:
+    sdk: flutter
 
 flutter:
   uses-material-design: true

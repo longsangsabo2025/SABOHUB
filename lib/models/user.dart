@@ -19,6 +19,7 @@ class User extends Equatable {
   final String? companyId; // Add companyId for company association
   final String? companyName; // Company name for display
   final BusinessType? businessType; // Business type for layout routing
+  final String? warehouseId; // Warehouse ID for warehouse staff
   final bool? isActive; // Active status for employee accounts
   final String? inviteToken; // Invite token for employee onboarding
   final DateTime? inviteExpiresAt; // When invite expires
@@ -39,6 +40,7 @@ class User extends Equatable {
     this.companyId, // Add companyId to constructor
     this.companyName, // Add companyName to constructor
     this.businessType, // Add businessType to constructor
+    this.warehouseId, // Add warehouseId to constructor
     this.isActive, // Add isActive to constructor
     this.inviteToken,
     this.inviteExpiresAt,
@@ -61,6 +63,7 @@ class User extends Equatable {
         companyId,
         companyName,
         businessType,
+        warehouseId,
         isActive,
         inviteToken,
         inviteExpiresAt,
@@ -110,6 +113,7 @@ class User extends Equatable {
       companyId: json['company_id'] as String?, // Add companyId
       companyName: companyName, // Add companyName from joined data OR direct field
       businessType: businessType, // Add businessType from joined data OR direct field
+      warehouseId: json['warehouse_id'] as String?, // Add warehouseId
       isActive: json['is_active'] as bool?, // Add isActive
       inviteToken: json['invite_token'] as String?,
       inviteExpiresAt: json['invite_expires_at'] != null
@@ -145,6 +149,7 @@ class User extends Equatable {
       'company_id': companyId, // Add companyId
       'company_name': companyName, // Add companyName for local storage
       'business_type': businessType?.toString().split('.').last, // Add businessType for local storage
+      'warehouse_id': warehouseId, // Add warehouseId for local storage
       'is_active': isActive, // Add isActive
       'invite_token': inviteToken,
       'invite_expires_at': inviteExpiresAt?.toIso8601String(),
@@ -168,6 +173,7 @@ class User extends Equatable {
     String? companyId, // Add companyId
     String? companyName, // Add companyName
     BusinessType? businessType, // Add businessType
+    String? warehouseId, // Add warehouseId
     bool? isActive, // Add isActive
     String? inviteToken,
     DateTime? inviteExpiresAt,
@@ -188,6 +194,7 @@ class User extends Equatable {
       companyId: companyId ?? this.companyId, // Add companyId
       companyName: companyName ?? this.companyName, // Add companyName
       businessType: businessType ?? this.businessType, // Add businessType
+      warehouseId: warehouseId ?? this.warehouseId, // Add warehouseId
       isActive: isActive ?? this.isActive, // Add isActive
       inviteToken: inviteToken ?? this.inviteToken,
       inviteExpiresAt: inviteExpiresAt ?? this.inviteExpiresAt,

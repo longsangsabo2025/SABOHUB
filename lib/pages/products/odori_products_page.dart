@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/odori_product.dart';
 import '../../providers/odori_providers.dart';
 import 'product_form_page.dart';
+import 'product_samples_page.dart';
 
 class OdoriProductsPage extends ConsumerStatefulWidget {
   const OdoriProductsPage({super.key});
@@ -13,24 +14,26 @@ class OdoriProductsPage extends ConsumerStatefulWidget {
   ConsumerState<OdoriProductsPage> createState() => _OdoriProductsPageState();
 }
 
-class _OdoriProductsPageState extends ConsumerState<OdoriProductsPage> {
+class _OdoriProductsPageState extends ConsumerState<OdoriProductsPage> with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
   String? _categoryFilter;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final productsAsync = ref.watch(productsProvider(ProductFilters(
-      categoryId: _categoryFilter,
-      search: _searchController.text.isEmpty ? null : _searchController.text,
-    )));
-    final categoriesAsync = ref.watch(productCategoriesProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sản phẩm'),
@@ -40,7 +43,32 @@ class _OdoriProductsPageState extends ConsumerState<OdoriProductsPage> {
             onPressed: () => _scanBarcode(),
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.inventory_2_outlined), text: 'Sản phẩm'),
+            Tab(icon: Icon(Icons.card_giftcard_outlined), text: 'Mẫu SP'),
+          ],
+        ),
       ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildProductsTab(),
+          const ProductSamplesPage(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductsTab() {
+    final productsAsync = ref.watch(productsProvider(ProductFilters(
+      categoryId: _categoryFilter,
+      search: _searchController.text.isEmpty ? null : _searchController.text,
+    )));
+    final categoriesAsync = ref.watch(productCategoriesProvider);
+
+    return Scaffold(
       body: Column(
         children: [
           // Search bar

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/odori_customer.dart';
@@ -20,10 +21,21 @@ class OrderFormPage extends ConsumerStatefulWidget {
 class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
+  final _discountController = TextEditingController();
   
   OdoriCustomer? _selectedCustomer;
   final List<_OrderLineItem> _orderItems = [];
   bool _isLoading = false;
+  
+  // Discount settings
+  String _discountType = 'percent'; // 'percent' or 'fixed'
+  double _discountValue = 0;
+  
+  // Warehouse selection
+  List<Map<String, dynamic>> _warehouses = [];
+  String? _selectedWarehouseId;
+  String? _selectedWarehouseName;
+  bool _isLoadingWarehouses = true;
   
   // Formatters
   final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
@@ -35,11 +47,46 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     if (widget.preselectedCustomer != null) {
       _selectedCustomer = widget.preselectedCustomer;
     }
+    _loadWarehouses();
+  }
+
+  Future<void> _loadWarehouses() async {
+    try {
+      final authState = ref.read(authProvider);
+      final companyId = authState.user?.companyId;
+      
+      if (companyId == null) return;
+      
+      final supabase = Supabase.instance.client;
+      final data = await supabase
+          .from('warehouses')
+          .select('id, name, is_primary')
+          .eq('company_id', companyId)
+          .order('is_primary', ascending: false)
+          .order('name', ascending: true);
+      
+      setState(() {
+        _warehouses = List<Map<String, dynamic>>.from(data);
+        // Auto-select primary warehouse if exists
+        final primaryWarehouse = _warehouses.firstWhere(
+          (w) => w['is_primary'] == true,
+          orElse: () => _warehouses.isNotEmpty ? _warehouses.first : {},
+        );
+        if (primaryWarehouse.isNotEmpty) {
+          _selectedWarehouseId = primaryWarehouse['id'];
+          _selectedWarehouseName = primaryWarehouse['name'];
+        }
+        _isLoadingWarehouses = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingWarehouses = false);
+    }
   }
 
   @override
   void dispose() {
     _notesController.dispose();
+    _discountController.dispose();
     super.dispose();
   }
 
@@ -73,6 +120,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildCustomerSection(),
+                    const SizedBox(height: 16),
+                    _buildWarehouseSection(),
                     const SizedBox(height: 16),
                     _buildItemsSection(),
                     const SizedBox(height: 16),
@@ -153,6 +202,103 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     );
   }
 
+  Widget _buildWarehouseSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.warehouse, color: Colors.orange.shade700),
+                const SizedBox(width: 8),
+                const Text(
+                  'Kho xuất hàng',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_isLoadingWarehouses)
+              const Center(child: CircularProgressIndicator())
+            else if (_warehouses.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber, color: Colors.orange.shade700),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text('Chưa có kho nào. Vui lòng tạo kho trước.'),
+                    ),
+                  ],
+                ),
+              )
+            else
+              DropdownButtonFormField<String>(
+                value: _selectedWarehouseId,
+                decoration: InputDecoration(
+                  prefixIcon: Icon(Icons.inventory_2, color: Colors.orange.shade600),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                ),
+                items: _warehouses.map((warehouse) {
+                  final isPrimary = warehouse['is_primary'] == true;
+                  return DropdownMenuItem<String>(
+                    value: warehouse['id'],
+                    child: Row(
+                      children: [
+                        Text(warehouse['name'] ?? 'Kho'),
+                        if (isPrimary) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Chính',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedWarehouseId = value;
+                    _selectedWarehouseName = _warehouses
+                        .firstWhere((w) => w['id'] == value)['name'];
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Vui lòng chọn kho';
+                  }
+                  return null;
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildItemsSection() {
     if (_orderItems.isEmpty) {
       return Card(
@@ -226,6 +372,20 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   Widget _buildTotalsSection() {
     final subtotal = _orderItems.fold<double>(0, (sum, item) => sum + item.total);
     
+    // Calculate discount amount
+    double discountAmount = 0;
+    if (_discountValue > 0) {
+      if (_discountType == 'percent') {
+        discountAmount = subtotal * (_discountValue / 100);
+      } else {
+        discountAmount = _discountValue;
+      }
+    }
+    // Ensure discount doesn't exceed subtotal
+    if (discountAmount > subtotal) discountAmount = subtotal;
+    
+    final total = subtotal - discountAmount;
+    
     return Card(
       color: Colors.blue.shade50,
       child: Padding(
@@ -242,19 +402,106 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                 ),
               ],
             ),
-            // TODO: Add discount/tax logic here if needed
+            const SizedBox(height: 12),
+            // Discount input section
+            Row(
+              children: [
+                const Icon(Icons.discount_outlined, size: 20, color: Colors.orange),
+                const SizedBox(width: 8),
+                const Text('Chiết khấu:', style: TextStyle(fontSize: 14)),
+                const Spacer(),
+                // Toggle between % and VND
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildDiscountTypeButton('%', 'percent'),
+                      _buildDiscountTypeButton('VNĐ', 'fixed'),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 100,
+                  child: TextField(
+                    controller: _discountController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.right,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      hintText: _discountType == 'percent' ? '0%' : '0đ',
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _discountValue = double.tryParse(value.replaceAll(',', '').replaceAll('.', '')) ?? 0;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            if (discountAmount > 0) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Giảm giá (${_discountType == 'percent' ? '${_discountValue.toStringAsFixed(0)}%' : ''}):',
+                    style: TextStyle(fontSize: 14, color: Colors.orange.shade800),
+                  ),
+                  Text(
+                    '-${_currencyFormat.format(discountAmount)}',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.orange.shade800),
+                  ),
+                ],
+              ),
+            ],
             const Divider(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('KHÁCH PHẢI TRẢ:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 Text(
-                  _currencyFormat.format(subtotal),
+                  _currencyFormat.format(total),
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue.shade900),
                 ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiscountTypeButton(String label, String type) {
+    final isSelected = _discountType == type;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _discountType = type;
+          _discountController.clear();
+          _discountValue = 0;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.orange : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : Colors.grey.shade600,
+          ),
         ),
       ),
     );
@@ -310,6 +557,10 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn khách hàng')));
       return;
     }
+    if (_selectedWarehouseId == null || _selectedWarehouseId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn kho xuất hàng')));
+      return;
+    }
     if (_orderItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng thêm sản phẩm')));
       return;
@@ -328,6 +579,24 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       
       final subtotal = _orderItems.fold<double>(0, (sum, item) => sum + item.total);
 
+      // Calculate discount
+      double discountPercent = 0;
+      double discountAmount = 0;
+      if (_discountValue > 0) {
+        if (_discountType == 'percent') {
+          discountPercent = _discountValue;
+          discountAmount = subtotal * (_discountValue / 100);
+        } else {
+          discountAmount = _discountValue;
+          // Calculate percent for record keeping
+          discountPercent = subtotal > 0 ? (discountAmount / subtotal * 100) : 0;
+        }
+      }
+      // Ensure discount doesn't exceed subtotal
+      if (discountAmount > subtotal) discountAmount = subtotal;
+      
+      final total = subtotal - discountAmount;
+
       // 1. Create Sales Order
       await supabase.from('sales_orders').insert({
         'id': orderId,
@@ -335,11 +604,14 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
         'order_number': orderNumber,
         'customer_id': _selectedCustomer!.id,
         'sale_id': authState.user?.id, // Employee who creates the order
+        'warehouse_id': _selectedWarehouseId,
         'order_date': DateTime.now().toIso8601String().split('T')[0], // date only
         'status': 'pending_approval', 
         'payment_status': 'unpaid',
         'subtotal': subtotal,
-        'total': subtotal, // Match schema column name
+        'discount_percent': discountPercent,
+        'discount_amount': discountAmount,
+        'total': total,
         'notes': _notesController.text,
       });
 

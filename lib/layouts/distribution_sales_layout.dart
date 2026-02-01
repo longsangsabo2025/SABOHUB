@@ -9,6 +9,7 @@ import '../widgets/bug_report_dialog.dart';
 import '../widgets/realtime_notification_widgets.dart';
 
 import '../providers/auth_provider.dart';
+import '../providers/odori_providers.dart';
 import '../widgets/error_boundary.dart';
 import '../utils/app_logger.dart';
 import '../pages/staff/staff_profile_page.dart';
@@ -2644,7 +2645,7 @@ class _SalesOrderHistorySheetState extends State<_SalesOrderHistorySheet> {
       
       final response = await supabase
           .from('sales_orders')
-          .select('id, order_code, total_amount, status, created_at')
+          .select('id, order_number, total, status, created_at')
           .eq('customer_id', customerId)
           .order('created_at', ascending: false)
           .limit(50);
@@ -2753,7 +2754,7 @@ class _SalesOrderHistorySheetState extends State<_SalesOrderHistorySheet> {
                                 child: Icon(Icons.receipt, color: _getStatusColor(status)),
                               ),
                               title: Text(
-                                order['order_code'] ?? 'N/A',
+                                order['order_number'] ?? 'N/A',
                                 style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                               subtitle: Text(
@@ -2766,7 +2767,7 @@ class _SalesOrderHistorySheetState extends State<_SalesOrderHistorySheet> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    currencyFormat.format(order['total_amount'] ?? 0),
+                                    currencyFormat.format(order['total'] ?? 0),
                                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal),
                                   ),
                                   Container(
@@ -3425,6 +3426,8 @@ class _SalesCustomerFormSheetState extends ConsumerState<_SalesCustomerFormSheet
   String _selectedChannel = 'GT Sỉ';
   String _selectedType = 'retail'; // retail, distributor, agent, direct
   String _selectedStatus = 'active';
+  String _selectedTier = 'bronze'; // diamond, gold, silver, bronze
+  String? _selectedReferrerId;
   bool _isLoading = false;
 
   @override
@@ -3441,6 +3444,8 @@ class _SalesCustomerFormSheetState extends ConsumerState<_SalesCustomerFormSheet
       _selectedChannel = widget.customer!['channel'] ?? 'GT Sỉ';
       _selectedType = widget.customer!['type'] ?? 'retail';
       _selectedStatus = widget.customer!['status'] ?? 'active';
+      _selectedTier = widget.customer!['tier'] ?? 'bronze';
+      _selectedReferrerId = widget.customer!['referrer_id'];
     } else {
       _creditLimitController.text = '0';
       _paymentTermsController.text = '0';
@@ -3485,6 +3490,8 @@ class _SalesCustomerFormSheetState extends ConsumerState<_SalesCustomerFormSheet
         'channel': _selectedChannel,
         'type': _selectedType,
         'status': _selectedStatus,
+        'tier': _selectedTier,
+        'referrer_id': _selectedReferrerId,
         'credit_limit': double.tryParse(_creditLimitController.text) ?? 0,
         'payment_terms': int.tryParse(_paymentTermsController.text) ?? 0,
         'company_id': companyId,
@@ -3701,6 +3708,68 @@ class _SalesCustomerFormSheetState extends ConsumerState<_SalesCustomerFormSheet
                   DropdownMenuItem(value: 'direct', child: Text('📍 Trực tiếp')),
                 ],
                 onChanged: (value) => setState(() => _selectedType = value!),
+              ),
+              const SizedBox(height: 12),
+              
+              // Phân loại khách hàng (tier)
+              DropdownButtonFormField<String>(
+                value: _selectedTier,
+                decoration: InputDecoration(
+                  labelText: 'Phân loại khách hàng',
+                  prefixIcon: Icon(
+                    _selectedTier == 'diamond' ? Icons.diamond : Icons.workspace_premium,
+                    color: _selectedTier == 'diamond' ? Colors.blue[300] :
+                           _selectedTier == 'gold' ? Colors.amber[600] :
+                           _selectedTier == 'silver' ? Colors.grey[400] :
+                           Colors.brown[300],
+                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'diamond', child: Text('💎 Kim cương')),
+                  DropdownMenuItem(value: 'gold', child: Text('🥇 Vàng')),
+                  DropdownMenuItem(value: 'silver', child: Text('🥈 Bạc')),
+                  DropdownMenuItem(value: 'bronze', child: Text('🥉 Đồng')),
+                ],
+                onChanged: (value) => setState(() => _selectedTier = value!),
+              ),
+              const SizedBox(height: 12),
+              
+              // Người giới thiệu
+              Consumer(
+                builder: (context, ref, _) {
+                  final referrersAsync = ref.watch(activeReferrersProvider);
+                  return referrersAsync.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, _) => Text('Lỗi: $e'),
+                    data: (referrers) {
+                      if (referrers.isEmpty) return const SizedBox.shrink();
+                      return DropdownButtonFormField<String?>(
+                        value: _selectedReferrerId,
+                        decoration: InputDecoration(
+                          labelText: 'Người giới thiệu',
+                          prefixIcon: const Icon(Icons.person_add_alt_1),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          filled: true,
+                          fillColor: Colors.grey.shade50,
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('-- Không có --'),
+                          ),
+                          ...referrers.map((r) => DropdownMenuItem(
+                            value: r.id,
+                            child: Text('${r.name} (${r.commissionRate}%)'),
+                          )),
+                        ],
+                        onChanged: (value) => setState(() => _selectedReferrerId = value),
+                      );
+                    },
+                  );
+                },
               ),
               const SizedBox(height: 12),
               

@@ -39,6 +39,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
   bool _isActive = true;
   bool _isLoading = false;
   bool _isDeleting = false;
+  bool _showAdvanced = false; // Toggle for advanced fields
   
   // Image handling
   XFile? _selectedImage;
@@ -97,6 +98,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
       final companyId = authState.user?.companyId;
 
       if (companyId == null) throw Exception('User context not found');
+      
+      // Debug: Print selected category
+      debugPrint('📦 Saving product with category_id: $_selectedCategoryId');
 
       // Upload image if selected
       String? imageUrl = _imageUrlController.text.trim().isNotEmpty 
@@ -156,8 +160,16 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = 'Lỗi: $e';
+        
+        // Handle duplicate SKU error
+        if (e.toString().contains('idx_products_sku_company') || 
+            e.toString().contains('duplicate key')) {
+          errorMessage = 'Mã SKU "${_skuController.text}" đã tồn tại. Vui lòng dùng mã khác.';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -237,9 +249,26 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Basic Info Card
+              // Image Picker - Đặt lên đầu cho trực quan
+              Center(
+                child: ProductImagePicker(
+                  currentImageUrl: _currentImageUrl,
+                  onImageSelected: (image) {
+                    setState(() {
+                      _selectedImage = image;
+                      if (image == null) {
+                        _imageUrlController.clear();
+                        _currentImageUrl = null;
+                      }
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Essential Info - Thông tin quan trọng
               _buildSectionCard(
-                title: 'Thông tin cơ bản',
+                title: 'Thông tin sản phẩm',
                 icon: Icons.info_outline,
                 children: [
                   TextFormField(
@@ -251,7 +280,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                     validator: (val) => val == null || val.trim().isEmpty ? 'Bắt buộc nhập tên' : null,
                     textCapitalization: TextCapitalization.words,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -268,16 +297,18 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
-                          controller: _barcodeController,
+                          controller: _unitController,
                           decoration: const InputDecoration(
-                            labelText: 'Barcode',
-                            prefixIcon: Icon(Icons.qr_code_scanner),
+                            labelText: 'Đơn vị *',
+                            prefixIcon: Icon(Icons.straighten),
+                            hintText: 'chai, hộp...',
                           ),
+                          validator: (val) => val == null || val.trim().isEmpty ? 'Bắt buộc' : null,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   categoriesAsync.when(
                     data: (categories) => DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
@@ -292,266 +323,226 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                           child: Text(cat.name),
                         )),
                       ],
-                      onChanged: (val) => setState(() => _selectedCategoryId = val),
+                      onChanged: (val) {
+                        debugPrint('📂 Category selected: $val');
+                        setState(() => _selectedCategoryId = val);
+                      },
                     ),
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () => const LinearProgressIndicator(),
                     error: (e, s) => Text('Lỗi tải danh mục: $e'),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   TextFormField(
-                    controller: _descriptionController,
+                    controller: _sellingPriceController,
                     decoration: const InputDecoration(
-                      labelText: 'Mô tả sản phẩm',
-                      prefixIcon: Icon(Icons.description_outlined),
-                      alignLabelWithHint: true,
-                    ),
-                    maxLines: 3,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Pricing Card
-              _buildSectionCard(
-                title: 'Giá & Đơn vị',
-                icon: Icons.attach_money,
-                children: [
-                  TextFormField(
-                    controller: _unitController,
-                    decoration: const InputDecoration(
-                      labelText: 'Đơn vị tính *',
-                      prefixIcon: Icon(Icons.straighten),
-                      hintText: 'Ví dụ: chai, hộp, kg, thùng',
-                    ),
-                    validator: (val) => val == null || val.trim().isEmpty ? 'Bắt buộc' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _sellingPriceController,
-                          decoration: const InputDecoration(
-                            labelText: 'Giá bán *',
-                            prefixIcon: Icon(Icons.sell),
-                            suffixText: 'đ',
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          validator: (val) => val == null || val.isEmpty ? 'Bắt buộc' : null,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _costPriceController,
-                          decoration: const InputDecoration(
-                            labelText: 'Giá vốn',
-                            prefixIcon: Icon(Icons.price_change_outlined),
-                            suffixText: 'đ',
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _wholesalePriceController,
-                          decoration: const InputDecoration(
-                            labelText: 'Giá sỉ',
-                            prefixIcon: Icon(Icons.local_offer_outlined),
-                            suffixText: 'đ',
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _minWholesaleQtyController,
-                          decoration: const InputDecoration(
-                            labelText: 'SL tối thiểu sỉ',
-                            prefixIcon: Icon(Icons.production_quantity_limits),
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Margin display
-                  if (_sellingPriceController.text.isNotEmpty && _costPriceController.text.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Builder(builder: (context) {
-                        final sell = double.tryParse(_sellingPriceController.text) ?? 0;
-                        final cost = double.tryParse(_costPriceController.text) ?? 0;
-                        final margin = sell > 0 ? ((sell - cost) / sell * 100) : 0;
-                        final profit = sell - cost;
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: margin > 0 ? Colors.green.shade50 : Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              Column(
-                                children: [
-                                  Text('Lợi nhuận', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                                  Text(
-                                    '${currencyFormat.format(profit)}đ',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: profit >= 0 ? Colors.green : Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Column(
-                                children: [
-                                  Text('Biên LN', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                                  Text(
-                                    '${margin.toStringAsFixed(1)}%',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: margin >= 0 ? Colors.green : Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Additional Info
-              _buildSectionCard(
-                title: 'Thông tin thêm',
-                icon: Icons.more_horiz,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: TextFormField(
-                          controller: _weightController,
-                          decoration: const InputDecoration(
-                            labelText: 'Trọng lượng',
-                            prefixIcon: Icon(Icons.scale),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(labelText: 'ĐV'),
-                          value: _weightUnit,
-                          items: const [
-                            DropdownMenuItem(value: 'kg', child: Text('kg')),
-                            DropdownMenuItem(value: 'g', child: Text('g')),
-                            DropdownMenuItem(value: 'ml', child: Text('ml')),
-                            DropdownMenuItem(value: 'l', child: Text('lít')),
-                          ],
-                          onChanged: (val) => setState(() => _weightUnit = val ?? 'kg'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _minStockController,
-                    decoration: const InputDecoration(
-                      labelText: 'Tồn kho tối thiểu',
-                      prefixIcon: Icon(Icons.inventory_outlined),
-                      hintText: 'Cảnh báo khi dưới mức này',
+                      labelText: 'Giá bán *',
+                      prefixIcon: Icon(Icons.sell),
+                      suffixText: 'đ',
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  ),
-                  const SizedBox(height: 16),
-                  // Image Picker Section
-                  const Text(
-                    'Hình ảnh sản phẩm',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 8),
-                  ProductImagePicker(
-                    currentImageUrl: _currentImageUrl,
-                    onImageSelected: (image) {
-                      setState(() {
-                        _selectedImage = image;
-                        if (image == null) {
-                          _imageUrlController.clear();
-                          _currentImageUrl = null;
-                        }
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  // Keep URL field as backup option
-                  TextFormField(
-                    controller: _imageUrlController,
-                    decoration: InputDecoration(
-                      labelText: 'Hoặc nhập link ảnh',
-                      prefixIcon: const Icon(Icons.link),
-                      hintText: 'https://...',
-                      suffixIcon: _imageUrlController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                setState(() {
-                                  _imageUrlController.clear();
-                                  _currentImageUrl = null;
-                                });
-                              },
-                            )
-                          : null,
-                    ),
-                    keyboardType: TextInputType.url,
-                    onChanged: (value) {
-                      setState(() {
-                        _currentImageUrl = value.isNotEmpty ? value : null;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  SwitchListTile(
-                    title: const Text('Đang kinh doanh'),
-                    subtitle: Text(_isActive ? 'Sản phẩm đang hoạt động' : 'Sản phẩm đã ngưng'),
-                    value: _isActive,
-                    onChanged: (val) => setState(() => _isActive = val),
-                    activeColor: Colors.green,
+                    validator: (val) => val == null || val.isEmpty ? 'Bắt buộc' : null,
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
+
+              // Advanced Toggle
+              InkWell(
+                onTap: () => setState(() => _showAdvanced = !_showAdvanced),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _showAdvanced ? Icons.expand_less : Icons.expand_more,
+                        color: Colors.grey.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _showAdvanced ? 'Ẩn thông tin thêm' : 'Thông tin thêm (giá vốn, mô tả...)',
+                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Advanced Fields (Collapsible)
+              if (_showAdvanced) ...[
+                const SizedBox(height: 12),
+                _buildSectionCard(
+                  title: 'Thông tin mở rộng',
+                  icon: Icons.more_horiz,
+                  children: [
+                    TextFormField(
+                      controller: _barcodeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Barcode',
+                        prefixIcon: Icon(Icons.qr_code_scanner),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _costPriceController,
+                            decoration: const InputDecoration(
+                              labelText: 'Giá vốn',
+                              prefixIcon: Icon(Icons.price_change_outlined),
+                              suffixText: 'đ',
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _wholesalePriceController,
+                            decoration: const InputDecoration(
+                              labelText: 'Giá sỉ',
+                              prefixIcon: Icon(Icons.local_offer_outlined),
+                              suffixText: 'đ',
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _minWholesaleQtyController,
+                            decoration: const InputDecoration(
+                              labelText: 'SL tối thiểu sỉ',
+                              prefixIcon: Icon(Icons.production_quantity_limits),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _minStockController,
+                            decoration: const InputDecoration(
+                              labelText: 'Tồn kho tối thiểu',
+                              prefixIcon: Icon(Icons.inventory_outlined),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            controller: _weightController,
+                            decoration: const InputDecoration(
+                              labelText: 'Trọng lượng',
+                              prefixIcon: Icon(Icons.scale),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            decoration: const InputDecoration(labelText: 'ĐV'),
+                            value: _weightUnit,
+                            items: const [
+                              DropdownMenuItem(value: 'kg', child: Text('kg')),
+                              DropdownMenuItem(value: 'g', child: Text('g')),
+                              DropdownMenuItem(value: 'ml', child: Text('ml')),
+                              DropdownMenuItem(value: 'l', child: Text('lít')),
+                            ],
+                            onChanged: (val) => setState(() => _weightUnit = val ?? 'kg'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Mô tả sản phẩm',
+                        prefixIcon: Icon(Icons.description_outlined),
+                        alignLabelWithHint: true,
+                      ),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 12),
+                    // URL ảnh backup
+                    TextFormField(
+                      controller: _imageUrlController,
+                      decoration: InputDecoration(
+                        labelText: 'Link ảnh (nếu có)',
+                        prefixIcon: const Icon(Icons.link),
+                        hintText: 'https://...',
+                        suffixIcon: _imageUrlController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 18),
+                                onPressed: () {
+                                  setState(() {
+                                    _imageUrlController.clear();
+                                    _currentImageUrl = null;
+                                  });
+                                },
+                              )
+                            : null,
+                      ),
+                      keyboardType: TextInputType.url,
+                      onChanged: (value) {
+                        setState(() => _currentImageUrl = value.isNotEmpty ? value : null);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Đang kinh doanh', style: TextStyle(fontSize: 14)),
+                      subtitle: Text(
+                        _isActive ? 'Hoạt động' : 'Đã ngưng',
+                        style: TextStyle(fontSize: 12, color: _isActive ? Colors.green : Colors.red),
+                      ),
+                      value: _isActive,
+                      onChanged: (val) => setState(() => _isActive = val),
+                      activeColor: Colors.green,
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 20),
 
               // Submit Button
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 48,
                 child: ElevatedButton.icon(
                   onPressed: _isLoading ? null : _submitForm,
                   icon: _isLoading 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : Icon(isEditing ? Icons.save : Icons.add),
-                  label: Text(isEditing ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm'),
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Icon(isEditing ? Icons.save : Icons.add, size: 20),
+                  label: Text(isEditing ? 'Lưu thay đổi' : 'Thêm sản phẩm'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Colors.teal,
                     foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),

@@ -35,15 +35,37 @@ class _OrdersManagementPageState extends ConsumerState<OrdersManagementPage> wit
   Widget build(BuildContext context) {
     return Column(
       children: [
-        TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'Chờ duyệt'),
-            Tab(text: 'Đã duyệt'),
-            Tab(text: 'Đang giao'),
-            Tab(text: 'Hoàn thành'),
-          ],
+        Container(
+          color: Colors.white,
+          child: Row(
+            children: [
+              Expanded(
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabs: const [
+                    Tab(text: 'Chờ duyệt'),
+                    Tab(text: 'Đã duyệt'),
+                    Tab(text: 'Đang giao'),
+                    Tab(text: 'Hoàn thành'),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Làm mới',
+                onPressed: () {
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✓ Đã làm mới danh sách đơn hàng'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
         Expanded(
           child: TabBarView(
@@ -154,7 +176,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
       final supabase = Supabase.instance.client;
       var query = supabase
           .from('sales_orders')
-          .select('*, customers!inner(name, address, phone)')
+          .select('*, customers!inner(name, address, phone), sales_order_items(*)')
           .eq('company_id', user.companyId!)
           .eq('status', widget.status);
 
@@ -194,7 +216,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
       final supabase = Supabase.instance.client;
       var query = supabase
           .from('sales_orders')
-          .select('*, customers!inner(name, address, phone)')
+          .select('*, customers!inner(name, address, phone), sales_order_items(*)')
           .eq('company_id', user.companyId!)
           .eq('status', widget.status);
 
@@ -1107,8 +1129,45 @@ class OrderDetailSheet extends StatelessWidget {
                           children: [
                             const Text('Tổng tiền hàng'),
                             Text(
-                              currencyFormat.format(order.total),
+                              currencyFormat.format(order.subtotal),
                               style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                        // Show discount if exists
+                        if (order.discountAmount > 0) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.discount, size: 16, color: Colors.orange),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Chiết khấu${order.discountPercent != null && order.discountPercent! > 0 ? ' (${order.discountPercent!.toStringAsFixed(0)}%)' : ''}',
+                                    style: TextStyle(color: Colors.orange.shade700),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                '-${currencyFormat.format(order.discountAmount)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.orange.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const Divider(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Khách phải trả', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text(
+                              currencyFormat.format(order.total),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue),
                             ),
                           ],
                         ),

@@ -132,7 +132,7 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
       final filePath = 'avatars/$fileName';
       
       // Upload to Supabase Storage
-      await supabase.storage.from('public').uploadBinary(
+      await supabase.storage.from('avatars').uploadBinary(
         filePath,
         bytes,
         fileOptions: FileOptions(
@@ -142,7 +142,7 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
       );
       
       // Get public URL
-      final publicUrl = supabase.storage.from('public').getPublicUrl(filePath);
+      final publicUrl = supabase.storage.from('avatars').getPublicUrl(filePath);
       
       // Update employee record - sử dụng auth_user_id vì employee xác thực qua CEO
       await supabase.from('employees').update({

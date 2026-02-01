@@ -446,14 +446,14 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
       final path = 'avatars/$userId/${DateTime.now().millisecondsSinceEpoch}.$validExt';
 
       // Upload to Supabase Storage
-      await supabase.storage.from('public').uploadBinary(
+      await supabase.storage.from('avatars').uploadBinary(
         path,
         bytes,
         fileOptions: FileOptions(contentType: 'image/$validExt'),
       );
 
       // Get public URL
-      final publicUrl = supabase.storage.from('public').getPublicUrl(path);
+      final publicUrl = supabase.storage.from('avatars').getPublicUrl(path);
 
       // Update employee record
       await supabase.from('employees').update({
