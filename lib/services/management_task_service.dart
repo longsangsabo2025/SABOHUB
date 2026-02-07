@@ -40,9 +40,8 @@ class ManagementTaskService {
   /// Used in CEO Tasks Page - Strategic Tasks tab
   Future<List<ManagementTask>> getCEOStrategicTasks() async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
+      final userId = _ref.read(authProvider).user?.id;
       if (userId == null) {
-        // In dev mode without auth, return empty list instead of throwing
         return [];
       }
 
@@ -127,9 +126,9 @@ class ManagementTaskService {
   /// Used in CEO Tasks Page - Approvals tab
   Future<List<TaskApproval>> getPendingApprovals() async {
     try {
-      // Get current user's company_id from metadata
-      final user = _supabase.auth.currentUser;
-      final companyId = user?.userMetadata?['company_id'] as String?;
+      // Get current user's company_id from authProvider
+      final currentUser = _ref.read(authProvider).user;
+      final companyId = currentUser?.companyId;
       
       var query = _supabase.from('task_approvals').select('*')
           .eq('status', 'pending');
@@ -162,7 +161,7 @@ class ManagementTaskService {
     DateTime? dueDate,
   }) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
+      final userId = _ref.read(authProvider).user?.id;
       if (userId == null) throw Exception('User not authenticated');
 
       final taskData = {
@@ -270,8 +269,6 @@ class ManagementTaskService {
         approverId = currentUser?.id;
       }
       
-      // Nếu vẫn null, thử lấy từ Supabase Auth (CEO)
-      approverId ??= _supabase.auth.currentUser?.id;
       
       if (approverId == null) throw Exception('User not authenticated');
 
@@ -306,8 +303,6 @@ class ManagementTaskService {
         approverId = currentUser?.id;
       }
       
-      // Nếu vẫn null, thử lấy từ Supabase Auth (CEO)
-      approverId ??= _supabase.auth.currentUser?.id;
       
       if (approverId == null) throw Exception('User not authenticated');
 
@@ -325,9 +320,8 @@ class ManagementTaskService {
   /// Get task statistics for CEO dashboard
   Future<Map<String, int>> getTaskStatistics() async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
+      final userId = _ref.read(authProvider).user?.id;
       if (userId == null) {
-        // In dev mode without auth, return default stats
         return {
           'total': 0,
           'pending': 0,
@@ -376,9 +370,9 @@ class ManagementTaskService {
   /// Only shows statistics for the user's company (not all companies)
   Future<List<Map<String, dynamic>>> getCompanyTaskStatistics() async {
     try {
-      // Get current user's company_id from metadata
-      final user = _supabase.auth.currentUser;
-      final companyId = user?.userMetadata?['company_id'] as String?;
+      // Get current user's company_id from authProvider
+      final currentUser = _ref.read(authProvider).user;
+      final companyId = currentUser?.companyId;
       
       if (companyId == null) {
         return [];
@@ -570,7 +564,7 @@ class ManagementTaskService {
   /// Stream CEO strategic tasks - REALTIME
   /// Used in CEO Tasks Page - Strategic Tasks tab
   Stream<List<ManagementTask>> streamCEOStrategicTasks() {
-    final userId = _supabase.auth.currentUser?.id;
+    final userId = _ref.read(authProvider).user?.id;
     
     if (userId == null) {
       return Stream.value([]);

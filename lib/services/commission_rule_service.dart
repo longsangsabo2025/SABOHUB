@@ -8,6 +8,7 @@ class CommissionRuleService {
   /// Tạo quy tắc hoa hồng mới (CEO)
   Future<CommissionRule> createRule({
     required String companyId,
+    required String currentUserId,
     required String ruleName,
     String? description,
     required String appliesTo, // all, role, individual
@@ -20,8 +21,6 @@ class CommissionRuleService {
     DateTime? effectiveFrom,
     DateTime? effectiveTo,
   }) async {
-    final currentUserId = _supabase.auth.currentUser?.id;
-    if (currentUserId == null) throw Exception('User not authenticated');
 
     final data = {
       'company_id': companyId,

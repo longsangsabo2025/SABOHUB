@@ -13,6 +13,7 @@ import '../services/employee_service.dart';
 import '../services/task_service.dart';
 import 'cache_provider.dart';
 import 'document_provider.dart';
+import 'auth_provider.dart';
 
 // PHASE 3A - Multi-role dashboard providers
 import 'ceo_dashboard_provider.dart';
@@ -34,7 +35,8 @@ final cachedCompaniesProvider =
 
   // Fetch from service - using getMyCompanies for data isolation
   final service = ref.watch(companyServiceProvider);
-  final companies = await service.getMyCompanies();
+  final userId = ref.read(authProvider).user?.id;
+  final companies = await service.getMyCompanies(userId: userId);
 
   // Cache result
   memoryCache.set('companies', companies, config.defaultTTL);

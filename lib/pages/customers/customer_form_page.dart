@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dvhcvn/dvhcvn.dart' as dvhcvn;
 
-import '../../providers/odori_providers.dart';
+import '../../business_types/distribution/providers/odori_providers.dart';
 import '../../providers/auth_provider.dart';
 
 final supabase = Supabase.instance.client;

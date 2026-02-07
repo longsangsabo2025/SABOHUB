@@ -4,6 +4,7 @@ import '../services/task_service.dart';
 import '../models/company.dart';
 import '../models/task.dart';
 import 'cached_data_providers.dart';
+import 'auth_provider.dart';
 
 /// Company Actions Provider with automatic cache invalidation
 final companyActionsProvider = Provider<CompanyActions>((ref) {
@@ -24,8 +25,10 @@ class CompanyActions {
     String? email,
     String? businessType,
   }) async {
+    final userId = ref.read(authProvider).user?.id ?? '';
     final company = await _service.createCompany(
       name: name,
+      userId: userId,
       address: address,
       phone: phone,
       email: email,

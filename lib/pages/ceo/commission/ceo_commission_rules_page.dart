@@ -321,6 +321,7 @@ class _CreateRuleDialogState extends ConsumerState<_CreateRuleDialog> {
 
       await _ruleService.createRule(
         companyId: companyId,
+        currentUserId: user.user?.id ?? '',
         ruleName: _ruleNameController.text,
         description: _descriptionController.text.isEmpty
             ? null

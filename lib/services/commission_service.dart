@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/bill_commission.dart';
+import '../business_types/entertainment/models/bill_commission.dart';
 import '../models/commission_summary.dart';
 
 /// Commission Service - Quản lý hoa hồng nhân viên
@@ -93,11 +93,9 @@ class CommissionService {
   /// Approve commission (CEO)
   Future<BillCommission> approveCommission(
     String commissionId, {
+    required String userId,
     String? notes,
   }) async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
-
     final data = {
       'status': 'approved',
       'approved_by': userId,
@@ -118,11 +116,9 @@ class CommissionService {
   /// Reject commission (CEO)
   Future<BillCommission> rejectCommission(
     String commissionId, {
+    required String userId,
     String? notes,
   }) async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
-
     final data = {
       'status': 'rejected',
       'approved_by': userId,
@@ -143,12 +139,10 @@ class CommissionService {
   /// Mark commission as paid (CEO)
   Future<BillCommission> markCommissionAsPaid(
     String commissionId, {
+    required String userId,
     String? paymentReference,
     String? notes,
   }) async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
-
     final data = {
       'status': 'paid',
       'paid_by': userId,
@@ -168,9 +162,7 @@ class CommissionService {
   }
 
   /// Bulk approve commissions for a bill
-  Future<void> approveBillCommissions(String billId) async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
+  Future<void> approveBillCommissions(String billId, {required String userId}) async {
 
     await _supabase
         .from('bill_commissions')
@@ -186,10 +178,9 @@ class CommissionService {
   /// Bulk mark commissions as paid for a bill
   Future<void> markBillCommissionsAsPaid(
     String billId, {
+    required String userId,
     String? paymentReference,
   }) async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) throw Exception('User not authenticated');
 
     await _supabase
         .from('bill_commissions')

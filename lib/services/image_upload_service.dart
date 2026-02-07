@@ -26,6 +26,8 @@ class ImageUploadService {
   static const String bucketCustomers = 'customer-images';
   static const String bucketCompanies = 'company-images';
   static const String bucketGeneral = 'uploads';
+  static const String bucketPaymentProofs = 'payment-proofs';
+  static const String bucketInvoiceImages = 'invoice-images';
 
   /// Chọn ảnh từ gallery
   Future<XFile?> pickFromGallery({
@@ -131,6 +133,34 @@ class ImageUploadService {
       bucket: bucketGeneral,
       folder: folder,
       filePrefix: filePrefix,
+    );
+  }
+
+  /// Upload ảnh chứng minh thanh toán (chuyển khoản)
+  Future<String?> uploadPaymentProof({
+    required XFile imageFile,
+    required String companyId,
+    String? paymentId,
+  }) async {
+    return _uploadImage(
+      imageFile: imageFile,
+      bucket: bucketPaymentProofs,
+      folder: companyId,
+      filePrefix: paymentId ?? 'payment',
+    );
+  }
+
+  /// Upload ảnh hóa đơn đơn hàng
+  Future<String?> uploadInvoiceImage({
+    required XFile imageFile,
+    required String companyId,
+    String? orderId,
+  }) async {
+    return _uploadImage(
+      imageFile: imageFile,
+      bucket: bucketInvoiceImages,
+      folder: companyId,
+      filePrefix: orderId ?? 'invoice',
     );
   }
 

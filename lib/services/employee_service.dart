@@ -128,12 +128,9 @@ class EmployeeService {
         currentUser = authState.user;
       }
 
-      // Fallback to Supabase auth if no demo user
+      // Fallback: if authState has no user, reject
       if (currentUser == null) {
-        final supabaseUser = _supabase.auth.currentUser;
-        if (supabaseUser == null) {
-          throw Exception('Please login as CEO first');
-        }
+        throw Exception('Please login as CEO first');
       }
 
       // Verify user is CEO

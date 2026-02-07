@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/daily_work_report.dart';
 import '../../services/daily_work_report_service.dart';
+import '../../providers/auth_provider.dart';
 
 /// CEO Daily Reports Dashboard
 /// View all employee daily work reports with filters
@@ -38,26 +39,20 @@ class _DailyReportsDashboardPageState
 
     try {
       final service = ref.read(dailyWorkReportServiceProvider);
-      final user = _supabase.auth.currentUser;
+      final authUser = ref.read(authProvider).user;
 
-      if (user != null) {
+      if (authUser != null) {
         // Get company ID
-        final companyResponse = await _supabase
-            .from('companies')
-            .select('id')
-            .eq('owner_id', user.id)
-            .maybeSingle();
+        final companyId = authUser.companyId;
 
-        if (companyResponse == null) {
-          // User is not a CEO or doesn't have a company yet
+        if (companyId == null) {
+          // User doesn't have a company yet
           setState(() {
             _reports = [];
             _statistics = {};
           });
           return;
         }
-
-        final companyId = companyResponse['id'] as String;
 
         // Get reports for selected date
         final reports =

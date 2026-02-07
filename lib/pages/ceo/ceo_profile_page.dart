@@ -40,34 +40,25 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
     setState(() => _isLoading = true);
 
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) {
+      final authUser = ref.read(authProvider).user;
+      if (authUser == null) {
         setState(() => _isLoading = false);
         return;
       }
 
-      // Fetch user data from users table
+      // Fetch user data from employees table
       var response = await _supabase
-          .from('users')
+          .from('employees')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', authUser.id)
           .maybeSingle();
-
-      // Fallback to employees table if not found in users
-      if (response == null) {
-        response = await _supabase
-            .from('employees')
-            .select('*')
-            .eq('auth_user_id', user.id)
-            .maybeSingle();
-      }
 
       if (response != null) {
         final data = response;
         setState(() {
           _userData = data;
           _nameController.text = data['full_name'] ?? '';
-          _emailController.text = data['email'] ?? user.email ?? '';
+          _emailController.text = data['email'] ?? authUser.email ?? '';
           _phoneController.text = data['phone'] ?? '';
           _positionController.text = _getRoleLabel(data['role'] ?? 'CEO');
           _avatarUrl = data['avatar_url'];
@@ -237,12 +228,12 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
     setState(() => _isUploadingAvatar = true);
 
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) throw Exception('Chưa đăng nhập');
+      final authUser = ref.read(authProvider).user;
+      if (authUser == null) throw Exception('Chưa đăng nhập');
 
       final bytes = await image.readAsBytes();
       final fileExt = image.path.split('.').last;
-      final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final fileName = '${authUser.id}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
       final filePath = 'avatars/$fileName';
 
       // Upload to Supabase Storage
@@ -258,11 +249,11 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
       // Get public URL
       final publicUrl = _supabase.storage.from('avatars').getPublicUrl(filePath);
 
-      // Update users table (CEO uses users table)
-      await _supabase.from('users').update({
+      // Update employees table
+      await _supabase.from('employees').update({
         'avatar_url': publicUrl,
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', user.id);
+      }).eq('id', authUser.id);
 
       setState(() => _avatarUrl = publicUrl);
 
@@ -316,14 +307,14 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
     setState(() => _isUploadingAvatar = true);
 
     try {
-      final user = _supabase.auth.currentUser;
-      if (user == null) throw Exception('Chưa đăng nhập');
+      final authUser = ref.read(authProvider).user;
+      if (authUser == null) throw Exception('Chưa đăng nhập');
 
-      // Update users table
-      await _supabase.from('users').update({
+      // Update employees table
+      await _supabase.from('employees').update({
         'avatar_url': null,
         'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', user.id);
+      }).eq('id', authUser.id);
 
       setState(() => _avatarUrl = null);
 
@@ -428,14 +419,14 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
                     try {
-                      final user = _supabase.auth.currentUser;
-                      if (user == null) throw Exception('Chưa đăng nhập');
+                      final authUser = ref.read(authProvider).user;
+                      if (authUser == null) throw Exception('Chưa đăng nhập');
 
-                      await _supabase.from('users').update({
+                      await _supabase.from('employees').update({
                         'full_name': _nameController.text.trim(),
                         'phone': _phoneController.text.trim(),
                         'updated_at': DateTime.now().toIso8601String(),
-                      }).eq('id', user.id);
+                      }).eq('id', authUser.id);
 
                       await _loadUserData();
 

@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/payment.dart';
 import '../services/payment_service.dart';
 import 'auth_provider.dart';
-import 'session_provider.dart';
+import '../business_types/entertainment/providers/session_provider.dart';
 
 // Payment service provider
 final paymentServiceProvider = Provider<PaymentService>((ref) {

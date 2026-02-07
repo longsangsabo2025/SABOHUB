@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/cached_data_providers.dart'; // PHASE 3A - Cached providers
@@ -56,6 +57,8 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
                 _buildWelcomeSection(kpis),
                 const SizedBox(height: 24),
                 _buildKPISection(kpis),
+                const SizedBox(height: 24),
+                _buildCongNoOverviewSection(),
                 const SizedBox(height: 24),
                 _buildQuickActionsSection(),
                 const SizedBox(height: 24),
@@ -433,6 +436,254 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
           ),
         ],
       ),
+    );
+  }
+
+  // =============================================
+  // CÔNG NỢ OVERVIEW SECTION
+  // =============================================
+  Widget _buildCongNoOverviewSection() {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _loadCongNoData(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        final data = snapshot.data!;
+        final cf = NumberFormat('#,###', 'vi_VN');
+        final totalOutstanding = (data['total_outstanding'] ?? 0).toDouble();
+        final totalOverdue = (data['total_overdue'] ?? 0).toDouble();
+        final customerCount = data['customer_count'] ?? 0;
+        final overdueCount = data['overdue_count'] ?? 0;
+        final agingBuckets = data['aging'] as Map<String, double>? ?? {};
+        final overduePercent = totalOutstanding > 0 
+            ? (totalOverdue / totalOutstanding * 100) : 0.0;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.account_balance_wallet, 
+                    color: Colors.orange.shade700, size: 22),
+                const SizedBox(width: 8),
+                Text('Công nợ phải thu',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                    )),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: overdueCount > 0 ? Colors.red.shade50 : Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    overdueCount > 0 ? '$overdueCount quá hạn' : 'Tốt',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: overdueCount > 0 ? Colors.red.shade700 : Colors.green.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Main stats row
+            Row(
+              children: [
+                Expanded(
+                  child: _buildCongNoStatCard(
+                    'Tổng công nợ',
+                    '${cf.format(totalOutstanding)} ₫',
+                    Icons.monetization_on,
+                    Colors.orange,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildCongNoStatCard(
+                    'Quá hạn',
+                    '${cf.format(totalOverdue)} ₫',
+                    Icons.warning_amber_rounded,
+                    Colors.red,
+                    subtitle: '${overduePercent.toStringAsFixed(1)}%',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildCongNoStatCard(
+                    'Khách hàng nợ',
+                    '$customerCount',
+                    Icons.people,
+                    Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildCongNoStatCard(
+                    'Quá hạn >60 ngày',
+                    '${cf.format((agingBuckets['61-90'] ?? 0) + (agingBuckets['90+'] ?? 0))} ₫',
+                    Icons.schedule,
+                    Colors.deepOrange,
+                  ),
+                ),
+              ],
+            ),
+            // Aging bar
+            if (totalOutstanding > 0) ...[
+              const SizedBox(height: 16),
+              _buildAgingBarCEO(agingBuckets, totalOutstanding),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> _loadCongNoData() async {
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Get receivables summary
+      final receivables = await supabase
+          .from('v_receivables_aging')
+          .select('customer_id, balance, aging_bucket, days_overdue');
+      
+      double totalOutstanding = 0;
+      double totalOverdue = 0;
+      int overdueCount = 0;
+      final customers = <String>{};
+      final aging = <String, double>{
+        'current': 0, '1-30': 0, '31-60': 0, '61-90': 0, '90+': 0
+      };
+      
+      for (final r in (receivables as List)) {
+        final bal = ((r['balance'] ?? 0) as num).toDouble();
+        final bucket = r['aging_bucket']?.toString() ?? 'current';
+        final daysOverdue = (r['days_overdue'] ?? 0) as num;
+        
+        totalOutstanding += bal;
+        aging[bucket] = (aging[bucket] ?? 0) + bal;
+        customers.add(r['customer_id'].toString());
+        
+        if (daysOverdue > 0) {
+          totalOverdue += bal;
+          overdueCount++;
+        }
+      }
+      
+      return {
+        'total_outstanding': totalOutstanding,
+        'total_overdue': totalOverdue,
+        'customer_count': customers.length,
+        'overdue_count': overdueCount,
+        'aging': aging,
+      };
+    } catch (e) {
+      return {};
+    }
+  }
+
+  Widget _buildCongNoStatCard(String title, String value, IconData icon, 
+      MaterialColor color, {String? subtitle}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.shade50,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color.shade700, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                const SizedBox(height: 2),
+                Text(value, style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.bold, color: color.shade700)),
+                if (subtitle != null)
+                  Text(subtitle, style: TextStyle(fontSize: 10, color: color.shade400)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAgingBarCEO(Map<String, double> aging, double total) {
+    final buckets = [
+      ('Chưa hạn', aging['current'] ?? 0, Colors.green),
+      ('1-30d', aging['1-30'] ?? 0, Colors.yellow.shade700),
+      ('31-60d', aging['31-60'] ?? 0, Colors.orange),
+      ('61-90d', aging['61-90'] ?? 0, Colors.deepOrange),
+      ('>90d', aging['90+'] ?? 0, Colors.red),
+    ];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Aging bar
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            height: 10,
+            child: Row(
+              children: buckets.map((b) {
+                final pct = total > 0 ? b.$2 / total : 0.0;
+                if (pct <= 0) return const SizedBox.shrink();
+                return Expanded(
+                  flex: (pct * 1000).round().clamp(1, 1000),
+                  child: Container(color: b.$3),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        // Legend
+        Wrap(
+          spacing: 12,
+          children: buckets.where((b) => b.$2 > 0).map((b) {
+            final cf = NumberFormat.compact(locale: 'vi');
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(width: 8, height: 8,
+                  decoration: BoxDecoration(color: b.$3, shape: BoxShape.circle)),
+                const SizedBox(width: 4),
+                Text('${b.$1}: ${cf.format(b.$2)}₫',
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+              ],
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 

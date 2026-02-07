@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/company.dart';
 import '../services/company_service.dart';
+import 'auth_provider.dart';
 
 /// Company Service Provider
 final companyServiceProvider = Provider<CompanyService>((ref) {
@@ -13,7 +14,8 @@ final companyServiceProvider = Provider<CompanyService>((ref) {
 /// This ensures data isolation - each CEO only sees their own companies
 final companiesProvider = FutureProvider<List<Company>>((ref) async {
   final service = ref.watch(companyServiceProvider);
-  return await service.getMyCompanies();
+  final userId = ref.read(authProvider).user?.id;
+  return await service.getMyCompanies(userId: userId);
 });
 
 /// All Companies Provider (Admin/Platform only)

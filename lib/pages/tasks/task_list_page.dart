@@ -4,7 +4,7 @@ import '../../models/task.dart';
 import '../../providers/task_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
-import '../tasks/task_form_page.dart';
+import 'task_form_page.dart';
 
 class TaskListPage extends ConsumerStatefulWidget {
   const TaskListPage({super.key});

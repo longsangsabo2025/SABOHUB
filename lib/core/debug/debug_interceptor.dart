@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import '../debug/debug_manager.dart';
+import 'debug_manager.dart';
 
 /// Debug Interceptor for tracking API calls and responses
 class DebugInterceptor extends Interceptor {

@@ -101,8 +101,8 @@ class OrderItem {
     return OrderItem(
       id: json['id'],
       productId: json['product_id'],
-      productName: json['products']?['name'] ?? 'Unknown',
-      sku: json['products']?['sku'],
+      productName: json['products']?['name'] ?? json['product_name'] ?? 'Unknown',
+      sku: json['products']?['sku'] ?? json['product_sku'],
       unit: json['products']?['unit'] ?? 'pcs',
       quantity: json['quantity'] ?? 0,
     );

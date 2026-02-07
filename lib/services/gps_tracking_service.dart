@@ -8,8 +8,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geolocator_android/geolocator_android.dart';
 import 'package:geolocator_apple/geolocator_apple.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/odori_service.dart';
-import '../models/odori_models.dart';
+import '../business_types/distribution/services/odori_service.dart';
+import '../business_types/distribution/models/odori_models.dart';
 
 /// GPS Position Data
 class GpsPosition {

@@ -20,6 +20,9 @@ enum BusinessType {
   /// Check if this is a distribution/delivery business type (like Odori)
   bool get isDistribution => this == BusinessType.distribution || this == BusinessType.manufacturing;
 
+  /// Check if this is specifically manufacturing (not pure distribution)
+  bool get isManufacturing => this == BusinessType.manufacturing;
+
   /// Check if this is an entertainment/retail business type (like SABO Billiards)
   bool get isEntertainment => !isDistribution;
 }

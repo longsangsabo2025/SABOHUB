@@ -6,10 +6,11 @@ class AnalyticsService {
   final _supabase = supabase.client;
 
   /// Helper to get current user's company_id
+  /// This should be passed from the caller, NOT fetched from auth
   Future<String?> _getCompanyId() async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) return null;
-    return user.userMetadata?['company_id'] as String?;
+    // Deprecated: auth.currentUser doesn't work for employee login
+    // Callers should pass companyId directly
+    return null;
   }
 
   /// Get Dashboard KPIs for a specific company

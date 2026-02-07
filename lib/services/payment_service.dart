@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/payment.dart';
-import '../models/session.dart';
+import '../business_types/entertainment/models/session.dart';
 
 /// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
 /// **EMPLOYEE KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**

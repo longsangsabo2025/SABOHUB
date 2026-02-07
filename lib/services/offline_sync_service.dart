@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import '../models/odori_models.dart';
+import '../business_types/distribution/models/odori_models.dart';
 // TODO: Re-enable when OdoriService methods are implemented
 // import 'odori_service.dart';
 

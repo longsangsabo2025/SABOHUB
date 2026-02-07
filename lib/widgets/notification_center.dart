@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../services/odori_notification_service.dart';
+import '../business_types/distribution/services/odori_notification_service.dart';
 
 /// Format a DateTime as relative time in Vietnamese
 String _formatTimeAgo(DateTime dateTime) {

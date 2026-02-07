@@ -1,7 +1,7 @@
 import 'company.dart';
 import 'order.dart';
 import 'payment.dart';
-import 'session.dart';
+import '../business_types/entertainment/models/session.dart';
 
 /// Receipt model - represents a printed receipt
 class Receipt {

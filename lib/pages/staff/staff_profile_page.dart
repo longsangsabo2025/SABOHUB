@@ -307,16 +307,14 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
         final user = authState.user;
 
         if (user != null) {
-          // Try RPC first, fallback to direct update
+          // Use change_employee_password RPC
           try {
-            await supabase.rpc('update_employee_password', params: {
-              'emp_id': user.id,
-              'new_password': newPasswordController.text,
+            await supabase.rpc('change_employee_password', params: {
+              'p_employee_id': user.id,
+              'p_new_password': newPasswordController.text,
             });
-          } catch (_) {
-            await supabase.from('employees').update({
-              'password_hash': newPasswordController.text,
-            }).eq('id', user.id);
+          } catch (rpcError) {
+            throw Exception('Lỗi đổi mật khẩu: $rpcError');
           }
 
           if (mounted) {

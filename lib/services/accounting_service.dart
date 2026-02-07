@@ -124,7 +124,7 @@ class AccountingService {
       if (type == null || type == TransactionType.revenue) {
         var salesQuery = _supabase
             .from('sales_orders')
-            .select('id, order_number, order_date, total, payment_method, payment_status, status, notes, created_at')
+            .select('id, order_number, order_date, total, payment_method, payment_status, status, notes, created_at, customers(name), sales_order_items(products(name))')
             .eq('company_id', companyId)
             .inFilter('status', ['completed', 'approved']);
 
@@ -141,6 +141,20 @@ class AccountingService {
         final salesData = await salesQuery.order('order_date', ascending: false);
         
         for (var record in salesData) {
+          final customer = record['customers'] as Map<String, dynamic>?;
+          final items = record['sales_order_items'] as List? ?? [];
+          final itemNames = items
+              .map((item) {
+                final product = item['products'] as Map<String, dynamic>?;
+                return product?['name']?.toString().trim();
+              })
+              .where((name) => name != null && name!.isNotEmpty)
+              .cast<String>()
+              .toList();
+          final itemsSummary = itemNames.isEmpty
+              ? null
+              : '${itemNames.take(3).join(', ')}${itemNames.length > 3 ? '...' : ''}';
+
           transactions.add(AccountingTransaction(
             id: record['id'] as String,
             companyId: companyId,
@@ -153,6 +167,9 @@ class AccountingService {
             category: 'sales',
             referenceId: record['order_number'] as String?,
             notes: record['notes'] as String?,
+            status: (record['payment_status'] as String?) ?? (record['status'] as String?),
+            counterpartyName: customer?['name']?.toString(),
+            itemsSummary: itemsSummary,
             createdAt: DateTime.parse(record['created_at'].toString()),
           ));
         }
@@ -187,6 +204,7 @@ class AccountingService {
             category: 'purchase',
             referenceId: record['transaction_code'] as String?,
             notes: record['notes'] as String?,
+            status: record['status'] as String?,
             createdAt: DateTime.parse(record['created_at'].toString()),
           ));
         }

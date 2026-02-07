@@ -307,7 +307,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
       final activeCompanies = await supabase
           .from('companies')
           .select('id')
-          .eq('status', 'active')
+          .eq('is_active', true)
           .count();
       
       setState(() {
@@ -785,7 +785,8 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
   }
 
   Widget _buildCompanyCard(Map<String, dynamic> company) {
-    final status = company['status'] ?? 'active';
+    final isActive = company['is_active'] ?? true;
+    final status = isActive ? 'active' : 'inactive';
     final businessType = company['business_type'] ?? 'unknown';
     final employeeCount = company['employees']?[0]?['count'] ?? 0;
     
@@ -927,7 +928,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
                 await SupabaseService().client.from('companies').insert({
                   'name': nameController.text,
                   'business_type': selectedType,
-                  'status': 'active',
+                  'is_active': true,
                 });
                 Navigator.pop(context);
                 _loadCompanies();
@@ -1014,8 +1015,8 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
   }
 
   void _toggleCompanyStatus(Map<String, dynamic> company) async {
-    final newStatus = company['status'] == 'active' ? 'inactive' : 'active';
-    await SupabaseService().client.from('companies').update({'status': newStatus}).eq('id', company['id']);
+    final currentActive = company['is_active'] ?? true;
+    await SupabaseService().client.from('companies').update({'is_active': !currentActive}).eq('id', company['id']);
     _loadCompanies();
   }
 
@@ -1217,7 +1218,8 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
   Widget _buildUserCard(Map<String, dynamic> user) {
     final role = (user['role'] ?? 'staff').toString().toUpperCase();
     final companyName = user['companies']?['name'] ?? 'No Company';
-    final status = user['status'] ?? 'active';
+    final isActive = user['is_active'] ?? true;
+    final status = isActive ? 'active' : 'inactive';
     
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1391,8 +1393,8 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
   }
 
   void _toggleUserStatus(Map<String, dynamic> user) async {
-    final newStatus = user['status'] == 'active' ? 'inactive' : 'active';
-    await SupabaseService().client.from('employees').update({'status': newStatus}).eq('id', user['id']);
+    final currentActive = user['is_active'] ?? true;
+    await SupabaseService().client.from('employees').update({'is_active': !currentActive}).eq('id', user['id']);
     _loadUsers();
   }
 }

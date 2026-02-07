@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../providers/odori_providers.dart';
+import '../../business_types/distribution/providers/odori_providers.dart';
+import '../../providers/auth_provider.dart';
 
 class StockAdjustmentPage extends ConsumerStatefulWidget {
   const StockAdjustmentPage({super.key});
@@ -60,20 +61,13 @@ class _StockAdjustmentPageState extends ConsumerState<StockAdjustmentPage> {
 
     try {
       final supabase = Supabase.instance.client;
-      final user = supabase.auth.currentUser;
+      final appUser = ref.read(authProvider).user;
       
-      if (user == null) {
+      if (appUser == null) {
         throw Exception('Chưa đăng nhập');
       }
 
-      // Get user's company_id
-      final employee = await supabase
-          .from('employees')
-          .select('company_id')
-          .eq('user_id', user.id)
-          .single();
-
-      final companyId = employee['company_id'];
+      final companyId = appUser.companyId;
       final quantity = int.parse(_quantityController.text);
 
       // Insert inventory movement
@@ -83,10 +77,10 @@ class _StockAdjustmentPageState extends ConsumerState<StockAdjustmentPage> {
         'type': _movementType,
         'reason': _reasonController.text.isNotEmpty ? _reasonController.text : null,
         'quantity': quantity,
-        'before_quantity': 0, // Could fetch current stock if needed
-        'after_quantity': _movementType == 'out' ? -quantity : quantity, // Simplified
+        'before_quantity': 0,
+        'after_quantity': _movementType == 'out' ? -quantity : quantity,
         'notes': _notesController.text.isNotEmpty ? _notesController.text : null,
-        'created_by': user.id,
+        'created_by': appUser.id,
       });
 
       if (mounted) {

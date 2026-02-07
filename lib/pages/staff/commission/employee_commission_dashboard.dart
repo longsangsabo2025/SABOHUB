@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/commission_summary.dart';
-import '../../../models/bill_commission.dart';
+import '../../../business_types/entertainment/models/bill_commission.dart';
 import '../../../services/commission_service.dart';
 import '../../../providers/auth_provider.dart';
 import 'package:intl/intl.dart';

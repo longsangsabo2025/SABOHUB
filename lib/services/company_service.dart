@@ -30,9 +30,8 @@ class CompanyService {
 
   /// Get companies owned by current user (CEO)
   /// This is the PRIMARY method for CEO dashboard - only shows their companies
-  Future<List<Company>> getMyCompanies() async {
+  Future<List<Company>> getMyCompanies({String? userId}) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
       if (userId == null) {
         debugPrint('🏢 getMyCompanies: User not authenticated');
         return [];
@@ -90,17 +89,13 @@ class CompanyService {
   /// Create new company
   Future<Company> createCompany({
     required String name,
+    required String userId,
     String? address,
     String? phone,
     String? email,
     String? businessType,
   }) async {
     try {
-      // Verify user is authenticated
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        throw Exception('User not authenticated');
-      }
 
       // ✅ Insert company WITH created_by (CEO owner)
       final response = await _supabase

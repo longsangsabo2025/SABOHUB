@@ -89,7 +89,7 @@ class RouteDelivery {
       driverName: json['employees']?['full_name'],
       orderNumber: order?['order_number'],
       customerName: customer?['name'],
-      customerAddress: customer?['address'],
+      customerAddress: json['delivery_address'] as String? ?? customer?['address'],
       customerPhone: customer?['phone'],
       latitude: customer?['lat']?.toDouble(),  // DB uses 'lat' not 'latitude'
       longitude: customer?['lng']?.toDouble(),  // DB uses 'lng' not 'longitude'

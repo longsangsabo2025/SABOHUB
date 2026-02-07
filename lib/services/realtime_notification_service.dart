@@ -51,7 +51,8 @@ class AppNotification {
       referenceId: json['reference_id'] as String?,
       // Database uses 'link' instead of 'action_url'
       actionUrl: (json['action_url'] ?? json['link']) as String?,
-      actionData: json['action_data'] as Map<String, dynamic>?,
+      // Database uses 'data' instead of 'action_data'
+      actionData: (json['action_data'] ?? json['data']) as Map<String, dynamic>?,
       isRead: json['is_read'] as bool? ?? false,
       readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
       createdBy: json['created_by'] as String?,
@@ -75,6 +76,12 @@ class AppNotification {
         return Icons.access_time;
       case 'announcement':
         return Icons.campaign;
+      case 'overdue_payment':
+        return Icons.money_off;
+      case 'overdue_digest':
+        return Icons.summarize;
+      case 'approval_request':
+        return Icons.approval;
       default:
         return Icons.notifications;
     }
@@ -95,6 +102,12 @@ class AppNotification {
         return Colors.purple;
       case 'announcement':
         return Colors.teal;
+      case 'overdue_payment':
+        return Colors.red;
+      case 'overdue_digest':
+        return Colors.deepOrange;
+      case 'approval_request':
+        return Colors.amber;
       default:
         return Colors.grey;
     }

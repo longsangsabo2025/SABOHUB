@@ -3,18 +3,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../layouts/manager_main_layout.dart';
-import '../pages/super_admin/super_admin_main_layout.dart';
-import '../layouts/distribution_manager_layout.dart';
-import '../layouts/distribution_sales_layout.dart';
-import '../layouts/distribution_warehouse_layout.dart';
-import 'driver/distribution_driver_layout_refactored.dart';
-import '../layouts/distribution_customer_service_layout.dart';
-import '../layouts/distribution_finance_layout.dart';
+import 'super_admin/super_admin_main_layout.dart';
+import '../business_types/distribution/layouts/distribution_manager_layout.dart';
+import '../business_types/distribution/layouts/distribution_sales_layout.dart';
+import '../business_types/distribution/layouts/distribution_warehouse_layout.dart';
+import '../business_types/distribution/pages/driver/distribution_driver_layout_refactored.dart';
+import '../business_types/distribution/layouts/distribution_customer_service_layout.dart';
+import '../business_types/distribution/layouts/distribution_finance_layout.dart' hide Text, Icon, SizedBox, Expanded;
+import '../business_types/manufacturing/layouts/manufacturing_manager_layout.dart';
+import '../business_types/entertainment/layouts/entertainment_manager_layout.dart';
 import '../layouts/shift_leader_main_layout.dart';
 import '../layouts/driver_main_layout.dart';
 import '../layouts/warehouse_main_layout.dart';
-import '../pages/ceo/ceo_main_layout.dart';
-import '../pages/staff_main_layout.dart';
+import 'ceo/ceo_main_layout.dart';
+import 'staff_main_layout.dart';
 import '../providers/auth_provider.dart';
 import '../models/user.dart' as app_user;
 import '../utils/app_logger.dart';
@@ -481,9 +483,17 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
         return const CEOMainLayout();
       case UserRole.manager:
         // Route to different layout based on business type
+        if (businessType != null && businessType.isManufacturing) {
+          AppLogger.nav('→ Routing to ManufacturingManagerLayout (isManufacturing=true)');
+          return const ManufacturingManagerLayout();
+        }
         if (businessType != null && businessType.isDistribution) {
           AppLogger.nav('→ Routing to DistributionManagerLayout (isDistribution=true)');
           return const DistributionManagerLayout();
+        }
+        if (businessType != null && businessType.isEntertainment) {
+          AppLogger.nav('→ Routing to EntertainmentManagerLayout (isEntertainment=true)');
+          return const EntertainmentManagerLayout();
         }
         AppLogger.nav('→ Routing to ManagerMainLayout (default)');
         return const ManagerMainLayout();
@@ -526,7 +536,12 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
         AppLogger.nav('→ Routing to DriverMainLayout');
         return const DriverMainLayout();
       case UserRole.warehouse:
-        AppLogger.nav('→ Routing to WarehouseMainLayout');
+        // Distribution warehouse gets specialized layout with more tabs
+        if (businessType != null && businessType.isDistribution) {
+          AppLogger.nav('→ Routing to DistributionWarehouseLayout (warehouse + distribution)');
+          return const DistributionWarehouseLayout();
+        }
+        AppLogger.nav('→ Routing to WarehouseMainLayout (default)');
         return const WarehouseMainLayout();
     }
   }

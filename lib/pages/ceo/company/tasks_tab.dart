@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../models/company.dart';
 import '../../../models/task.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/task_provider.dart';
 import '../../../providers/cached_data_providers.dart';
 import '../../../providers/data_action_providers.dart';
@@ -1056,8 +1057,8 @@ class _TasksTabState extends ConsumerState<TasksTab>
 
   Future<void> _applyTemplate(TaskTemplate template) async {
     try {
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser == null) return;
+      final appUser = ref.read(authProvider).user;
+      if (appUser == null) return;
 
       final taskService = TaskService();
       final task = Task(
@@ -1071,8 +1072,8 @@ class _TasksTabState extends ConsumerState<TasksTab>
         status: TaskStatus.todo,
         recurrence: template.recurrence,
         dueDate: _calculateDueDate(template.recurrence),
-        createdBy: currentUser.id,
-        createdByName: currentUser.email ?? '',
+        createdBy: appUser.id,
+        createdByName: appUser.email ?? '',
         createdAt: DateTime.now(),
       );
 

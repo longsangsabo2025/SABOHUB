@@ -8,6 +8,7 @@ import '../../../models/company.dart';
 import '../../../models/manager_permissions.dart';
 import '../../../providers/company_provider.dart';
 import '../../../providers/manager_permissions_provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../services/company_service.dart';
 import '../company_details_page.dart' show companyDetailsProvider;
@@ -28,10 +29,10 @@ class SettingsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Get current user info
-    final currentUser = supabase.client.auth.currentUser;
-    final isUserCEO = currentUser?.userMetadata?['role'] == 'ceo';
-    final currentUserId = currentUser?.id;
+    // Get current user info from authProvider
+    final authUser = ref.read(authProvider).user;
+    final isUserCEO = authUser?.role.toString().toLowerCase().contains('ceo') ?? false;
+    final currentUserId = authUser?.id;
     
     // For managers, check permissions
     final managerPermissionsAsync = isUserCEO || currentUserId == null

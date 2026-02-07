@@ -108,6 +108,25 @@ extension CustomerTierExtension on CustomerTier {
     }
     return CustomerTier.bronze;
   }
+  
+  /// Parse tier từ string (từ database)
+  static CustomerTier fromString(String? value) {
+    if (value == null) return CustomerTier.bronze;
+    switch (value.toLowerCase()) {
+      case 'diamond':
+        return CustomerTier.diamond;
+      case 'gold':
+        return CustomerTier.gold;
+      case 'silver':
+        return CustomerTier.silver;
+      case 'bronze':
+        return CustomerTier.bronze;
+      case 'none':
+        return CustomerTier.none;
+      default:
+        return CustomerTier.bronze;
+    }
+  }
 }
 
 /// Model chứa thông tin doanh số của khách hàng từ v_sales_by_customer

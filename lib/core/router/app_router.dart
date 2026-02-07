@@ -20,28 +20,32 @@ import '../../layouts/manager_main_layout.dart';
 import '../../layouts/shift_leader_main_layout.dart';
 import '../../layouts/driver_main_layout.dart';
 import '../../layouts/warehouse_main_layout.dart';
-import '../../layouts/distribution_warehouse_layout.dart';
-import '../../pages/driver/distribution_driver_layout_refactored.dart';
-import '../../layouts/distribution_finance_layout.dart';
-import '../../layouts/distribution_customer_service_layout.dart';
+import '../../business_types/distribution/layouts/distribution_warehouse_layout.dart';
+import '../../business_types/distribution/pages/driver/distribution_driver_layout_refactored.dart';
+import '../../business_types/distribution/layouts/distribution_finance_layout.dart';
+import '../../business_types/distribution/layouts/distribution_customer_service_layout.dart';
 import '../../pages/staff_main_layout.dart';
 import '../../pages/ceo/ceo_main_layout.dart';
 import '../../pages/manager/manager_reports_page.dart';
 // Odori B2B Module Pages
-import '../../pages/customers/odori_customers_page.dart';
-import '../../pages/products/odori_products_page.dart';
-import '../../pages/orders/odori_orders_page.dart';
-import '../../pages/deliveries/odori_deliveries_page.dart';
-import '../../pages/receivables/odori_receivables_page.dart';
+import '../../business_types/distribution/pages/customers/odori_customers_page.dart';
+import '../../business_types/distribution/pages/products/odori_products_page.dart';
+import '../../business_types/distribution/pages/orders/odori_orders_page.dart';
+import '../../business_types/distribution/pages/deliveries/odori_deliveries_page.dart';
+import '../../business_types/distribution/pages/receivables/odori_receivables_page.dart';
 // Warehouse & Driver Pages - Now using layouts
 import '../../pages/delivery/route_planning_page.dart';
 // Manufacturing Module Pages
-import '../../pages/manufacturing/suppliers_page.dart';
-import '../../pages/manufacturing/materials_page.dart';
-import '../../pages/manufacturing/bom_page.dart';
-import '../../pages/manufacturing/purchase_orders_page.dart';
-import '../../pages/manufacturing/production_orders_page.dart';
-import '../../pages/manufacturing/payables_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/suppliers_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/materials_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/bom_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/purchase_orders_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/production_orders_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/payables_page.dart';
+// Entertainment Module Pages
+import '../../business_types/entertainment/pages/tables/table_list_page.dart';
+import '../../business_types/entertainment/pages/sessions/session_list_page.dart';
+import '../../business_types/entertainment/pages/menu/menu_list_page.dart';
 // Map & GPS Module Pages - TEMPORARILY DISABLED for web compatibility
 // import '../../pages/map/map_overview_page.dart';
 // import '../../pages/map/delivery_tracking_page.dart';
@@ -123,6 +127,11 @@ class AppRoutes {
   static const String manufacturingPurchaseOrders = '/manufacturing/purchase-orders';
   static const String manufacturingProductionOrders = '/manufacturing/production-orders';
   static const String manufacturingPayables = '/manufacturing/payables';
+
+  // Entertainment Module routes
+  static const String entertainmentTables = '/entertainment/tables';
+  static const String entertainmentSessions = '/entertainment/sessions';
+  static const String entertainmentMenu = '/entertainment/menu';
 
   // Map & GPS Module routes
   static const String mapOverview = '/map/overview';
@@ -462,6 +471,20 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.driverDashboard,
         builder: (BuildContext context, GoRouterState state) => const DriverMainLayout(),
+      ),
+
+      // Entertainment Module routes
+      GoRoute(
+        path: AppRoutes.entertainmentTables,
+        builder: (BuildContext context, GoRouterState state) => const TableListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.entertainmentSessions,
+        builder: (BuildContext context, GoRouterState state) => const SessionListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.entertainmentMenu,
+        builder: (BuildContext context, GoRouterState state) => const MenuListPage(),
       ),
 
       // Manufacturing Module routes

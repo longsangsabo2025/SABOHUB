@@ -382,10 +382,10 @@ class AIService {
   /// Update recommendation status
   Future<AIRecommendation> updateRecommendationStatus(
     String recommendationId,
-    String status,
-  ) async {
+    String status, {
+    String? userId,
+  }) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
       final response = await _supabase
           .from('ai_recommendations')
           .update({

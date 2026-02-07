@@ -4,15 +4,23 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../models/odori_customer.dart';
-import '../../models/odori_product.dart';
-import '../../providers/odori_providers.dart';
+import '../../business_types/distribution/models/odori_customer.dart';
+import '../../business_types/distribution/models/odori_product.dart';
+import '../../business_types/distribution/models/odori_sales_order.dart';
+import '../../models/customer_address.dart';
+import '../../models/customer_contact.dart';
+import '../../business_types/distribution/providers/odori_providers.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/customer_avatar.dart';
 
 class OrderFormPage extends ConsumerStatefulWidget {
   final OdoriCustomer? preselectedCustomer;
+  final OdoriSalesOrder? orderToEdit; // For edit mode
   
-  const OrderFormPage({super.key, this.preselectedCustomer});
+  const OrderFormPage({super.key, this.preselectedCustomer, this.orderToEdit});
+  
+  /// Check if in edit mode
+  bool get isEditMode => orderToEdit != null;
 
   @override
   ConsumerState<OrderFormPage> createState() => _OrderFormPageState();
@@ -25,6 +33,10 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   
   OdoriCustomer? _selectedCustomer;
   final List<_OrderLineItem> _orderItems = [];
+  
+  /// For edit mode
+  bool get _isEditMode => widget.orderToEdit != null;
+  String? _editingOrderId;
   bool _isLoading = false;
   
   // Discount settings
@@ -37,17 +49,123 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   String? _selectedWarehouseName;
   bool _isLoadingWarehouses = true;
   
+  // Delivery address selection
+  List<CustomerAddress> _customerAddresses = [];
+  CustomerAddress? _selectedAddress;
+  bool _isLoadingAddresses = false;
+  
+  // Delivery contact selection
+  List<CustomerContact> _customerContacts = [];
+  CustomerContact? _selectedContact;
+  bool _isLoadingContacts = false;
+  
   // Formatters
   final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
 
   @override
   void initState() {
     super.initState();
-    // Pre-select customer if provided
-    if (widget.preselectedCustomer != null) {
+    
+    // Edit mode: load existing order data
+    if (_isEditMode) {
+      _loadOrderForEdit();
+    }
+    // Pre-select customer if provided (new order)
+    else if (widget.preselectedCustomer != null) {
       _selectedCustomer = widget.preselectedCustomer;
+      _loadCustomerAddresses(widget.preselectedCustomer!.id);
+      _loadCustomerContacts(widget.preselectedCustomer!.id);
     }
     _loadWarehouses();
+  }
+  
+  /// Load existing order data for edit mode
+  Future<void> _loadOrderForEdit() async {
+    final order = widget.orderToEdit!;
+    _editingOrderId = order.id;
+    
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Load customer data
+      final customerData = await supabase
+          .from('customers')
+          .select()
+          .eq('id', order.customerId)
+          .single();
+      _selectedCustomer = OdoriCustomer.fromJson(customerData);
+      
+      // Load customer addresses and contacts
+      await _loadCustomerAddresses(order.customerId);
+      await _loadCustomerContacts(order.customerId);
+      
+      // Set warehouse
+      _selectedWarehouseId = order.warehouseId;
+      _selectedWarehouseName = order.warehouseName;
+      
+      // Set discount
+      if (order.discountPercent != null && order.discountPercent! > 0) {
+        _discountType = 'percent';
+        _discountValue = order.discountPercent!;
+        _discountController.text = order.discountPercent!.toStringAsFixed(0);
+      } else if (order.discountAmount > 0) {
+        _discountType = 'fixed';
+        _discountValue = order.discountAmount;
+        _discountController.text = order.discountAmount.toStringAsFixed(0);
+      }
+      
+      // Set notes
+      _notesController.text = order.notes ?? '';
+      
+      // Load order items
+      if (order.items != null && order.items!.isNotEmpty) {
+        for (final item in order.items!) {
+          // Create a temporary product object from item data
+          final product = OdoriProduct(
+            id: item.productId,
+            companyId: order.companyId,
+            name: item.productName ?? 'Sản phẩm',
+            sku: item.productSku ?? '',
+            sellingPrice: item.unitPrice,
+            unit: item.unit ?? 'Cái',
+            status: 'active',
+            createdAt: DateTime.now(),
+          );
+          _orderItems.add(_OrderLineItem(
+            product: product,
+            quantity: item.quantity.toDouble(),
+            customPrice: item.unitPrice,
+          ));
+        }
+      } else {
+        // Load items from database if not included
+        final itemsData = await supabase
+            .from('sales_order_items')
+            .select('*, products(id, name, sku, price, unit)')
+            .eq('order_id', order.id);
+        
+        for (final itemJson in itemsData) {
+          final productJson = itemJson['products'];
+          if (productJson != null) {
+            final product = OdoriProduct.fromJson(productJson);
+            _orderItems.add(_OrderLineItem(
+              product: product,
+              quantity: (itemJson['quantity'] as num).toDouble(),
+              customPrice: (itemJson['unit_price'] as num).toDouble(),
+            ));
+          }
+        }
+      }
+      
+      setState(() {});
+    } catch (e) {
+      debugPrint('Error loading order for edit: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tải đơn hàng: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Future<void> _loadWarehouses() async {
@@ -83,6 +201,82 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     }
   }
 
+  Future<void> _loadCustomerAddresses(String customerId) async {
+    setState(() {
+      _isLoadingAddresses = true;
+      _customerAddresses = [];
+      _selectedAddress = null;
+    });
+
+    try {
+      final supabase = Supabase.instance.client;
+      final data = await supabase
+          .from('customer_addresses')
+          .select()
+          .eq('customer_id', customerId)
+          .eq('is_active', true)
+          .order('is_default', ascending: false)
+          .order('name');
+
+      final addresses = (data as List)
+          .map((json) => CustomerAddress.fromJson(json))
+          .toList();
+
+      setState(() {
+        _customerAddresses = addresses;
+        // Auto-select default address
+        if (addresses.isNotEmpty) {
+          _selectedAddress = addresses.firstWhere(
+            (a) => a.isDefault,
+            orElse: () => addresses.first,
+          );
+        }
+        _isLoadingAddresses = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading customer addresses: $e');
+      setState(() => _isLoadingAddresses = false);
+    }
+  }
+
+  Future<void> _loadCustomerContacts(String customerId) async {
+    setState(() {
+      _isLoadingContacts = true;
+      _customerContacts = [];
+      _selectedContact = null;
+    });
+
+    try {
+      final supabase = Supabase.instance.client;
+      final data = await supabase
+          .from('customer_contacts')
+          .select()
+          .eq('customer_id', customerId)
+          .eq('is_active', true)
+          .order('is_primary', ascending: false)
+          .order('name');
+
+      final contacts = (data as List)
+          .map((json) => CustomerContact.fromJson(json))
+          .toList();
+
+      setState(() {
+        _customerContacts = contacts;
+        // Auto-select primary contact
+        if (contacts.isNotEmpty) {
+          _selectedContact = contacts.firstWhere(
+            (c) => c.isPrimary,
+            orElse: () => contacts.first,
+          );
+        }
+        _isLoadingContacts = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading customer contacts: $e');
+      setState(() => _isLoadingContacts = false);
+    }
+  }
+
   @override
   void dispose() {
     _notesController.dispose();
@@ -94,7 +288,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tạo đơn hàng mới'),
+        title: Text(_isEditMode ? 'Sửa đơn hàng' : 'Tạo đơn hàng mới'),
         actions: [
           TextButton.icon(
             onPressed: _isLoading ? null : _submitOrder,
@@ -195,10 +389,387 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                   labelStyle: TextStyle(color: Colors.blue.shade900, fontSize: 12),
                 ),
               ),
+              // Delivery Address Section
+              const Divider(),
+              _buildDeliveryAddressSection(),
+              // Delivery Contact Section
+              const SizedBox(height: 12),
+              _buildDeliveryContactSection(),
             ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDeliveryAddressSection() {
+    if (_isLoadingAddresses) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+
+    if (_customerAddresses.isEmpty) {
+      // No branches — show customer's own address inline (no dropdown needed)
+      final addr = _selectedCustomer?.fullAddress ?? _selectedCustomer?.address;
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.teal.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.teal.shade100),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.location_on, color: Colors.teal.shade600, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Địa chỉ giao hàng',
+                    style: TextStyle(fontSize: 11, color: Colors.teal.shade700, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    addr != null && addr.isNotEmpty ? addr : 'Chưa có địa chỉ',
+                    style: TextStyle(fontSize: 13, color: addr != null && addr.isNotEmpty ? Colors.grey.shade800 : Colors.grey.shade500),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.location_on, color: Colors.teal.shade600, size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Địa chỉ giao hàng',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DropdownButtonFormField<CustomerAddress?>(
+            value: _selectedAddress,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: InputBorder.none,
+            ),
+            items: [
+              // Customer's own default address
+              DropdownMenuItem<CustomerAddress?>(
+                value: null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          _selectedCustomer?.name ?? 'Khách hàng',
+                          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.teal.shade100,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Mặc định',
+                            style: TextStyle(fontSize: 10, color: Colors.teal.shade700),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      _selectedCustomer?.fullAddress ?? _selectedCustomer?.address ?? 'Chưa có địa chỉ',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              // Branches / cơ sở
+              ..._customerAddresses.map((addr) {
+                return DropdownMenuItem<CustomerAddress?>(
+                  value: addr,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            addr.name,
+                            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                          ),
+                          if (addr.isDefault) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade100,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Cơ sở chính',
+                                style: TextStyle(fontSize: 10, color: Colors.blue.shade700),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      Text(
+                        addr.fullAddress,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+            onChanged: (addr) {
+              setState(() => _selectedAddress = addr);
+            },
+            selectedItemBuilder: (context) {
+              return [
+                // For null (customer default)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '${_selectedCustomer?.name ?? 'KH'} - ${_selectedCustomer?.fullAddress ?? _selectedCustomer?.address ?? ''}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+                // For each branch
+                ..._customerAddresses.map((addr) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '${addr.name} - ${addr.fullAddress}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  );
+                }),
+              ];
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeliveryContactSection() {
+    if (_isLoadingContacts) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+
+    if (_customerContacts.isEmpty) {
+      // Show customer's own contact info as default
+      final contactName = _selectedCustomer?.contactPerson ?? _selectedCustomer?.name;
+      final contactPhone = _selectedCustomer?.phone;
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.purple.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.purple.shade100),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.person, color: Colors.purple.shade600, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Người nhận hàng',
+                    style: TextStyle(fontSize: 11, color: Colors.purple.shade700, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    [
+                      if (contactName != null && contactName.isNotEmpty) contactName,
+                      if (contactPhone != null && contactPhone.isNotEmpty) contactPhone,
+                    ].join(' • '),
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final defaultContactName = _selectedCustomer?.contactPerson ?? _selectedCustomer?.name ?? '';
+    final defaultContactPhone = _selectedCustomer?.phone ?? '';
+    final defaultContactDisplay = [defaultContactName, defaultContactPhone].where((s) => s.isNotEmpty).join(' • ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.person_pin, color: Colors.purple.shade600, size: 20),
+            const SizedBox(width: 8),
+            const Text(
+              'Người nhận hàng',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DropdownButtonFormField<CustomerContact?>(
+            value: _selectedContact,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              border: InputBorder.none,
+            ),
+            items: [
+              // Customer's own contact as default
+              DropdownMenuItem<CustomerContact?>(
+                value: null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          defaultContactName.isNotEmpty ? defaultContactName : 'Khách hàng',
+                          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.shade100,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Mặc định',
+                            style: TextStyle(fontSize: 10, color: Colors.purple.shade700),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (defaultContactPhone.isNotEmpty)
+                      Text(
+                        defaultContactPhone,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                  ],
+                ),
+              ),
+              // Other contacts from customer_contacts
+              ..._customerContacts.map((contact) {
+                return DropdownMenuItem<CustomerContact?>(
+                  value: contact,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            contact.name,
+                            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                          ),
+                          if (contact.isPrimary) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.shade100,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Chính',
+                                style: TextStyle(fontSize: 10, color: Colors.purple.shade700),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      Text(
+                        '${contact.position ?? ''} ${contact.phone ?? ''}'.trim(),
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+            onChanged: (contact) {
+              setState(() => _selectedContact = contact);
+            },
+            selectedItemBuilder: (context) {
+              return [
+                // For null (customer default)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    defaultContactDisplay.isNotEmpty ? defaultContactDisplay : 'Liên hệ mặc định',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+                // For each contact
+                ..._customerContacts.map((contact) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '${contact.name} - ${contact.phone ?? contact.position ?? ''}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  );
+                }),
+              ];
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -525,6 +1096,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       builder: (context) => _CustomerSelectionSheet(
         onSelect: (customer) {
           setState(() => _selectedCustomer = customer);
+          _loadCustomerAddresses(customer.id);
+          _loadCustomerContacts(customer.id);
           Navigator.pop(context);
         },
       ),
@@ -566,6 +1139,105 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       return;
     }
 
+    // === Check overdue receivables & credit limit before allowing order ===
+    try {
+      final authState = ref.read(authProvider);
+      final companyId = authState.user?.companyId;
+      if (companyId != null && _selectedCustomer != null) {
+        final cf = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
+        final orderTotal = _orderItems.fold<double>(0, (sum, item) => sum + item.total);
+
+        // 1. Check credit limit
+        final custData = await Supabase.instance.client
+            .from('customers')
+            .select('credit_limit, total_debt')
+            .eq('id', _selectedCustomer!.id)
+            .maybeSingle();
+        if (custData != null) {
+          final creditLimit = ((custData['credit_limit'] ?? 0) as num).toDouble();
+          final totalDebt = ((custData['total_debt'] ?? 0) as num).toDouble();
+          if (creditLimit > 0 && (totalDebt + orderTotal) > creditLimit) {
+            if (!mounted) return;
+            final proceed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: Row(children: [
+                  Icon(Icons.credit_card_off, color: Colors.orange.shade700),
+                  const SizedBox(width: 8),
+                  const Text('Vượt hạn mức'),
+                ]),
+                content: Text(
+                  'Đơn hàng sẽ vượt hạn mức tín dụng:\n\n'
+                  '• Hạn mức: ${cf.format(creditLimit)}\n'
+                  '• Nợ hiện tại: ${cf.format(totalDebt)}\n'
+                  '• Đơn mới: ${cf.format(orderTotal)}\n'
+                  '• Tổng sau đơn: ${cf.format(totalDebt + orderTotal)}\n\n'
+                  'Vượt: ${cf.format(totalDebt + orderTotal - creditLimit)}',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Hủy'),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Vẫn tạo đơn', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
+            );
+            if (proceed != true) return;
+          }
+        }
+
+        // 2. Check overdue receivables
+        final overdueCheck = await Supabase.instance.client
+            .from('receivables')
+            .select('id, original_amount, paid_amount, due_date')
+            .eq('company_id', companyId)
+            .eq('customer_id', _selectedCustomer!.id)
+            .eq('status', 'overdue')
+            .limit(5);
+        if (overdueCheck is List && overdueCheck.isNotEmpty) {
+          final totalOverdue = (overdueCheck as List).fold<double>(
+              0, (s, r) => s + (((r['original_amount'] ?? 0) as num).toDouble() - ((r['paid_amount'] ?? 0) as num).toDouble()));
+          if (!mounted) return;
+          final proceed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.red.shade700),
+                const SizedBox(width: 8),
+                const Text('Khách hàng quá hạn'),
+              ]),
+              content: Text(
+                'Khách hàng này có ${overdueCheck.length} khoản nợ quá hạn '
+                'với tổng ${cf.format(totalOverdue)}.\n\n'
+                'Bạn có chắc muốn tiếp tục tạo đơn?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Hủy'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Vẫn tạo đơn', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+          );
+          if (proceed != true) return;
+        }
+      }
+    } catch (_) {
+      // Non-blocking: if check fails, allow order to proceed
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -574,8 +1246,11 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
 
       if (companyId == null) throw Exception('Không tìm thấy thông tin công ty');
 
-      final orderId = const Uuid().v4();
-      final orderNumber = 'SO-${DateFormat('yyMMdd').format(DateTime.now())}-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+      // Use existing orderId for edit mode, generate new for create
+      final orderId = _isEditMode ? _editingOrderId! : const Uuid().v4();
+      final orderNumber = _isEditMode 
+          ? widget.orderToEdit!.orderNumber 
+          : 'SO-${DateFormat('yyMMdd').format(DateTime.now())}-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
       
       final subtotal = _orderItems.fold<double>(0, (sum, item) => sum + item.total);
 
@@ -597,32 +1272,74 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       
       final total = subtotal - discountAmount;
 
-      // 1. Create Sales Order
-      await supabase.from('sales_orders').insert({
-        'id': orderId,
-        'company_id': companyId,
-        'order_number': orderNumber,
+      // Determine delivery address
+      String? deliveryAddress;
+      if (_selectedAddress != null) {
+        deliveryAddress = _selectedAddress!.fullAddress;
+      } else if (_selectedCustomer!.address != null) {
+        deliveryAddress = _selectedCustomer!.address;
+      }
+
+      // Determine delivery contact
+      String? deliveryContactName;
+      String? deliveryContactPhone;
+      if (_selectedContact != null) {
+        deliveryContactName = _selectedContact!.name;
+        deliveryContactPhone = _selectedContact!.phone;
+      } else if (_selectedCustomer!.contactPerson != null) {
+        deliveryContactName = _selectedCustomer!.contactPerson;
+        deliveryContactPhone = _selectedCustomer!.phone;
+      }
+
+      final orderData = {
         'customer_id': _selectedCustomer!.id,
-        'sale_id': authState.user?.id, // Employee who creates the order
         'warehouse_id': _selectedWarehouseId,
-        'order_date': DateTime.now().toIso8601String().split('T')[0], // date only
-        'status': 'pending_approval', 
-        'payment_status': 'unpaid',
         'subtotal': subtotal,
         'discount_percent': discountPercent,
         'discount_amount': discountAmount,
         'total': total,
         'notes': _notesController.text,
-      });
+        'delivery_address': deliveryAddress,
+        'delivery_address_id': _selectedAddress?.id,
+        'delivery_contact_id': _selectedContact?.id,
+        'delivery_contact_name': deliveryContactName,
+        'delivery_contact_phone': deliveryContactPhone,
+        'customer_address': _selectedCustomer!.address,
+      };
 
-      // 2. Create Order Items
+      if (_isEditMode) {
+        // UPDATE mode: Update existing order
+        await supabase.from('sales_orders')
+            .update({
+              ...orderData,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', orderId);
+        
+        // Delete old items and insert new ones
+        await supabase.from('sales_order_items').delete().eq('order_id', orderId);
+      } else {
+        // CREATE mode: Insert new order
+        await supabase.from('sales_orders').insert({
+          'id': orderId,
+          'company_id': companyId,
+          'order_number': orderNumber,
+          ...orderData,
+          'sale_id': authState.user?.id,
+          'order_date': DateTime.now().toIso8601String().split('T')[0],
+          'status': 'pending_approval',
+          'payment_status': 'unpaid',
+        });
+      }
+
+      // Insert order items (both create and edit modes)
       final orderItemsData = _orderItems.map((item) => {
         'id': const Uuid().v4(),
         'order_id': orderId,
         'product_id': item.product.id,
         'product_name': item.product.name,
         'product_sku': item.product.sku,
-        'quantity': item.quantity.toInt(), // Must be integer for database
+        'quantity': item.quantity.toInt(),
         'unit': item.product.unit,
         'unit_price': item.price,
         'line_total': item.total,
@@ -632,8 +1349,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
 
       if (mounted) {
         Navigator.pop(context); 
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Tạo đơn hàng thành công!'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_isEditMode ? 'Cập nhật đơn hàng thành công!' : 'Tạo đơn hàng thành công!'),
           backgroundColor: Colors.green,
         ));
         // Refresh orders list
@@ -657,10 +1374,11 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
 class _OrderLineItem {
   final OdoriProduct product;
   double quantity;
+  double? customPrice; // For edit mode: use saved price instead of current product price
 
-  _OrderLineItem({required this.product, required this.quantity});
+  _OrderLineItem({required this.product, required this.quantity, this.customPrice});
 
-  double get price => product.sellingPrice;
+  double get price => customPrice ?? product.sellingPrice;
   double get total => price * quantity;
 }
 
@@ -866,17 +1584,9 @@ class _CustomerListTile extends StatelessWidget {
             // Avatar with type indicator
             Stack(
               children: [
-                CircleAvatar(
-                  backgroundColor: typeColor.withValues(alpha: 0.15),
+                CustomerAvatar(
+                  seed: customer.name,
                   radius: 24,
-                  child: Text(
-                    customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?',
-                    style: TextStyle(
-                      color: typeColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
                 ),
                 if (customer.hasLocation)
                   Positioned(

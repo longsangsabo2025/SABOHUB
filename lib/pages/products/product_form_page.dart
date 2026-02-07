@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../models/odori_product.dart';
+import '../../business_types/distribution/models/odori_product.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/odori_providers.dart';
+import '../../business_types/distribution/providers/odori_providers.dart';
 import '../../services/image_upload_service.dart';
 import '../../widgets/sabo_image_picker.dart';
 

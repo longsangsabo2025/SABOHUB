@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
-import '../../models/odori_product.dart';
-import '../distribution_manager/inventory/warehouse_dialogs.dart';
+import '../../business_types/distribution/models/odori_product.dart';
+import '../../business_types/distribution/pages/manager/inventory/warehouse_dialogs.dart';
 
 final supabase = Supabase.instance.client;
 

@@ -55,30 +55,13 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
         return;
       }
 
-      // Check if this is a Supabase Auth user (CEO)
-      final supabaseUser = _supabase.auth.currentUser;
-      
-      Map<String, dynamic>? response;
-      
-      if (supabaseUser != null) {
-        // CEO: Fetch from users table using Supabase auth ID
-        response = await _supabase
-            .from('users')
-            .select(
-                'id, full_name, email, phone, avatar_url, role, branch_id, company_id, companies!company_id(name), branches!branch_id(name)')
-            .eq('id', supabaseUser.id)
-            .maybeSingle();
-      }
-      
-      // If not found or employee login, try employees table with app user ID
-      if (response == null) {
-        response = await _supabase
-            .from('employees')
-            .select(
-                'id, full_name, email, phone, avatar_url, role, branch_id, company_id, companies!company_id(name), branches!branch_id(name)')
-            .eq('id', appUser.id)
-            .maybeSingle();
-      }
+      // All users (CEO + Employee) use employees table
+      final response = await _supabase
+          .from('employees')
+          .select(
+              'id, full_name, email, phone, avatar_url, role, branch_id, company_id, companies!company_id(name), branches!branch_id(name)')
+          .eq('id', appUser.id)
+          .maybeSingle();
 
       if (response != null) {
         final data = response;
@@ -121,37 +104,15 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       
       if (appUser == null) throw Exception('Chưa đăng nhập');
       
-      // Check if this is a Supabase Auth user (CEO)
-      final supabaseUser = _supabase.auth.currentUser;
-      
-      bool updated = false;
-      
-      if (supabaseUser != null) {
-        // CEO: Try updating users table first
-        final usersResult = await _supabase
-            .from('users')
-            .update({
-              'full_name': _fullNameController.text.trim(),
-              'phone': _phoneController.text.trim(),
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('id', supabaseUser.id)
-            .select();
-        
-        updated = usersResult.isNotEmpty;
-      }
-
-      // If not updated (employee or CEO not in users table), update employees table
-      if (!updated) {
-        await _supabase
-            .from('employees')
-            .update({
-              'full_name': _fullNameController.text.trim(),
-              'phone': _phoneController.text.trim(),
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('id', appUser.id);
-      }
+      // All users (CEO + Employee) use employees table
+      await _supabase
+          .from('employees')
+          .update({
+            'full_name': _fullNameController.text.trim(),
+            'phone': _phoneController.text.trim(),
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', appUser.id);
 
       // Reload user data to update UI
       await _loadUserData();
@@ -228,41 +189,17 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
               final messenger = ScaffoldMessenger.of(context);
 
               try {
-                // Support both CEO (Supabase Auth) and Employee (custom auth)
+                // All users use employee_login, so change password via RPC
                 final appUser = ref.read(authProvider).user;
-                final authUser = _supabase.auth.currentUser;
+                if (appUser == null) throw Exception('Chưa đăng nhập');
                 
-                // Check if user is an employee (not CEO)
-                // Employee roles: employee, driver, sales, manager, warehouse_staff, etc.
-                final isEmployee = appUser != null && authUser == null;
+                final result = await _supabase.rpc('change_employee_password', params: {
+                  'p_employee_id': appUser.id,
+                  'p_new_password': passwordController.text,
+                });
                 
-                if (isEmployee) {
-                  // Employee - use RPC to hash password properly
-                  final result = await _supabase.rpc('change_employee_password', params: {
-                    'p_employee_id': appUser.id,
-                    'p_new_password': passwordController.text,
-                  });
-                  
-                  if (result['success'] != true) {
-                    throw Exception(result['error'] ?? 'Không thể đổi mật khẩu');
-                  }
-                } else if (authUser != null) {
-                  // CEO/Admin - use Supabase Auth
-                  await _supabase.auth.updateUser(
-                    UserAttributes(password: passwordController.text),
-                  );
-                } else if (appUser != null) {
-                  // Fallback: use RPC to hash password properly
-                  final result = await _supabase.rpc('change_employee_password', params: {
-                    'p_employee_id': appUser.id,
-                    'p_new_password': passwordController.text,
-                  });
-                  
-                  if (result['success'] != true) {
-                    throw Exception(result['error'] ?? 'Không thể đổi mật khẩu');
-                  }
-                } else {
-                  throw Exception('Không thể xác định loại tài khoản');
+                if (result['success'] != true) {
+                  throw Exception(result['error'] ?? 'Không thể đổi mật khẩu');
                 }
 
                 if (mounted) {
@@ -310,7 +247,8 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
     );
 
     if (confirm == true) {
-      await _supabase.auth.signOut();
+      // Clear auth state (works for both CEO and Employee)
+      await ref.read(authProvider.notifier).logout();
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/login');
       }
@@ -448,10 +386,9 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
     setState(() => _isUploadingAvatar = true);
 
     try {
-      // Support both CEO (Supabase Auth) and Employee (custom auth)
+      // Get user from auth provider
       final appUser = ref.read(authProvider).user;
-      final authUser = _supabase.auth.currentUser;
-      final userId = appUser?.id ?? authUser?.id;
+      final userId = appUser?.id;
       
       if (userId == null) throw Exception('Chưa đăng nhập');
 
@@ -509,20 +446,11 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       final publicUrl = _supabase.storage.from('avatars').getPublicUrl(filePath);
       debugPrint('✅ Upload success! URL: $publicUrl');
 
-      // Update based on user type
-      if (appUser?.role == 'employee' || appUser?.role == 'driver' || appUser?.role == 'sales' || appUser?.role == 'manager') {
-        // Employee - update employees table
-        await _supabase.from('employees').update({
-          'avatar_url': publicUrl,
-          'updated_at': DateTime.now().toIso8601String(),
-        }).eq('id', userId);
-      } else {
-        // CEO/Admin - update users table
-        await _supabase.from('users').update({
-          'avatar_url': publicUrl,
-          'updated_at': DateTime.now().toIso8601String(),
-        }).eq('id', userId);
-      }
+      // All users in employees table
+      await _supabase.from('employees').update({
+        'avatar_url': publicUrl,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', userId);
 
       setState(() => _avatarUrl = publicUrl);
 
@@ -576,27 +504,17 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
     setState(() => _isUploadingAvatar = true);
 
     try {
-      // Support both CEO (Supabase Auth) and Employee (custom auth)
+      // Get user from auth provider
       final appUser = ref.read(authProvider).user;
-      final authUser = _supabase.auth.currentUser;
-      final userId = appUser?.id ?? authUser?.id;
+      final userId = appUser?.id;
       
       if (userId == null) throw Exception('Chưa đăng nhập');
 
-      // Update based on user type
-      if (appUser?.role == 'employee' || appUser?.role == 'driver' || appUser?.role == 'sales' || appUser?.role == 'manager') {
-        // Employee - update employees table
-        await _supabase.from('employees').update({
-          'avatar_url': null,
-          'updated_at': DateTime.now().toIso8601String(),
-        }).eq('id', userId);
-      } else {
-        // CEO/Admin - update users table
-        await _supabase.from('users').update({
-          'avatar_url': null,
-          'updated_at': DateTime.now().toIso8601String(),
-        }).eq('id', userId);
-      }
+      // All users in employees table
+      await _supabase.from('employees').update({
+        'avatar_url': null,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', userId);
 
       setState(() => _avatarUrl = null);
 

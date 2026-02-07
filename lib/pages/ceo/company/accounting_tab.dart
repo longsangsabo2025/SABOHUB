@@ -10,6 +10,8 @@ import '../../../models/accounting.dart';
 import '../../../models/company.dart';
 import '../../../services/accounting_service.dart';
 import '../../../widgets/shimmer_loading.dart';
+import '../../../widgets/customer_avatar.dart';
+import '../../../providers/auth_provider.dart';
 
 /// Accounting Summary Provider
 /// Caches summary data for 5 minutes to reduce API calls
@@ -101,16 +103,22 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime _endDate = DateTime.now();
   String? _selectedBranchId;
+  TransactionType? _transactionTypeFilter;
+  PaymentMethod? _paymentFilter;
+  String? _statusFilter;
+  String _transactionSearch = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -222,10 +230,12 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               labelColor: Colors.blue,
               unselectedLabelColor: Colors.grey,
               indicatorColor: Colors.blue,
+              isScrollable: true,
               tabs: const [
                 Tab(text: 'Tổng quan'),
                 Tab(text: 'Giao dịch'),
                 Tab(text: 'Doanh thu'),
+                Tab(text: 'Công nợ'),
                 Tab(text: 'Báo cáo'),
               ],
             ),
@@ -239,6 +249,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                 _buildOverviewTab(summaryAsync),
                 _buildTransactionsTab(),
                 _buildRevenueTab(),
+                _buildCongNoTab(),
                 _buildReportsTab(),
               ],
             ),
@@ -645,6 +656,9 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
   Widget _buildTransactionItem(AccountingTransaction transaction) {
     final isExpense = transaction.type != TransactionType.revenue;
     final color = isExpense ? Colors.red : Colors.green;
+    final counterparty = transaction.counterpartyName;
+    final itemsSummary = transaction.itemsSummary;
+    final statusLabel = _formatStatus(transaction.status);
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -660,31 +674,633 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
         transaction.description,
         style: const TextStyle(fontWeight: FontWeight.w500),
       ),
-      subtitle: Text(
-        DateFormat('dd/MM/yyyy HH:mm').format(transaction.date),
-        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            DateFormat('dd/MM/yyyy HH:mm').format(transaction.date),
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+          if (counterparty != null && counterparty.isNotEmpty)
+            Text(
+              'Khách: $counterparty',
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          if (itemsSummary != null && itemsSummary.isNotEmpty)
+            Text(
+              'SP: $itemsSummary',
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+        ],
       ),
-      trailing: Text(
-        '${isExpense ? '-' : '+'}${NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0).format(transaction.amount)}',
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.bold,
-          fontSize: 15,
-        ),
+      trailing: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '${isExpense ? '-' : '+'}${NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0).format(transaction.amount)}',
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 15,
+            ),
+          ),
+          if (statusLabel.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                statusLabel,
+                style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
+              ),
+            ),
+        ],
       ),
     );
   }
 
   Widget _buildTransactionsTab() {
-    return const Center(child: Text('Danh sách giao dịch chi tiết'));
+    final transactionsAsync = ref.watch(
+      accountingTransactionsProvider((
+        companyId: widget.companyId,
+        branchId: _selectedBranchId,
+        startDate: _startDate,
+        endDate: _endDate,
+        type: _transactionTypeFilter,
+      )),
+    );
+
+    return transactionsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Lỗi: $error')),
+      data: (transactions) {
+        final filtered = _applyTransactionFilters(transactions);
+        final statusOptions = _collectStatusOptions(transactions);
+        final grouped = _groupTransactionsByDate(filtered);
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Tìm theo khách, sản phẩm, mô tả...',
+                      prefixIcon: const Icon(Icons.search, size: 18),
+                      suffixIcon: _transactionSearch.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () {
+                                setState(() {
+                                  _transactionSearch = '';
+                                  _searchController.clear();
+                                });
+                              },
+                            ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    onChanged: (value) => setState(() => _transactionSearch = value.trim()),
+                  ),
+                  const SizedBox(height: 10),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip(
+                          label: 'Tất cả',
+                          selected: _transactionTypeFilter == null,
+                          onSelected: () => setState(() => _transactionTypeFilter = null),
+                        ),
+                        const SizedBox(width: 6),
+                        _buildFilterChip(
+                          label: 'Thu',
+                          selected: _transactionTypeFilter == TransactionType.revenue,
+                          onSelected: () => setState(() => _transactionTypeFilter = TransactionType.revenue),
+                        ),
+                        const SizedBox(width: 6),
+                        _buildFilterChip(
+                          label: 'Chi',
+                          selected: _transactionTypeFilter == TransactionType.expense,
+                          onSelected: () => setState(() => _transactionTypeFilter = TransactionType.expense),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip(
+                          label: 'Tất cả HTTT',
+                          selected: _paymentFilter == null,
+                          onSelected: () => setState(() => _paymentFilter = null),
+                        ),
+                        const SizedBox(width: 6),
+                        ...PaymentMethod.values.map((method) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: _buildFilterChip(
+                              label: method.label,
+                              selected: _paymentFilter == method,
+                              onSelected: () => setState(() => _paymentFilter = method),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip(
+                          label: 'Tất cả trạng thái',
+                          selected: _statusFilter == null,
+                          onSelected: () => setState(() => _statusFilter = null),
+                        ),
+                        const SizedBox(width: 6),
+                        ...statusOptions.map((status) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: _buildFilterChip(
+                              label: _formatStatus(status),
+                              selected: _statusFilter == status,
+                              onSelected: () => setState(() => _statusFilter = status),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: grouped.isEmpty
+                  ? const Center(child: Text('Không có giao dịch phù hợp'))
+                  : ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: grouped.entries.map((entry) {
+                        final dateLabel = DateFormat('dd/MM/yyyy').format(entry.key);
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8, top: 8),
+                              child: Text(
+                                dateLabel,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            ...entry.value.map(_buildTransactionItem),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildRevenueTab() {
     return const Center(child: Text('Quản lý doanh thu'));
   }
 
+  // =============================================
+  // CÔNG NỢ TAB - Receivables for this company
+  // =============================================
+  Widget _buildCongNoTab() {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _loadCompanyCongNo(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle_outline, size: 64, color: Colors.green.shade300),
+                const SizedBox(height: 16),
+                const Text('Không có công nợ phải thu',
+                    style: TextStyle(fontSize: 16, color: Colors.grey)),
+              ],
+            ),
+          );
+        }
+        
+        final data = snapshot.data!;
+        final cf = NumberFormat('#,###', 'vi_VN');
+        final totalOutstanding = (data['total_outstanding'] ?? 0).toDouble();
+        final totalOverdue = (data['total_overdue'] ?? 0).toDouble();
+        final customers = data['customers'] as List<Map<String, dynamic>>? ?? [];
+        final aging = data['aging'] as Map<String, double>? ?? {};
+        final overduePercent = totalOutstanding > 0 
+            ? (totalOverdue / totalOutstanding * 100) : 0.0;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Summary cards
+              Row(
+                children: [
+                  _buildCongNoCard('Tổng công nợ', '${cf.format(totalOutstanding)} ₫',
+                      Colors.orange, Icons.account_balance_wallet),
+                  const SizedBox(width: 12),
+                  _buildCongNoCard('Quá hạn', '${cf.format(totalOverdue)} ₫',
+                      Colors.red, Icons.warning_amber_rounded,
+                      subtitle: '${overduePercent.toStringAsFixed(1)}%'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _buildCongNoCard('Khách hàng nợ', '${customers.length}',
+                      Colors.blue, Icons.people),
+                  const SizedBox(width: 12),
+                  _buildCongNoCard('Trung bình/KH',
+                      customers.isNotEmpty 
+                          ? '${cf.format(totalOutstanding / customers.length)} ₫'
+                          : '0 ₫',
+                      Colors.purple, Icons.analytics),
+                ],
+              ),
+              
+              // Aging distribution bar
+              if (totalOutstanding > 0) ...[
+                const SizedBox(height: 20),
+                const Text('Phân bổ tuổi nợ',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                _buildAgingBarCompany(aging, totalOutstanding),
+              ],
+
+              // Aging pie chart
+              if (totalOutstanding > 0) ...[
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 200,
+                  child: PieChart(
+                    PieChartData(
+                      sections: _buildAgingPieSections(aging, totalOutstanding),
+                      centerSpaceRadius: 40,
+                      sectionsSpace: 2,
+                    ),
+                  ),
+                ),
+              ],
+
+              // Top customers
+              const SizedBox(height: 20),
+              const Text('Top khách hàng nợ',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              ...customers.take(10).map((c) {
+                final custOutstanding = (c['outstanding'] ?? 0).toDouble();
+                final custOverdue = (c['overdue_amount'] ?? 0).toDouble();
+                final pct = totalOutstanding > 0 ? custOutstanding / totalOutstanding : 0.0;
+                final isOverdue = custOverdue > 0;
+                
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: isOverdue ? Border.all(color: Colors.red.shade100) : null,
+                    boxShadow: [BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 6, offset: const Offset(0, 2),
+                    )],
+                  ),
+                  child: Row(
+                    children: [
+                      CustomerAvatar(
+                        seed: c['name'] ?? 'K',
+                        radius: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(c['name'] ?? '', 
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                            Text('${(pct * 100).toStringAsFixed(1)}% tổng nợ',
+                                style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('${cf.format(custOutstanding)} ₫',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 13,
+                                color: isOverdue ? Colors.red.shade700 : Colors.orange.shade700,
+                              )),
+                          if (isOverdue)
+                            Text('QH: ${cf.format(custOverdue)} ₫',
+                                style: TextStyle(fontSize: 10, color: Colors.red.shade400)),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> _loadCompanyCongNo() async {
+    try {
+      final supabase = SupabaseService().client;
+      
+      final data = await supabase
+          .from('v_receivables_aging')
+          .select('customer_id, customer_name, balance, aging_bucket, days_overdue')
+          .eq('company_id', widget.companyId);
+      
+      if (data == null || (data as List).isEmpty) return {};
+      
+      double totalOutstanding = 0;
+      double totalOverdue = 0;
+      final aging = <String, double>{
+        'current': 0, '1-30': 0, '31-60': 0, '61-90': 0, '90+': 0
+      };
+      final customerMap = <String, Map<String, dynamic>>{};
+      
+      for (final r in data) {
+        final bal = ((r['balance'] ?? 0) as num).toDouble();
+        final bucket = r['aging_bucket']?.toString() ?? 'current';
+        final daysOverdue = ((r['days_overdue'] ?? 0) as num).toInt();
+        final custId = r['customer_id'].toString();
+        
+        totalOutstanding += bal;
+        aging[bucket] = (aging[bucket] ?? 0) + bal;
+        
+        customerMap.putIfAbsent(custId, () => {
+          'name': r['customer_name'] ?? 'N/A',
+          'outstanding': 0.0,
+          'overdue_amount': 0.0,
+        });
+        customerMap[custId]!['outstanding'] = 
+            (customerMap[custId]!['outstanding'] as double) + bal;
+        
+        if (daysOverdue > 0) {
+          totalOverdue += bal;
+          customerMap[custId]!['overdue_amount'] = 
+              (customerMap[custId]!['overdue_amount'] as double) + bal;
+        }
+      }
+      
+      final customers = customerMap.values.toList()
+        ..sort((a, b) => (b['outstanding'] as double).compareTo(a['outstanding'] as double));
+      
+      return {
+        'total_outstanding': totalOutstanding,
+        'total_overdue': totalOverdue,
+        'customers': customers,
+        'aging': aging,
+      };
+    } catch (e) {
+      return {};
+    }
+  }
+
+  Widget _buildCongNoCard(String title, String value, MaterialColor color, 
+      IconData icon, {String? subtitle}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(
+            color: Colors.black.withOpacity(0.04), blurRadius: 8,
+            offset: const Offset(0, 2),
+          )],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.shade50, borderRadius: BorderRadius.circular(10)),
+              child: Icon(icon, color: color.shade700, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                  const SizedBox(height: 2),
+                  Text(value, style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.bold, color: color.shade700)),
+                  if (subtitle != null)
+                    Text(subtitle, style: TextStyle(fontSize: 10, color: color.shade400)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAgingBarCompany(Map<String, double> aging, double total) {
+    final buckets = [
+      ('Chưa hạn', aging['current'] ?? 0, Colors.green),
+      ('1-30 ngày', aging['1-30'] ?? 0, Colors.yellow.shade700),
+      ('31-60', aging['31-60'] ?? 0, Colors.orange),
+      ('61-90', aging['61-90'] ?? 0, Colors.deepOrange),
+      ('>90 ngày', aging['90+'] ?? 0, Colors.red),
+    ];
+    
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            height: 12,
+            child: Row(
+              children: buckets.map((b) {
+                final pct = total > 0 ? b.$2 / total : 0.0;
+                if (pct <= 0) return const SizedBox.shrink();
+                return Expanded(
+                  flex: (pct * 1000).round().clamp(1, 1000),
+                  child: Container(color: b.$3),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 14,
+          runSpacing: 4,
+          children: buckets.where((b) => b.$2 > 0).map((b) {
+            final cf = NumberFormat.compact(locale: 'vi');
+            final pct = total > 0 ? (b.$2 / total * 100).toStringAsFixed(0) : '0';
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(width: 10, height: 10,
+                  decoration: BoxDecoration(color: b.$3, shape: BoxShape.circle)),
+                const SizedBox(width: 4),
+                Text('${b.$1}: ${cf.format(b.$2)}₫ ($pct%)',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+              ],
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  List<PieChartSectionData> _buildAgingPieSections(Map<String, double> aging, double total) {
+    final items = [
+      ('Chưa hạn', aging['current'] ?? 0, Colors.green.shade400),
+      ('1-30d', aging['1-30'] ?? 0, Colors.yellow.shade600),
+      ('31-60d', aging['31-60'] ?? 0, Colors.orange.shade400),
+      ('61-90d', aging['61-90'] ?? 0, Colors.deepOrange.shade400),
+      ('>90d', aging['90+'] ?? 0, Colors.red.shade400),
+    ];
+    
+    return items
+        .where((i) => i.$2 > 0)
+        .map((i) {
+          final pct = total > 0 ? i.$2 / total * 100 : 0.0;
+          return PieChartSectionData(
+            value: i.$2,
+            title: '${pct.toStringAsFixed(0)}%',
+            color: i.$3,
+            radius: 50,
+            titleStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+          );
+        })
+        .toList();
+  }
+
   Widget _buildReportsTab() {
     return const Center(child: Text('Báo cáo tài chính'));
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onSelected,
+  }) {
+    return ChoiceChip(
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      selected: selected,
+      onSelected: (_) => onSelected(),
+      selectedColor: Colors.blue.withValues(alpha: 0.15),
+      side: BorderSide(color: selected ? Colors.blue : Colors.grey.shade300),
+    );
+  }
+
+  List<AccountingTransaction> _applyTransactionFilters(
+    List<AccountingTransaction> transactions,
+  ) {
+    final search = _transactionSearch.toLowerCase();
+    return transactions.where((t) {
+      if (_paymentFilter != null && t.paymentMethod != _paymentFilter) {
+        return false;
+      }
+      if (_statusFilter != null && t.status != _statusFilter) {
+        return false;
+      }
+      if (search.isEmpty) return true;
+
+      final haystack = [
+        t.description,
+        t.referenceId,
+        t.notes,
+        t.counterpartyName,
+        t.itemsSummary,
+      ].where((v) => v != null).join(' ').toLowerCase();
+
+      return haystack.contains(search);
+    }).toList();
+  }
+
+  Map<DateTime, List<AccountingTransaction>> _groupTransactionsByDate(
+    List<AccountingTransaction> transactions,
+  ) {
+    final Map<DateTime, List<AccountingTransaction>> grouped = {};
+    for (final transaction in transactions) {
+      final dateKey = DateTime(
+        transaction.date.year,
+        transaction.date.month,
+        transaction.date.day,
+      );
+      grouped.putIfAbsent(dateKey, () => []);
+      grouped[dateKey]!.add(transaction);
+    }
+
+    final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+    return {for (final key in sortedKeys) key: grouped[key]!};
+  }
+
+  List<String> _collectStatusOptions(List<AccountingTransaction> transactions) {
+    final statusSet = <String>{};
+    for (final transaction in transactions) {
+      final status = transaction.status;
+      if (status != null && status.isNotEmpty) {
+        statusSet.add(status);
+      }
+    }
+    final statuses = statusSet.toList();
+    statuses.sort();
+    return statuses;
+  }
+
+  String _formatStatus(String? status) {
+    switch (status) {
+      case 'paid':
+        return 'Đã thanh toán';
+      case 'unpaid':
+        return 'Chưa thanh toán';
+      case 'pending':
+        return 'Đang xử lý';
+      case 'approved':
+        return 'Đã duyệt';
+      case 'completed':
+        return 'Hoàn tất';
+      default:
+        return status ?? '';
+    }
   }
 
   Future<void> _selectDateRange() async {
@@ -899,7 +1515,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                     );
 
                     final service = AccountingService();
-                    final userId = supabase.client.auth.currentUser?.id;
+                    final userId = ref.read(authProvider).user?.id;
 
                     if (userId == null) {
                       throw Exception('User not authenticated');
