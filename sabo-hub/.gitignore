@@ -1,0 +1,32 @@
+.vercel
+.env*.local
+
+# Python
+.venv*/
+__pycache__/
+*.pyc
+
+# Flutter/Dart
+sabohub-app/SABOHUB/build/
+sabohub-app/SABOHUB/.dart_tool/
+sabohub-app/SABOHUB/.flutter-plugins
+sabohub-app/SABOHUB/.flutter-plugins-dependencies
+sabohub-app/SABOHUB/.packages
+
+# Build artifacts
+build/
+*.aab
+*.apk
+
+# Node
+node_modules/
+sabohub-nexus/node_modules/
+sabohub-nexus/.next/
+sabohub-automation/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
