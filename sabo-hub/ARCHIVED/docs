@@ -1,0 +1,237 @@
+# Sales Features Implementation - SABOHUB
+
+## Tổng quan
+
+Đã triển khai đầy đủ 10 tính năng mới cho module Sales của ứng dụng SABOHUB, bao gồm backend (database + services) và frontend (UI widgets).
+
+## Tính năng đã triển khai
+
+### 1. ✅ Chụp ảnh khi viếng thăm (Visit Photo Capture)
+- **File**: `widgets/sales_features_widgets.dart` - `VisitPhotoCaptureButton`
+- **Backend**: `services/sales_features_service.dart` - `VisitPhotoService`
+- **Table**: `store_visit_photos` (có sẵn)
+- **Chức năng**: Chụp ảnh từ camera/thư viện, upload lên Supabase Storage
+
+### 2. ✅ Kiểm tồn kho tại điểm bán (Store Inventory Check)
+- **File**: `widgets/sales_features_widgets_2.dart` - `StockCheckForm`
+- **Backend**: `services/sales_features_service.dart` - `StoreInventoryCheckService`
+- **Table**: `store_inventory_checks` (có sẵn)
+- **Chức năng**: Kiểm tra tồn kệ, tồn kho sau, đánh dấu hết hàng/sắp hết
+
+### 3. ✅ Khuyến mãi đang áp dụng (Active Promotions)
+- **File**: `widgets/sales_features_widgets.dart` - `ActivePromotionsList`, `PromotionBadge`
+- **Backend**: `services/sales_features_service.dart` - `PromotionService`
+- **Table**: `distributor_promotions` (có sẵn)
+- **Tích hợp**: Trang Tạo đơn hàng - hiển thị ngay sau khi chọn khách hàng
+
+### 4. ✅ Chỉ tiêu bán hàng (KPI Targets)
+- **File**: `widgets/sales_features_widgets.dart` - `KpiTargetsCard`
+- **Backend**: `services/sales_features_service.dart` - `SalesTargetService`
+- **Table**: `sales_targets` (mới tạo)
+- **Tích hợp**: Dashboard - hiển thị dưới doanh số tháng
+
+### 5. ✅ Báo cáo đối thủ (Competitor Reports)
+- **File**: `widgets/sales_features_widgets.dart` - `CompetitorReportForm`
+- **Backend**: `services/sales_features_service.dart` - `CompetitorReportService`
+- **Table**: `competitor_reports` (mới tạo)
+- **Chức năng**: Form báo cáo với danh mục, mức độ, mô tả
+
+### 6. ✅ Lịch sử đặt hàng khách hàng (Customer Order History)
+- **File**: `widgets/sales_features_widgets.dart` - `CustomerOrderHistory`
+- **Backend**: `services/sales_features_service.dart` - `CustomerHistoryService`
+- **Chức năng**: Hiển thị 20 đơn gần nhất với trạng thái, tổng tiền
+
+### 7. ✅ Đề xuất sản phẩm (Product Recommendations)
+- **File**: `widgets/sales_features_widgets_2.dart` - `ProductRecommendations`
+- **Backend**: `services/sales_features_service.dart` - `CustomerHistoryService.getFrequentProducts`
+- **Tích hợp**: Trang Tạo đơn hàng - hiển thị sản phẩm thường mua
+
+### 8. ✅ Hiển thị công nợ khách hàng (Customer Debt Display)
+- **File**: `widgets/sales_features_widgets.dart` - `CustomerDebtBadge`
+- **Backend**: Sử dụng cột `total_debt`, `credit_limit` từ customers
+- **Tích hợp**: Customer card - hiển thị dưới KPI row
+
+### 9. ✅ Khảo sát khách hàng (Customer Surveys)
+- **File**: `widgets/sales_features_widgets_2.dart` - `SurveyFormWidget`, `SurveysList`
+- **Backend**: `services/sales_features_service.dart` - `SurveyService`
+- **Tables**: `surveys`, `survey_responses` (mới tạo)
+- **Chức năng**: Hỗ trợ nhiều loại câu hỏi (rating, choice, yes/no, text)
+
+### 10. ✅ Tối ưu UX toàn bộ
+- Modern UI với Material 3
+- Loading states và error handling
+- Pull-to-refresh
+- Vietnamese localization
+
+## Database Schema
+
+### Bảng mới được tạo:
+
+```sql
+-- Chỉ tiêu bán hàng
+CREATE TABLE sales_targets (
+  id UUID PRIMARY KEY,
+  company_id UUID REFERENCES companies(id),
+  user_id UUID NOT NULL,
+  period_type TEXT DEFAULT 'monthly',
+  period_start DATE NOT NULL,
+  period_end DATE NOT NULL,
+  target_revenue DECIMAL DEFAULT 0,
+  target_orders INTEGER DEFAULT 0,
+  target_visits INTEGER DEFAULT 0,
+  target_new_customers INTEGER DEFAULT 0,
+  actual_revenue DECIMAL DEFAULT 0,
+  actual_orders INTEGER DEFAULT 0,
+  actual_visits INTEGER DEFAULT 0,
+  actual_new_customers INTEGER DEFAULT 0
+);
+
+-- Báo cáo đối thủ
+CREATE TABLE competitor_reports (
+  id UUID PRIMARY KEY,
+  company_id UUID REFERENCES companies(id),
+  visit_id UUID,
+  customer_id UUID REFERENCES customers(id),
+  reported_by UUID NOT NULL,
+  competitor_name TEXT NOT NULL,
+  report_type TEXT DEFAULT 'observation',
+  category TEXT,
+  severity TEXT DEFAULT 'low',
+  description TEXT,
+  photo_urls JSONB DEFAULT '[]',
+  location_lat DOUBLE PRECISION,
+  location_lng DOUBLE PRECISION
+);
+
+-- Khảo sát
+CREATE TABLE surveys (
+  id UUID PRIMARY KEY,
+  company_id UUID REFERENCES companies(id),
+  title TEXT NOT NULL,
+  description TEXT,
+  questions JSONB DEFAULT '[]',
+  target_responses INTEGER DEFAULT 100,
+  current_responses INTEGER DEFAULT 0,
+  start_date DATE,
+  end_date DATE,
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Phản hồi khảo sát
+CREATE TABLE survey_responses (
+  id UUID PRIMARY KEY,
+  survey_id UUID REFERENCES surveys(id),
+  company_id UUID REFERENCES companies(id),
+  customer_id UUID,
+  visit_id UUID,
+  respondent_id UUID NOT NULL,
+  answers JSONB DEFAULT '{}',
+  duration_seconds INTEGER DEFAULT 0,
+  submitted_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+## Files được tạo/sửa
+
+### Mới tạo:
+1. `lib/services/sales_features_service.dart` - Backend services
+2. `lib/widgets/sales_features_widgets.dart` - UI widgets set 1
+3. `lib/widgets/sales_features_widgets_2.dart` - UI widgets set 2
+4. `lib/services/sales_features_integration.dart` - Export file
+5. `check_sales_features_schema.py` - Schema check script
+6. `create_sales_feature_tables.py` - DB migration script
+
+### Đã sửa:
+1. `lib/layouts/distribution_sales_layout.dart`:
+   - Thêm imports
+   - Thêm KpiTargetsCard vào Dashboard
+   - Thêm CustomerDebtBadge vào Customer cards
+   - Thêm ActivePromotionsList vào Create Order
+   - Thêm ProductRecommendations vào Create Order
+
+2. `lib/widgets/customer_visits_sheet.dart`:
+   - Thêm imports cho photo capture widgets
+
+## Hướng dẫn sử dụng
+
+### Sử dụng KPI Targets:
+```dart
+// Tự động load data từ sales_targets table
+KpiTargetsCard()
+```
+
+### Sử dụng Customer Debt Badge:
+```dart
+CustomerDebtBadge(
+  totalDebt: 5000000,
+  creditLimit: 10000000,
+  onPaymentTap: () => navigateToPayment(),
+)
+```
+
+### Sử dụng Promotions:
+```dart
+ActivePromotionsList() // Hiển thị tất cả promotions
+PromotionBadge(promotion: promo) // Hiển thị 1 promotion
+```
+
+### Sử dụng Stock Check Form:
+```dart
+Navigator.push(context, MaterialPageRoute(
+  builder: (_) => StockCheckForm(
+    visitId: 'visit-uuid',
+    onSaved: () => refreshVisits(),
+  ),
+));
+```
+
+### Sử dụng Survey Form:
+```dart
+// Hiển thị danh sách surveys
+SurveysList(customerId: 'customer-uuid', visitId: 'visit-uuid')
+
+// Mở form trực tiếp
+SurveyFormWidget(
+  survey: surveyObject,
+  customerId: 'customer-uuid',
+  onCompleted: () => print('Done'),
+)
+```
+
+### Sử dụng Competitor Report:
+```dart
+showModalBottomSheet(
+  context: context,
+  builder: (_) => CompetitorReportForm(
+    visitId: 'visit-uuid',
+    customerId: 'customer-uuid',
+    onSubmitted: () => Navigator.pop(context),
+  ),
+);
+```
+
+### Sử dụng Photo Capture:
+```dart
+VisitPhotoCaptureButton(
+  visitId: 'visit-uuid',
+  photoType: 'shelf',
+  label: 'Chụp kệ hàng',
+  onPhotoUploaded: (url) => print('Uploaded: $url'),
+)
+```
+
+## Next Steps
+
+1. **Tạo data test**: Thêm dữ liệu mẫu cho sales_targets, surveys
+2. **Tích hợp sâu hơn**: 
+   - Thêm nút báo cáo đối thủ trong visit detail
+   - Thêm nút khảo sát trong visit flow
+3. **Reports**: Dashboard báo cáo tổng hợp các chỉ số
+
+## Notes
+- Tất cả RLS policies đã được bật với `USING (true)` để đơn giản
+- Cần cập nhật RLS policies với logic user/company thực tế khi production
+- Image picker cần permission CAMERA và PHOTOS trong app
+
+---
+*Cập nhật: $(date)*
