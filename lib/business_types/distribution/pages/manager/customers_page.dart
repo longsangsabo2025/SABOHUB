@@ -24,6 +24,7 @@ import '../../../../pages/customers/customer_detail_page.dart';
 // Extracted sub-components
 import 'customers_sheets/customer_form_sheet.dart';
 import 'customers_sheets/customer_order_history_sheet.dart';
+import 'customers_sheets/credit_limit_sheet.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -526,6 +527,10 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                   Navigator.pop(context);
                   _showCustomerDebt(customer);
                 }),
+                _buildActionButton(Icons.credit_score, 'Hạn mức', Colors.blue, () {
+                  Navigator.pop(context);
+                  _showCreditLimit(customer);
+                }),
                 _buildActionButton(Icons.place, 'Viếng thăm', Colors.indigo, () {
                   Navigator.pop(context);
                   _showCustomerVisits(customer);
@@ -856,6 +861,23 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => CustomerDebtSheet(
+        customer: customer,
+        onChanged: () {
+          _loadStatistics();
+          _loadInitial();
+        },
+      ),
+    );
+  }
+
+  void _showCreditLimit(OdoriCustomer customer) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => CreditLimitSheet(
         customer: customer,
         onChanged: () {
           _loadStatistics();
@@ -1521,11 +1543,17 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                   ),
                   Container(width: 1, height: 30, color: Colors.grey.shade200),
                   Expanded(
-                    child: _buildKPIItem(
-                      customer.status == 'active' ? '✅' : '⛔',
-                      customer.status == 'active' ? 'HĐ' : 'Ngưng',
-                      'Trạng thái',
-                      customer.status == 'active' ? Colors.green : Colors.red,
+                    child: InkWell(
+                      onTap: () => _showCreditLimit(customer),
+                      borderRadius: BorderRadius.circular(8),
+                      child: _buildKPIItem(
+                        '💳',
+                        customer.creditLimit > 0
+                            ? NumberFormat.compact(locale: 'vi').format(customer.creditLimit)
+                            : '—',
+                        'Hạn mức',
+                        Colors.blue,
+                      ),
                     ),
                   ),
                 ],
