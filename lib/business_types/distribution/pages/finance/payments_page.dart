@@ -53,9 +53,13 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
           .eq('company_id', companyId);
 
       if (_dateFilter != null) {
+        // End date needs +1 day because payment_date is timestamp (has time component)
+        // e.g. "Hôm qua" = Feb 10 → need payments from Feb 10 00:00 to Feb 11 00:00
+        final endOfDay = DateTime(_dateFilter!.end.year, _dateFilter!.end.month, _dateFilter!.end.day)
+            .add(const Duration(days: 1));
         queryBuilder = queryBuilder
             .gte('payment_date', _dateFilter!.start.toIso8601String())
-            .lte('payment_date', _dateFilter!.end.toIso8601String());
+            .lt('payment_date', endOfDay.toIso8601String());
       }
 
       final data = await queryBuilder

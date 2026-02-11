@@ -99,7 +99,7 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
           .select('id, amount, payment_date, customers(name)')
           .eq('company_id', companyId)
           .gte('payment_date', rangeStart.toIso8601String())
-          .lte('payment_date', rangeEnd.toIso8601String())
+          .lt('payment_date', rangeEnd.toIso8601String())
           .order('payment_date', ascending: false);
 
       double paidThisMonth = 0;
