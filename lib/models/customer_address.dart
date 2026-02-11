@@ -51,6 +51,15 @@ class CustomerAddress {
     if (street != null && street!.isNotEmpty) {
       parts.add(street!);
     }
+    // If no structured street info, use the free-text address field
+    if (parts.isEmpty && address.isNotEmpty) {
+      final addrParts = <String>[address];
+      // Append city if not already in address text
+      if (city != null && city!.isNotEmpty && !address.contains(city!)) {
+        addrParts.add(city!);
+      }
+      return addrParts.join(', ');
+    }
     if (ward != null && ward!.isNotEmpty) {
       parts.add(ward!);
     }

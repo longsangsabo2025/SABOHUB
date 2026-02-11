@@ -519,7 +519,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     
     final orderNumber = salesOrder?['order_number'] ?? delivery['order_number'] ?? 'N/A';
     final customerName = salesOrder?['customer_name'] ?? customer?['name'] ?? 'Không có tên';
-    final customerAddress = delivery['delivery_address'] ?? salesOrder?['delivery_address'] ?? customer?['address'] ?? '';
+    final customerAddress = salesOrder?['delivery_address'] ?? salesOrder?['customer_address'] ?? delivery['delivery_address'] ?? customer?['address'] ?? '';
     final totalAmount = (salesOrder?['total'] ?? delivery['total_amount'] ?? 0).toDouble();
     final updatedAt = delivery['updated_at'] != null 
         ? DateTime.parse(delivery['updated_at']).toLocal() 
