@@ -56,27 +56,42 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
       final rangeStart = effectiveRange.start;
       final rangeEnd = effectiveRange.end.add(const Duration(days: 1));
 
-      // Get total receivables from customers
-      final customersData = await supabase
-          .from('customers')
-          .select('id, name, total_debt, credit_limit')
+      // Get total receivables from unpaid orders (real-time, khớp với Reports page)
+      final unpaidOrders = await supabase
+          .from('sales_orders')
+          .select('customer_id, total, paid_amount, created_at, customers(name)')
           .eq('company_id', companyId)
-          .gt('total_debt', 0);
+          .neq('status', 'cancelled')
+          .inFilter('payment_status', ['unpaid', 'debt', 'partial', 'pending_transfer']);
 
       double totalReceivable = 0;
       double overdueAmount = 0;
       int overdueCustomers = 0;
+      final now = DateTime.now();
+      final Set<String> overdueCustomerIds = {};
+      final Set<String> customerIds = {};
 
-      for (var customer in customersData) {
-        final debt = (customer['total_debt'] ?? 0).toDouble();
-        totalReceivable += debt;
-        // Giả định nợ quá hạn nếu vượt credit limit
-        final creditLimit = (customer['credit_limit'] ?? 0).toDouble();
-        if (debt > creditLimit && creditLimit > 0) {
-          overdueAmount += (debt - creditLimit);
-          overdueCustomers++;
+      for (var order in unpaidOrders) {
+        final total = (order['total'] ?? 0).toDouble();
+        final paid = (order['paid_amount'] ?? 0).toDouble();
+        final remaining = total - paid;
+        totalReceivable += remaining;
+        
+        final custId = order['customer_id'] as String?;
+        if (custId != null) customerIds.add(custId);
+
+        // Quá hạn: đơn cũ hơn 30 ngày chưa thanh toán
+        final createdAtStr = order['created_at'] as String?;
+        if (createdAtStr != null && remaining > 0) {
+          final orderDate = DateTime.parse(createdAtStr);
+          if (now.difference(orderDate).inDays > 30) {
+            overdueAmount += remaining;
+            if (custId != null) overdueCustomerIds.add(custId);
+          }
         }
       }
+      overdueCustomers = overdueCustomerIds.length;
+      final customersData = unpaidOrders; // for backwards compat with count
 
       // Get payments in date range
       final paymentsData = await supabase
@@ -130,7 +145,7 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
           'overdueCustomers': overdueCustomers,
           'paidThisMonth': paidThisMonth,
           'paymentsCount': paymentsData.length,
-          'customersWithDebt': customersData.length,
+          'customersWithDebt': customerIds.length,
           'pendingTransfersCount': pendingTransfers.length,
           'totalRevenue': totalRevenue,
           'orderCount': ordersData.length,

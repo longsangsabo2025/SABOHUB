@@ -662,8 +662,9 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
       // Include pending_transfer as it's also unpaid
       final unpaidOrders = await supabase
           .from('sales_orders')
-          .select('id, customer_id, total, created_at, payment_status, customers(name, phone, contact_person)')
+          .select('id, customer_id, total, paid_amount, created_at, payment_status, customers(name, phone, contact_person)')
           .eq('company_id', companyId)
+          .neq('status', 'cancelled')
           .inFilter('payment_status', ['unpaid', 'debt', 'partial', 'pending_transfer'])
           .order('created_at', ascending: false);
 
@@ -674,14 +675,16 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
 
       for (var order in unpaidOrders) {
         final total = (order['total'] ?? 0).toDouble();
-        totalReceivables += total;
+        final paid = (order['paid_amount'] ?? 0).toDouble();
+        final remaining = total - paid;
+        totalReceivables += remaining;
 
         // Check if overdue (> 30 days)
         final createdAtStr = order['created_at'] as String?;
-        if (createdAtStr != null) {
+        if (createdAtStr != null && remaining > 0) {
           final orderDate = DateTime.parse(createdAtStr);
           if (now.difference(orderDate).inDays > 30) {
-            overdueAmount += total;
+            overdueAmount += remaining;
           }
         }
 
@@ -701,7 +704,7 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
               'oldestDate': order['created_at'],
             };
           }
-          customerDebtMap[custId]!['total'] += total;
+          customerDebtMap[custId]!['total'] += remaining;
           customerDebtMap[custId]!['count'] += 1;
         }
       }
