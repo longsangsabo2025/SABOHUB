@@ -61,10 +61,10 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
       final supabase = Supabase.instance.client;
       final customerId = widget.customer['id'];
 
-      // Load unpaid orders
+      // Load unpaid orders (include delivery_address for branch info)
       final orders = await supabase
           .from('sales_orders')
-          .select('id, order_number, total, paid_amount, payment_status, payment_method, delivery_status, created_at, delivery_date, order_date, sales_order_items(id, product_name, quantity)')
+          .select('id, order_number, total, paid_amount, payment_status, payment_method, delivery_status, created_at, delivery_date, order_date, delivery_address, delivery_address_id, sales_order_items(id, product_name, quantity)')
           .eq('customer_id', customerId)
           .eq('company_id', companyId)
           .neq('payment_status', 'paid')
@@ -326,6 +326,26 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
                 ],
               ),
               const SizedBox(height: 10),
+
+              // Branch/delivery address
+              if (order['delivery_address'] != null && (order['delivery_address'] as String).isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      Icon(Icons.location_on, size: 14, color: Colors.teal.shade400),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          order['delivery_address'] as String,
+                          style: TextStyle(fontSize: 12, color: Colors.teal.shade700, fontWeight: FontWeight.w500),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
               // Items summary
               Text('${items.length} sản phẩm', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
