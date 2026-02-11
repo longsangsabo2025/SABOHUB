@@ -530,43 +530,41 @@ final dashboardStatsProvider = FutureProvider.autoDispose<OdoriDashboardStats>((
       }
     }).length;
 
-    // Calculate revenue - tính cả doanh số (delivered) và doanh thu (delivered + paid)
-    double todaySales = 0;    // Tổng doanh số (tất cả đơn delivered)
-    double todayRevenue = 0;  // Doanh thu đã thu (delivered + paid)
+    // Calculate revenue - tính doanh số theo ngày tạo đơn (created_at) khớp với Reports page
+    // Dùng created_at (ngày tạo đơn) thay vì updated_at, và tính tất cả đơn non-cancelled
+    double todaySales = 0;    // Tổng doanh số hôm nay (tất cả đơn non-cancelled)
+    double todayRevenue = 0;  // Doanh thu đã thu hôm nay (non-cancelled + paid)
     double monthSales = 0;
     double monthRevenue = 0;
-    final monthStart = DateTime.utc(today.year, today.month, 1);
+    // Dùng cùng cách tính ngày với Reports page: DateTime local → so sánh UTC
+    final todayDayStart = DateTime.utc(today.year, today.month, today.day);
+    final monthDayStart = DateTime.utc(today.year, today.month, 1);
     
     for (final order in orders) {
-      final deliveryStatus = order['delivery_status']?.toString() ?? '';
+      final status = order['status']?.toString() ?? '';
+      if (status == 'cancelled') continue;
+      
       final paymentStatus = order['payment_status']?.toString() ?? '';
       final total = (order['total'] as num?)?.toDouble() ?? 0;
-      final updatedAtStr = order['updated_at']?.toString() ?? order['created_at']?.toString() ?? '';
+      final createdAtStr = order['created_at']?.toString() ?? '';
       
-      if (updatedAtStr.isEmpty) continue;
+      if (createdAtStr.isEmpty) continue;
       
       try {
-        final updatedAt = DateTime.parse(updatedAtStr);
+        final createdAt = DateTime.parse(createdAtStr);
         
-        // Tính doanh số cho tất cả đơn đã giao (delivered)
-        if (deliveryStatus == 'delivered') {
-          // Doanh số hôm nay
-          if (updatedAt.isAfter(yesterdayStart)) {
-            todaySales += total;
-          }
-          // Doanh số tháng này
-          if (updatedAt.isAfter(monthStart.subtract(const Duration(days: 1)))) {
-            monthSales += total;
-          }
-          
-          // Doanh thu (chỉ tính đã thanh toán)
+        // Doanh số hôm nay (theo created_at, khớp Reports page)
+        if (!createdAt.isBefore(todayDayStart)) {
+          todaySales += total;
           if (paymentStatus == 'paid') {
-            if (updatedAt.isAfter(yesterdayStart)) {
-              todayRevenue += total;
-            }
-            if (updatedAt.isAfter(monthStart.subtract(const Duration(days: 1)))) {
-              monthRevenue += total;
-            }
+            todayRevenue += total;
+          }
+        }
+        // Doanh số tháng này
+        if (!createdAt.isBefore(monthDayStart)) {
+          monthSales += total;
+          if (paymentStatus == 'paid') {
+            monthRevenue += total;
           }
         }
       } catch (_) {
