@@ -24,7 +24,7 @@ class DeliveryCompletionDialog extends StatefulWidget {
 
 class _DeliveryCompletionDialogState extends State<DeliveryCompletionDialog> {
   final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
-  String selectedPaymentOption = 'cash_collected';
+  String? selectedPaymentOption;
 
   String _getPaymentMethodLabel(String method) {
     switch (method.toLowerCase()) {
@@ -126,7 +126,7 @@ class _DeliveryCompletionDialogState extends State<DeliveryCompletionDialog> {
           child: const Text('Hủy'),
         ),
         ElevatedButton(
-          onPressed: () {
+          onPressed: selectedPaymentOption == null ? null : () {
             Map<String, dynamic> result = {'updatePayment': false};
             
             switch (selectedPaymentOption) {
@@ -138,7 +138,7 @@ class _DeliveryCompletionDialogState extends State<DeliveryCompletionDialog> {
                 result = {'updatePayment': true, 'paymentStatus': 'paid', 'paymentMethod': 'transfer'};
                 break;
               case 'debt_added':
-                result = {'updatePayment': true, 'paymentStatus': 'debt', 'paymentMethod': widget.paymentMethod};
+                result = {'updatePayment': true, 'paymentStatus': 'debt', 'paymentMethod': 'debt'};
                 break;
             }
             

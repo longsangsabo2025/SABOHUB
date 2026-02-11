@@ -1,6 +1,8 @@
 // Extracted from distribution_manager_layout.dart
 // Customers Management Page with search, filters, statistics, and CRUD operations
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -60,6 +62,10 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   CustomerTier? _selectedTier;
   Map<String, CustomerRevenue> _revenueData = {};
   Map<CustomerTier, int> _tierStats = {};
+  
+  // Debounce & race condition prevention
+  Timer? _searchDebounce;
+  int _loadVersion = 0;
 
   @override
   void initState() {
@@ -73,6 +79,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -260,6 +267,8 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   }
 
   Future<void> _loadInitial() async {
+    final thisVersion = ++_loadVersion;
+    
     setState(() {
       _isInitialLoading = true;
       _allCustomers.clear();
@@ -300,6 +309,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
       final response = await query
           .order(_sortBy, ascending: _sortAscending, nullsFirst: false)
+          .order('id', ascending: true)
           .limit(_pageSize)
           .range(0, _pageSize - 1);
 
@@ -307,20 +317,28 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
       debugPrint('✅ Initial load: ${customers.length} customers');
 
+      // Discard stale response if a newer request was started
+      if (thisVersion != _loadVersion) return;
+      
       setState(() {
-        _allCustomers.addAll(customers);
+        _allCustomers
+          ..clear()
+          ..addAll(customers);
         _hasMore = customers.length >= _pageSize;
         _isInitialLoading = false;
       });
     } catch (e) {
       debugPrint('❌ Error loading customers: $e');
-      setState(() => _isInitialLoading = false);
+      if (thisVersion == _loadVersion) {
+        setState(() => _isInitialLoading = false);
+      }
     }
   }
 
   Future<void> _loadMore() async {
     if (_isLoadingMore || !_hasMore || _isInitialLoading) return;
 
+    final thisVersion = _loadVersion;
     setState(() => _isLoadingMore = true);
 
     try {
@@ -353,6 +371,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
       final response = await query
           .order(_sortBy, ascending: _sortAscending, nullsFirst: false)
+          .order('id', ascending: true)
           .limit(_pageSize)
           .range(newOffset, newOffset + _pageSize - 1);
 
@@ -360,8 +379,15 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
       debugPrint('✅ Loaded ${newCustomers.length} customers at offset $newOffset');
 
+      // Discard stale response
+      if (thisVersion != _loadVersion) return;
+      
+      // Deduplicate by ID before adding
+      final existingIds = _allCustomers.map((c) => c.id).toSet();
+      final uniqueNew = newCustomers.where((c) => !existingIds.contains(c.id)).toList();
+      
       setState(() {
-        _allCustomers.addAll(newCustomers);
+        _allCustomers.addAll(uniqueNew);
         _currentOffset = newOffset;
         _hasMore = newCustomers.length >= _pageSize;
         _isLoadingMore = false;
@@ -979,7 +1005,11 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                         ),
                         onChanged: (value) {
                           setState(() => _searchQuery = value);
-                          _loadInitial();
+                          _searchDebounce?.cancel();
+                          _searchDebounce = Timer(
+                            const Duration(milliseconds: 400),
+                            () => _loadInitial(),
+                          );
                         },
                       ),
                     ),

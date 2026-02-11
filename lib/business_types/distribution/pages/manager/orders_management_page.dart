@@ -76,9 +76,15 @@ class _OrdersManagementPageState extends ConsumerState<OrdersManagementPage> wit
             controller: _tabController,
             children: const [
               OrderListByStatus(status: 'pending_approval'),
-              OrderListByStatus(status: 'confirmed'),
-              OrderListByStatus(status: 'processing'),
-              OrderListByStatus(status: 'completed'),
+              OrderListByStatus(statusList: ['confirmed', 'processing', 'ready']),
+              OrderListByStatus(
+                status: 'completed',
+                deliveryStatusNotIn: ['delivered'],
+              ),
+              OrderListByStatus(
+                status: 'completed',
+                deliveryStatus: 'delivered',
+              ),
             ],
           ),
         ),
@@ -91,8 +97,17 @@ class _OrdersManagementPageState extends ConsumerState<OrdersManagementPage> wit
 /// Order List By Status
 /// Danh sách đơn hàng theo trạng thái cụ thể
 class OrderListByStatus extends ConsumerStatefulWidget {
-  final String status;
-  const OrderListByStatus({super.key, required this.status});
+  final String? status;
+  final List<String>? statusList;
+  final String? deliveryStatus;
+  final List<String>? deliveryStatusNotIn;
+  const OrderListByStatus({
+    super.key,
+    this.status,
+    this.statusList,
+    this.deliveryStatus,
+    this.deliveryStatusNotIn,
+  });
 
   @override
   ConsumerState<OrderListByStatus> createState() => _OrderListByStatusState();
@@ -142,11 +157,27 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
       if (user == null || user.companyId == null) return;
 
       final supabase = Supabase.instance.client;
-      final resp = await supabase
+      var query = supabase
           .from('sales_orders')
           .select('id, total')
-          .eq('company_id', user.companyId!)
-          .eq('status', widget.status);
+          .eq('company_id', user.companyId!);
+      
+      // Apply status filters
+      if (widget.statusList != null) {
+        query = query.inFilter('status', widget.statusList!);
+      } else if (widget.status != null) {
+        query = query.eq('status', widget.status!);
+      }
+      if (widget.deliveryStatus != null) {
+        query = query.eq('delivery_status', widget.deliveryStatus!);
+      }
+      if (widget.deliveryStatusNotIn != null) {
+        for (final ds in widget.deliveryStatusNotIn!) {
+          query = query.neq('delivery_status', ds);
+        }
+      }
+      
+      final resp = await query;
       
       final orders = resp as List;
       _totalOrders = orders.length;
@@ -181,8 +212,22 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
       var query = supabase
           .from('sales_orders')
           .select('*, customers!inner(name, address, phone), sales_order_items(*, products(name, sku, image_url))')
-          .eq('company_id', user.companyId!)
-          .eq('status', widget.status);
+          .eq('company_id', user.companyId!);
+      
+      // Apply status filters
+      if (widget.statusList != null) {
+        query = query.inFilter('status', widget.statusList!);
+      } else if (widget.status != null) {
+        query = query.eq('status', widget.status!);
+      }
+      if (widget.deliveryStatus != null) {
+        query = query.eq('delivery_status', widget.deliveryStatus!);
+      }
+      if (widget.deliveryStatusNotIn != null) {
+        for (final ds in widget.deliveryStatusNotIn!) {
+          query = query.neq('delivery_status', ds);
+        }
+      }
 
       if (_searchQuery.isNotEmpty) {
         query = query.or('order_number.ilike.%$_searchQuery%,customer_name.ilike.%$_searchQuery%');
@@ -221,8 +266,22 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
       var query = supabase
           .from('sales_orders')
           .select('*, customers!inner(name, address, phone), sales_order_items(*, products(name, sku, image_url))')
-          .eq('company_id', user.companyId!)
-          .eq('status', widget.status);
+          .eq('company_id', user.companyId!);
+      
+      // Apply status filters
+      if (widget.statusList != null) {
+        query = query.inFilter('status', widget.statusList!);
+      } else if (widget.status != null) {
+        query = query.eq('status', widget.status!);
+      }
+      if (widget.deliveryStatus != null) {
+        query = query.eq('delivery_status', widget.deliveryStatus!);
+      }
+      if (widget.deliveryStatusNotIn != null) {
+        for (final ds in widget.deliveryStatusNotIn!) {
+          query = query.neq('delivery_status', ds);
+        }
+      }
 
       if (_searchQuery.isNotEmpty) {
         query = query.or('order_number.ilike.%$_searchQuery%,customer_name.ilike.%$_searchQuery%');
@@ -335,6 +394,11 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
 
       if (newStatus == 'delivered') {
         updateData['delivery_date'] = DateTime.now().toIso8601String();
+      }
+
+      // When order is completed, also mark delivery_status as delivered
+      if (newStatus == 'completed') {
+        updateData['delivery_status'] = 'delivered';
       }
 
       await supabase.from('sales_orders').update(updateData).eq('id', order.id);
@@ -520,7 +584,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
                     child: _buildStatCard(
                       'Số đơn',
                       '$_totalOrders',
-                      _getStatusColor(widget.status),
+                      _getStatusColor(widget.status ?? widget.statusList?.first ?? 'pending'),
                       Icons.receipt_long,
                     ),
                   ),
@@ -626,7 +690,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
                       const SizedBox(height: 16),
                       Text('Không có đơn hàng', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
                       const SizedBox(height: 8),
-                      Text(_getStatusLabel(widget.status), style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                      Text(_getStatusLabel(widget.status ?? widget.statusList?.first ?? ''), style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
                     ],
                   ),
                 ),
@@ -1396,8 +1460,7 @@ class OrderDetailSheet extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildInfoCard([
                     _buildInfoRow('Ngày tạo', _formatDate(order.createdAt)),
-                    if (order.orderDate != null)
-                      _buildInfoRow('Ngày đặt', _formatDate(order.orderDate!)),
+                    _buildInfoRow('Ngày đặt', _formatDate(order.orderDate)),
                     if (order.source != null && order.source!.isNotEmpty)
                       _buildInfoRow('Nguồn', order.source!),
                     if (order.priority != null)
@@ -1477,7 +1540,7 @@ class OrderDetailSheet extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                _getPaymentLabel(order.paymentStatus, order.paidAmount ?? 0, order.total),
+                                _getPaymentLabel(order.paymentStatus, order.paidAmount, order.total),
                                 style: TextStyle(
                                   color: paymentColor,
                                   fontWeight: FontWeight.w600,
@@ -1494,7 +1557,7 @@ class OrderDetailSheet extends StatelessWidget {
                             children: [
                               Text('Còn nợ', style: TextStyle(color: Colors.red.shade700)),
                               Text(
-                                currencyFormat.format(order.total - (order.paidAmount ?? 0)),
+                                currencyFormat.format(order.total - order.paidAmount),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.red.shade700,

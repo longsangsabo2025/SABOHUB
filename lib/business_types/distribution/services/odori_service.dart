@@ -385,8 +385,17 @@ class OdoriService {
           'signature_url': signatureUrl,
         })
         .eq('id', id)
-        .select()
+        .select('*, order_id')
         .single();
+
+    // Also update sales_orders.delivery_status to 'delivered'
+    final orderId = response['order_id'];
+    if (orderId != null) {
+      await _supabase.from('sales_orders').update({
+        'delivery_status': 'delivered',
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', orderId);
+    }
 
     return OdoriDelivery.fromJson(response);
   }

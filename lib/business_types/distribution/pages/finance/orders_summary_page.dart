@@ -55,7 +55,8 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
       var query = supabase
           .from('sales_orders')
           .select('*, customers(name, phone, address), sales_order_items(id, product_name, quantity, unit, unit_price, line_total)')
-          .eq('company_id', companyId);
+          .eq('company_id', companyId)
+          .neq('status', 'cancelled');
 
       if (_orderDateFilter != null) {
         query = query
@@ -137,17 +138,20 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
     return grouped;
   }
 
-  // Stats
-  int get _totalOrders => _filteredOrders.length;
-  double get _totalRevenue => _filteredOrders.fold(0.0, (sum, o) => sum + (o['total'] ?? 0).toDouble());
-  int get _deliveredCount => _filteredOrders.where((o) => o['delivery_status'] == 'delivered').length;
-  int get _pendingCount => _filteredOrders.where((o) => o['delivery_status'] == 'pending' || o['delivery_status'] == 'delivering').length;
-  int get _paidCount => _filteredOrders.where((o) => o['payment_status'] == 'paid').length;
-  int get _unpaidCount => _filteredOrders.where((o) => o['payment_status'] != 'paid').length;
+  // Stats (exclude cancelled orders)
+  List<Map<String, dynamic>> get _activeOrders => _filteredOrders.where((o) => o['status'] != 'cancelled').toList();
+  int get _totalOrders => _activeOrders.length;
+  double get _totalRevenue => _activeOrders.fold(0.0, (sum, o) => sum + (o['total'] ?? 0).toDouble());
+  int get _deliveredCount => _activeOrders.where((o) => o['delivery_status'] == 'delivered').length;
+  int get _pendingCount => _activeOrders.where((o) => o['delivery_status'] == 'pending' || o['delivery_status'] == 'awaiting_pickup').length;
+  int get _deliveringCount => _activeOrders.where((o) => o['delivery_status'] == 'delivering').length;
+  int get _paidCount => _activeOrders.where((o) => o['payment_status'] == 'paid').length;
+  int get _debtCount => _activeOrders.where((o) => o['payment_status'] == 'debt' || (o['payment_status'] == 'unpaid' && o['delivery_status'] == 'delivered')).length;
 
   String _deliveryStatusLabel(String? status) {
     switch (status) {
       case 'pending': return 'Chờ giao';
+      case 'awaiting_pickup': return 'Chờ lấy';
       case 'delivering': return 'Đang giao';
       case 'delivered': return 'Đã giao';
       case 'cancelled': return 'Đã hủy';
@@ -158,6 +162,7 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
   Color _deliveryStatusColor(String? status) {
     switch (status) {
       case 'pending': return Colors.orange;
+      case 'awaiting_pickup': return Colors.purple;
       case 'delivering': return Colors.blue;
       case 'delivered': return Colors.green;
       case 'cancelled': return Colors.red;
@@ -315,6 +320,7 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
                             items: const [
                               DropdownMenuItem(value: 'all', child: Text('Giao hàng')),
                               DropdownMenuItem(value: 'pending', child: Text('Chờ giao')),
+                              DropdownMenuItem(value: 'awaiting_pickup', child: Text('Chờ lấy')),
                               DropdownMenuItem(value: 'delivering', child: Text('Đang giao')),
                               DropdownMenuItem(value: 'delivered', child: Text('Đã giao')),
                             ],
@@ -364,11 +370,13 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
                         const SizedBox(width: 8),
                         _buildStatChip('$_deliveredCount giao', Icons.check_circle, Colors.teal),
                         const SizedBox(width: 8),
-                        _buildStatChip('$_pendingCount chờ', Icons.local_shipping, Colors.orange),
+                        _buildStatChip('$_deliveringCount đang', Icons.local_shipping, Colors.blue),
+                        const SizedBox(width: 8),
+                        _buildStatChip('$_pendingCount chờ', Icons.hourglass_empty, Colors.orange),
                         const SizedBox(width: 8),
                         _buildStatChip('$_paidCount TT', Icons.paid, Colors.green),
                         const SizedBox(width: 8),
-                        _buildStatChip('$_unpaidCount nợ', Icons.money_off, Colors.red),
+                        _buildStatChip('$_debtCount nợ', Icons.money_off, Colors.red),
                       ],
                     ),
                   ),

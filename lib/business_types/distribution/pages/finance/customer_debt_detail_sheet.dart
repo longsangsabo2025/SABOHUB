@@ -64,7 +64,7 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
       // Load unpaid orders
       final orders = await supabase
           .from('sales_orders')
-          .select('id, order_number, total, paid_amount, payment_status, payment_method, delivery_status, created_at, delivery_date, sales_order_items(id, product_name, quantity)')
+          .select('id, order_number, total, paid_amount, payment_status, payment_method, delivery_status, created_at, delivery_date, order_date, sales_order_items(id, product_name, quantity)')
           .eq('customer_id', customerId)
           .eq('company_id', companyId)
           .neq('payment_status', 'paid')
@@ -91,7 +91,7 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
   }
 
   String _calcDebtAge(Map<String, dynamic> order) {
-    final deliveredAt = order['delivery_date'] ?? order['created_at'];
+    final deliveredAt = order['delivery_date'] ?? order['order_date'] ?? order['created_at'];
     if (deliveredAt == null) return '';
     final date = DateTime.tryParse(deliveredAt.toString());
     if (date == null) return '';
@@ -102,7 +102,7 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
   }
 
   Color _ageColor(Map<String, dynamic> order) {
-    final deliveredAt = order['delivery_date'] ?? order['created_at'];
+    final deliveredAt = order['delivery_date'] ?? order['order_date'] ?? order['created_at'];
     if (deliveredAt == null) return Colors.grey;
     final date = DateTime.tryParse(deliveredAt.toString());
     if (date == null) return Colors.grey;
@@ -282,9 +282,11 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
         final orderNum = order['order_number'] ?? '';
         final age = _calcDebtAge(order);
         final ageCol = _ageColor(order);
-        final createdAt = order['created_at'] != null
-            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(order['created_at']))
-            : '';
+        final createdAt = order['order_date'] != null
+            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(order['order_date']))
+            : order['created_at'] != null
+                ? DateFormat('dd/MM/yyyy').format(DateTime.parse(order['created_at']).toLocal())
+                : '';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 10),

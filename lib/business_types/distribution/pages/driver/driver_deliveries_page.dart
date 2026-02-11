@@ -116,6 +116,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             *,
             sales_orders:order_id(
               id, order_number, total, customer_name, payment_status, payment_method,
+              delivery_address, customer_address,
               customers(name, phone, address, lat, lng),
               sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
             )
@@ -134,6 +135,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             *,
             sales_orders:order_id(
               id, order_number, total, customer_name, payment_status, payment_method,
+              delivery_address, customer_address,
               customers(name, phone, address, lat, lng),
               sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
             )
@@ -151,6 +153,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             *,
             sales_orders:order_id(
               id, order_number, total, customer_name, payment_status, payment_method,
+              delivery_address, customer_address,
               customers(name, phone, address, lat, lng),
               sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
             )
@@ -760,7 +763,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    delivery['delivery_address'] ?? customer?['address'] ?? 'Chưa có địa chỉ',
+                    salesOrder?['delivery_address'] ?? salesOrder?['customer_address'] ?? delivery['delivery_address'] ?? customer?['address'] ?? 'Chưa có địa chỉ',
                     style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
                   ),
                 ),
@@ -842,7 +845,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     final total = (salesOrder?['total'] as num?)?.toDouble() ?? 
                   (salesOrder?['total_amount'] as num?)?.toDouble() ?? 0;
     final customerName = salesOrder?['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
-    final customerAddress = delivery['delivery_address'] ?? customer?['address'];
+    final customerAddress = salesOrder?['delivery_address'] ?? salesOrder?['customer_address'] ?? delivery['delivery_address'] ?? customer?['address'];
     final customerPhone = customer?['phone'];
 
     return GestureDetector(
@@ -1033,7 +1036,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
 
       // Update sales_orders delivery_status so warehouse can track
       await supabase.from('sales_orders').update({
-        'delivery_status': 'driver_accepted',
+        'delivery_status': 'awaiting_pickup',
         'updated_at': now,
       }).eq('id', orderId);
 
@@ -1228,7 +1231,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     required String paymentStatus,
     required double totalAmount,
   }) async {
-    String selectedOption = 'cash';
+    String? selectedOption;
     
     return showDialog<Map<String, dynamic>>(
       context: context,
@@ -1302,20 +1305,20 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                   const Text('Chọn phương thức:', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   
-                  RadioListTile<String>(
+                  RadioListTile<String?>(  
                     value: 'cash',
                     groupValue: selectedOption,
-                    onChanged: (v) => setState(() => selectedOption = v!),
+                    onChanged: (v) => setState(() => selectedOption = v),
                     title: const Text('💵 Thu tiền mặt'),
                     subtitle: Text(currencyFormat.format(totalAmount), style: const TextStyle(fontSize: 12)),
                     contentPadding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,
                   ),
                   
-                  RadioListTile<String>(
+                  RadioListTile<String?>(  
                     value: 'transfer',
                     groupValue: selectedOption,
-                    onChanged: (v) => setState(() => selectedOption = v!),
+                    onChanged: (v) => setState(() => selectedOption = v),
                     title: const Text('🏦 Chuyển khoản'),
                     subtitle: const Text('Hiện QR cho khách quét', style: TextStyle(fontSize: 12)),
                     contentPadding: EdgeInsets.zero,
@@ -1340,10 +1343,10 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                       ),
                     ),
                   
-                  RadioListTile<String>(
+                  RadioListTile<String?>(  
                     value: 'debt',
                     groupValue: selectedOption,
-                    onChanged: (v) => setState(() => selectedOption = v!),
+                    onChanged: (v) => setState(() => selectedOption = v),
                     title: const Text('📝 Ghi nợ'),
                     subtitle: const Text('Thêm vào công nợ khách hàng', style: TextStyle(fontSize: 12)),
                     contentPadding: EdgeInsets.zero,
@@ -1359,7 +1362,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
               child: const Text('Hủy'),
             ),
             ElevatedButton.icon(
-              onPressed: () {
+              onPressed: selectedOption == null ? null : () {
                 Map<String, dynamic> result = {'updatePayment': false};
                 
                 switch (selectedOption) {
@@ -1668,7 +1671,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     final total = (salesOrder?['total'] as num?)?.toDouble() ?? 0;
     final customerName = salesOrder?['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
     final customerPhone = customer?['phone'] as String?;
-    final customerAddress = delivery['delivery_address'] ?? customer?['address'] ?? '';
+    final customerAddress = salesOrder?['delivery_address'] ?? salesOrder?['customer_address'] ?? delivery['delivery_address'] ?? customer?['address'] ?? '';
     final paymentStatus = salesOrder?['payment_status'] ?? 'pending';
     final paymentMethod = salesOrder?['payment_method'] ?? '';
     final items = (isFromSalesOrders
