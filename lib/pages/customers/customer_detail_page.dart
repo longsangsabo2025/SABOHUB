@@ -1646,7 +1646,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> with Si
                 await supabase.from('customers').update({
                   'name': nameController.text.trim(),
                   'phone': phoneController.text.trim().isEmpty ? null : phoneController.text.trim(),
-                  'phone_2': phone2Controller.text.trim().isEmpty ? null : phone2Controller.text.trim(),
+                  'phone2': phone2Controller.text.trim().isEmpty ? null : phone2Controller.text.trim(),
                   'email': emailController.text.trim().isEmpty ? null : emailController.text.trim(),
                   'contact_person': contactPersonController.text.trim().isEmpty ? null : contactPersonController.text.trim(),
                   'address': addressController.text.trim().isEmpty ? null : addressController.text.trim(),
