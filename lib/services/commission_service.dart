@@ -59,7 +59,7 @@ class CommissionService {
     }
 
     if (toDate != null) {
-      query = query.lte('bills.bill_date', toDate.toIso8601String());
+      query = query.lt('bills.bill_date', toDate.add(const Duration(days: 1)).toIso8601String());
     }
 
     final response = await query.order('created_at', ascending: false);
@@ -223,7 +223,7 @@ class CommissionService {
     }
 
     if (endDate != null) {
-      query = query.lte('bills.bill_date', endDate.toIso8601String());
+      query = query.lt('bills.bill_date', endDate.add(const Duration(days: 1)).toIso8601String());
     }
 
     final response = await query;

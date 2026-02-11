@@ -115,7 +115,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
           .from('customers')
           .select('id')
           .eq('company_id', companyId)
-          .eq('status', 'archived')
+          .eq('status', 'inactive')
           .count(CountOption.exact);
       
       final now = DateTime.now();
@@ -298,7 +298,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         query = query.eq('status', _selectedStatus!);
       } else if (!_showArchived) {
         // Mặc định ẩn KH lưu trữ
-        query = query.neq('status', 'archived');
+        query = query.neq('status', 'inactive');
       }
       if (_searchQuery.isNotEmpty) {
         query = query.or('name.ilike.%$_searchQuery%,code.ilike.%$_searchQuery%,phone.ilike.%$_searchQuery%');
@@ -360,7 +360,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         query = query.eq('status', _selectedStatus!);
       } else if (!_showArchived) {
         // Mặc định ẩn KH lưu trữ
-        query = query.neq('status', 'archived');
+        query = query.neq('status', 'inactive');
       }
       if (_searchQuery.isNotEmpty) {
         query = query.or('name.ilike.%$_searchQuery%,code.ilike.%$_searchQuery%,phone.ilike.%$_searchQuery%');
@@ -547,7 +547,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                   _showEditCustomerDialog(customer);
                 }),
                 // Archive/Unarchive button
-                customer.status == 'archived'
+                customer.status == 'inactive'
                     ? _buildActionButton(Icons.unarchive, 'Khôi phục', Colors.green, () {
                         Navigator.pop(context);
                         _toggleArchiveCustomer(customer, false);
@@ -665,7 +665,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
   /// Lưu trữ hoặc khôi phục khách hàng
   Future<void> _toggleArchiveCustomer(OdoriCustomer customer, bool archive) async {
     try {
-      final newStatus = archive ? 'archived' : 'active';
+      final newStatus = archive ? 'inactive' : 'active';
       await supabase
           .from('customers')
           .update({'status': newStatus, 'updated_at': DateTime.now().toIso8601String()})
@@ -694,7 +694,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
   Future<void> _confirmDeleteCustomer(OdoriCustomer customer) async {
     // Nếu chưa lưu trữ, gợi ý lưu trữ trước
-    final isArchived = customer.status == 'archived';
+    final isArchived = customer.status == 'inactive';
     
     final result = await showDialog<String>(
       context: context,
@@ -1096,14 +1096,14 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                   // Status filter dropdown
                   _buildCompactPopup<String?>(
                     icon: Icons.circle,
-                    label: _selectedStatus == 'active' ? 'Đang HĐ' : _selectedStatus == 'inactive' ? 'Ngưng HĐ' : _selectedStatus == 'archived' ? 'Lưu trữ' : 'Trạng thái',
+                    label: _selectedStatus == 'active' ? 'Đang HĐ' : _selectedStatus == 'inactive' ? 'Ngưng HĐ' : 'Trạng thái',
                     isActive: _selectedStatus != null || _showArchived,
-                    activeColor: _selectedStatus == 'active' ? Colors.green : _selectedStatus == 'inactive' ? Colors.red : _selectedStatus == 'archived' ? Colors.grey : Colors.orange,
+                    activeColor: _selectedStatus == 'active' ? Colors.green : _selectedStatus == 'inactive' ? Colors.red : Colors.orange,
                     items: [
                       PopupMenuItem(value: '__all__', child: Text('Tất cả', style: TextStyle(fontWeight: _selectedStatus == null ? FontWeight.bold : FontWeight.normal))),
                       PopupMenuItem(value: 'active', child: Text('✅ Đang HĐ', style: TextStyle(fontWeight: _selectedStatus == 'active' ? FontWeight.bold : FontWeight.normal))),
                       PopupMenuItem(value: 'inactive', child: Text('⏸ Ngưng HĐ', style: TextStyle(fontWeight: _selectedStatus == 'inactive' ? FontWeight.bold : FontWeight.normal))),
-                      PopupMenuItem(value: 'archived', child: Text('📦 Lưu trữ ($_archivedCustomers)', style: TextStyle(fontWeight: _selectedStatus == 'archived' ? FontWeight.bold : FontWeight.normal))),
+                      PopupMenuItem(value: 'inactive', child: Text('📦 Lưu trữ ($_archivedCustomers)', style: TextStyle(fontWeight: _selectedStatus == 'inactive' ? FontWeight.bold : FontWeight.normal))),
                       const PopupMenuDivider(),
                       PopupMenuItem(
                         value: '__toggle_archived__',

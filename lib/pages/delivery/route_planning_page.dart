@@ -405,7 +405,7 @@ class _RoutePlanningPageState extends ConsumerState<RoutePlanningPage>
       for (final deliveryId in _selectedDeliveryIds) {
         await supabase.from('deliveries').update({
           'driver_id': driverId,
-          'status': 'assigned',
+          'status': 'planned',
           'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', deliveryId);
       }

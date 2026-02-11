@@ -68,7 +68,7 @@ class BillService {
     }
 
     if (toDate != null) {
-      query = query.lte('bill_date', toDate.toIso8601String());
+      query = query.lt('bill_date', toDate.add(const Duration(days: 1)).toIso8601String());
     }
 
     final response = await query.order('bill_date', ascending: false);

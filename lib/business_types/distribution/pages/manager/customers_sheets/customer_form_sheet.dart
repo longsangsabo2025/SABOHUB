@@ -592,7 +592,7 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
                 items: const [
                   DropdownMenuItem(value: 'active', child: Text('🟢 Đang hoạt động')),
                   DropdownMenuItem(value: 'inactive', child: Text('🔴 Ngưng hoạt động')),
-                  DropdownMenuItem(value: 'archived', child: Text('📦 Lưu trữ')),
+                  DropdownMenuItem(value: 'inactive', child: Text('📦 Lưu trữ')),
                 ],
                 onChanged: (value) => setState(() => _selectedStatus = value!),
               ),

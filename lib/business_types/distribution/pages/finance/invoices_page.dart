@@ -64,12 +64,13 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
             customers(name, phone, address),
             sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
           ''')
-          .eq('company_id', companyId);
+          .eq('company_id', companyId)
+          .neq('status', 'cancelled');
 
       if (_invoiceDateFilter != null) {
         queryBuilder = queryBuilder
             .gte('created_at', _invoiceDateFilter!.start.toIso8601String())
-            .lte('created_at', _invoiceDateFilter!.end.toIso8601String());
+            .lt('created_at', _invoiceDateFilter!.end.add(const Duration(days: 1)).toIso8601String());
       }
 
       final data = await queryBuilder
@@ -216,7 +217,7 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
     }
     final discountAmount = (order['discount_amount'] ?? 0).toDouble();
     final taxAmount = (order['tax_amount'] ?? 0).toDouble();
-    final shippingAmount = (order['shipping_amount'] ?? 0).toDouble();
+    final shippingAmount = (order['shipping_fee'] ?? 0).toDouble();
     // Use the authoritative total from DB (already includes discount, tax, shipping)
     final total = (order['total'] ?? (subtotal - discountAmount + taxAmount + shippingAmount)).toDouble();
 

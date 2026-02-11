@@ -209,9 +209,9 @@ class _OdoriCustomersPageState extends ConsumerState<OdoriCustomersPage> {
                 ),
                 ChoiceChip(
                   label: const Text('Trực tiếp'),
-                  selected: _typeFilter == 'direct',
+                  selected: _typeFilter == 'retail',
                   onSelected: (_) {
-                    setState(() => _typeFilter = 'direct');
+                    setState(() => _typeFilter = 'retail');
                     Navigator.pop(context);
                   },
                 ),
@@ -225,9 +225,9 @@ class _OdoriCustomersPageState extends ConsumerState<OdoriCustomersPage> {
                 ),
                 ChoiceChip(
                   label: const Text('Đại lý'),
-                  selected: _typeFilter == 'agent',
+                  selected: _typeFilter == 'wholesale',
                   onSelected: (_) {
-                    setState(() => _typeFilter = 'agent');
+                    setState(() => _typeFilter = 'wholesale');
                     Navigator.pop(context);
                   },
                 ),

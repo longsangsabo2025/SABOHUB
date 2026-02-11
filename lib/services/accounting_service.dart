@@ -23,11 +23,11 @@ class AccountingService {
       // Get revenue from completed sales_orders (payment_status = 'paid')
       var salesQuery = _supabase
           .from('sales_orders')
-          .select('total, payment_status, status')
+          .select('total, paid_amount, payment_status, status')
           .eq('company_id', companyId)
           .gte('order_date', startDateStr)
           .lte('order_date', endDateStr)
-          .inFilter('status', ['completed', 'approved']);
+          .inFilter('status', ['completed', 'confirmed']);
 
       if (branchId != null) {
         salesQuery = salesQuery.eq('branch_id', branchId);
@@ -41,13 +41,14 @@ class AccountingService {
 
       for (var record in salesData) {
         final total = (record['total'] as num?)?.toDouble() ?? 0.0;
+        final paidAmount = (record['paid_amount'] as num?)?.toDouble() ?? 0.0;
         final paymentStatus = record['payment_status'] as String?;
         
         if (paymentStatus == 'paid') {
           totalRevenue += total;
           paidOrderCount++;
         } else {
-          totalReceivable += total;
+          totalReceivable += (total - paidAmount);
           unpaidOrderCount++;
         }
       }
@@ -126,7 +127,7 @@ class AccountingService {
             .from('sales_orders')
             .select('id, order_number, order_date, total, payment_method, payment_status, status, notes, created_at, customers(name), sales_order_items(products(name))')
             .eq('company_id', companyId)
-            .inFilter('status', ['completed', 'approved']);
+            .inFilter('status', ['completed', 'confirmed']);
 
         if (branchId != null) {
           salesQuery = salesQuery.eq('branch_id', branchId);
@@ -247,7 +248,7 @@ class AccountingService {
           .from('sales_orders')
           .select('order_date, total, payment_status')
           .eq('company_id', companyId)
-          .inFilter('status', ['completed', 'approved']);
+          .inFilter('status', ['completed', 'confirmed']);
 
       if (branchId != null) {
         query = query.eq('branch_id', branchId);
@@ -307,7 +308,7 @@ class AccountingService {
           .select('id, order_number, order_date, customer_id, total, paid_amount, payment_status, status, created_at')
           .eq('company_id', companyId)
           .eq('payment_status', 'unpaid')
-          .inFilter('status', ['completed', 'approved', 'pending']);
+          .inFilter('status', ['completed', 'confirmed', 'pending_approval']);
 
       if (branchId != null) {
         query = query.eq('branch_id', branchId);
@@ -507,7 +508,7 @@ class AccountingService {
           .select('order_date, total')
           .eq('company_id', companyId)
           .eq('payment_status', 'paid')
-          .inFilter('status', ['completed', 'approved'])
+          .inFilter('status', ['completed', 'confirmed'])
           .gte('order_date', startDateStr)
           .lte('order_date', endDateStr);
 

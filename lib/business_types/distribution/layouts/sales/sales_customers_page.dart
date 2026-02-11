@@ -90,7 +90,7 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
           .eq('company_id', companyId);
           
       if (_showArchived) {
-        query = query.eq('status', 'archived');
+        query = query.eq('status', 'inactive');
       } else {
         query = query.eq('status', _statusFilter);
       }

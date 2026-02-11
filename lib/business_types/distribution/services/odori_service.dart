@@ -273,7 +273,7 @@ class OdoriService {
           'order_number': orderNumber,
           'order_date': DateTime.now().toIso8601String().split('T')[0],
           'subtotal': subtotal,
-          'total_amount': subtotal,
+          'total': subtotal,
           'status': 'draft',
           'item_count': items.length,
         })

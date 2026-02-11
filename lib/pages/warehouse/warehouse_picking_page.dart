@@ -392,7 +392,7 @@ class _WarehousePickingPageState extends ConsumerState<WarehousePickingPage> {
     try {
       // Update order status
       await supabase.from('sales_orders').update({
-        'status': 'ready_for_delivery',
+        'status': 'ready',
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', order.id);
 
@@ -413,7 +413,7 @@ class _WarehousePickingPageState extends ConsumerState<WarehousePickingPage> {
           'order_id': order.id,
           'driver_id': driverId,
           'delivery_number': deliveryNumber,
-          'status': 'assigned',
+          'status': 'planned',
           'delivery_date': DateTime.now().toIso8601String().split('T')[0],
         });
       }

@@ -68,6 +68,7 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
           .eq('customer_id', customerId)
           .eq('company_id', companyId)
           .neq('payment_status', 'paid')
+          .neq('status', 'cancelled')
           .order('created_at', ascending: false);
 
       // Load payment history

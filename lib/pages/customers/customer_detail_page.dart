@@ -2325,7 +2325,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> with Si
 
   // ==================== ARCHIVE/RESTORE ====================
   Future<void> _toggleArchiveCustomer() async {
-    final isArchived = _customer.status == 'archived';
+    final isArchived = _customer.status == 'inactive';
     final action = isArchived ? 'khôi phục' : 'lưu trữ';
     
     final confirm = await showDialog<bool>(
@@ -2359,7 +2359,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage> with Si
     
     if (confirm == true) {
       try {
-        final newStatus = isArchived ? 'active' : 'archived';
+        final newStatus = isArchived ? 'active' : 'inactive';
         await supabase.from('customers')
             .update({'status': newStatus})
             .eq('id', _customer.id);

@@ -309,12 +309,12 @@ class OdoriSalesOrder extends Equatable {
           : null,
       status: _parseOrderStatus(json['status'] as String?),
       subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0,
-      discountTotal: (json['discount_total'] as num?)?.toDouble() ?? 0,
-      taxTotal: (json['tax_total'] as num?)?.toDouble() ?? 0,
-      totalAmount: (json['total_amount'] as num?)?.toDouble() ?? 0,
-      shippingAddress: json['shipping_address'] as String?,
+      discountTotal: (json['discount_amount'] as num?)?.toDouble() ?? 0,
+      taxTotal: (json['tax_amount'] as num?)?.toDouble() ?? 0,
+      totalAmount: (json['total'] as num?)?.toDouble() ?? 0,
+      shippingAddress: json['delivery_address'] as String?,
       notes: json['notes'] as String?,
-      salesRepId: json['sales_rep_id'] as String?,
+      salesRepId: json['sale_id'] as String?,
       approvedBy: json['approved_by'] as String?,
       approvedAt: json['approved_at'] != null
           ? DateTime.parse(json['approved_at'] as String)
@@ -329,11 +329,11 @@ class OdoriSalesOrder extends Equatable {
 
   static OrderStatus _parseOrderStatus(String? status) {
     switch (status) {
-      case 'pending': return OrderStatus.pending;
-      case 'approved': return OrderStatus.approved;
+      case 'pending_approval': return OrderStatus.pending;
+      case 'confirmed': return OrderStatus.approved;
       case 'processing': return OrderStatus.processing;
-      case 'shipped': return OrderStatus.shipped;
-      case 'delivered': return OrderStatus.delivered;
+      case 'ready': return OrderStatus.shipped;
+      case 'completed': return OrderStatus.delivered;
       case 'cancelled': return OrderStatus.cancelled;
       default: return OrderStatus.draft;
     }

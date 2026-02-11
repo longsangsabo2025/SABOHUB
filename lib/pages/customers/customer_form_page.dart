@@ -35,7 +35,7 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
   List<dvhcvn.Level3> _wards = [];
   
   // State
-  String _customerType = 'direct'; // direct, distributor, agent
+  String _customerType = 'retail'; // retail, wholesale, distributor, horeca, other
   bool _isLoading = false;
 
   @override
