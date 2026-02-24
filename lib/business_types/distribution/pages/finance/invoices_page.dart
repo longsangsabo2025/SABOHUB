@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../utils/app_logger.dart';
 import '../../../../utils/quick_date_range_picker.dart';
+import '../../widgets/invoice_preview_sheet.dart';
 
 // ============================================================================
 // INVOICES PAGE - Modern UI with Odori PDF Template
@@ -180,6 +181,19 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
         );
       }
     }
+  }
+
+  /// Preview invoice in-app (mobile-friendly)
+  void _previewInvoice(Map<String, dynamic> order) {
+    final authState = ref.read(authProvider);
+    final companyName = authState.user?.companyName ?? 'CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI ODORI';
+
+    InvoicePreviewSheet.show(
+      context,
+      order: order,
+      companyName: companyName,
+      onPrint: () => _printInvoice(order),
+    );
   }
 
   Future<void> _printSelectedInvoices() async {
@@ -791,24 +805,52 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
                       Text(currencyFormat.format(total),
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       const SizedBox(height: 4),
-                      if (canPrint && !_isSelectMode)
-                        GestureDetector(
-                          onTap: () => _printInvoice(order),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.purple.shade600,
-                              borderRadius: BorderRadius.circular(8),
+                      if (!_isSelectMode)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Preview button - always visible
+                            GestureDetector(
+                              onTap: () => _previewInvoice(order),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.visibility, size: 14, color: Colors.blue.shade700),
+                                    const SizedBox(width: 4),
+                                    Text('Xem', style: TextStyle(color: Colors.blue.shade700, fontSize: 12, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ),
                             ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.print, size: 14, color: Colors.white),
-                                SizedBox(width: 4),
-                                Text('In', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                              ],
-                            ),
-                          ),
+                            if (canPrint) ...[  
+                              const SizedBox(width: 6),
+                              // Print button  
+                              GestureDetector(
+                                onTap: () => _printInvoice(order),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple.shade600,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.print, size: 14, color: Colors.white),
+                                      SizedBox(width: 4),
+                                      Text('In', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       if (isPrinted)
                         GestureDetector(
