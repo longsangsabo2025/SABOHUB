@@ -198,7 +198,19 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
   }
 
   Future<Uint8List> _generateInvoicePdf(Map<String, dynamic> order) async {
-    final pdf = pw.Document();
+    // Load Vietnamese-supporting fonts (Roboto supports Vietnamese)
+    final fontRegular = await PdfGoogleFonts.robotoRegular();
+    final fontBold = await PdfGoogleFonts.robotoBold();
+    final fontItalic = await PdfGoogleFonts.robotoItalic();
+
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(
+        base: fontRegular,
+        bold: fontBold,
+        italic: fontItalic,
+      ),
+    );
+
     final customer = order['customers'] as Map<String, dynamic>?;
     final items = (order['sales_order_items'] as List?) ?? [];
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '');
