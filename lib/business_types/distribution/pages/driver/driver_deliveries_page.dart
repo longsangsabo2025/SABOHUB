@@ -974,15 +974,31 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                         } else {
                           final deliveryId = delivery['id'] as String;
                           final orderId = delivery['order_id'] as String? ?? 
-                                         (delivery['sales_orders'] as Map<String, dynamic>?)?['id'] as String? ?? 
-                                         deliveryId;
+                                         (delivery['sales_orders'] as Map<String, dynamic>?)?['id'] as String?;
+                          if (orderId == null || orderId.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Lỗi: Đơn hàng không tồn tại hoặc đã bị xóa'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
                           _pickupDelivery(deliveryId, orderId);
                         }
                       } else {
                         final deliveryId = delivery['id'] as String;
                         final orderId = delivery['order_id'] as String? ?? 
-                                       (delivery['sales_orders'] as Map<String, dynamic>?)?['id'] as String? ?? 
-                                       deliveryId;
+                                       (delivery['sales_orders'] as Map<String, dynamic>?)?['id'] as String?;
+                        if (orderId == null || orderId.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Lỗi: Đơn hàng không tồn tại hoặc đã bị xóa'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
                         _completeDelivery(deliveryId, orderId);
                       }
                     },
@@ -1013,6 +1029,19 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
   // ============================================================================
 
   Future<void> _acceptOrder(String orderId, Map<String, dynamic> orderData) async {
+    // Validate orderId
+    if (orderId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lỗi: Mã đơn hàng không hợp lệ'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+    
     try {
       final supabase = Supabase.instance.client;
       final authState = ref.read(authProvider);
