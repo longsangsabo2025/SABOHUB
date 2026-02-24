@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dvhcvn/dvhcvn.dart' as dvhcvn;
 
+import '../../../../../services/geocoding_service.dart';
 import '../../../models/odori_customer.dart';
 import '../../../../../providers/auth_provider.dart';
 import '../../../providers/odori_providers.dart';
@@ -204,6 +205,23 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
       }
       final fullAddress = addressParts.join(', ');
 
+      // Auto-geocode address
+      double? latitude;
+      double? longitude;
+      if (_selectedDistrict != null) {
+        final coords = await GeocodingService.geocodeFromFields(
+          streetNumber: _streetNumberController.text.trim(),
+          street: _streetController.text.trim(),
+          ward: _selectedWard?.name,
+          district: _selectedDistrict?.name,
+          city: _selectedCity?.name,
+        );
+        if (coords != null) {
+          latitude = coords.lat;
+          longitude = coords.lng;
+        }
+      }
+
       final customerData = {
         'name': _nameController.text.trim(),
         'code': _codeController.text.trim().isEmpty 
@@ -216,6 +234,8 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
         'district': _selectedDistrict?.name.replaceAll('Quận ', '').replaceAll('Huyện ', '').replaceAll('Thành phố ', '').replaceAll('Thị xã ', ''),
         'city': _selectedCity?.name.replaceAll('Thành phố ', '').replaceAll('Tỉnh ', ''),
         'address': fullAddress.isEmpty ? null : fullAddress,
+        'latitude': latitude,
+        'longitude': longitude,
         'channel': _selectedChannel,
         'status': _selectedStatus,
         'tier': _selectedTier,

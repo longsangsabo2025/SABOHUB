@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dvhcvn/dvhcvn.dart' as dvhcvn;
+import '../../services/geocoding_service.dart';
 import '../../business_types/distribution/models/odori_customer.dart';
 import '../../models/customer_contact.dart';
 import '../../models/customer_address.dart';
@@ -1068,61 +1069,6 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
     );
   }
 
-  Widget _buildContactCard(CustomerContact contact) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-            color: contact.isPrimary
-                ? Colors.purple.shade200
-                : Colors.grey.shade200),
-      ),
-      child: ListTile(
-        leading: CustomerAvatar(
-          seed: contact.name,
-          radius: 20,
-        ),
-        title: Row(
-          children: [
-            Text(contact.name,
-                style: const TextStyle(fontWeight: FontWeight.w500)),
-            if (contact.isPrimary) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                    color: Colors.purple,
-                    borderRadius: BorderRadius.circular(4)),
-                child: const Text('Chính',
-                    style: TextStyle(fontSize: 9, color: Colors.white)),
-              ),
-            ],
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (contact.position != null)
-              Text(contact.position!,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-            if (contact.phone != null)
-              Text(contact.phone!,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-          ],
-        ),
-        trailing: contact.phone != null
-            ? IconButton(
-                icon: const Icon(Icons.phone, color: Colors.green),
-                onPressed: () => _makePhoneCall(contact.phone),
-              )
-            : null,
-        isThreeLine: contact.position != null && contact.phone != null,
-      ),
-    );
-  }
-
   Widget _buildBranchCard(CustomerAddress branch) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -2032,6 +1978,23 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                   }
                   final fullAddress = addressParts.join(', ');
 
+                  // Auto-geocode if address changed and we have district info
+                  double? latitude;
+                  double? longitude;
+                  if (selectedDistrict != null) {
+                    final coords = await GeocodingService.geocodeFromFields(
+                      streetNumber: streetNumberController.text.trim(),
+                      street: streetController.text.trim(),
+                      ward: selectedWard?.name,
+                      district: selectedDistrict?.name,
+                      city: selectedCity?.name,
+                    );
+                    if (coords != null) {
+                      latitude = coords.lat;
+                      longitude = coords.lng;
+                    }
+                  }
+
                   await supabase.from('customers').update({
                     'name': nameController.text.trim(),
                     'phone': phoneController.text.trim().isEmpty
@@ -2060,6 +2023,8 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                     'city': selectedCity?.name
                         .replaceAll(RegExp(r'^(Thành phố |Tỉnh )'), ''),
                     'address': fullAddress.isNotEmpty ? fullAddress : null,
+                    'latitude': latitude,
+                    'longitude': longitude,
                     'updated_at': DateTime.now().toIso8601String(),
                   }).eq('id', _customer.id);
 
@@ -2095,153 +2060,6 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
           const SnackBar(
               content: Text('✅ Đã cập nhật khách hàng'),
               backgroundColor: Colors.green),
-        );
-      }
-    }
-  }
-
-  // ==================== ADD CONTACT ====================
-  Future<void> _showAddContactDialog() async {
-    final nameController = TextEditingController();
-    final phoneController = TextEditingController();
-    final emailController = TextEditingController();
-    final positionController = TextEditingController();
-    bool isPrimary =
-        _contacts.isEmpty; // Default to primary if no contacts exist
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.add_business, color: Colors.purple),
-              SizedBox(width: 8),
-              Text('Thêm cơ sở / chi nhánh'),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Tên cơ sở / chi nhánh *',
-                    prefixIcon: Icon(Icons.store),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Số điện thoại *',
-                    prefixIcon: Icon(Icons.phone),
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: positionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Chức vụ',
-                    prefixIcon: Icon(Icons.badge),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                CheckboxListTile(
-                  value: isPrimary,
-                  onChanged: (v) =>
-                      setDialogState(() => isPrimary = v ?? false),
-                  title: const Text('Cơ sở chính'),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hủy'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (nameController.text.trim().isEmpty ||
-                    phoneController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Vui lòng nhập tên và số điện thoại'),
-                        backgroundColor: Colors.red),
-                  );
-                  return;
-                }
-
-                try {
-                  // If this will be primary, unset other primaries first
-                  if (isPrimary && _contacts.isNotEmpty) {
-                    await supabase.from('customer_contacts').update(
-                        {'is_primary': false}).eq('customer_id', _customer.id);
-                  }
-
-                  final user = ref.read(authProvider).user;
-                  if (user?.companyId == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Lỗi: Không xác định được công ty'),
-                          backgroundColor: Colors.red),
-                    );
-                    return;
-                  }
-                  await supabase.from('customer_contacts').insert({
-                    'customer_id': _customer.id,
-                    'company_id': user!.companyId,
-                    'name': nameController.text.trim(),
-                    'phone': phoneController.text.trim(),
-                    'email': emailController.text.trim().isEmpty
-                        ? null
-                        : emailController.text.trim(),
-                    'position': positionController.text.trim().isEmpty
-                        ? null
-                        : positionController.text.trim(),
-                    'is_primary': isPrimary,
-                    'is_active': true,
-                  });
-
-                  Navigator.pop(context, true);
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('Lỗi: $e'), backgroundColor: Colors.red),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white),
-              child: const Text('Thêm'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (result == true) {
-      await _loadContacts();
-      setState(() {});
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('✅ Đã thêm cơ sở'), backgroundColor: Colors.green),
         );
       }
     }
@@ -2813,7 +2631,6 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
   // ==================== ARCHIVE/RESTORE ====================
   Future<void> _toggleArchiveCustomer() async {
     final isArchived = _customer.status == 'inactive';
-    final action = isArchived ? 'khôi phục' : 'lưu trữ';
 
     final confirm = await showDialog<bool>(
       context: context,

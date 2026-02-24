@@ -8,10 +8,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../models/odori_customer.dart';
 import '../../../../models/customer_tier.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../services/customer_revenue_service.dart';
+import '../../../../services/customer_import_export_service.dart';
 import '../../../../widgets/customer_tier_widgets.dart';
 import '../../../../widgets/customer_addresses_sheet.dart';
 import '../../../../widgets/customer_contacts_sheet.dart';
@@ -642,6 +644,104 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     );
   }
 
+  /// Dialog nhập khách hàng từ CSV
+  Future<void> _showImportDialog(String companyId) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+      withData: true,
+    );
+
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.first;
+    if (file.bytes == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không thể đọc file'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    // Show loading dialog
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Đang nhập khách hàng...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    try {
+      final csvContent = String.fromCharCodes(file.bytes!);
+      final importResult = await CustomerImportExportService.importFromCSV(
+        companyId: companyId,
+        csvContent: csvContent,
+      );
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        // Show result dialog
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(importResult.hasErrors ? Icons.warning : Icons.check_circle, 
+                     color: importResult.hasErrors ? Colors.orange : Colors.green),
+                const SizedBox(width: 12),
+                const Text('Kết quả nhập'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('📥 Thêm mới: ${importResult.added} khách hàng'),
+                Text('📝 Cập nhật: ${importResult.updated} khách hàng'),
+                Text('⏭️ Bỏ qua: ${importResult.skipped} dòng'),
+                if (importResult.hasErrors) ...[
+                  const SizedBox(height: 12),
+                  const Text('Lỗi:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                  ...importResult.errors.take(5).map((e) => Text('• $e', style: const TextStyle(fontSize: 12))),
+                  if (importResult.errors.length > 5)
+                    Text('... và ${importResult.errors.length - 5} lỗi khác', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ],
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+
+        // Reload data
+        _loadStatistics();
+        _loadInitial();
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Lỗi nhập file: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   void _showEditCustomerDialog(OdoriCustomer customer) {
     showModalBottomSheet(
       context: context,
@@ -1061,6 +1161,56 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                           child: Icon(Icons.sort, color: Colors.teal.shade700),
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 4),
+                    PopupMenuButton<String>(
+                      icon: Icon(Icons.more_vert, color: Colors.teal.shade700),
+                      tooltip: 'Thêm tùy chọn',
+                      onSelected: (value) async {
+                        final companyId = ref.read(authProvider).user?.companyId;
+                        if (companyId == null) return;
+                        
+                        if (value == 'export') {
+                          try {
+                            await CustomerImportExportService.exportToCSV(companyId: companyId);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('✅ Đã xuất file CSV'), backgroundColor: Colors.green),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('❌ Lỗi xuất file: $e'), backgroundColor: Colors.red),
+                              );
+                            }
+                          }
+                        } else if (value == 'import') {
+                          _showImportDialog(companyId);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'export',
+                          child: Row(
+                            children: [
+                              Icon(Icons.download, color: Colors.teal),
+                              SizedBox(width: 12),
+                              Text('Xuất Excel/CSV'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'import',
+                          child: Row(
+                            children: [
+                              Icon(Icons.upload, color: Colors.orange),
+                              SizedBox(width: 12),
+                              Text('Nhập từ CSV'),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

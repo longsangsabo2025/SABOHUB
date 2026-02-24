@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dvhcvn/dvhcvn.dart' as dvhcvn;
 
+import '../../../../../services/geocoding_service.dart';
 import '../../../../../providers/auth_provider.dart';
 import '../../../providers/odori_providers.dart';
 
@@ -25,10 +27,17 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
   final _nameController = TextEditingController();
   final _codeController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _districtController = TextEditingController();
+  final _streetNumberController = TextEditingController();
+  final _streetController = TextEditingController();
   final _creditLimitController = TextEditingController();
   final _paymentTermsController = TextEditingController();
+  
+  // Vietnamese Address Selection
+  dvhcvn.Level1? _selectedCity;
+  dvhcvn.Level2? _selectedDistrict;
+  dvhcvn.Level3? _selectedWard;
+  List<dvhcvn.Level2> _districts = [];
+  List<dvhcvn.Level3> _wards = [];
   
   String _selectedChannel = 'GT Sỉ';
   String _selectedType = 'retail';
@@ -40,12 +49,13 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
   @override
   void initState() {
     super.initState();
+    _initializeAddress();
     if (widget.customer != null) {
       _nameController.text = widget.customer!['name'] ?? '';
       _codeController.text = widget.customer!['code'] ?? '';
       _phoneController.text = widget.customer!['phone'] ?? '';
-      _addressController.text = widget.customer!['address'] ?? '';
-      _districtController.text = widget.customer!['district'] ?? '';
+      _streetNumberController.text = widget.customer!['street_number'] ?? '';
+      _streetController.text = widget.customer!['street'] ?? '';
       _creditLimitController.text = (widget.customer!['credit_limit'] ?? 0).toString();
       _paymentTermsController.text = (widget.customer!['payment_terms'] ?? 0).toString();
       _selectedChannel = widget.customer!['channel'] ?? 'GT Sỉ';
@@ -53,10 +63,47 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
       _selectedStatus = widget.customer!['status'] ?? 'active';
       _selectedTier = widget.customer!['tier'] ?? 'bronze';
       _selectedReferrerId = widget.customer!['referrer_id'];
+      _matchExistingAddress();
     } else {
       _creditLimitController.text = '0';
       _paymentTermsController.text = '0';
       _generateCustomerCode();
+    }
+  }
+  
+  void _initializeAddress() {
+    final hcm = dvhcvn.findLevel1ByName('Thành phố Hồ Chí Minh');
+    if (hcm != null) {
+      _selectedCity = hcm;
+      _districts = hcm.children;
+    }
+  }
+  
+  void _matchExistingAddress() {
+    if (widget.customer == null) return;
+    final district = widget.customer!['district'] as String?;
+    final ward = widget.customer!['ward'] as String?;
+    
+    if (district != null && district.isNotEmpty) {
+      for (final d in _districts) {
+        if (d.name.contains(district) || 
+            district.contains(d.name.replaceAll(RegExp(r'^(Quận |Huyện |Thành phố |Thị xã )'), ''))) {
+          setState(() {
+            _selectedDistrict = d;
+            _wards = d.children;
+          });
+          break;
+        }
+      }
+    }
+    if (ward != null && ward.isNotEmpty && _selectedDistrict != null) {
+      for (final w in _wards) {
+        if (w.name.contains(ward) || 
+            ward.contains(w.name.replaceAll(RegExp(r'^(Phường |Xã |Thị trấn )'), ''))) {
+          setState(() => _selectedWard = w);
+          break;
+        }
+      }
     }
   }
 
@@ -99,8 +146,8 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
     _nameController.dispose();
     _codeController.dispose();
     _phoneController.dispose();
-    _addressController.dispose();
-    _districtController.dispose();
+    _streetNumberController.dispose();
+    _streetController.dispose();
     _creditLimitController.dispose();
     _paymentTermsController.dispose();
     super.dispose();
@@ -121,14 +168,56 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
 
       final supabase = Supabase.instance.client;
 
+      // Build full address from structured fields
+      final addressParts = <String>[];
+      if (_streetNumberController.text.trim().isNotEmpty) {
+        addressParts.add(_streetNumberController.text.trim());
+      }
+      if (_streetController.text.trim().isNotEmpty) {
+        addressParts.add(_streetController.text.trim());
+      }
+      if (_selectedWard != null) {
+        addressParts.add(_selectedWard!.name);
+      }
+      if (_selectedDistrict != null) {
+        addressParts.add(_selectedDistrict!.name);
+      }
+      if (_selectedCity != null) {
+        addressParts.add(_selectedCity!.name);
+      }
+      final fullAddress = addressParts.join(', ');
+
+      // Auto-geocode address
+      double? latitude;
+      double? longitude;
+      if (_selectedDistrict != null) {
+        final coords = await GeocodingService.geocodeFromFields(
+          streetNumber: _streetNumberController.text.trim(),
+          street: _streetController.text.trim(),
+          ward: _selectedWard?.name,
+          district: _selectedDistrict?.name,
+          city: _selectedCity?.name,
+        );
+        if (coords != null) {
+          latitude = coords.lat;
+          longitude = coords.lng;
+        }
+      }
+
       final customerData = {
         'name': _nameController.text.trim(),
         'code': _codeController.text.trim().isEmpty 
-            ? 'KH${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}'
+            ? 'KH-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}'
             : _codeController.text.trim(),
         'phone': _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-        'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-        'district': _districtController.text.trim().isEmpty ? null : _districtController.text.trim(),
+        'street_number': _streetNumberController.text.trim().isEmpty ? null : _streetNumberController.text.trim(),
+        'street': _streetController.text.trim().isEmpty ? null : _streetController.text.trim(),
+        'ward': _selectedWard?.name.replaceAll(RegExp(r'^(Phường |Xã |Thị trấn )'), ''),
+        'district': _selectedDistrict?.name.replaceAll(RegExp(r'^(Quận |Huyện |Thành phố |Thị xã )'), ''),
+        'city': _selectedCity?.name.replaceAll(RegExp(r'^(Thành phố |Tỉnh )'), ''),
+        'address': fullAddress.isEmpty ? null : fullAddress,
+        'latitude': latitude,
+        'longitude': longitude,
         'channel': _selectedChannel,
         'type': _selectedType,
         'status': _selectedStatus,
@@ -284,53 +373,120 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
               ),
               const SizedBox(height: 12),
               
-              TextFormField(
-                controller: _addressController,
+              // === Structured Address Section ===
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.teal.shade100),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.location_on, color: Colors.teal.shade700, size: 20),
+                        const SizedBox(width: 8),
+                        Text('Địa chỉ', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal.shade700)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 80,
+                          child: TextFormField(
+                            controller: _streetNumberController,
+                            decoration: InputDecoration(
+                              labelText: 'Số',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _streetController,
+                            decoration: InputDecoration(
+                              labelText: 'Tên đường',
+                              hintText: 'VD: Dương Đình Hội',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<dvhcvn.Level2>(
+                      value: _selectedDistrict,
+                      decoration: InputDecoration(
+                        labelText: 'Quận/Huyện *',
+                        prefixIcon: const Icon(Icons.location_city, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                      isExpanded: true,
+                      items: _districts.map((d) => DropdownMenuItem(
+                        value: d,
+                        child: Text(d.name, overflow: TextOverflow.ellipsis),
+                      )).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedDistrict = value;
+                          _selectedWard = null;
+                          _wards = value?.children ?? [];
+                        });
+                      },
+                      validator: (value) => value == null ? 'Chọn quận/huyện' : null,
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<dvhcvn.Level3>(
+                      value: _selectedWard,
+                      decoration: InputDecoration(
+                        labelText: 'Phường/Xã',
+                        prefixIcon: const Icon(Icons.house, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                      isExpanded: true,
+                      items: _wards.map((w) => DropdownMenuItem(
+                        value: w,
+                        child: Text(w.name, overflow: TextOverflow.ellipsis),
+                      )).toList(),
+                      onChanged: (value) => setState(() => _selectedWard = value),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Kênh
+              DropdownButtonFormField<String>(
+                value: _selectedChannel,
                 decoration: InputDecoration(
-                  labelText: 'Địa chỉ',
-                  prefixIcon: const Icon(Icons.location_on),
+                  labelText: 'Kênh',
+                  prefixIcon: const Icon(Icons.store),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   filled: true,
                   fillColor: Colors.grey.shade50,
                 ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 12),
-              
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _districtController,
-                      decoration: InputDecoration(
-                        labelText: 'Quận/Huyện',
-                        prefixIcon: const Icon(Icons.map),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedChannel,
-                      decoration: InputDecoration(
-                        labelText: 'Kênh',
-                        prefixIcon: const Icon(Icons.store),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'Horeca', child: Text('Horeca')),
-                        DropdownMenuItem(value: 'GT Sỉ', child: Text('GT Sỉ')),
-                        DropdownMenuItem(value: 'GT Lẻ', child: Text('GT Lẻ')),
-                      ],
-                      onChanged: (value) => setState(() => _selectedChannel = value!),
-                    ),
-                  ),
+                items: const [
+                  DropdownMenuItem(value: 'Horeca', child: Text('Horeca')),
+                  DropdownMenuItem(value: 'GT Sỉ', child: Text('GT Sỉ')),
+                  DropdownMenuItem(value: 'GT Lẻ', child: Text('GT Lẻ')),
                 ],
+                onChanged: (value) => setState(() => _selectedChannel = value!),
               ),
               const SizedBox(height: 12),
               
