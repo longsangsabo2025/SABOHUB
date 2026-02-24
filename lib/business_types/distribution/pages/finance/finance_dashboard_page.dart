@@ -244,6 +244,15 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
                                   ),
                                   const RealtimeNotificationBell(
                                       iconColor: Colors.white),
+                                  // Refresh button
+                                  IconButton(
+                                    icon: const Icon(Icons.refresh, color: Colors.white),
+                                    onPressed: () {
+                                      setState(() => _isLoading = true);
+                                      _loadDashboardData();
+                                    },
+                                    tooltip: 'Làm mới dữ liệu',
+                                  ),
                                   PopupMenuButton<String>(
                                     icon: const Icon(Icons.more_vert, color: Colors.white),
                                     onSelected: (value) async {
