@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -723,7 +724,18 @@ class _AccountsReceivablePageState
                                     initialDate: invoiceDate,
                                     firstDate: DateTime(2020),
                                     lastDate: DateTime.now(),
-                                    locale: const Locale('vi'),
+                                    builder: (context, child) {
+                                      return Localizations.override(
+                                        context: context,
+                                        locale: const Locale('vi'),
+                                        delegates: const [
+                                          GlobalMaterialLocalizations.delegate,
+                                          GlobalWidgetsLocalizations.delegate,
+                                          GlobalCupertinoLocalizations.delegate,
+                                        ],
+                                        child: child!,
+                                      );
+                                    },
                                   );
                                   if (picked != null) {
                                     setDialogState(() => invoiceDate = picked);
@@ -764,7 +776,18 @@ class _AccountsReceivablePageState
                                     initialDate: dueDate ?? DateTime.now(),
                                     firstDate: DateTime(2020),
                                     lastDate: DateTime.now().add(const Duration(days: 365)),
-                                    locale: const Locale('vi'),
+                                    builder: (context, child) {
+                                      return Localizations.override(
+                                        context: context,
+                                        locale: const Locale('vi'),
+                                        delegates: const [
+                                          GlobalMaterialLocalizations.delegate,
+                                          GlobalWidgetsLocalizations.delegate,
+                                          GlobalCupertinoLocalizations.delegate,
+                                        ],
+                                        child: child!,
+                                      );
+                                    },
                                   );
                                   if (picked != null) {
                                     setDialogState(() => dueDate = picked);
