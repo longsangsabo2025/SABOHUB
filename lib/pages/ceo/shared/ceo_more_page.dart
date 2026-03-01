@@ -7,6 +7,7 @@ import '../ceo_documents_page.dart';
 import '../ceo_analytics_page.dart';
 import '../ceo_reports_settings_page.dart' show CEOReportsPage;
 import '../ai_management/ai_assistants_page.dart';
+import '../ceo_today_page.dart';
 import '../media_dashboard_page.dart';
 import '../revenue_dashboard_page.dart';
 import '../kanban_board_page.dart';
@@ -32,6 +33,18 @@ class CEOMorePage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _buildMenuItem(
+            context,
+            icon: Icons.rocket_launch,
+            color: Colors.blue.shade700,
+            title: 'Hôm nay',
+            subtitle: '1 nút giao việc, theo dõi tiến độ hôm nay',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CEOTodayPage()),
+            ),
+          ),
+          const SizedBox(height: 8),
           _buildSectionTitle('Quản lý nghiệp vụ'),
           _buildMenuItem(
             context,

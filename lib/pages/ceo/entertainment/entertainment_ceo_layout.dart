@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../widgets/ceo/ai_briefing_widgets.dart';
 import '../../../widgets/realtime_notification_widgets.dart';
 import '../ceo_profile_page.dart';
 import '../ceo_notifications_page.dart';
+import '../ceo_reports_settings_page.dart' show CEOSettingsPage;
 import '../shared/ceo_more_page.dart';
 
 // Shared CEO pages
@@ -36,7 +38,7 @@ class _EntertainmentCEOLayoutState
     final businessLabel = user?.businessType?.ceoLabel ?? 'Vận Hành';
 
     final pages = <Widget>[
-      _CEOCommandCenter(businessLabel: businessLabel),
+      CEOAICommandCenter(businessLabel: businessLabel),
       _CEOTeamTab(),
       _CEOIssuesTab(),
       _CEOGrowthTab(),
@@ -80,6 +82,10 @@ class _EntertainmentCEOLayoutState
                       MaterialPageRoute(
                           builder: (_) => const CEONotificationsPage()));
                   break;
+                case 'settings':
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const CEOSettingsPage()));
+                  break;
                 case 'more':
                   Navigator.push(context,
                       MaterialPageRoute(builder: (_) => const CEOMorePage()));
@@ -96,6 +102,11 @@ class _EntertainmentCEOLayoutState
                 dense: true,
                 leading: Icon(Icons.notifications_outlined),
                 title: Text('Thông báo'),
+              )),
+              PopupMenuItem(value: 'settings', child: ListTile(
+                dense: true,
+                leading: Icon(Icons.settings_outlined),
+                title: Text('Cài đặt'),
               )),
               PopupMenuItem(value: 'more', child: ListTile(
                 dense: true,
@@ -141,290 +152,6 @@ class _EntertainmentCEOLayoutState
             label: 'Tăng trưởng',
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// TAB 1: TỔNG QUAN — CEO Command Center
-// "Numbers don't lie." — Revenue, sessions, tables at a glance
-// ═══════════════════════════════════════════════════════════════════
-class _CEOCommandCenter extends ConsumerStatefulWidget {
-  final String businessLabel;
-  const _CEOCommandCenter({required this.businessLabel});
-
-  @override
-  ConsumerState<_CEOCommandCenter> createState() =>
-      _CEOCommandCenterState();
-}
-
-class _CEOCommandCenterState extends ConsumerState<_CEOCommandCenter> {
-  int _activeTables = 0;
-  int _todaySessions = 0;
-  double _todayRevenue = 0;
-  double _weekRevenue = 0;
-  double _monthRevenue = 0;
-  int _totalEmployees = 0;
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadStats();
-  }
-
-  Future<void> _loadStats() async {
-    try {
-      final user = ref.read(currentUserProvider);
-      final companyId = user?.companyId;
-      if (companyId == null) return;
-
-      final sb = supabase.client;
-      final now = DateTime.now();
-      final today = now.toIso8601String().split('T')[0];
-      final weekAgo = now.subtract(const Duration(days: 7)).toIso8601String().split('T')[0];
-      final monthStart = DateTime(now.year, now.month, 1).toIso8601String().split('T')[0];
-
-      final results = await Future.wait([
-        // Active tables right now
-        sb.from('tables').select('id')
-            .eq('company_id', companyId)
-            .eq('status', 'occupied'),
-        // Sessions today
-        sb.from('table_sessions').select('id')
-            .eq('company_id', companyId)
-            .gte('start_time', '${today}T00:00:00'),
-        // Revenue today
-        sb.from('daily_revenue').select('total_revenue')
-            .eq('company_id', companyId)
-            .eq('date', today),
-        // Revenue this week
-        sb.from('daily_revenue').select('total_revenue')
-            .eq('company_id', companyId)
-            .gte('date', weekAgo),
-        // Revenue this month
-        sb.from('daily_revenue').select('total_revenue')
-            .eq('company_id', companyId)
-            .gte('date', monthStart),
-        // Total employees
-        sb.from('employees').select('id')
-            .eq('company_id', companyId)
-            .eq('is_active', true),
-      ]);
-
-      if (mounted) {
-        setState(() {
-          _activeTables = (results[0] as List).length;
-          _todaySessions = (results[1] as List).length;
-          _todayRevenue = _sumRevenue(results[2] as List);
-          _weekRevenue = _sumRevenue(results[3] as List);
-          _monthRevenue = _sumRevenue(results[4] as List);
-          _totalEmployees = (results[5] as List).length;
-          _isLoading = false;
-          _error = null;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() { _isLoading = false; _error = e.toString(); });
-    }
-  }
-
-  double _sumRevenue(List data) {
-    return data.fold<double>(
-      0, (sum, item) => sum + ((item['total_revenue'] as num?)?.toDouble() ?? 0),
-    );
-  }
-
-  String _fmt(double v) {
-    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(1)}tỷ';
-    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(1)}tr';
-    if (v >= 1e3) return '${(v / 1e3).toStringAsFixed(0)}k';
-    return '${v.toInt()}₫';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        setState(() => _isLoading = true);
-        await _loadStats();
-      },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Hero banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.rocket_launch, color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        widget.businessLabel,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Hôm nay · ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
-                  const SizedBox(height: 16),
-                  // Big revenue number
-                  Text(
-                    _fmt(_todayRevenue),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  const Text(
-                    'Doanh thu hôm nay',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Revenue comparison row
-            Row(
-              children: [
-                _buildMetricCard('Tuần này', _fmt(_weekRevenue),
-                    Icons.date_range, const Color(0xFF3B82F6)),
-                const SizedBox(width: 8),
-                _buildMetricCard('Tháng này', _fmt(_monthRevenue),
-                    Icons.calendar_month, const Color(0xFF8B5CF6)),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Operational pulse
-            Row(
-              children: [
-                _buildMetricCard('Bàn hoạt động', '$_activeTables',
-                    Icons.table_bar, const Color(0xFFF59E0B)),
-                const SizedBox(width: 8),
-                _buildMetricCard('Phiên hôm nay', '$_todaySessions',
-                    Icons.timer, const Color(0xFF10B981)),
-                const SizedBox(width: 8),
-                _buildMetricCard('Nhân viên', '$_totalEmployees',
-                    Icons.badge, const Color(0xFF6366F1)),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            if (_error != null)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text('Lỗi: $_error',
-                        style: const TextStyle(fontSize: 12, color: Colors.red))),
-                  ],
-                ),
-              ),
-
-            // Quick insight
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.lightbulb_outline, size: 16, color: Colors.amber),
-                      SizedBox(width: 6),
-                      Text('Musk Insight',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _weekRevenue > 0
-                        ? 'Trung bình ${_fmt(_weekRevenue / 7)}/ngày tuần này. '
-                          '${_todayRevenue > (_weekRevenue / 7) ? "Hôm nay đang TRÊN trung bình 🔥" : "Hôm nay đang DƯỚI trung bình — push harder."}'
-                        : 'Chưa có dữ liệu doanh thu. Bắt đầu ghi nhận phiên để theo dõi.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetricCard(String label, String value, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(height: 8),
-            Text(value, style: TextStyle(
-                fontWeight: FontWeight.w800, fontSize: 16, color: color)),
-            const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
-                textAlign: TextAlign.center),
-          ],
-        ),
       ),
     );
   }

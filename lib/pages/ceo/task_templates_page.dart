@@ -165,7 +165,9 @@ class _TaskTemplatesPageState extends ConsumerState<TaskTemplatesPage> {
                   if (template.estimatedDuration != null)
                     _chip(Icons.timer, '${template.estimatedDuration} phút',
                         Colors.orange),
-                  if (template.assignedRole != null)
+                  if (template.assignedUserId != null)
+                    _chip(Icons.person, 'Đã giao cố định', Colors.purple)
+                  else if (template.assignedRole != null)
                     _chip(Icons.person, template.assignedRole!, Colors.purple),
                 ],
               ),
@@ -344,12 +346,23 @@ class _TaskTemplatesPageState extends ConsumerState<TaskTemplatesPage> {
     }
   }
 
-  void _showCreateTemplateDialog() {
+  void _showCreateTemplateDialog() async {
+    final service = ref.read(managementTaskServiceProvider);
+    List<Map<String, dynamic>> managers;
+    try {
+      managers = await service.getManagers();
+    } catch (_) {
+      managers = [];
+    }
+
+    if (!mounted) return;
+
     final titleCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     String selectedPriority = 'medium';
     String? selectedCategory = 'general';
     String? selectedRecurrence;
+    String? selectedAssignee;
     final checklistCtrl = TextEditingController();
     final checklistItems = <String>[];
 
@@ -374,6 +387,27 @@ class _TaskTemplatesPageState extends ConsumerState<TaskTemplatesPage> {
                     maxLines: 3,
                     decoration: const InputDecoration(labelText: 'Mô tả'),
                   ),
+                  const SizedBox(height: 12),
+                  if (managers.isNotEmpty)
+                    DropdownButtonFormField<String?>(
+                      value: selectedAssignee,
+                      decoration: const InputDecoration(
+                        labelText: 'Giao cho (cố định)',
+                        helperText: 'Người luôn nhận task từ template này',
+                        helperMaxLines: 2,
+                      ),
+                      items: [
+                        const DropdownMenuItem(
+                            value: null, child: Text('Chọn khi tạo task')),
+                        ...managers.map((m) => DropdownMenuItem(
+                              value: m['id'] as String,
+                              child: Text(
+                                  '${m['full_name']} (${m['role'] ?? ''})'),
+                            )),
+                      ],
+                      onChanged: (v) =>
+                          setDialogState(() => selectedAssignee = v),
+                    ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -474,6 +508,8 @@ class _TaskTemplatesPageState extends ConsumerState<TaskTemplatesPage> {
                     'category': selectedCategory,
                     'priority': selectedPriority,
                     'recurrence_pattern': selectedRecurrence,
+                    if (selectedAssignee != null)
+                      'assigned_user_id': selectedAssignee,
                     'checklist_items': checklistItems.isNotEmpty
                         ? checklistItems
                             .asMap()

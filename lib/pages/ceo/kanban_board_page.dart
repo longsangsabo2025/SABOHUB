@@ -43,6 +43,27 @@ class _KanbanBoardPageState extends ConsumerState<KanbanBoardPage> {
     );
   }
 
+  List<ManagementTask> _getColumnTasks(
+      List<ManagementTask> tasks, String statusValue) {
+    final now = DateTime.now();
+    if (statusValue == 'overdue') {
+      return tasks.where((t) {
+        if (t.status.value == 'overdue') return true;
+        if (t.status.value == 'completed' || t.status.value == 'cancelled') {
+          return false;
+        }
+        return t.dueDate != null && t.dueDate!.isBefore(now);
+      }).toList();
+    }
+    return tasks.where((t) {
+      if (t.status.value != statusValue) return false;
+      if (statusValue == 'pending' || statusValue == 'in_progress') {
+        return t.dueDate == null || !t.dueDate!.isBefore(now);
+      }
+      return true;
+    }).toList();
+  }
+
   Widget _buildBoard(List<ManagementTask> tasks) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -52,8 +73,7 @@ class _KanbanBoardPageState extends ConsumerState<KanbanBoardPage> {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: _columns.map((col) {
-              final columnTasks =
-                  tasks.where((t) => t.status.value == col.$1).toList();
+              final columnTasks = _getColumnTasks(tasks, col.$1);
               return Expanded(
                 child: _buildColumn(col.$1, col.$2, col.$3, columnTasks),
               );
@@ -67,8 +87,7 @@ class _KanbanBoardPageState extends ConsumerState<KanbanBoardPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: _columns.map((col) {
-              final columnTasks =
-                  tasks.where((t) => t.status.value == col.$1).toList();
+              final columnTasks = _getColumnTasks(tasks, col.$1);
               return SizedBox(
                 width: 300,
                 child: _buildColumn(col.$1, col.$2, col.$3, columnTasks),

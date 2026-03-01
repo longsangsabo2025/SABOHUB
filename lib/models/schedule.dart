@@ -121,12 +121,21 @@ class Schedule {
   }
 
   factory Schedule.fromJson(Map<String, dynamic> json) {
+    final empData = json['employees'];
+    final empName = json['employee_name'] as String? ??
+        (empData is Map ? empData['full_name'] as String? : null) ??
+        'N/A';
+    final empEmail = json['employee_email'] as String? ??
+        (empData is Map ? empData['email'] as String? : null);
+    final empPhone = json['employee_phone'] as String? ??
+        (empData is Map ? empData['phone'] as String? : null);
+
     return Schedule(
       id: json['id'] as String,
       employeeId: json['employee_id'] as String,
-      employeeName: json['employee_name'] as String,
-      employeeEmail: json['employee_email'] as String?,
-      employeePhone: json['employee_phone'] as String?,
+      employeeName: empName,
+      employeeEmail: empEmail,
+      employeePhone: empPhone,
       companyId: json['company_id'] as String,
       date: DateTime.parse(json['date'] as String),
       shiftType: ShiftType.values.firstWhere(

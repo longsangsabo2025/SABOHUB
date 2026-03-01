@@ -89,8 +89,8 @@ void main() {
     });
 
     group('values', () {
-      test('has exactly 7 business types', () {
-        expect(BusinessType.values.length, 7);
+      test('has exactly 8 business types', () {
+        expect(BusinessType.values.length, 8);
       });
     });
   });

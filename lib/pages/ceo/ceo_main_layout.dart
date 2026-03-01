@@ -75,6 +75,14 @@ class _CEOMainLayoutState extends ConsumerState<CEOMainLayout> {
           actions: [
             const RealtimeNotificationBell(),
             IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'Cài đặt',
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const CEOSettingsPage()));
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.person_outline),
               onPressed: () {
                 // TODO: Show profile

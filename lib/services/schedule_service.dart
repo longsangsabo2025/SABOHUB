@@ -9,7 +9,7 @@ class ScheduleService {
     try {
       final response = await _supabase
           .from('schedules')
-          .select()
+          .select('*, employees(full_name, email, phone)')
           .eq('company_id', companyId)
           .order('date', ascending: false);
 
@@ -30,7 +30,7 @@ class ScheduleService {
     try {
       final response = await _supabase
           .from('schedules')
-          .select()
+          .select('*, employees(full_name, email, phone)')
           .eq('company_id', companyId)
           .gte('date', startDate.toIso8601String().split('T').first)
           .lte('date', endDate.toIso8601String().split('T').first)
@@ -52,7 +52,7 @@ class ScheduleService {
     try {
       final response = await _supabase
           .from('schedules')
-          .select()
+          .select('*, employees(full_name, email, phone)')
           .eq('company_id', companyId)
           .eq('employee_id', employeeId)
           .order('date', ascending: false);
@@ -73,7 +73,7 @@ class ScheduleService {
     try {
       final response = await _supabase
           .from('schedules')
-          .select()
+          .select('*, employees(full_name, email, phone)')
           .eq('company_id', companyId)
           .eq('date', todayStr)
           .order('shift_type', ascending: true);
@@ -94,7 +94,7 @@ class ScheduleService {
     try {
       final response = await _supabase
           .from('schedules')
-          .select()
+          .select('*, employees(full_name, email, phone)')
           .eq('company_id', companyId)
           .gte('date', now.toIso8601String().split('T').first)
           .lte('date', nextWeek.toIso8601String().split('T').first)

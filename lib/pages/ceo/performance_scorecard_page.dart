@@ -85,11 +85,18 @@ final _performanceDataProvider =
   return results;
 });
 
-class PerformanceScorecardPage extends ConsumerWidget {
+class PerformanceScorecardPage extends ConsumerStatefulWidget {
   const PerformanceScorecardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PerformanceScorecardPage> createState() =>
+      _PerformanceScorecardPageState();
+}
+
+class _PerformanceScorecardPageState
+    extends ConsumerState<PerformanceScorecardPage> {
+  @override
+  Widget build(BuildContext context) {
     final dataAsync = ref.watch(_performanceDataProvider);
 
     return Scaffold(
@@ -114,7 +121,7 @@ class PerformanceScorecardPage extends ConsumerWidget {
     final topPerformers = data.take(3).toList();
 
     return RefreshIndicator(
-      onRefresh: () async {},
+      onRefresh: () async => ref.invalidate(_performanceDataProvider),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
