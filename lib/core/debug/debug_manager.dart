@@ -1,8 +1,7 @@
 import 'dart:convert';
-import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 
-/// Enhanced Debug Manager for Flutter Web with Chrome Console Integration
+/// Enhanced Debug Manager - Cross-platform (Web, iOS, Android)
 class DebugManager {
   static const String _version = '1.0.0';
   static bool _isInitialized = false;
@@ -24,10 +23,6 @@ class DebugManager {
     if (_isInitialized) return;
 
     _isInitialized = true;
-    _setupConsoleStyles();
-    _printWelcomeMessage();
-    _setupGlobalErrorHandling();
-    _setupPerformanceMonitoring();
 
     info('🔧 Debug Manager initialized successfully');
   }
@@ -181,122 +176,27 @@ class DebugManager {
   }
 
   static void _printToConsole(DebugLog log) {
-    if (!kIsWeb) return;
+    if (!kDebugMode) return;
 
     final levelName = _getLevelName(log.level);
     final icon = _getLevelIcon(log.level);
     final timestamp = log.timestamp.toIso8601String().substring(11, 23);
 
-    // Create main message
     final mainMessage =
         '$icon [$timestamp] [${log.tag}] $levelName: ${log.message}';
 
-    // Choose console method based on level
-    switch (log.level) {
-      case levelVerbose:
-      case levelDebug:
-        html.window.console.debug(mainMessage);
-        break;
-      case levelInfo:
-        html.window.console.info(mainMessage);
-        break;
-      case levelWarning:
-        html.window.console.warn(mainMessage);
-        break;
-      case levelError:
-      case levelCritical:
-        html.window.console.error(mainMessage);
-        break;
-    }
+    debugPrint(mainMessage);
 
-    // Print additional data
     if (log.data != null && log.data!.isNotEmpty) {
-      html.window.console.groupCollapsed('📊 Data:');
-      html.window.console.table(log.data);
-      html.window.console.groupEnd();
+      debugPrint('  📊 Data: ${jsonEncode(log.data)}');
     }
 
-    // Print context if available
-    if (log.context.isNotEmpty) {
-      html.window.console.groupCollapsed('🔍 Context:');
-      html.window.console.table(log.context);
-      html.window.console.groupEnd();
-    }
-
-    // Print error details
     if (log.error != null) {
-      html.window.console.groupCollapsed('❌ Error Details:');
-      html.window.console.error(log.error.toString());
+      debugPrint('  ❌ Error: ${log.error}');
       if (log.stackTrace != null) {
-        html.window.console.error('Stack Trace:');
-        html.window.console.error(log.stackTrace.toString());
+        debugPrint('  Stack: ${log.stackTrace}');
       }
-      html.window.console.groupEnd();
     }
-  }
-
-  static void _setupConsoleStyles() {
-    if (!kIsWeb) return;
-
-    // Add custom CSS for better console styling
-    html.document.head?.append(html.StyleElement()
-      ..text = '''
-        .debug-log { font-family: 'Consolas', 'Monaco', monospace; }
-        .debug-verbose { color: #9E9E9E; }
-        .debug-debug { color: #2196F3; }
-        .debug-info { color: #4CAF50; }
-        .debug-warning { color: #FF9800; }
-        .debug-error { color: #F44336; }
-        .debug-critical { color: #E91E63; font-weight: bold; }
-      ''');
-  }
-
-  static void _printWelcomeMessage() {
-    if (!kIsWeb) return;
-
-    html.window.console.clear();
-    html.window.console.log('🚀 SABOHUB Debug Console v$_version');
-    html.window.console.log('🔧 Debug Manager Active');
-    html.window.console.log('📊 Level: ${_getLevelName(_currentLevel)}');
-    html.window.console.log('⚡ Performance monitoring enabled');
-  }
-
-  static void _setupGlobalErrorHandling() {
-    if (!kIsWeb) return;
-
-    // Setup global error handler
-    html.window.addEventListener('error', (event) {
-      final errorEvent = event as html.ErrorEvent;
-      critical('Global Error: ${errorEvent.message}', tag: 'GLOBAL', data: {
-        'filename': errorEvent.filename,
-        'lineno': errorEvent.lineno,
-        'colno': errorEvent.colno,
-      });
-    });
-
-    // Setup unhandled promise rejection handler
-    html.window.addEventListener('unhandledrejection', (event) {
-      final rejectionEvent = event as html.PromiseRejectionEvent;
-      critical('Unhandled Promise Rejection: ${rejectionEvent.reason}',
-          tag: 'PROMISE');
-    });
-  }
-
-  static void _setupPerformanceMonitoring() {
-    if (!kIsWeb) return;
-
-    // Monitor page load performance
-    html.window.addEventListener('load', (event) {
-      final navigation = html.window.performance.timing;
-      final loadTime = navigation.loadEventEnd - navigation.navigationStart;
-
-      performance('Page Load', Duration(milliseconds: loadTime), metrics: {
-        'domContentLoaded':
-            navigation.domContentLoadedEventEnd - navigation.navigationStart,
-        'firstPaint': navigation.responseStart - navigation.navigationStart,
-        'domComplete': navigation.domComplete - navigation.navigationStart,
-      });
-    });
   }
 
   // ==================== UTILITY METHODS ====================
@@ -345,7 +245,6 @@ class DebugManager {
   /// Clear all logs
   static void clearLogs() {
     _logs.clear();
-    if (kIsWeb) html.window.console.clear();
     info('🧹 Logs cleared');
   }
 

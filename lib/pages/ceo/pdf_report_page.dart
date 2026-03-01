@@ -247,10 +247,10 @@ class _PDFReportPageState extends ConsumerState<PDFReportPage> {
     var query = supabase
         .from('daily_revenue')
         .select('*')
-        .gte('date', startDate)
-        .order('date', ascending: false);
+        .gte('date', startDate);
     if (companyId != null) query = query.eq('company_id', companyId);
-    final data = List<Map<String, dynamic>>.from(await query);
+    final data = List<Map<String, dynamic>>.from(
+        await query.order('date', ascending: false));
 
     final total = data.fold<double>(
         0, (s, d) => s + ((d['total_revenue'] as num?)?.toDouble() ?? 0));

@@ -18,14 +18,13 @@ final _revenueDataProvider =
   var query = supabase
       .from('daily_revenue')
       .select('*')
-      .gte('date', startDate)
-      .order('date', ascending: true);
+      .gte('date', startDate);
 
   if (companyId != null) {
     query = query.eq('company_id', companyId);
   }
 
-  final response = await query;
+  final response = await query.order('date', ascending: true);
   return List<Map<String, dynamic>>.from(response);
 });
 

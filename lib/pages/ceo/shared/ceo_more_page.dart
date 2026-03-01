@@ -7,9 +7,15 @@ import '../ceo_documents_page.dart';
 import '../ceo_analytics_page.dart';
 import '../ceo_reports_settings_page.dart' show CEOReportsPage;
 import '../ai_management/ai_assistants_page.dart';
+import '../media_dashboard_page.dart';
+import '../revenue_dashboard_page.dart';
+import '../kanban_board_page.dart';
+import '../task_templates_page.dart';
+import '../performance_scorecard_page.dart';
+import '../ceo_schedule_overview_page.dart';
+import '../pdf_report_page.dart';
 
 /// CEO More Page — Contains all shared features accessible via AppBar menu
-/// Companies, Documents, Analytics, Reports, AI Assistant
 class CEOMorePage extends ConsumerWidget {
   const CEOMorePage({super.key});
 
@@ -26,15 +32,99 @@ class CEOMorePage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _buildSectionTitle('Quản lý nghiệp vụ'),
+          _buildMenuItem(
+            context,
+            icon: Icons.campaign,
+            color: Colors.deepPurple,
+            title: 'SABO Media',
+            subtitle: 'Quản lý kênh YouTube, TikTok, Instagram...',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MediaDashboardPage()),
+            ),
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.attach_money,
+            color: Colors.green.shade700,
+            title: 'Doanh thu',
+            subtitle: 'Biểu đồ, chi tiết doanh thu theo ngày/tháng',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RevenueDashboardPage()),
+            ),
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.view_kanban,
+            color: Colors.indigo,
+            title: 'Kanban Board',
+            subtitle: 'Kéo thả task giữa các trạng thái',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const KanbanBoardPage()),
+            ),
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.content_copy,
+            color: Colors.teal,
+            title: 'Task Templates',
+            subtitle: 'Tạo task lặp lại nhanh chóng',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TaskTemplatesPage()),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildSectionTitle('Nhân sự & Vận hành'),
+          _buildMenuItem(
+            context,
+            icon: Icons.emoji_events,
+            color: Colors.amber.shade700,
+            title: 'Hiệu suất nhân viên',
+            subtitle: 'Bảng xếp hạng, điểm task + chấm công',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const PerformanceScorecardPage()),
+            ),
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.calendar_month,
+            color: Colors.blue.shade700,
+            title: 'Lịch làm việc',
+            subtitle: 'Tổng quan ca làm 7 ngày tới',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const CEOScheduleOverviewPage()),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildSectionTitle('Công cụ'),
           _buildMenuItem(
             context,
             icon: Icons.smart_toy,
             color: const Color(0xFF8B5CF6),
             title: 'Trợ lý AI',
-            subtitle: 'Hỏi doanh thu, đơn hàng, xuất báo cáo PDF',
+            subtitle: 'Hỏi doanh thu, đơn hàng, xuất báo cáo',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AIAssistantsPage()),
+            ),
+          ),
+          _buildMenuItem(
+            context,
+            icon: Icons.picture_as_pdf,
+            color: Colors.red.shade600,
+            title: 'Xuất PDF',
+            subtitle: 'Tạo báo cáo nhiệm vụ, doanh thu, nhân viên',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PDFReportPage()),
             ),
           ),
           _buildMenuItem(
@@ -73,9 +163,9 @@ class CEOMorePage extends ConsumerWidget {
           _buildMenuItem(
             context,
             icon: Icons.summarize,
-            color: Colors.teal,
-            title: 'Báo cáo',
-            subtitle: 'Tạo và xem báo cáo',
+            color: Colors.teal.shade700,
+            title: 'Báo cáo & Cài đặt',
+            subtitle: 'Tạo và xem báo cáo, cài đặt hệ thống',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const CEOReportsPage()),
@@ -83,6 +173,17 @@ class CEOMorePage extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(title,
+          style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Colors.black54)),
     );
   }
 

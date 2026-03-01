@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../../models/media_channel.dart';
 import '../../services/media_channel_service.dart';
-import '../../providers/auth_provider.dart';
 
 final _mediaServiceProvider = Provider((ref) => MediaChannelService(ref));
 
