@@ -123,7 +123,7 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
           .limit(1);
 
       int nextNumber = 1;
-      if (data is List && data.isNotEmpty) {
+      if (data.isNotEmpty) {
         final lastCode = data[0]['code'] as String?;
         if (lastCode != null && lastCode.startsWith('KH-')) {
           final numPart = lastCode.substring(3);
@@ -216,8 +216,8 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
         'district': _selectedDistrict?.name.replaceAll(RegExp(r'^(Quận |Huyện |Thành phố |Thị xã )'), ''),
         'city': _selectedCity?.name.replaceAll(RegExp(r'^(Thành phố |Tỉnh )'), ''),
         'address': fullAddress.isEmpty ? null : fullAddress,
-        'latitude': latitude,
-        'longitude': longitude,
+        'lat': latitude,
+        'lng': longitude,
         'channel': _selectedChannel,
         'type': _selectedType,
         'status': _selectedStatus,

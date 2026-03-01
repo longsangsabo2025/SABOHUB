@@ -29,7 +29,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
   String? _selectedCategory; // Stores category ID, not name
   final List<String> _categories = [];
   List<Map<String, dynamic>> _categoryData = [];
-  bool _showLowStock = false;
+  final bool _showLowStock = false;
   final List<OdoriProduct> _allProducts = [];
   int _currentOffset = 0;
   static const int _pageSize = 50;
@@ -47,10 +47,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
   late TabController _tabController;
   
   // Inventory & Warehouses data
-  List<Map<String, dynamic>> _inventory = [];
-  List<Map<String, dynamic>> _movements = [];
   List<Map<String, dynamic>> _warehouses = [];
-  bool _isLoadingInventory = true;
   bool _isRefreshing = false;
   
   // Product stock from inventory table (product_id -> {total, warehouseCount, warehouses})
@@ -96,7 +93,8 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
           .from('inventory')
           .select('*, products(id, name, sku, unit), warehouses(id, name, code, type)')
           .eq('company_id', companyId)
-          .order('products(name)');
+          .order('products(name)')
+          .limit(1000);
 
       // Build product stock map from inventory
       final stockMap = <String, Map<String, dynamic>>{};
@@ -126,14 +124,11 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
 
       if (mounted) {
         setState(() {
-          _inventory = List<Map<String, dynamic>>.from(data);
           _productStockMap = stockMap;
-          _isLoadingInventory = false;
         });
       }
     } catch (e) {
       debugPrint('❌ Error loading inventory: $e');
-      if (mounted) setState(() => _isLoadingInventory = false);
     }
   }
 
@@ -142,7 +137,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
       final companyId = ref.read(authProvider).user?.companyId ?? '';
       if (companyId.isEmpty) return;
 
-      final data = await supabase
+      await supabase
           .from('inventory_movements')
           .select('*, products(id, name, sku, unit)')
           .eq('company_id', companyId)
@@ -150,9 +145,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
           .limit(50);
 
       if (mounted) {
-        setState(() {
-          _movements = List<Map<String, dynamic>>.from(data);
-        });
+        setState(() {});
       }
     } catch (e) {
       debugPrint('❌ Error loading movements: $e');
@@ -463,47 +456,6 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
     } finally {
       if (mounted) setState(() => _isRefreshing = false);
     }
-  }
-
-  void _showFilterSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Bộ lọc', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            _buildFilterOption('Tất cả sản phẩm', !_showLowStock, () {
-              setState(() => _showLowStock = false);
-              Navigator.pop(context);
-              _loadInitial();
-            }),
-            _buildFilterOption('Sắp hết / Hết hàng', _showLowStock, () {
-              setState(() => _showLowStock = true);
-              Navigator.pop(context);
-              _loadInitial();
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterOption(String label, bool isSelected, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(
-        isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-        color: isSelected ? Colors.teal : Colors.grey,
-      ),
-      title: Text(label),
-      onTap: onTap,
-    );
   }
 
   @override
@@ -1275,46 +1227,6 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
       ),
     );
   }
-  
-  Widget _buildStatCard(String title, int value, Color color, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$value',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey.shade600,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildCategoryChip(String label, String? categoryId, bool isSelected) {
     return Padding(
@@ -2008,21 +1920,6 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
       builder: (context) => EditProductSheet(
         product: product,
         categoryData: _categoryData,
-        onSaved: () {
-          _loadStats();
-          _loadInitial();
-        },
-      ),
-    );
-  }
-
-  void _showAdjustStockSheet(BuildContext context, OdoriProduct product) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AdjustStockSheet(
-        product: product,
         onSaved: () {
           _loadStats();
           _loadInitial();

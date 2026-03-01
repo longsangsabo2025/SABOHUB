@@ -48,8 +48,8 @@ class _TableFormPageState extends ConsumerState<TableFormPage> {
 
   void _initializeFromTable(BilliardsTable table) {
     _tableNumberController.text = table.tableNumber;
-    _hourlyRateController.text = '50000'; // Default since not in current model
-    _selectedTableType = 'POOL'; // Default since not in current model
+    _hourlyRateController.text = table.hourlyRate.toStringAsFixed(0);
+    _selectedTableType = table.tableType?.toUpperCase() ?? 'POOL';
   }
 
   @override
@@ -339,7 +339,13 @@ class _TableFormPageState extends ConsumerState<TableFormPage> {
       final hourlyRate = double.parse(_hourlyRateController.text);
       
       if (widget.table != null) {
-        // For now, we'll just show success since update isn't fully implemented
+        await actions.updateTable(
+          tableId: widget.table!.id,
+          tableNumber: _tableNumberController.text.trim(),
+          tableType: _selectedTableType,
+          hourlyRate: hourlyRate,
+        );
+
         if (mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(

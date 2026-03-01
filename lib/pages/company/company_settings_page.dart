@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/cached_data_providers.dart';
+import '../ceo/company/settings_tab.dart';
 
 /// Company Settings Page
 /// Cài đặt công ty với các tính năng quản lý nhân viên
@@ -11,6 +14,12 @@ class CompanySettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authUser = ref.read(authProvider).user;
+    final companyId = authUser?.companyId;
+    final companyAsync = companyId != null 
+        ? ref.watch(cachedCompanyProvider(companyId)) 
+        : null;
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -34,6 +43,16 @@ class CompanySettingsPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Bank Account Settings (from SettingsTab)
+            if (companyId != null && companyAsync != null)
+              companyAsync.when(
+                data: (company) => company != null
+                    ? SettingsTab(company: company, companyId: companyId)
+                    : const SizedBox.shrink(),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            const SizedBox(height: 32),
             _buildSectionTitle('Quản lý nhân viên'),
             const SizedBox(height: 16),
             _buildEmployeeManagementCard(context),
@@ -196,31 +215,57 @@ class CompanySettingsPage extends ConsumerWidget {
   }
 
   void _navigateToCompanyInfo(BuildContext context) {
-    // TODO: Navigate to company info page
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tính năng đang phát triển'),
-        backgroundColor: Colors.orange,
-      ),
-    );
+    // Navigate to employee list as company info overview
+    context.push(AppRoutes.employeeList);
   }
 
   void _navigateToSystemSettings(BuildContext context) {
-    // TODO: Navigate to system settings page
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tính năng đang phát triển'),
-        backgroundColor: Colors.orange,
+    // Show a dialog with available settings
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cài đặt hệ thống'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.group),
+              title: const Text('Quản lý nhân viên'),
+              onTap: () { Navigator.pop(ctx); context.push(AppRoutes.employeeList); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_add),
+              title: const Text('Tạo nhân viên mới'),
+              onTap: () { Navigator.pop(ctx); context.push(AppRoutes.createEmployee); },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Đóng')),
+        ],
       ),
     );
   }
 
   void _navigateToSupport(BuildContext context) {
-    // TODO: Navigate to support page
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tính năng đang phát triển'),
-        backgroundColor: Colors.orange,
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hỗ trợ'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('📧 Email: support@sabohub.com'),
+            SizedBox(height: 8),
+            Text('📞 Hotline: 0123 456 789'),
+            SizedBox(height: 8),
+            Text('🕒 Giờ hỗ trợ: 8:00 - 17:00 (T2-T6)'),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Đóng')),
+        ],
       ),
     );
   }

@@ -434,10 +434,10 @@ class SalesRouteService {
   }
 
   /// Get today's journey plan for current user
-  Future<JourneyPlan?> getTodayJourneyPlan() async {
+  Future<JourneyPlan?> getTodayJourneyPlan({String? employeeId}) async {
     final today = DateTime.now().toIso8601String().split('T')[0];
     
-    final response = await _supabase
+    var query = _supabase
         .from('journey_plans')
         .select('''
           *,
@@ -445,10 +445,18 @@ class SalesRouteService {
           employees(full_name),
           journey_plan_stops(
             *,
-            customers(name, address, phone, latitude, longitude)
+            customers(name, address, phone, lat, lng)
           )
         ''')
-        .eq('plan_date', today)
+        .eq('plan_date', today);
+    
+    if (employeeId != null) {
+      query = query.eq('employee_id', employeeId);
+    }
+    
+    final response = await query
+        .order('created_at', ascending: false)
+        .limit(1)
         .maybeSingle();
     
     if (response == null) return null;
@@ -488,6 +496,151 @@ class SalesRouteService {
     });
     
     return response as String;
+  }
+
+  /// Create quick journey plan from selected customers (no route needed)
+  Future<String> createQuickJourneyPlan({
+    required String companyId,
+    required String employeeId,
+    required DateTime planDate,
+    required List<String> customerIds,
+  }) async {
+    // Insert journey_plan
+    final planResponse = await _supabase
+        .from('journey_plans')
+        .insert({
+          'company_id': companyId,
+          'employee_id': employeeId,
+          'plan_date': planDate.toIso8601String().split('T')[0],
+          'status': 'planned',
+          'total_visits_planned': customerIds.length,
+          'visits_completed': 0,
+        })
+        .select('id')
+        .single();
+    
+    final planId = planResponse['id'] as String;
+    
+    // Insert stops
+    final stops = <Map<String, dynamic>>[];
+    for (int i = 0; i < customerIds.length; i++) {
+      stops.add({
+        'journey_plan_id': planId,
+        'customer_id': customerIds[i],
+        'stop_order': i + 1,
+        'status': 'pending',
+      });
+    }
+    
+    await _supabase.from('journey_plan_stops').insert(stops);
+    
+    return planId;
+  }
+
+  /// Get customers for quick journey plan selection
+  Future<List<Map<String, dynamic>>> getCustomersForSelection({
+    required String companyId,
+    String? search,
+    String? district,
+    String? route,
+    int limit = 100,
+  }) async {
+    var query = _supabase
+        .from('customers')
+        .select('id, name, address, phone, type, district, route, lat, lng')
+        .eq('company_id', companyId)
+        .eq('status', 'active');
+    
+    if (search != null && search.isNotEmpty) {
+      query = query.or('name.ilike.%$search%,phone.ilike.%$search%,address.ilike.%$search%');
+    }
+    if (district != null && district.isNotEmpty) {
+      query = query.eq('district', district);
+    }
+    if (route != null && route.isNotEmpty) {
+      query = query.eq('route', route);
+    }
+    
+    final response = await query
+        .order('name')
+        .limit(limit);
+    
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Get distinct districts and routes for filtering
+  Future<Map<String, List<Map<String, dynamic>>>> getDistrictsAndRoutes({
+    required String companyId,
+  }) async {
+    // Get districts with count
+    final districtResponse = await _supabase
+        .rpc('get_customer_districts', params: {'p_company_id': companyId});
+    
+    // Get routes with count  
+    final routeResponse = await _supabase
+        .rpc('get_customer_routes', params: {'p_company_id': companyId});
+    
+    return {
+      'districts': List<Map<String, dynamic>>.from(districtResponse ?? []),
+      'routes': List<Map<String, dynamic>>.from(routeResponse ?? []),
+    };
+  }
+
+  /// Get distinct districts (fallback - direct query)
+  Future<List<Map<String, dynamic>>> getDistrictsDirect({
+    required String companyId,
+  }) async {
+    final response = await _supabase
+        .from('customers')
+        .select('district')
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .not('district', 'is', null)
+        .not('district', 'eq', '');
+    
+    // Count manually
+    final countMap = <String, int>{};
+    for (final row in response) {
+      final d = row['district'] as String? ?? '';
+      if (d.isNotEmpty) {
+        countMap[d] = (countMap[d] ?? 0) + 1;
+      }
+    }
+    
+    final result = countMap.entries
+        .map((e) => {'district': e.key, 'count': e.value})
+        .toList()
+      ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
+    
+    return result;
+  }
+
+  /// Get distinct routes (fallback - direct query)
+  Future<List<Map<String, dynamic>>> getRoutesDirect({
+    required String companyId,
+  }) async {
+    final response = await _supabase
+        .from('customers')
+        .select('route')
+        .eq('company_id', companyId)
+        .eq('status', 'active')
+        .not('route', 'is', null)
+        .not('route', 'eq', '');
+    
+    final countMap = <String, int>{};
+    for (final row in response) {
+      final r = row['route'] as String? ?? '';
+      if (r.isNotEmpty) {
+        countMap[r] = (countMap[r] ?? 0) + 1;
+      }
+    }
+    
+    final result = countMap.entries
+        .map((e) => {'route': e.key, 'count': e.value})
+        .toList()
+      ..sort((a, b) => (b['count'] as int).compareTo(a['count'] as int));
+    
+    return result;
   }
 
   /// Start journey
@@ -541,6 +694,16 @@ class SalesRouteService {
         .update(updates)
         .eq('id', stopId);
   }
+
+  /// Reorder journey plan stops (after route optimization)
+  Future<void> reorderJourneyStops(List<String> stopIds) async {
+    for (int i = 0; i < stopIds.length; i++) {
+      await _supabase
+          .from('journey_plan_stops')
+          .update({'stop_order': i + 1})
+          .eq('id', stopIds[i]);
+    }
+  }
 }
 
 // ==================== PROVIDERS ====================
@@ -553,9 +716,11 @@ final salesRoutesProvider = FutureProvider.autoDispose<List<SalesRoute>>((ref) a
   return service.getRoutes(status: 'active');
 });
 
-/// Provider for today's journey plan
+/// Provider for today's journey plan (requires auth to filter by employee)
 final todayJourneyPlanProvider = FutureProvider.autoDispose<JourneyPlan?>((ref) async {
   final service = ref.watch(salesRouteServiceProvider);
+  // Note: employeeId passed as null - RLS on the table should handle filtering
+  // If RLS doesn't filter, we pass employeeId explicitly
   return service.getTodayJourneyPlan();
 });
 

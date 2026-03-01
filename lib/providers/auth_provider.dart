@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
@@ -60,12 +62,25 @@ class AuthNotifier extends Notifier<AuthState> {
   static const Duration _sessionTimeout = Duration(minutes: 30);
   DateTime? _lastActivityTime;
   final bool _sessionTimeoutEnabled = true;
+  bool _isDisposed = false;
+  StreamSubscription<dynamic>? _authSubscription;
 
   @override
   AuthState build() {
+    // Cancel previous subscription if build is called again
+    _authSubscription?.cancel();
+    _isDisposed = false;
+
+    // Clean up on dispose
+    ref.onDispose(() {
+      _isDisposed = true;
+      _authSubscription?.cancel();
+    });
+
     // Set up auth state listener (but don't block build)
     Future.microtask(() {
-      _supabaseClient.auth.onAuthStateChange.listen((data) {
+      _authSubscription = _supabaseClient.auth.onAuthStateChange.listen((data) {
+        if (_isDisposed) return;
         final event = data.event;
 
         switch (event) {
@@ -130,34 +145,21 @@ class AuthNotifier extends Notifier<AuthState> {
         }
 
         try {
-          // 2. Fetch user profile from database WITH company data for businessType
-          var response = await _supabaseClient
-              .from('users')
+          // 2. Fetch user profile from employees table WITH company data for businessType
+          final employeeResponse = await _supabaseClient
+              .from('employees')
               .select(
-                  'id, full_name, email, role, department, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at, companies(name, business_type)')
-              .eq('id', session.user.id)
+                  'id, full_name, email, role, department, phone, avatar_url, branch_id, company_id, warehouse_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at, companies(name, business_type)')
+              .eq('auth_user_id', session.user.id)
               .maybeSingle();
 
-          // If not found in users table, try employees table
-          if (response == null) {
-            print('🔄 [AUTH] Session restore: Not found in users, checking employees...');
-            final employeeResponse = await _supabaseClient
-                .from('employees')
-                .select(
-                    'id, full_name, email, role, department, phone, avatar_url, branch_id, company_id, warehouse_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at, companies(name, business_type)')
-                .eq('auth_user_id', session.user.id)
-                .maybeSingle();
-            
-            if (employeeResponse != null) {
-              response = {
-                ...employeeResponse,
-                // CRITICAL FIX: Use employee's actual UUID for sale_id foreign key
-                // The employee's id is what's referenced in sales_orders.sale_id
-                'id': employeeResponse['id'], // Use employee UUID (exists in employees table)
-                'auth_user_id': session.user.id, // Keep auth id for reference
-              };
-              print('✅ [AUTH] Session restore: Found employee profile with id: ${employeeResponse['id']}');
-            }
+          Map<String, dynamic>? response;
+          if (employeeResponse != null) {
+            response = {
+              ...employeeResponse,
+              'id': employeeResponse['id'], // Use employee UUID (exists in employees table)
+              'auth_user_id': session.user.id, // Keep auth id for reference
+            };
           }
 
           if (response != null) {
@@ -266,30 +268,21 @@ class AuthNotifier extends Notifier<AuthState> {
         return;
       }
 
-      // Fetch fresh data from database - try users table first
-      var response = await _supabaseClient
-          .from('users')
+      // Fetch fresh data from employees table
+      final employeeResponse = await _supabaseClient
+          .from('employees')
           .select(
-              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
-          .eq('id', currentUser.id)
+              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, warehouse_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
+          .eq('auth_user_id', currentUser.id)
           .maybeSingle();
 
-      // Fallback to employees table
-      if (response == null) {
-        final employeeResponse = await _supabaseClient
-            .from('employees')
-            .select(
-                'id, full_name, email, role, phone, avatar_url, branch_id, company_id, warehouse_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
-            .eq('auth_user_id', currentUser.id)
-            .maybeSingle();
-        if (employeeResponse != null) {
-          response = {
-            ...employeeResponse,
-            // CRITICAL FIX: Use employee's actual UUID for foreign key references
-            'id': employeeResponse['id'], // Use employee UUID
-            'auth_user_id': currentUser.id,
-          };
-        }
+      Map<String, dynamic>? response;
+      if (employeeResponse != null) {
+        response = {
+          ...employeeResponse,
+          'id': employeeResponse['id'], // Use employee UUID
+          'auth_user_id': currentUser.id,
+        };
       }
 
       if (response == null) {
@@ -318,25 +311,27 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      print('🔵 [AUTH] Login attempt for: $email');
+      AppLogger.auth('🔵 [AUTH] Login attempt for: $email');
       
-      // 1. Check demo users first
-      final demoUser = app_user.DemoUsers.findByEmail(email);
-      if (demoUser != null && password == 'demo') {
-        print('✅ [AUTH] Demo user login successful');
-        await _saveUser(demoUser, isDemoMode: true);
+      // 1. Check demo users (ONLY in debug mode)
+      if (kDebugMode) {
+        final demoUser = app_user.DemoUsers.findByEmail(email);
+        if (demoUser != null && password == 'demo') {
+          AppLogger.auth('✅ [AUTH] Demo user login successful (debug only)');
+          await _saveUser(demoUser, isDemoMode: true);
 
-        // Single state update with all data
-        state = state.copyWith(
-          user: demoUser,
-          isDemoMode: true,
-          isLoading: false,
-        );
+          // Single state update with all data
+          state = state.copyWith(
+            user: demoUser,
+            isDemoMode: true,
+            isLoading: false,
+          );
 
-        return true;
+          return true;
+        }
       }
 
-      print('🔄 [AUTH] Attempting Supabase authentication...');
+      AppLogger.auth('🔄 [AUTH] Attempting Supabase authentication...');
       
       // 2. Real Supabase authentication
       final authResponse = await _supabaseClient.auth.signInWithPassword(
@@ -344,10 +339,10 @@ class AuthNotifier extends Notifier<AuthState> {
         password: password,
       );
 
-      print('📊 [AUTH] Auth response received');
+      AppLogger.auth('📊 [AUTH] Auth response received');
 
       if (authResponse.user == null) {
-        print('❌ [AUTH] No user in response');
+        AppLogger.error('❌ [AUTH] No user in response');
         state = state.copyWith(
           isLoading: false,
           error: 'Đăng nhập thất bại',
@@ -355,11 +350,11 @@ class AuthNotifier extends Notifier<AuthState> {
         return false;
       }
 
-      print('✅ [AUTH] User authenticated: ${authResponse.user!.id}');
+      AppLogger.auth('✅ [AUTH] User authenticated: ${authResponse.user!.id}');
 
       // 3. Check if email is verified
       if (authResponse.user!.emailConfirmedAt == null) {
-        print('⚠️ [AUTH] Email not verified');
+        AppLogger.warn('⚠️ [AUTH] Email not verified');
         state = state.copyWith(
           isLoading: false,
           error:
@@ -368,41 +363,29 @@ class AuthNotifier extends Notifier<AuthState> {
         return false;
       }
 
-      print('🔄 [AUTH] Fetching user profile...');
+      AppLogger.auth('🔄 [AUTH] Fetching user profile...');
 
-      // 4. Fetch user profile from database - try users table first, then employees
-      var response = await _supabaseClient
-          .from('users')
+      // 4. Fetch user profile from employees table
+      final employeeResponse = await _supabaseClient
+          .from('employees')
           .select(
-              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
-          .eq('id', authResponse.user!.id)
+              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, warehouse_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
+          .eq('auth_user_id', authResponse.user!.id)
           .maybeSingle();
 
-      // If not found in users table, try employees table (for CEO/employee accounts)
-      if (response == null) {
-        print('🔄 [AUTH] Not found in users, checking employees table...');
-        final employeeResponse = await _supabaseClient
-            .from('employees')
-            .select(
-                'id, full_name, email, role, phone, avatar_url, branch_id, company_id, warehouse_id, is_active, invite_token, invite_expires_at, invited_at, onboarded_at, created_at, updated_at')
-            .eq('auth_user_id', authResponse.user!.id)
-            .maybeSingle();
-        
-        if (employeeResponse != null) {
-          // CRITICAL FIX: Use employee's actual UUID for foreign key references
-          response = {
-            ...employeeResponse,
-            'id': employeeResponse['id'], // Use employee UUID (exists in employees table)
-            'auth_user_id': authResponse.user!.id, // Keep auth id for reference
-          };
-          print('✅ [AUTH] Found employee profile: ${response['full_name']} with id: ${employeeResponse['id']}');
-        }
+      Map<String, dynamic>? response;
+      if (employeeResponse != null) {
+        response = {
+          ...employeeResponse,
+          'id': employeeResponse['id'], // Use employee UUID (exists in employees table)
+          'auth_user_id': authResponse.user!.id, // Keep auth id for reference
+        };
       }
 
-      print('📊 [AUTH] Profile response: ${response != null ? "found" : "not found"}');
+      AppLogger.auth('📊 [AUTH] Profile response: ${response != null ? "found" : "not found"}');
 
       if (response == null) {
-        print('❌ [AUTH] User profile not found in database');
+        AppLogger.error('❌ [AUTH] User profile not found in database');
         state = state.copyWith(
           isLoading: false,
           error:
@@ -411,7 +394,7 @@ class AuthNotifier extends Notifier<AuthState> {
         return false;
       }
 
-      print('✅ [AUTH] User profile loaded: ${response['full_name']}');
+      AppLogger.auth('✅ [AUTH] User profile loaded: ${response['full_name']}');
 
       // 5. Fetch company info if user has company_id
       String? companyName;
@@ -419,7 +402,7 @@ class AuthNotifier extends Notifier<AuthState> {
       final companyId = response['company_id'] as String?;
       
       if (companyId != null) {
-        print('🔄 [AUTH] Fetching company info for: $companyId');
+        AppLogger.auth('🔄 [AUTH] Fetching company info for: $companyId');
         final companyResponse = await _supabaseClient
             .from('companies')
             .select('name, business_type')
@@ -437,11 +420,11 @@ class AuthNotifier extends Notifier<AuthState> {
                 orElse: () => BusinessType.distribution,
               );
             } catch (e) {
-              print('⚠️ [AUTH] Unknown business type: $businessTypeStr');
+              AppLogger.warn('⚠️ [AUTH] Unknown business type: $businessTypeStr');
               businessType = BusinessType.distribution;
             }
           }
-          print('✅ [AUTH] Company: $companyName, BusinessType: $businessType');
+          AppLogger.auth('✅ [AUTH] Company: $companyName, BusinessType: $businessType');
         }
       }
 
@@ -457,7 +440,7 @@ class AuthNotifier extends Notifier<AuthState> {
         businessType: businessType,
       );
       
-      print('✅ [AUTH] User created - Role: ${user.role}, BusinessType: ${user.businessType}');
+      AppLogger.auth('✅ [AUTH] User created - Role: ${user.role}, BusinessType: ${user.businessType}');
 
       // 7. Batch all save operations (don't await each one)
       final saveOperations = Future.wait([
@@ -483,7 +466,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
       return true;
     } on AuthException catch (e) {
-      print('❌ [AUTH] AuthException: ${e.message}');
+      AppLogger.error('❌ [AUTH] AuthException: ${e.message}', e);
       String errorMessage = 'Đăng nhập thất bại';
 
       if (e.message.contains('Invalid login credentials') ||
@@ -503,8 +486,7 @@ class AuthNotifier extends Notifier<AuthState> {
       );
       return false;
     } catch (e, stackTrace) {
-      print('💥 [AUTH] Unexpected error: $e');
-      print('📍 [AUTH] Stack trace: $stackTrace');
+      AppLogger.error('💥 [AUTH] Unexpected login error', e, stackTrace);
       
       state = state.copyWith(
         isLoading: false,
@@ -588,8 +570,9 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  /// Quick role switch for demo mode
+  /// Quick role switch for demo mode (debug only)
   Future<void> switchRole(app_user.UserRole role) async {
+    if (!kDebugMode) return; // Disabled in production
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -658,28 +641,20 @@ class AuthNotifier extends Notifier<AuthState> {
         return false;
       }
 
-      // Check if user exists in database - try users table first
-      var response = await _supabaseClient
-          .from('users')
+      // Check if user exists in employees table
+      final employeeResponse = await _supabaseClient
+          .from('employees')
           .select()
-          .eq('id', authResponse.user!.id)
+          .eq('auth_user_id', authResponse.user!.id)
           .maybeSingle();
 
-      // Also check employees table
-      if (response == null) {
-        final employeeResponse = await _supabaseClient
-            .from('employees')
-            .select()
-            .eq('auth_user_id', authResponse.user!.id)
-            .maybeSingle();
-        if (employeeResponse != null) {
-          response = {
-            ...employeeResponse,
-            // CRITICAL FIX: Use employee's actual UUID for foreign key references
-            'id': employeeResponse['id'], // Use employee UUID
-            'auth_user_id': authResponse.user!.id,
-          };
-        }
+      Map<String, dynamic>? response;
+      if (employeeResponse != null) {
+        response = {
+          ...employeeResponse,
+          'id': employeeResponse['id'], // Use employee UUID
+          'auth_user_id': authResponse.user!.id,
+        };
       }
 
       app_user.User user;
@@ -698,8 +673,11 @@ class AuthNotifier extends Notifier<AuthState> {
         };
 
         final insertResponse = await _supabaseClient
-            .from('users')
-            .insert(newUser)
+            .from('employees')
+            .insert({
+              ...newUser,
+              'auth_user_id': authResponse.user!.id,
+            })
             .select()
             .single();
 
@@ -837,6 +815,7 @@ class AuthNotifier extends Notifier<AuthState> {
   void _startSessionTimeoutChecker() {
     // Check every minute
     Future.delayed(const Duration(minutes: 1), () {
+      if (_isDisposed) return; // Guard: stop recursive checking on dispose
       _checkSessionTimeout();
       _startSessionTimeoutChecker(); // Recursive call for continuous checking
     });
@@ -946,13 +925,16 @@ class AuthNotifier extends Notifier<AuthState> {
         return true;
       }
 
-      // TODO: Real password change with Supabase
-
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Password change not implemented yet',
-      );
-      return false;
+      final client = Supabase.instance.client;
+      final result = await client.rpc('change_employee_password', params: {
+        'p_employee_id': state.user!.id,
+        'p_new_password': newPassword,
+      });
+      if (result is Map && result['success'] != true) {
+        throw Exception(result['error'] ?? 'Không thể đổi mật khẩu');
+      }
+      state = state.copyWith(isLoading: false);
+      return true;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,

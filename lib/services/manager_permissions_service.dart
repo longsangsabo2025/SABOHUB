@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/manager_permissions.dart';
+import '../utils/app_logger.dart';
 
 /// Manager Permissions Service
 /// Handles fetching and managing permissions for Managers
@@ -18,13 +19,13 @@ class ManagerPermissionsService {
           .maybeSingle();
 
       if (response == null) {
-        print('⚠️ No permissions found for manager: $managerId');
+        AppLogger.warn('⚠️ No permissions found for manager: $managerId');
         return null;
       }
 
       return ManagerPermissions.fromJson(response);
     } catch (e) {
-      print('❌ Error fetching manager permissions: $e');
+      AppLogger.error('❌ Error fetching manager permissions', e);
       rethrow;
     }
   }
@@ -43,14 +44,14 @@ class ManagerPermissionsService {
           .maybeSingle();
 
       if (response == null) {
-        print(
+        AppLogger.warn(
             '⚠️ No permissions found for manager $managerId in company $companyId');
         return null;
       }
 
       return ManagerPermissions.fromJson(response);
     } catch (e) {
-      print('❌ Error fetching manager permissions: $e');
+      AppLogger.error('❌ Error fetching manager permissions', e);
       rethrow;
     }
   }
@@ -82,7 +83,7 @@ class ManagerPermissionsService {
 
       return ManagerPermissions.fromJson(response);
     } catch (e) {
-      print('❌ Error creating default permissions: $e');
+      AppLogger.error('❌ Error creating default permissions', e);
       rethrow;
     }
   }
@@ -102,7 +103,7 @@ class ManagerPermissionsService {
 
       return ManagerPermissions.fromJson(response);
     } catch (e) {
-      print('❌ Error updating permissions: $e');
+      AppLogger.error('❌ Error updating permissions', e);
       rethrow;
     }
   }
@@ -111,7 +112,7 @@ class ManagerPermissionsService {
   Future<List<Map<String, dynamic>>> getAllManagerPermissions(
       String companyId) async {
     try {
-      print('🔍 [PERMISSIONS] Fetching permissions for company: $companyId');
+      AppLogger.api('🔍 [PERMISSIONS] Fetching permissions for company: $companyId');
       
       // First, get all permissions for the company
       final permissions = await _supabase
@@ -120,10 +121,10 @@ class ManagerPermissionsService {
           .eq('company_id', companyId)
           .order('granted_at', ascending: false);
 
-      print('📊 [PERMISSIONS] Found ${(permissions as List).length} permission records');
+      AppLogger.api('📊 [PERMISSIONS] Found ${(permissions as List).length} permission records');
       
       if ((permissions as List).isEmpty) {
-        print('⚠️ [PERMISSIONS] No permissions found for company');
+        AppLogger.warn('⚠️ [PERMISSIONS] No permissions found for company');
         return [];
       }
 
@@ -133,7 +134,7 @@ class ManagerPermissionsService {
           .toSet()
           .toList();
 
-      print('👥 [PERMISSIONS] Manager IDs: $managerIds');
+      AppLogger.data('👥 [PERMISSIONS] Manager IDs: $managerIds');
 
       // Fetch all employee names in one query using 'in' filter
       final employees = await _supabase
@@ -141,8 +142,8 @@ class ManagerPermissionsService {
           .select('id, full_name')
           .filter('id', 'in', '(${managerIds.join(',')})');
 
-      print('📝 [PERMISSIONS] Found ${(employees as List).length} employees');
-      print('📝 [PERMISSIONS] Employee data: $employees');
+      AppLogger.data('📝 [PERMISSIONS] Found ${(employees as List).length} employees');
+      AppLogger.data('📝 [PERMISSIONS] Employee data: $employees');
 
       // Create a map of manager_id -> name for quick lookup
       final Map<String, String> managerNames = {};
@@ -150,7 +151,7 @@ class ManagerPermissionsService {
         managerNames[emp['id'] as String] = emp['full_name'] as String;
       }
 
-      print('🗺️ [PERMISSIONS] Manager names map: $managerNames');
+      AppLogger.data('🗺️ [PERMISSIONS] Manager names map: $managerNames');
 
       // Combine permissions with names
       final result = permissions.map<Map<String, dynamic>>((perm) {
@@ -160,10 +161,10 @@ class ManagerPermissionsService {
         return result;
       }).toList();
       
-      print('✅ [PERMISSIONS] Returning ${result.length} manager permissions');
+      AppLogger.api('✅ [PERMISSIONS] Returning ${result.length} manager permissions');
       return result;
     } catch (e) {
-      print('❌ Error fetching all manager permissions: $e');
+      AppLogger.error('❌ Error fetching all manager permissions', e);
       rethrow;
     }
   }
@@ -216,7 +217,7 @@ class ManagerPermissionsService {
           return false;
       }
     } catch (e) {
-      print('❌ Error checking permission: $e');
+      AppLogger.error('❌ Error checking permission', e);
       return false;
     }
   }

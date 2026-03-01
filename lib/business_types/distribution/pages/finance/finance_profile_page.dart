@@ -133,8 +133,32 @@ class FinanceProfilePage extends ConsumerWidget {
                       'Tùy chỉnh ứng dụng',
                       Colors.grey,
                       () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tính năng đang phát triển')),
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Cài đặt'),
+                            content: const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ListTile(
+                                  leading: Icon(Icons.notifications_outlined),
+                                  title: Text('Thông báo'),
+                                  subtitle: Text('Bật/tắt thông báo'),
+                                ),
+                                ListTile(
+                                  leading: Icon(Icons.language),
+                                  title: Text('Ngôn ngữ'),
+                                  subtitle: Text('Tiếng Việt'),
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Đóng'),
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),

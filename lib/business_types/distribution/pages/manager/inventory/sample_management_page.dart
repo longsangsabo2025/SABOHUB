@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../models/odori_product.dart';
 import '../../../../../providers/auth_provider.dart';
 
 class SampleManagementPage extends ConsumerStatefulWidget {
@@ -141,10 +141,10 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
 
   Color _getStatusColor(String status) {
     const colors = {
-      'pending': Color(0xFFF59E0B),
-      'delivered': Color(0xFF3B82F6),
-      'received': Color(0xFF10B981),
-      'feedback_received': Color(0xFF8B5CF6),
+      'pending': AppColors.warning,
+      'delivered': AppColors.info,
+      'received': AppColors.success,
+      'feedback_received': AppColors.primary,
       'converted': Color(0xFF14B8A6),
     };
     return colors[status] ?? Colors.grey;

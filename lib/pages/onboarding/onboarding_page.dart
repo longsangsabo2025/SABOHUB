@@ -50,7 +50,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
       // Kiểm tra invite token có hợp lệ không
       final response = await supabase
-          .from('users')
+          .from('employees')
           .select(
               'id, full_name, role, company_id, invite_expires_at, onboarded_at')
           .eq('invite_token', widget.inviteToken)
@@ -122,9 +122,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
       final userId = authResponse.user!.id;
 
-      // BƯỚC 2: Update user record - link với invite
-      await supabase.from('users').update({
-        'id': userId, // Override temp ID with Auth ID
+      // BƯỚC 2: Update employee record - link với invite
+      await supabase.from('employees').update({
+        'auth_user_id': userId, // Link auth ID to employee record
         'email': email,
         'is_active': true,
         'onboarded_at': DateTime.now().toIso8601String(),

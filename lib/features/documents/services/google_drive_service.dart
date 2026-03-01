@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:mime/mime.dart';
+
+import '../../../utils/app_logger.dart';
 
 /// Google Drive Service for file operations
 class GoogleDriveService {
@@ -14,6 +16,7 @@ class GoogleDriveService {
   GoogleSignIn? _googleSignIn;
   drive.DriveApi? _driveApi;
   GoogleSignInAccount? _currentUser;
+  StreamSubscription<GoogleSignInAccount?>? _signInSubscription;
 
   /// Scopes required for Google Drive access
   static const List<String> _scopes = [
@@ -28,12 +31,12 @@ class GoogleDriveService {
     );
 
     // Listen to sign-in state changes
-    _googleSignIn!.onCurrentUserChanged.listen((GoogleSignInAccount? account) {
+    _signInSubscription = _googleSignIn!.onCurrentUserChanged.listen((GoogleSignInAccount? account) {
       _currentUser = account;
       if (account != null) {
-        debugPrint('✅ Google Drive: User signed in: ${account.email}');
+        AppLogger.auth('✅ Google Drive: User signed in: ${account.email}');
       } else {
-        debugPrint('⚠️ Google Drive: User signed out');
+        AppLogger.auth('⚠️ Google Drive: User signed out');
       }
     });
 
@@ -41,8 +44,14 @@ class GoogleDriveService {
     try {
       await _googleSignIn!.signInSilently();
     } catch (e) {
-      debugPrint('⚠️ Silent sign-in failed: $e');
+      AppLogger.warn('⚠️ Silent sign-in failed', e);
     }
+  }
+
+  /// Dispose resources
+  void dispose() {
+    _signInSubscription?.cancel();
+    _signInSubscription = null;
   }
 
   /// Sign in to Google Drive
@@ -60,13 +69,13 @@ class GoogleDriveService {
         final authClient = await _googleSignIn!.authenticatedClient();
         if (authClient != null) {
           _driveApi = drive.DriveApi(authClient);
-          debugPrint('✅ Google Drive API initialized');
+          AppLogger.auth('✅ Google Drive API initialized');
           return true;
         }
       }
       return false;
     } catch (e) {
-      debugPrint('❌ Error signing in to Google Drive: $e');
+      AppLogger.error('❌ Error signing in to Google Drive', e);
       return false;
     }
   }
@@ -77,9 +86,9 @@ class GoogleDriveService {
       await _googleSignIn?.signOut();
       _currentUser = null;
       _driveApi = null;
-      debugPrint('✅ Signed out from Google Drive');
+      AppLogger.auth('✅ Signed out from Google Drive');
     } catch (e) {
-      debugPrint('❌ Error signing out: $e');
+      AppLogger.error('❌ Error signing out', e);
     }
   }
 
@@ -109,9 +118,10 @@ class GoogleDriveService {
       final mimeType = lookupMimeType(fileName) ?? 'application/octet-stream';
       final fileSize = fileBytes.length;
 
-      debugPrint('📤 Uploading file: $fileName');
-      debugPrint('   Size: ${_formatBytes(fileSize)}');
-      debugPrint('   Type: $mimeType');
+      AppLogger.api('📤 Uploading file: $fileName', {
+        'size': _formatBytes(fileSize),
+        'type': mimeType,
+      });
 
       // Create Drive file metadata
       final driveFile = drive.File()
@@ -138,13 +148,14 @@ class GoogleDriveService {
             'id, name, mimeType, size, webViewLink, webContentLink, createdTime, modifiedTime',
       );
 
-      debugPrint('✅ File uploaded successfully!');
-      debugPrint('   ID: ${uploadedFile.id}');
-      debugPrint('   Web View: ${uploadedFile.webViewLink}');
+      AppLogger.api('✅ File uploaded successfully!', {
+        'id': uploadedFile.id,
+        'webView': uploadedFile.webViewLink,
+      });
 
       return uploadedFile;
     } catch (e) {
-      debugPrint('❌ Error uploading file: $e');
+      AppLogger.error('❌ Error uploading file', e);
       rethrow;
     }
   }
@@ -159,7 +170,7 @@ class GoogleDriveService {
         }
       }
 
-      debugPrint('📥 Downloading file: $fileId');
+      AppLogger.api('📥 Downloading file: $fileId');
 
       final media = await _driveApi!.files.get(
         fileId,
@@ -171,10 +182,10 @@ class GoogleDriveService {
         bytes.addAll(chunk);
       }
 
-      debugPrint('✅ File downloaded: ${_formatBytes(bytes.length)}');
+      AppLogger.api('✅ File downloaded: ${_formatBytes(bytes.length)}');
       return bytes;
     } catch (e) {
-      debugPrint('❌ Error downloading file: $e');
+      AppLogger.error('❌ Error downloading file', e);
       rethrow;
     }
   }
@@ -197,7 +208,7 @@ class GoogleDriveService {
 
       return file;
     } catch (e) {
-      debugPrint('❌ Error getting file metadata: $e');
+      AppLogger.error('❌ Error getting file metadata', e);
       return null;
     }
   }
@@ -212,12 +223,12 @@ class GoogleDriveService {
         }
       }
 
-      debugPrint('🗑️ Deleting file: $fileId');
+      AppLogger.api('🗑️ Deleting file: $fileId');
       await _driveApi!.files.delete(fileId);
-      debugPrint('✅ File deleted successfully');
+      AppLogger.api('✅ File deleted successfully');
       return true;
     } catch (e) {
-      debugPrint('❌ Error deleting file: $e');
+      AppLogger.error('❌ Error deleting file', e);
       return false;
     }
   }
@@ -250,7 +261,7 @@ class GoogleDriveService {
 
       return fileList.files ?? [];
     } catch (e) {
-      debugPrint('❌ Error listing files: $e');
+      AppLogger.error('❌ Error listing files', e);
       return [];
     }
   }
@@ -279,11 +290,11 @@ class GoogleDriveService {
         $fields: 'id, name, mimeType',
       );
 
-      debugPrint(
+      AppLogger.api(
           '✅ Folder created: ${createdFolder.name} (${createdFolder.id})');
       return createdFolder;
     } catch (e) {
-      debugPrint('❌ Error creating folder: $e');
+      AppLogger.error('❌ Error creating folder', e);
       return null;
     }
   }
@@ -310,7 +321,7 @@ class GoogleDriveService {
 
       return fileList.files ?? [];
     } catch (e) {
-      debugPrint('❌ Error searching files: $e');
+      AppLogger.error('❌ Error searching files', e);
       return [];
     }
   }

@@ -350,7 +350,7 @@ class _EmployeePerformancePageState
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '${score.toStringAsFixed(1)}',
+                      score.toStringAsFixed(1),
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -637,7 +637,7 @@ class _EmployeePerformancePageState
                     'evaluated_at': DateTime.now().toIso8601String(),
                   });
 
-                  if (mounted) {
+                  if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -648,7 +648,7 @@ class _EmployeePerformancePageState
                   }
                 } catch (e) {
                   debugPrint('❌ Failed to save evaluation: $e');
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('❌ Lỗi khi lưu đánh giá: $e'),

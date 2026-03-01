@@ -8,14 +8,14 @@ import '../../services/branch_service.dart';
 
 /// Branch Details Provider
 final branchDetailsProvider =
-    FutureProvider.family<Branch?, String>((ref, id) async {
+    FutureProvider.autoDispose.family<Branch?, String>((ref, id) async {
   final service = BranchService();
   return await service.getBranchById(id);
 });
 
 /// Branch Stats Provider
 final branchStatsProvider =
-    FutureProvider.family<Map<String, dynamic>, String>((ref, branchId) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, branchId) async {
   final service = BranchService();
   return await service.getBranchStats(branchId);
 });

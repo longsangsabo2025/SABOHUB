@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../widgets/error_boundary.dart';
 import '../pages/sales/journey_plan_page.dart';
-import '../pages/sales/sell_in_sell_out_page.dart';
+import '../pages/sales/sales_activity_page.dart';
 
 // Sub-pages extracted for maintainability
 import 'sales/sales_dashboard_page.dart';
@@ -20,6 +20,7 @@ import 'sales/sales_customers_page.dart';
 ///   - sales_create_order_page.dart  → Tạo đơn hàng (inline)
 ///   - sales_orders_page.dart        → Danh sách đơn hàng theo trạng thái
 ///   - sales_customers_page.dart     → Quản lý khách hàng
+///   - sales_activity_page.dart      → Timeline hoạt động sales
 ///   - sheets/
 ///       - sales_order_history_sheet.dart   → Lịch sử đơn hàng
 ///       - sales_create_order_form.dart     → Form tạo/sửa đơn hàng
@@ -39,7 +40,7 @@ class _DistributionSalesLayoutState
   final List<Widget> _pages = const [
     SalesDashboardPage(),
     JourneyPlanPage(),
-    SellInSellOutPage(),
+    SalesActivityPage(),
     SalesCreateOrderPage(),
     SalesOrdersPage(),
     SalesCustomersPage(),
@@ -96,16 +97,16 @@ class _DistributionSalesLayoutState
                 label: 'Hành trình',
               ),
               NavigationDestination(
-                icon: Icon(Icons.swap_horiz_outlined, color: Colors.grey.shade600),
+                icon: Icon(Icons.timeline_outlined, color: Colors.grey.shade600),
                 selectedIcon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.purple.shade50,
+                    color: Colors.deepPurple.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.swap_horiz, color: Colors.purple.shade700),
+                  child: Icon(Icons.timeline, color: Colors.deepPurple.shade700),
                 ),
-                label: 'Sell-in/out',
+                label: 'Hoạt động',
               ),
               NavigationDestination(
                 icon: Icon(Icons.add_shopping_cart_outlined, color: Colors.grey.shade600),
@@ -150,4 +151,3 @@ class _DistributionSalesLayoutState
     );
   }
 }
-

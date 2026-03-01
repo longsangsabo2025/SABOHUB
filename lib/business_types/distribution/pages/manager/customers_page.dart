@@ -1173,13 +1173,13 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                         if (value == 'export') {
                           try {
                             await CustomerImportExportService.exportToCSV(companyId: companyId);
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('✅ Đã xuất file CSV'), backgroundColor: Colors.green),
                               );
                             }
                           } catch (e) {
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('❌ Lỗi xuất file: $e'), backgroundColor: Colors.red),
                               );
@@ -1292,10 +1292,15 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                     ],
                     onSelected: (value) {
                       CustomerTier? tier;
-                      if (value == 'diamond') tier = CustomerTier.diamond;
-                      else if (value == 'gold') tier = CustomerTier.gold;
-                      else if (value == 'silver') tier = CustomerTier.silver;
-                      else if (value == 'bronze') tier = CustomerTier.bronze;
+                      if (value == 'diamond') {
+                        tier = CustomerTier.diamond;
+                      } else if (value == 'gold') {
+                        tier = CustomerTier.gold;
+                      } else if (value == 'silver') {
+                        tier = CustomerTier.silver;
+                      } else if (value == 'bronze') {
+                        tier = CustomerTier.bronze;
+                      }
                       setState(() => _selectedTier = tier);
                       _loadInitial();
                     },
@@ -1791,7 +1796,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       final isDistrictNumber = int.tryParse(district) != null;
       parts.add(isDistrictNumber ? 'Quận $district' : district);
       parts.add(city);
-      formattedAddress = parts.join(', ') + ', Việt Nam';
+      formattedAddress = '${parts.join(', ')}, Việt Nam';
     } else if (customer.address != null && customer.address!.isNotEmpty) {
       // Fallback to raw address field
       formattedAddress = customer.address!;

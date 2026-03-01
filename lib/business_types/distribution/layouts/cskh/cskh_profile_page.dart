@@ -74,18 +74,18 @@ class CSKHProfilePage extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // Stats
+            // Stats (placeholder — real data not yet wired)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatItem('Đã xử lý', '156', Colors.green),
+                    _buildStatItem('Đã xử lý', '—', Colors.green),
                     Container(width: 1, height: 40, color: Colors.grey.shade300),
-                    _buildStatItem('Đánh giá', '4.8', Colors.orange),
+                    _buildStatItem('Đánh giá', '—', Colors.orange),
                     Container(width: 1, height: 40, color: Colors.grey.shade300),
-                    _buildStatItem('Tháng này', '23', Colors.blue),
+                    _buildStatItem('Tháng này', '—', Colors.blue),
                   ],
                 ),
               ),
@@ -101,21 +101,33 @@ class CSKHProfilePage extends ConsumerWidget {
                     leading: const Icon(Icons.person_outline),
                     title: const Text('Thông tin cá nhân'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {},
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Xem và chỉnh sửa thông tin cá nhân tại màn hình Quản lý tài khoản'), duration: Duration(seconds: 2)),
+                      );
+                    },
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.bar_chart_outlined),
                     title: const Text('Thống kê'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {},
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Thống kê CSKH: số KH phụ trách, yêu cầu xử lý hôm nay'), duration: Duration(seconds: 2)),
+                      );
+                    },
                   ),
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.settings_outlined),
                     title: const Text('Cài đặt'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {},
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Cài đặt thông báo và hiển thị CSKH'), duration: Duration(seconds: 2)),
+                      );
+                    },
                   ),
                   const Divider(height: 1),
                   ListTile(

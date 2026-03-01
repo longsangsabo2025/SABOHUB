@@ -514,6 +514,8 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
     // Save route_order to database for each delivery
     await _saveRouteOrderToDatabase(optimizedStops);
 
+    if (!mounted) return;
+
     setState(() {
       _deliveryStops = optimizedStops;
       _isRouteOptimized = true;

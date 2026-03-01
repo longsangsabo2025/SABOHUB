@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import '../../../../utils/app_logger.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -10,7 +11,6 @@ import 'package:printing/printing.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../providers/auth_provider.dart';
-import '../../../../utils/app_logger.dart';
 import '../../../../services/image_upload_service.dart';
 import '../../../../widgets/customer_avatar.dart';
 import 'customer_debt_detail_sheet.dart';
@@ -65,7 +65,8 @@ class _AccountsReceivablePageState
           .select('id, name, code, phone, address, total_debt, credit_limit, payment_terms')
           .eq('company_id', companyId)
           .gt('total_debt', 0)
-          .order('total_debt', ascending: false);
+          .order('total_debt', ascending: false)
+          .limit(500);
 
       // Load aging data from receivables view
       List<Map<String, dynamic>> aging = [];
@@ -74,7 +75,9 @@ class _AccountsReceivablePageState
             .from('v_receivables_aging')
             .select('customer_id, customer_name, balance, aging_bucket, days_overdue')
             .eq('company_id', companyId));
-      } catch (_) {}
+      } catch (e) {
+        AppLogger.warn('Aging view not available: $e');
+      }
 
       setState(() {
         _customersWithDebt = List<Map<String, dynamic>>.from(data);

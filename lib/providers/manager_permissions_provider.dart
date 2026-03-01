@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/manager_permissions.dart';
 import '../services/manager_permissions_service.dart';
+import '../utils/app_logger.dart';
 import 'auth_provider.dart';
 
 /// Manager Permissions Service Provider
@@ -13,7 +14,7 @@ final managerPermissionsServiceProvider =
 /// Manager Permissions Provider
 /// Fetches permissions for the current logged-in manager
 final managerPermissionsProvider =
-    FutureProvider<ManagerPermissions?>((ref) async {
+    FutureProvider.autoDispose<ManagerPermissions?>((ref) async {
   final authState = ref.watch(authProvider);
   final service = ref.watch(managerPermissionsServiceProvider);
 
@@ -30,7 +31,7 @@ final managerPermissionsProvider =
 
     // If no permissions found, create default
     if (permissions == null && authState.user!.companyId != null) {
-      print('📝 Creating default permissions for manager: $managerId');
+      AppLogger.info('Creating default permissions for manager: $managerId');
       return await service.createDefaultPermissions(
         managerId: managerId,
         companyId: authState.user!.companyId!,
@@ -39,14 +40,14 @@ final managerPermissionsProvider =
 
     return permissions;
   } catch (e) {
-    print('❌ Error loading manager permissions: $e');
+    AppLogger.error('Error loading manager permissions', e);
     return null;
   }
 });
 
 /// Manager Permissions by Company Provider
 /// Useful for CEO viewing specific manager's permissions
-final managerPermissionsByCompanyProvider = FutureProvider.family<
+final managerPermissionsByCompanyProvider = FutureProvider.autoDispose.family<
     ManagerPermissions?,
     Map<String, String>>((ref, params) async {
   final service = ref.watch(managerPermissionsServiceProvider);
@@ -56,24 +57,24 @@ final managerPermissionsByCompanyProvider = FutureProvider.family<
   try {
     return await service.getManagerPermissionsByCompany(managerId, companyId);
   } catch (e) {
-    print('❌ Error loading manager permissions: $e');
+    AppLogger.error('Error loading manager permissions', e);
     return null;
   }
 });
 
 /// All Manager Permissions for a Company (CEO View)
 final allManagerPermissionsProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String>(
+    FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
         (ref, companyId) async {
-  print('🏢 [PROVIDER] Fetching all manager permissions for company: $companyId');
+  AppLogger.state('Fetching all manager permissions for company: $companyId');
   final service = ref.watch(managerPermissionsServiceProvider);
 
   try {
     final result = await service.getAllManagerPermissions(companyId);
-    print('✅ [PROVIDER] Provider returning ${result.length} managers');
+    AppLogger.state('Provider returning ${result.length} managers');
     return result;
   } catch (e) {
-    print('❌ [PROVIDER] Error loading all manager permissions: $e');
+    AppLogger.error('Error loading all manager permissions', e);
     return [];
   }
 });

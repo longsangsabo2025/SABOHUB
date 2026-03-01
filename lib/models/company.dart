@@ -21,11 +21,20 @@ class Company {
   final double? checkInLongitude;
   final double? checkInRadius; // in meters
   
-  // Bank account for VietQR
+  // Bank account for VietQR (primary)
   final String? bankName;
   final String? bankAccountNumber;
   final String? bankAccountName;
   final String? bankBin;
+  
+  // Bank account 2 (secondary)
+  final String? bankName2;
+  final String? bankAccountNumber2;
+  final String? bankAccountName2;
+  final String? bankBin2;
+  
+  // Which bank account is active (1 or 2)
+  final int activeBankAccount;
 
   const Company({
     required this.id,
@@ -49,7 +58,20 @@ class Company {
     this.bankAccountNumber,
     this.bankAccountName,
     this.bankBin,
+    this.bankName2,
+    this.bankAccountNumber2,
+    this.bankAccountName2,
+    this.bankBin2,
+    this.activeBankAccount = 1,
   });
+
+  // Helper getters for active bank account
+  String? get activeBankNameValue => activeBankAccount == 2 ? bankName2 : bankName;
+  String? get activeBankAccountNumberValue => activeBankAccount == 2 ? bankAccountNumber2 : bankAccountNumber;
+  String? get activeBankAccountNameValue => activeBankAccount == 2 ? bankAccountName2 : bankAccountName;
+  String? get activeBankBinValue => activeBankAccount == 2 ? bankBin2 : bankBin;
+  
+  bool get hasBankAccount2 => bankAccountNumber2 != null && bankAccountNumber2!.isNotEmpty;
 
   // Getter alias for businessType
   BusinessType get businessType => type;
@@ -98,6 +120,11 @@ class Company {
       bankAccountNumber: json['bank_account_number'] as String?,
       bankAccountName: json['bank_account_name'] as String?,
       bankBin: json['bank_bin'] as String?,
+      bankName2: json['bank_name_2'] as String?,
+      bankAccountNumber2: json['bank_account_number_2'] as String?,
+      bankAccountName2: json['bank_account_name_2'] as String?,
+      bankBin2: json['bank_bin_2'] as String?,
+      activeBankAccount: (json['active_bank_account'] as int?) ?? 1,
     );
   }
 
@@ -143,6 +170,11 @@ class Company {
     String? bankAccountNumber,
     String? bankAccountName,
     String? bankBin,
+    String? bankName2,
+    String? bankAccountNumber2,
+    String? bankAccountName2,
+    String? bankBin2,
+    int? activeBankAccount,
   }) {
     return Company(
       id: id ?? this.id,
@@ -166,6 +198,11 @@ class Company {
       bankAccountNumber: bankAccountNumber ?? this.bankAccountNumber,
       bankAccountName: bankAccountName ?? this.bankAccountName,
       bankBin: bankBin ?? this.bankBin,
+      bankName2: bankName2 ?? this.bankName2,
+      bankAccountNumber2: bankAccountNumber2 ?? this.bankAccountNumber2,
+      bankAccountName2: bankAccountName2 ?? this.bankAccountName2,
+      bankBin2: bankBin2 ?? this.bankBin2,
+      activeBankAccount: activeBankAccount ?? this.activeBankAccount,
     );
   }
 }

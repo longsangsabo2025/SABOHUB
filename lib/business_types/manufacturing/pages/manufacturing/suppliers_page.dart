@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../providers/auth_provider.dart';
 import '../../services/manufacturing_service.dart';
 import '../../models/manufacturing_models.dart';
 
@@ -11,13 +12,14 @@ class SuppliersPage extends ConsumerStatefulWidget {
 }
 
 class _SuppliersPageState extends ConsumerState<SuppliersPage> {
-  final _service = ManufacturingService();
+  late ManufacturingService _service;
   List<Supplier> _suppliers = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
+    _service = ManufacturingService(companyId: ref.read(authProvider).user?.companyId);
     _loadSuppliers();
   }
 
@@ -224,15 +226,16 @@ class _SuppliersPageState extends ConsumerState<SuppliersPage> {
                     'notes': notesController.text.isEmpty ? null : notesController.text,
                   });
                 }
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 await _loadSuppliers();
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(supplier == null ? 'Đã thêm nhà cung cấp' : 'Đã cập nhật nhà cung cấp')),
                   );
                 }
               } catch (e) {
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Lỗi: $e')),
                   );

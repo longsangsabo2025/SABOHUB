@@ -37,6 +37,7 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
   
   // State
   String _customerType = 'retail'; // retail, wholesale, distributor, horeca, other
+  String _customerChannel = 'GT Sỉ'; // Horeca, GT Sỉ, GT Lẻ
   bool _isLoading = false;
 
   @override
@@ -141,12 +142,31 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
                 border: OutlineInputBorder(),
               ),
               items: const [
-                DropdownMenuItem(value: 'direct', child: Text('Khách lẻ (Direct)')),
-                DropdownMenuItem(value: 'distributor', child: Text('Nhà Phân Phối (NPP)')),
-                DropdownMenuItem(value: 'agent', child: Text('Đại lý')),
+                DropdownMenuItem(value: 'retail', child: Text('🛒 Khách lẻ')),
+                DropdownMenuItem(value: 'wholesale', child: Text('🛍️ Khách sỉ')),
+                DropdownMenuItem(value: 'distributor', child: Text('🏢 Nhà phân phối (NPP)')),
+                DropdownMenuItem(value: 'horeca', child: Text('🍽️ Horeca')),
+                DropdownMenuItem(value: 'other', child: Text('📋 Khác')),
               ],
               onChanged: (value) {
                 if (value != null) setState(() => _customerType = value);
+              },
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _customerChannel,
+              decoration: const InputDecoration(
+                labelText: 'Kênh bán hàng',
+                prefixIcon: Icon(Icons.store),
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'Horeca', child: Text('Horeca')),
+                DropdownMenuItem(value: 'GT Sỉ', child: Text('GT Sỉ')),
+                DropdownMenuItem(value: 'GT Lẻ', child: Text('GT Lẻ')),
+              ],
+              onChanged: (value) {
+                if (value != null) setState(() => _customerChannel = value);
               },
             ),
           ],
@@ -358,7 +378,7 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
             .limit(1);
 
         int nextNumber = 1;
-        if (data is List && data.isNotEmpty) {
+        if (data.isNotEmpty) {
           final lastCode = data[0]['code'] as String?;
           if (lastCode != null && lastCode.startsWith('KH-')) {
             final numPart = lastCode.substring(3);
@@ -419,11 +439,12 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
         'district': _selectedDistrict?.name.replaceAll('Quận ', '').replaceAll('Huyện ', '').replaceAll('Thành phố ', '').replaceAll('Thị xã ', ''),
         'city': _selectedCity?.name.replaceAll('Thành phố ', '').replaceAll('Tỉnh ', ''),
         'address': fullAddress.isNotEmpty ? fullAddress : null,
-        'latitude': latitude,
-        'longitude': longitude,
+        'lat': latitude,
+        'lng': longitude,
         'email': _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
         'tax_code': _taxIdController.text.trim().isNotEmpty ? _taxIdController.text.trim() : null,
         'type': _customerType,
+        'channel': _customerChannel,
         'status': 'active',
         'created_at': DateTime.now().toIso8601String(),
       });

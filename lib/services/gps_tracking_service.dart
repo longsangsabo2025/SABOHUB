@@ -5,8 +5,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geolocator_android/geolocator_android.dart';
-import 'package:geolocator_apple/geolocator_apple.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../business_types/distribution/services/odori_service.dart';
 import '../business_types/distribution/models/odori_models.dart';
@@ -419,7 +417,7 @@ class TrackingStateNotifier extends Notifier<TrackingStateData> {
 }
 
 /// Current Position Provider
-final currentPositionProvider = FutureProvider<GpsPosition?>((ref) async {
+final currentPositionProvider = FutureProvider.autoDispose<GpsPosition?>((ref) async {
   return await gpsTrackingService.getCurrentPosition();
 });
 

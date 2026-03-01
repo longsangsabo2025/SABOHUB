@@ -20,7 +20,7 @@ class TableService {
       var query = _supabase.from('tables').select('*');
 
       if (companyId != null) {
-        query = query.eq('store_id', companyId); // Using store_id as company_id
+        query = query.eq('company_id', companyId);
       }
 
       final response = await query.order('table_number', ascending: true);
@@ -42,7 +42,7 @@ class TableService {
           .eq('status', _statusToDbString(status));
 
       if (companyId != null) {
-        query = query.eq('store_id', companyId);
+        query = query.eq('company_id', companyId);
       }
 
       final response = await query.order('table_number', ascending: true);
@@ -63,11 +63,11 @@ class TableService {
   }) async {
     try {
       final data = {
-        'table_number': int.parse(tableNumber),
-        'store_id': companyId,
+        'table_number': int.tryParse(tableNumber) ?? tableNumber,
+        'company_id': companyId,
         'table_type': tableType,
         'hourly_rate': hourlyRate,
-        'status': 'AVAILABLE',
+        'status': 'available',
         'created_by': employeeId,
       };
 
@@ -77,6 +77,36 @@ class TableService {
       return _tableFromJson(response);
     } catch (e) {
       throw Exception('Failed to create table: $e');
+    }
+  }
+
+  /// Update existing table
+  Future<BilliardsTable> updateTable({
+    required String tableId,
+    String? tableNumber,
+    String? tableType,
+    double? hourlyRate,
+  }) async {
+    try {
+      final updates = <String, dynamic>{
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      if (tableNumber != null) {
+        updates['table_number'] = int.tryParse(tableNumber) ?? tableNumber;
+      }
+      if (tableType != null) updates['table_type'] = tableType;
+      if (hourlyRate != null) updates['hourly_rate'] = hourlyRate;
+
+      final response = await _supabase
+          .from('tables')
+          .update(updates)
+          .eq('id', tableId)
+          .select()
+          .single();
+
+      return _tableFromJson(response);
+    } catch (e) {
+      throw Exception('Failed to update table: $e');
     }
   }
 
@@ -108,13 +138,21 @@ class TableService {
     String? employeeId,
   }) async {
     try {
-      // First create table session
+      final table = await getTableById(tableId);
+      final rate = table?.hourlyRate ?? 50000;
+
       final sessionData = {
         'table_id': tableId,
         'start_time': DateTime.now().toIso8601String(),
-        'hourly_rate': 50000, // Default rate, should get from table
-        'status': 'ACTIVE',
+        'hourly_rate': rate,
+        'status': 'active',
+        'customer_name': customerName,
+        'notes': notes,
         'created_by': employeeId,
+        'total_paused_minutes': 0,
+        'table_amount': 0.0,
+        'orders_amount': 0.0,
+        'total_amount': 0.0,
       };
 
       final sessionResponse = await _supabase
@@ -123,11 +161,10 @@ class TableService {
           .select()
           .single();
 
-      // Then update table status to occupied
       final response = await _supabase
           .from('tables')
           .update({
-            'status': 'OCCUPIED',
+            'status': 'occupied',
             'current_session_id': sessionResponse['id'],
             'updated_at': DateTime.now().toIso8601String(),
           })
@@ -150,22 +187,20 @@ class TableService {
         throw Exception('Table is not currently occupied');
       }
 
-      // Update current session to completed
       await _supabase
           .from('table_sessions')
           .update({
             'end_time': DateTime.now().toIso8601String(),
-            'status': 'COMPLETED',
+            'status': 'completed',
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('table_id', tableId)
-          .eq('status', 'ACTIVE');
+          .eq('status', 'active');
 
-      // Then update table status to available
       final response = await _supabase
           .from('tables')
           .update({
-            'status': 'AVAILABLE',
+            'status': 'available',
             'current_session_id': null,
             'updated_at': DateTime.now().toIso8601String(),
           })
@@ -209,7 +244,7 @@ class TableService {
       var query = _supabase.from('tables').select('status');
 
       if (companyId != null) {
-        query = query.eq('store_id', companyId);
+        query = query.eq('company_id', companyId);
       }
 
       final response = await query;
@@ -247,46 +282,43 @@ class TableService {
     }
   }
 
-  /// Convert JSON to BilliardsTable model
   BilliardsTable _tableFromJson(Map<String, dynamic> json) {
     return BilliardsTable(
       id: json['id'] as String,
       tableNumber: json['table_number'].toString(),
-      companyId: json['store_id'] as String? ?? '',
+      companyId: json['company_id'] as String? ?? '',
       status: _statusFromDbString(json['status'] as String?),
-      startTime: null, // Will be calculated from active session if needed
-      currentAmount: null, // Will be calculated from session if needed
-      customerName: null, // Will come from session data if needed
-      notes: null, // Additional notes if added to schema
+      tableType: json['table_type'] as String?,
+      hourlyRate: (json['hourly_rate'] as num?)?.toDouble() ?? 50000,
+      currentSessionId: json['current_session_id'] as String?,
+      notes: json['notes'] as String?,
     );
   }
 
-  /// Convert TableStatus to database string
   String _statusToDbString(TableStatus status) {
     switch (status) {
       case TableStatus.available:
-        return 'AVAILABLE';
+        return 'available';
       case TableStatus.occupied:
-        return 'OCCUPIED';
+        return 'occupied';
       case TableStatus.reserved:
-        return 'RESERVED';
+        return 'reserved';
       case TableStatus.maintenance:
-        return 'MAINTENANCE';
+        return 'maintenance';
       case TableStatus.cleaning:
-        return 'MAINTENANCE'; // Map cleaning to maintenance
+        return 'maintenance';
     }
   }
 
-  /// Convert database string to TableStatus
   TableStatus _statusFromDbString(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'AVAILABLE':
+    switch (status?.toLowerCase()) {
+      case 'available':
         return TableStatus.available;
-      case 'OCCUPIED':
+      case 'occupied':
         return TableStatus.occupied;
-      case 'RESERVED':
+      case 'reserved':
         return TableStatus.reserved;
-      case 'MAINTENANCE':
+      case 'maintenance':
         return TableStatus.maintenance;
       default:
         return TableStatus.available;

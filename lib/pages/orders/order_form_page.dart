@@ -46,7 +46,6 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   // Warehouse selection
   List<Map<String, dynamic>> _warehouses = [];
   String? _selectedWarehouseId;
-  String? _selectedWarehouseName;
   bool _isLoadingWarehouses = true;
   
   // Delivery address selection
@@ -101,7 +100,6 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       
       // Set warehouse
       _selectedWarehouseId = order.warehouseId;
-      _selectedWarehouseName = order.warehouseName;
       
       // Set discount
       if (order.discountPercent != null && order.discountPercent! > 0) {
@@ -127,7 +125,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
             name: item.productName ?? 'Sản phẩm',
             sku: item.productSku ?? '',
             sellingPrice: item.unitPrice,
-            unit: item.unit ?? 'Cái',
+            unit: item.unit,
             status: 'active',
             createdAt: DateTime.now(),
           );
@@ -192,7 +190,6 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
         );
         if (primaryWarehouse.isNotEmpty) {
           _selectedWarehouseId = primaryWarehouse['id'];
-          _selectedWarehouseName = primaryWarehouse['name'];
         }
         _isLoadingWarehouses = false;
       });
@@ -853,8 +850,6 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                 onChanged: (value) {
                   setState(() {
                     _selectedWarehouseId = value;
-                    _selectedWarehouseName = _warehouses
-                        .firstWhere((w) => w['id'] == value)['name'];
                   });
                 },
                 validator: (value) {
@@ -1200,8 +1195,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
             .eq('customer_id', _selectedCustomer!.id)
             .eq('status', 'overdue')
             .limit(5);
-        if (overdueCheck is List && overdueCheck.isNotEmpty) {
-          final totalOverdue = (overdueCheck as List).fold<double>(
+        if (overdueCheck.isNotEmpty) {
+          final totalOverdue = overdueCheck.fold<double>(
               0, (s, r) => s + (((r['original_amount'] ?? 0) as num).toDouble() - ((r['paid_amount'] ?? 0) as num).toDouble()));
           if (!mounted) return;
           final proceed = await showDialog<bool>(

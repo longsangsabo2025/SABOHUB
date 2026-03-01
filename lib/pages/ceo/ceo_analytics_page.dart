@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../providers/analytics_provider.dart';
-import '../../providers/ceo_analytics_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/ceo_business_provider.dart';
 import '../manager/employee_performance_page.dart';
 import 'daily_reports_dashboard_page.dart';
 
@@ -139,7 +144,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF8B5CF6) : Colors.transparent,
+            color: isSelected ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
@@ -182,7 +187,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
             border: Border(
               bottom: BorderSide(
                 color:
-                    isSelected ? const Color(0xFF8B5CF6) : Colors.transparent,
+                    isSelected ? AppColors.primary : Colors.transparent,
                 width: 2,
               ),
             ),
@@ -194,7 +199,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               color:
-                  isSelected ? const Color(0xFF8B5CF6) : Colors.grey.shade600,
+                  isSelected ? AppColors.primary : Colors.grey.shade600,
             ),
           ),
         ),
@@ -237,13 +242,13 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
 
   Widget _buildRevenueOverview() {
     final selectedPeriod = ref.watch(selectedPeriodProvider);
-    final revenueAsync = ref.watch(ceoRevenueAnalyticsProvider(selectedPeriod));
+    final revenueAsync = ref.watch(ceoPeriodRevenueProvider(selectedPeriod));
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+          colors: [AppColors.primary, Color(0xFF7C3AED)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -368,6 +373,8 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
   }
 
   Widget _buildRevenueChart() {
+    final chartAsync = ref.watch(dailyRevenueChartProvider);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -385,7 +392,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Biểu đồ doanh thu',
+            'Biểu đồ doanh thu 30 ngày',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -393,18 +400,146 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
             ),
           ),
           const SizedBox(height: 20),
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(8),
+          chartAsync.when(
+            data: (dataPoints) {
+              if (dataPoints.isEmpty) {
+                return Container(
+                  height: 200,
+                  alignment: Alignment.center,
+                  child: const Text('Chưa có dữ liệu',
+                      style: TextStyle(color: Colors.grey)),
+                );
+              }
+
+              final spots = dataPoints.asMap().entries.map((e) {
+                return FlSpot(e.key.toDouble(), e.value.revenue);
+              }).toList();
+
+              final maxY = spots
+                  .map((s) => s.y)
+                  .reduce((a, b) => a > b ? a : b);
+
+              return SizedBox(
+                height: 200,
+                child: LineChart(
+                  LineChartData(
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval: maxY > 0 ? maxY / 4 : 1,
+                      getDrawingHorizontalLine: (_) => FlLine(
+                        color: Colors.grey.shade200,
+                        strokeWidth: 1,
+                      ),
+                    ),
+                    titlesData: FlTitlesData(
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 50,
+                          getTitlesWidget: (value, _) {
+                            if (value >= 1000000) {
+                              return Text(
+                                '${(value / 1000000).toStringAsFixed(0)}M',
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade500),
+                              );
+                            }
+                            if (value >= 1000) {
+                              return Text(
+                                '${(value / 1000).toStringAsFixed(0)}K',
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade500),
+                              );
+                            }
+                            return Text(
+                              value.toStringAsFixed(0),
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade500),
+                            );
+                          },
+                        ),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: (dataPoints.length / 6)
+                              .ceilToDouble()
+                              .clamp(1, 10),
+                          getTitlesWidget: (value, _) {
+                            final idx = value.toInt();
+                            if (idx < 0 || idx >= dataPoints.length) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                DateFormat('dd/MM')
+                                    .format(dataPoints[idx].date),
+                                style: TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.grey.shade500),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: spots,
+                        isCurved: true,
+                        color: AppColors.primary,
+                        barWidth: 2.5,
+                        dotData: const FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          color: AppColors.primary
+                              .withValues(alpha: 0.08),
+                        ),
+                      ),
+                    ],
+                    lineTouchData: LineTouchData(
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipItems: (touchedSpots) {
+                          return touchedSpots.map((spot) {
+                            final idx = spot.x.toInt();
+                            final day = idx >= 0 &&
+                                    idx < dataPoints.length
+                                ? DateFormat('dd/MM')
+                                    .format(dataPoints[idx].date)
+                                : '';
+                            return LineTooltipItem(
+                              '$day\n${_formatRevenue(spot.y)}',
+                              const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            );
+                          }).toList();
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+            loading: () => const SizedBox(
+              height: 200,
+              child: Center(child: CircularProgressIndicator()),
             ),
-            child: const Center(
-              child: Text(
-                'Biểu đồ doanh thu sẽ được hiển thị ở đây\n(Sử dụng thư viện fl_chart)',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
-              ),
+            error: (e, _) => SizedBox(
+              height: 200,
+              child: Center(child: Text('Lỗi: $e')),
             ),
           ),
         ],
@@ -414,7 +549,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
 
   Widget _buildRevenueByCompany() {
     final selectedPeriod = ref.watch(selectedPeriodProvider);
-    final revenueAsync = ref.watch(ceoRevenueAnalyticsProvider(selectedPeriod));
+    final revenueAsync = ref.watch(ceoPeriodRevenueProvider(selectedPeriod));
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -595,15 +730,15 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
   Map<String, dynamic> _getBusinessTypeInfo(String type) {
     switch (type.toLowerCase()) {
       case 'restaurant':
-        return {'icon': Icons.restaurant, 'color': const Color(0xFF10B981)};
+        return {'icon': Icons.restaurant, 'color': AppColors.success};
       case 'cafe':
-        return {'icon': Icons.coffee, 'color': const Color(0xFF8B5CF6)};
+        return {'icon': Icons.coffee, 'color': AppColors.primary};
       case 'billiards':
-        return {'icon': Icons.sports_bar, 'color': const Color(0xFF3B82F6)};
+        return {'icon': Icons.sports_bar, 'color': AppColors.info};
       case 'karaoke':
         return {'icon': Icons.mic, 'color': const Color(0xFFEC4899)};
       case 'hotel':
-        return {'icon': Icons.hotel, 'color': const Color(0xFFF59E0B)};
+        return {'icon': Icons.hotel, 'color': AppColors.warning};
       default:
         return {'icon': Icons.business, 'color': const Color(0xFF6366F1)};
     }
@@ -624,154 +759,458 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
   }
 
   Widget _buildCustomerAnalytics() {
-    return const Center(
-      child: Text('Phân tích khách hàng'),
+    final insightsAsync = ref.watch(customerInsightsProvider);
+    final cf = NumberFormat('#,###', 'vi_VN');
+
+    return insightsAsync.when(
+      data: (insights) => SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Summary cards
+            Row(
+              children: [
+                Expanded(
+                  child: _buildQuickStatCard(
+                    'Tổng khách hàng',
+                    '${insights.totalActive}',
+                    Icons.people,
+                    Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildQuickStatCard(
+                    'KH mới tháng này',
+                    '${insights.newThisMonth}',
+                    Icons.person_add,
+                    Colors.green,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildQuickStatCard(
+                    'KH có nguy cơ',
+                    '${insights.atRiskCount}',
+                    Icons.warning_amber,
+                    Colors.orange,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildQuickStatCard(
+                    'Tổng công nợ',
+                    '${cf.format(insights.totalDebt)}₫',
+                    Icons.account_balance,
+                    Colors.red,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Tier distribution
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Phân bố khách hàng theo hạng',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ...insights.tierDistribution.entries.map((e) {
+                    final total = insights.totalActive > 0
+                        ? insights.totalActive
+                        : 1;
+                    final pct = (e.value / total * 100);
+                    final tierColor = _getTierColor(e.key);
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: tierColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _getTierLabel(e.key),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${e.value} (${pct.toStringAsFixed(0)}%)',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: pct / 100,
+                              backgroundColor: Colors.grey.shade200,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(tierColor),
+                              minHeight: 6,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Top 10 customers
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Top 10 khách hàng (theo doanh thu)',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (insights.top10Customers.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Text('Chưa có dữ liệu',
+                            style: TextStyle(color: Colors.grey)),
+                      ),
+                    )
+                  else
+                    ...insights.top10Customers.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final c = entry.value;
+                      final name = c['name'] ?? 'N/A';
+                      final revenue = (c['revenue'] as num?)?.toDouble() ?? 0.0;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: i < 3
+                                    ? Colors.amber.shade100
+                                    : Colors.grey.shade100,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '${i + 1}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: i < 3
+                                      ? Colors.amber.shade800
+                                      : Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                            Text(
+                              currencyFormat.format(revenue),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Lỗi: $e')),
     );
   }
 
+  Color _getTierColor(String tier) {
+    switch (tier.toLowerCase()) {
+      case 'vip':
+        return Colors.amber;
+      case 'gold':
+        return Colors.orange;
+      case 'silver':
+        return Colors.blueGrey;
+      case 'bronze':
+        return Colors.brown;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getTierLabel(String tier) {
+    switch (tier.toLowerCase()) {
+      case 'vip':
+        return 'VIP';
+      case 'gold':
+        return 'Vàng';
+      case 'silver':
+        return 'Bạc';
+      case 'bronze':
+        return 'Đồng';
+      default:
+        return tier;
+    }
+  }
+
   Widget _buildPerformanceAnalytics() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _loadPerformanceStats(),
+      builder: (context, snapshot) {
+        final stats = snapshot.data ?? {};
+        final totalEmployees = stats['total'] ?? 0;
+        final avgScore = stats['avgScore'] ?? 0.0;
+        final kpiAchieved = stats['kpiPercent'] ?? 0;
+        final needsImprovement = stats['needsImprovement'] ?? 0;
+        
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPerformanceHeaderCard(),
+              const SizedBox(height: 24),
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else ...[
+                Row(
+                  children: [
+                    Expanded(child: _buildQuickStatCard('Tổng nhân viên', '$totalEmployees', Icons.people, Colors.blue)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildQuickStatCard('Điểm TB', avgScore is double ? avgScore.toStringAsFixed(1) : '$avgScore', Icons.star, Colors.amber)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: _buildQuickStatCard('KPI đạt', '$kpiAchieved%', Icons.check_circle, Colors.green)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildQuickStatCard('Cần cải thiện', '$needsImprovement', Icons.trending_up, Colors.orange)),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue.shade700),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Click vào nút trên để xem bảng xếp hạng, KPI chi tiết và thực hiện đánh giá nhân viên',
+                        style: TextStyle(fontSize: 13, color: Colors.blue.shade700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> _loadPerformanceStats() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final user = ref.read(authProvider).user;
+      if (user == null) return {};
+      
+      final companiesData = await supabase
+          .from('companies')
+          .select('id')
+          .eq('owner_id', user.id);
+      final companyIds = (companiesData as List).map((c) => c['id'] as String).toList();
+      if (companyIds.isEmpty) return {};
+      
+      final empData = await supabase
+          .from('employees')
+          .select('id')
+          .inFilter('company_id', companyIds)
+          .eq('is_active', true);
+      final total = (empData as List).length;
+      
+      final now = DateTime.now();
+      final monthStart = DateTime(now.year, now.month, 1).toIso8601String();
+      final monthEnd = DateTime(now.year, now.month + 1, 0).toIso8601String();
+      
+      final kpiData = await supabase
+          .from('kpi_targets')
+          .select('employee_id, target_value, current_value')
+          .inFilter('company_id', companyIds)
+          .gte('period_start', monthStart)
+          .lte('period_start', monthEnd);
+      
+      final kpiList = kpiData as List;
+      int achieved = 0;
+      int needsImprovement = 0;
+      double totalScore = 0;
+      
+      for (final kpi in kpiList) {
+        final target = (kpi['target_value'] as num?)?.toDouble() ?? 0;
+        final current = (kpi['current_value'] as num?)?.toDouble() ?? 0;
+        final score = target > 0 ? (current / target * 100) : 0.0;
+        totalScore += score;
+        if (score >= 80) achieved++;
+        else if (score < 50) needsImprovement++;
+      }
+      
+      return {
+        'total': total,
+        'avgScore': kpiList.isNotEmpty ? totalScore / kpiList.length : 0.0,
+        'kpiPercent': kpiList.isNotEmpty ? (achieved / kpiList.length * 100).round() : 0,
+        'needsImprovement': needsImprovement,
+      };
+    } catch (e) {
+      return {'total': 0, 'avgScore': 0.0, 'kpiPercent': 0, 'needsImprovement': 0};
+    }
+  }
+
+  Widget _buildPerformanceHeaderCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, Color(0xFF6366F1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.analytics, color: Colors.white, size: 40),
-                const SizedBox(height: 12),
-                const Text(
-                  'Đánh giá hiệu suất nhân viên',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Theo dõi KPI, xếp hạng và đánh giá chi tiết',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EmployeePerformancePage(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.rate_review),
-                  label: const Text('Xem bảng KPI chi tiết'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF8B5CF6),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 14,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          
-          // Quick Stats Row
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickStatCard(
-                  'Tổng nhân viên',
-                  '0',
-                  Icons.people,
-                  Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickStatCard(
-                  'Điểm TB',
-                  '0',
-                  Icons.star,
-                  Colors.amber,
-                ),
-              ),
-            ],
-          ),
+          const Icon(Icons.analytics, color: Colors.white, size: 40),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickStatCard(
-                  'KPI đạt',
-                  '0%',
-                  Icons.check_circle,
-                  Colors.green,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickStatCard(
-                  'Cần cải thiện',
-                  '0',
-                  Icons.trending_up,
-                  Colors.orange,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          
-          // Info Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
+          const Text(
+            'Đánh giá hiệu suất nhân viên',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue.shade700),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Click vào nút trên để xem bảng xếp hạng, KPI chi tiết và thực hiện đánh giá nhân viên',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.blue.shade700,
-                    ),
-                  ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Theo dõi KPI, xếp hạng và đánh giá chi tiết',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EmployeePerformancePage(),
                 ),
-              ],
+              );
+            },
+            icon: const Icon(Icons.rate_review),
+            label: const Text('Xem bảng KPI chi tiết'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 14,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ],
@@ -836,14 +1275,14 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                colors: [AppColors.warning, AppColors.error],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                  color: AppColors.warning.withValues(alpha: 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -884,7 +1323,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                   label: const Text('Mở Dashboard báo cáo'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFFF59E0B),
+                    foregroundColor: AppColors.warning,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 14,
@@ -1012,8 +1451,127 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
   }
 
   Widget _buildComparisonAnalytics() {
-    return const Center(
-      child: Text('So sánh công ty'),
+    final companyAsync = ref.watch(companyComparisonProvider);
+    final cf = NumberFormat('#,###', 'vi_VN');
+
+    return companyAsync.when(
+      data: (companies) {
+        if (companies.isEmpty) {
+          return const Center(
+            child: Text('Chưa có công ty nào',
+                style: TextStyle(color: Colors.grey)),
+          );
+        }
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: companies.map((c) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color:
+                                AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.business,
+                              color: AppColors.primary, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            c.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        _comparisonStat(
+                            'Doanh thu tháng',
+                            '${cf.format(c.monthlyRevenue)}₫',
+                            Icons.trending_up,
+                            Colors.green),
+                        _comparisonStat(
+                            'Đơn hàng',
+                            '${c.orderCount}',
+                            Icons.receipt_long,
+                            Colors.blue),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _comparisonStat(
+                            'Nhân viên',
+                            '${c.employeeCount}',
+                            Icons.people,
+                            Colors.purple),
+                        _comparisonStat(
+                            'Khách hàng',
+                            '${c.customerCount}',
+                            Icons.store,
+                            Colors.orange),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Lỗi: $e')),
+    );
+  }
+
+  Widget _comparisonStat(
+      String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.bold)),
+                Text(label,
+                    style:
+                        TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

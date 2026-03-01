@@ -11,7 +11,7 @@ final orderServiceProvider = Provider<OrderService>((ref) {
 
 /// All Orders Provider
 /// Fetches orders for current company
-final ordersProvider = FutureProvider<List<Order>>((ref) async {
+final ordersProvider = FutureProvider.autoDispose<List<Order>>((ref) async {
   final service = ref.watch(orderServiceProvider);
   final authState = ref.watch(authProvider);
   
@@ -22,7 +22,7 @@ final ordersProvider = FutureProvider<List<Order>>((ref) async {
 
 /// Orders by Status Provider
 /// Gets orders filtered by status
-final ordersByStatusProvider = FutureProvider.family<List<Order>, OrderStatus>((ref, status) async {
+final ordersByStatusProvider = FutureProvider.autoDispose.family<List<Order>, OrderStatus>((ref, status) async {
   final service = ref.watch(orderServiceProvider);
   final authState = ref.watch(authProvider);
   
@@ -33,14 +33,14 @@ final ordersByStatusProvider = FutureProvider.family<List<Order>, OrderStatus>((
 
 /// Single Order Provider
 /// Gets order details by ID
-final orderProvider = FutureProvider.family<Order?, String>((ref, orderId) async {
+final orderProvider = FutureProvider.autoDispose.family<Order?, String>((ref, orderId) async {
   final service = ref.watch(orderServiceProvider);
   return await service.getOrderDetails(orderId);
 });
 
 /// Orders Stream Provider
 /// Real-time orders stream
-final ordersStreamProvider = StreamProvider<List<Order>>((ref) {
+final ordersStreamProvider = StreamProvider.autoDispose<List<Order>>((ref) {
   final service = ref.watch(orderServiceProvider);
   final authState = ref.watch(authProvider);
   

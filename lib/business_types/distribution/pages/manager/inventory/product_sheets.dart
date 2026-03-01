@@ -271,7 +271,7 @@ class ProductDetailSheet extends StatelessWidget {
                                     ],
                                   ),
                                 );
-                              }).toList(),
+                              }),
                             ],
                           ),
                         ),
@@ -1045,6 +1045,35 @@ class _AdjustStockSheetState extends ConsumerState<AdjustStockSheet> {
   final _noteController = TextEditingController();
   String _adjustType = 'add';
   bool _isLoading = false;
+  int _currentStock = 0;
+  bool _stockLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentStock();
+  }
+
+  Future<void> _loadCurrentStock() async {
+    try {
+      final inventoryData = await supabase
+          .from('inventory')
+          .select('quantity')
+          .eq('company_id', widget.product.companyId)
+          .eq('product_id', widget.product.id)
+          .maybeSingle();
+      if (mounted) {
+        setState(() {
+          _currentStock = (inventoryData?['quantity'] as num?)?.toInt() ?? 0;
+          _stockLoaded = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _stockLoaded = true);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -1059,6 +1088,18 @@ class _AdjustStockSheetState extends ConsumerState<AdjustStockSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Vui lòng nhập số lượng hợp lệ'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Validate stock for 'remove' type
+    if (_adjustType == 'remove' && qty > _currentStock) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không đủ hàng trong kho (tồn: $_currentStock)'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -1143,7 +1184,7 @@ class _AdjustStockSheetState extends ConsumerState<AdjustStockSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final currentStock = widget.product.minStock ?? 0;
+    final currentStock = _stockLoaded ? _currentStock : (widget.product.minStock ?? 0);
     
     return Container(
       margin: const EdgeInsets.all(8),

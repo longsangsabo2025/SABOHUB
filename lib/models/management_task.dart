@@ -3,6 +3,66 @@
 /// Separate from operational tasks used by staff
 library;
 
+/// Checklist item within a task
+class ChecklistItem {
+  final String id;
+  final String title;
+  final bool isDone;
+
+  const ChecklistItem({
+    required this.id,
+    required this.title,
+    this.isDone = false,
+  });
+
+  factory ChecklistItem.fromJson(Map<String, dynamic> json) {
+    return ChecklistItem(
+      id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      title: json['title'] as String,
+      isDone: json['is_done'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'is_done': isDone,
+      };
+
+  ChecklistItem copyWith({String? id, String? title, bool? isDone}) {
+    return ChecklistItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      isDone: isDone ?? this.isDone,
+    );
+  }
+}
+
+/// Business category for multi-division task management
+enum TaskCategory {
+  general('general', 'Chung', '🏢'),
+  billiards('billiards', 'Billiards', '🎱'),
+  media('media', 'Media', '📱'),
+  arena('arena', 'Arena', '🎮'),
+  operations('operations', 'Vận hành', '⚙️');
+
+  final String value;
+  final String label;
+  final String icon;
+
+  const TaskCategory(this.value, this.label, this.icon);
+
+  String get displayName => '$icon $label';
+
+  static TaskCategory fromString(String? value) {
+    if (value == null) return TaskCategory.general;
+    return TaskCategory.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => TaskCategory.general,
+    );
+  }
+}
+
 class ManagementTask {
   final String id;
   final String title;
@@ -10,6 +70,9 @@ class ManagementTask {
   final TaskPriority priority;
   final TaskStatus status;
   final int progress;
+  final TaskCategory category;
+  final String recurrence;
+  final List<ChecklistItem> checklist;
   final DateTime? dueDate;
   final DateTime? completedAt;
   final String createdBy;
@@ -18,6 +81,11 @@ class ManagementTask {
   final String? branchId;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  int get checklistDone => checklist.where((c) => c.isDone).length;
+  int get checklistTotal => checklist.length;
+  bool get hasChecklist => checklist.isNotEmpty;
+  bool get isRecurring => recurrence != 'none';
 
   // Optional user details (from join)
   final String? createdByName;
@@ -34,6 +102,9 @@ class ManagementTask {
     required this.priority,
     required this.status,
     required this.progress,
+    this.category = TaskCategory.general,
+    this.recurrence = 'none',
+    this.checklist = const [],
     this.dueDate,
     this.completedAt,
     required this.createdBy,
@@ -58,6 +129,13 @@ class ManagementTask {
       priority: TaskPriority.fromString(json['priority'] as String),
       status: TaskStatus.fromString(json['status'] as String),
       progress: (json['progress'] as num?)?.toInt() ?? 0,
+      category: TaskCategory.fromString(json['category'] as String?),
+      recurrence: json['recurrence'] as String? ?? 'none',
+      checklist: json['checklist'] != null
+          ? (json['checklist'] as List)
+              .map((e) => ChecklistItem.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : [],
       dueDate: json['due_date'] != null
           ? DateTime.parse(json['due_date'] as String)
           : null,
@@ -87,6 +165,9 @@ class ManagementTask {
       'priority': priority.value,
       'status': status.value,
       'progress': progress,
+      'category': category.value,
+      'recurrence': recurrence,
+      'checklist': checklist.map((e) => e.toJson()).toList(),
       'due_date': dueDate?.toIso8601String(),
       'completed_at': completedAt?.toIso8601String(),
       'created_by': createdBy,
@@ -105,6 +186,9 @@ class ManagementTask {
     TaskPriority? priority,
     TaskStatus? status,
     int? progress,
+    TaskCategory? category,
+    String? recurrence,
+    List<ChecklistItem>? checklist,
     DateTime? dueDate,
     DateTime? completedAt,
     String? createdBy,
@@ -121,6 +205,9 @@ class ManagementTask {
       priority: priority ?? this.priority,
       status: status ?? this.status,
       progress: progress ?? this.progress,
+      category: category ?? this.category,
+      recurrence: recurrence ?? this.recurrence,
+      checklist: checklist ?? this.checklist,
       dueDate: dueDate ?? this.dueDate,
       completedAt: completedAt ?? this.completedAt,
       createdBy: createdBy ?? this.createdBy,

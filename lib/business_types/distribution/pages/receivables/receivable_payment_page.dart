@@ -24,6 +24,7 @@ class _ReceivablePaymentPageState extends ConsumerState<ReceivablePaymentPage> {
   String? _selectedReceivableId;
   String _paymentMethod = 'cash';
   DateTime _paymentDate = DateTime.now();
+  String? _preselectedCustomerName;
   
   List<Map<String, dynamic>> _openReceivables = [];
   bool _loadingReceivables = false;
@@ -35,7 +36,22 @@ class _ReceivablePaymentPageState extends ConsumerState<ReceivablePaymentPage> {
     if (widget.preselectedCustomerId != null) {
       _selectedCustomerId = widget.preselectedCustomerId;
       _loadOpenReceivables(widget.preselectedCustomerId!);
+      _loadPreselectedCustomerName(widget.preselectedCustomerId!);
     }
+  }
+
+  Future<void> _loadPreselectedCustomerName(String customerId) async {
+    try {
+      final db = Supabase.instance.client;
+      final res = await db
+          .from('customers')
+          .select('name')
+          .eq('id', customerId)
+          .maybeSingle();
+      if (res != null && mounted) {
+        setState(() => _preselectedCustomerName = res['name'] as String?);
+      }
+    } catch (_) {}
   }
 
   @override
@@ -167,23 +183,43 @@ class _ReceivablePaymentPageState extends ConsumerState<ReceivablePaymentPage> {
             children: [
               // Customer Selection
               customersAsync.when(
-                data: (customers) => DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: 'Khách hàng *'),
-                  value: _selectedCustomerId,
-                  items: customers.map((c) => DropdownMenuItem(
-                    value: c.id,
-                    child: Text(c.name),
-                  )).toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _selectedCustomerId = val;
-                      _selectedReceivableId = null;
-                      _openReceivables = [];
-                    });
-                    if (val != null) _loadOpenReceivables(val);
-                  },
-                  validator: (val) => val == null ? 'Bắt buộc' : null,
-                ),
+                data: (customers) {
+                  // Build items list, ensuring preselected customer is included
+                  final items = <DropdownMenuItem<String>>[];
+                  final seenIds = <String>{};
+                  
+                  // Add preselected customer first if not in list
+                  if (_selectedCustomerId != null && 
+                      !customers.any((c) => c.id == _selectedCustomerId)) {
+                    items.add(DropdownMenuItem(
+                      value: _selectedCustomerId,
+                      child: Text(_preselectedCustomerName ?? 'Khách hàng đã chọn'),
+                    ));
+                    seenIds.add(_selectedCustomerId!);
+                  }
+                  
+                  for (final c in customers) {
+                    if (!seenIds.contains(c.id)) {
+                      items.add(DropdownMenuItem(value: c.id, child: Text(c.name)));
+                      seenIds.add(c.id);
+                    }
+                  }
+                  
+                  return DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Khách hàng *'),
+                    value: _selectedCustomerId,
+                    items: items,
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedCustomerId = val;
+                        _selectedReceivableId = null;
+                        _openReceivables = [];
+                      });
+                      if (val != null) _loadOpenReceivables(val);
+                    },
+                    validator: (val) => val == null ? 'Bắt buộc' : null,
+                  );
+                },
                 loading: () => const CircularProgressIndicator(),
                 error: (e, s) => Text('Lỗi: $e'),
               ),

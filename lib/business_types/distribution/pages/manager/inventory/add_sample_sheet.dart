@@ -1,20 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../models/odori_product.dart';
 import '../../../../../providers/auth_provider.dart';
 import 'inventory_constants.dart';
 
+/// An item in the sample list: product + quantity
+class _SampleItem {
+  OdoriProduct? product;
+  final TextEditingController quantityController;
+
+  _SampleItem({this.product, String quantity = '1'})
+      : quantityController = TextEditingController(text: quantity);
+
+  void dispose() => quantityController.dispose();
+}
+
 // ==================== ADD SAMPLE SHEET ====================
 class AddSampleSheet extends ConsumerStatefulWidget {
   final List<OdoriProduct> products;
   final VoidCallback onSaved;
+  final String? preselectedCustomerId;
+  final String? preselectedCustomerName;
 
   const AddSampleSheet({
     super.key,
     required this.products,
     required this.onSaved,
+    this.preselectedCustomerId,
+    this.preselectedCustomerName,
   });
 
   @override
@@ -22,10 +36,11 @@ class AddSampleSheet extends ConsumerStatefulWidget {
 }
 
 class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
-  OdoriProduct? _selectedProduct;
+  // Multi-product sample list
+  final List<_SampleItem> _sampleItems = [];
+
   String? _selectedCustomerId;
   String? _selectedCustomerName;
-  final _quantityController = TextEditingController(text: '1');
   final _notesController = TextEditingController();
   String _customerSearchQuery = '';
   List<Map<String, dynamic>> _customers = [];
@@ -36,14 +51,35 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
   @override
   void initState() {
     super.initState();
+    // Start with one empty sample row
+    _sampleItems.add(_SampleItem());
+    // Pre-select customer if provided (e.g. from journey stop)
+    if (widget.preselectedCustomerId != null) {
+      _selectedCustomerId = widget.preselectedCustomerId;
+      _selectedCustomerName = widget.preselectedCustomerName;
+    }
     _loadCustomers();
   }
 
   @override
   void dispose() {
-    _quantityController.dispose();
+    for (final item in _sampleItems) {
+      item.dispose();
+    }
     _notesController.dispose();
     super.dispose();
+  }
+
+  void _addSampleRow() {
+    setState(() => _sampleItems.add(_SampleItem()));
+  }
+
+  void _removeSampleRow(int index) {
+    if (_sampleItems.length <= 1) return;
+    setState(() {
+      _sampleItems[index].dispose();
+      _sampleItems.removeAt(index);
+    });
   }
   
   void _filterCustomers(String query) {
@@ -267,9 +303,11 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
   }
 
   Future<void> _saveSample() async {
-    if (_selectedProduct == null) {
+    // Validate: at least one product selected
+    final validItems = _sampleItems.where((item) => item.product != null).toList();
+    if (validItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn sản phẩm')),
+        const SnackBar(content: Text('Vui lòng chọn ít nhất 1 sản phẩm')),
       );
       return;
     }
@@ -281,12 +319,15 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
       return;
     }
 
-    final quantity = int.tryParse(_quantityController.text) ?? 0;
-    if (quantity <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Số lượng phải lớn hơn 0')),
-      );
-      return;
+    // Validate quantities
+    for (int i = 0; i < validItems.length; i++) {
+      final qty = int.tryParse(validItems[i].quantityController.text) ?? 0;
+      if (qty <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Số lượng ${validItems[i].product!.name} phải lớn hơn 0')),
+        );
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
@@ -296,10 +337,17 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
       final userId = ref.read(authProvider).user?.id ?? '';
       final userName = ref.read(authProvider).user?.displayName ?? '';
 
-      // Step 1: Create Sales Order with order_type: 'sample'
-      final orderNumber = 'SO-${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}';
-      final subtotal = quantity * (_selectedProduct!.sellingPrice ?? 0);
-      
+      // Calculate totals
+      double subtotal = 0;
+      for (final item in validItems) {
+        final qty = int.tryParse(item.quantityController.text) ?? 0;
+        subtotal += qty * item.product!.sellingPrice;
+      }
+
+      // Step 1: Create Sales Order with source = 'sample'
+      final orderNumber = 'SM-${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}';
+
+      final notesText = _notesController.text.trim();
       final orderResponse = await supabase.from('sales_orders').insert({
         'company_id': companyId,
         'customer_id': _selectedCustomerId,
@@ -308,48 +356,56 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
         'status': 'pending_approval',
         'payment_status': 'unpaid',
         'delivery_status': 'pending',
-        'order_type': 'sample', // Mark as sample order
+        'source': 'app',
         'subtotal': subtotal,
         'total': subtotal,
         'sale_id': userId,
-        'notes': 'Mẫu sản phẩm - ${_notesController.text.trim()}',
+        'notes': '[MẪU SP] Gửi mẫu ${validItems.length} sản phẩm${notesText.isNotEmpty ? ' - $notesText' : ''}',
       }).select().single();
 
       final orderId = orderResponse['id'];
 
-      // Step 2: Create Sales Order Item
-      await supabase.from('sales_order_items').insert({
-        'order_id': orderId,
-        'product_id': _selectedProduct!.id,
-        'product_sku': _selectedProduct!.sku,
-        'product_name': _selectedProduct!.name,
-        'unit': _selectedProduct!.unit,
-        'quantity': quantity,
-        'unit_price': _selectedProduct!.sellingPrice ?? 0,
-        'line_total': subtotal,
-      });
+      // Step 2: Create Sales Order Items (batch)
+      final orderItems = validItems.map((item) {
+        final qty = int.tryParse(item.quantityController.text) ?? 0;
+        return {
+          'order_id': orderId,
+          'product_id': item.product!.id,
+          'product_sku': item.product!.sku,
+          'product_name': item.product!.name,
+          'unit': item.product!.unit,
+          'quantity': qty,
+          'unit_price': item.product!.sellingPrice,
+          'line_total': qty * item.product!.sellingPrice,
+        };
+      }).toList();
+      await supabase.from('sales_order_items').insert(orderItems);
 
-      // Step 3: Create Product Sample record with order link
-      await supabase.from('product_samples').insert({
-        'company_id': companyId,
-        'order_id': orderId, // Link to sales order
-        'product_id': _selectedProduct!.id,
-        'customer_id': _selectedCustomerId,
-        'quantity': quantity,
-        'unit': _selectedProduct!.unit,
-        'product_name': _selectedProduct!.name,
-        'product_sku': _selectedProduct!.sku,
-        'sent_by_id': userId,
-        'sent_by_name': userName,
-        'notes': _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
-        'status': 'pending',
-        'sent_date': DateTime.now().toIso8601String(),
-      });
+      // Step 3: Create Product Sample records (batch)
+      final sampleRecords = validItems.map((item) {
+        final qty = int.tryParse(item.quantityController.text) ?? 0;
+        return {
+          'company_id': companyId,
+          'order_id': orderId,
+          'product_id': item.product!.id,
+          'customer_id': _selectedCustomerId,
+          'quantity': qty,
+          'unit': item.product!.unit,
+          'product_name': item.product!.name,
+          'product_sku': item.product!.sku,
+          'sent_by_id': userId,
+          'sent_by_name': userName,
+          'notes': notesText.isNotEmpty ? notesText : null,
+          'status': 'pending',
+          'sent_date': DateTime.now().toIso8601String(),
+        };
+      }).toList();
+      await supabase.from('product_samples').insert(sampleRecords);
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✓ Đã ghi nhận gửi mẫu (tạo đơn hàng #$orderNumber)')),
+          SnackBar(content: Text('✓ Đã gửi ${validItems.length} mẫu SP (đơn #$orderNumber)')),
         );
         widget.onSaved();
       }
@@ -386,10 +442,9 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
             ),
           ),
 
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
               children: [
                 // Title
                 Row(
@@ -397,10 +452,10 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.purple.shade50,
+                        color: Colors.deepOrange.shade50,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(Icons.content_copy, color: Colors.purple.shade700, size: 20),
+                      child: Icon(Icons.card_giftcard, color: Colors.deepOrange.shade700, size: 20),
                     ),
                     const SizedBox(width: 12),
                     const Expanded(
@@ -414,35 +469,7 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
 
                 const SizedBox(height: 20),
 
-                // Product Dropdown
-                const Text(
-                  'Sản phẩm *',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<OdoriProduct>(
-                  value: _selectedProduct,
-                  decoration: InputDecoration(
-                    hintText: 'Chọn sản phẩm...',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  ),
-                  items: widget.products.map((product) {
-                    return DropdownMenuItem(
-                      value: product,
-                      child: Text(
-                        product.name,
-                        style: const TextStyle(fontSize: 14),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) => setState(() => _selectedProduct = value),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Customer Selector with Search
+                // Customer Selector
                 const Text(
                   'Khách hàng *',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
@@ -461,21 +488,15 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
                           child: Row(
                             children: [
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      _selectedCustomerName ?? 'Chọn khách hàng...',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: _selectedCustomerName != null ? Colors.black : Colors.grey.shade600,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
+                                child: Text(
+                                  _selectedCustomerName ?? 'Chọn khách hàng...',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: _selectedCustomerName != null ? Colors.black : Colors.grey.shade600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               Icon(Icons.arrow_drop_down, color: Colors.grey.shade600),
@@ -484,22 +505,44 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
                         ),
                       ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-                // Quantity
-                const Text(
-                  'Số lượng *',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                // Product list header
+                Row(
+                  children: [
+                    const Text(
+                      'Sản phẩm mẫu *',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${_sampleItems.where((i) => i.product != null).length} SP',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.deepOrange.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: _quantityController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: 'Nhập số lượng',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    suffixText: _selectedProduct?.unit ?? 'cái',
+
+                // Sample item rows
+                ...List.generate(_sampleItems.length, (index) {
+                  return _buildSampleItemRow(index);
+                }),
+
+                // Add more button
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _addSampleRow,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Thêm sản phẩm'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.deepOrange.shade700,
+                    side: BorderSide(color: Colors.deepOrange.shade300),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
 
@@ -513,9 +556,9 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: _notesController,
-                  maxLines: 3,
+                  maxLines: 2,
                   decoration: InputDecoration(
-                    hintText: 'Thêm ghi chú về mẫu này...',
+                    hintText: 'Thêm ghi chú...',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     contentPadding: const EdgeInsets.all(12),
                   ),
@@ -538,21 +581,22 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         onPressed: _isLoading ? null : _saveSample,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: _isLoading
+                        icon: _isLoading
                             ? const SizedBox(
                                 height: 16,
                                 width: 16,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                               )
-                            : const Text('Gửi mẫu'),
+                            : const Icon(Icons.send, size: 18),
+                        label: Text('Gửi ${_sampleItems.where((i) => i.product != null).length} mẫu'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepOrange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
                       ),
                     ),
                   ],
@@ -562,6 +606,137 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSampleItemRow(int index) {
+    final item = _sampleItems[index];
+    // Filter out already-selected products (except current)
+    final usedProductIds = _sampleItems
+        .where((s) => s != item && s.product != null)
+        .map((s) => s.product!.id)
+        .toSet();
+    final availableProducts = widget.products
+        .where((p) => !usedProductIds.contains(p.id) || p.id == item.product?.id)
+        .toList();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: item.product != null ? Colors.deepOrange.shade200 : Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+        color: item.product != null ? Colors.deepOrange.shade50.withValues(alpha: 0.3) : Colors.grey.shade50,
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              // Index badge
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.deepOrange.shade100,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${index + 1}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepOrange.shade800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Product dropdown
+              Expanded(
+                child: DropdownButtonFormField<OdoriProduct>(
+                  value: item.product,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    hintText: 'Chọn sản phẩm...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    isDense: true,
+                  ),
+                  items: availableProducts.map((product) {
+                    return DropdownMenuItem(
+                      value: product,
+                      child: Text(
+                        product.name,
+                        style: const TextStyle(fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) => setState(() => item.product = value),
+                ),
+              ),
+              // Remove button
+              if (_sampleItems.length > 1) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  onPressed: () => _removeSampleRow(index),
+                  icon: Icon(Icons.close, size: 18, color: Colors.red.shade400),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  padding: EdgeInsets.zero,
+                  tooltip: 'Xóa',
+                ),
+              ],
+            ],
+          ),
+          if (item.product != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const SizedBox(width: 32),
+                // Quantity
+                SizedBox(
+                  width: 80,
+                  child: TextField(
+                    controller: item.quantityController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: 'SL',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      isDense: true,
+                    ),
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  item.product!.unit,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                ),
+                const Spacer(),
+                // Price info
+                Text(
+                  '${_formatNumber(item.product!.sellingPrice)} đ',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatNumber(double value) {
+    if (value == value.toInt()) {
+      return value.toInt().toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]}.',
+      );
+    }
+    return value.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
     );
   }
 }

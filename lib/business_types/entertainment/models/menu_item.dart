@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../../core/theme/app_colors.dart';
 
 enum MenuCategory {
-  food('Món ăn', Icons.restaurant_menu, Color(0xFF10B981)),
-  drink('Đồ uống', Icons.local_cafe, Color(0xFF3B82F6)),
-  snack('Snack', Icons.cookie, Color(0xFFF59E0B)),
-  other('Khác', Icons.shopping_basket, Color(0xFF8B5CF6));
+  food('Món ăn', Icons.restaurant_menu, AppColors.success),
+  drink('Đồ uống', Icons.local_cafe, AppColors.info),
+  snack('Snack', Icons.cookie, AppColors.warning),
+  other('Khác', Icons.shopping_basket, AppColors.primary);
 
   final String label;
   final IconData icon;

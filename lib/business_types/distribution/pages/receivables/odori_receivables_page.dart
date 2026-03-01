@@ -149,7 +149,10 @@ class _OdoriReceivablesPageState extends ConsumerState<OdoriReceivablesPage>
 
   Widget _buildSummaryCards(AsyncValue<List<OdoriReceivable>> receivablesAsync) {
     return receivablesAsync.when(
-      loading: () => const SizedBox.shrink(),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
       error: (_, __) => const SizedBox.shrink(),
       data: (receivables) {
         final totalReceivable = receivables

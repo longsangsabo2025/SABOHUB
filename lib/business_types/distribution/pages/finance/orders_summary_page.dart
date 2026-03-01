@@ -585,7 +585,7 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
                                   child: InteractiveViewer(
-                                    child: Image.network(invoiceImageUrl!,
+                                    child: Image.network(invoiceImageUrl,
                                       fit: BoxFit.contain,
                                       loadingBuilder: (_, child, progress) => progress == null
                                         ? child
@@ -686,7 +686,6 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
     final items = order['sales_order_items'] as List? ?? [];
     String? invoiceImageUrl = order['invoice_image_url']?.toString();
     bool isUploadingInvoice = false;
-    final invoiceNumber = (order['invoice_number'] ?? '').toString();
 
     showModalBottomSheet(
       context: context,

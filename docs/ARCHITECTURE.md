@@ -272,11 +272,53 @@ cd sabohub-app/SABOHUB
 flutter run -d chrome
 
 # Production build
-flutter build web --no-tree-shake-icons
+flutter build web --no-tree-shake-icons --release
 
 # Analyze
 flutter analyze
 
 # Output
-build/web/   ← Deploy này lên hosting
+build/web/   ← Static files deploy lên Vercel
+```
+
+### Production Deployment
+- **Hosting**: Vercel (project: `sabohub-app`)
+- **URL**: https://sabohub-app.vercel.app
+- **Deploy script**: `sabohub-app/SABOHUB/deploy.ps1`
+- **Vercel Dashboard**: https://vercel.com/dsmhs-projects/sabohub-app
+
+```bash
+# Quick deploy
+cd sabohub-app/SABOHUB
+.\deploy.ps1             # Build + deploy
+.\deploy.ps1 -SkipBuild  # Deploy existing build
+```
+
+### Environment Files
+| File | Purpose | Supabase Project |
+|------|---------|-----------------|
+| `.env` | **Production** (bundled in release build) | `dqddxowyikefqcdiioyh` |
+| `.env.local` | **Development** (local debug only) | `diexsbzqwsbpilsymnfb` |
+
+> **IMPORTANT**: Khi build production, copy `.env` → `.env.local` để cả 2 đều trỏ production. Xem `deploy.ps1`.
+
+### Related Services
+| Service | URL | Hosting |
+|---------|-----|---------|
+| SABOHUB App (Flutter) | https://sabohub-app.vercel.app | Vercel |
+| SABOHUB Nexus (React) | https://hub.saboarena.com | Vercel |
+| Supabase Backend | https://dqddxowyikefqcdiioyh.supabase.co | Supabase Cloud |
+
+## 8. Workspace Structure
+
+```
+sabo-hub/                              ← Workspace root (clean)
+├── .gitignore
+├── sabohub-app/SABOHUB/              ← Flutter project
+├── sabohub-nexus/                    ← React admin portal
+├── sabohub-automation/               ← TypeScript automation
+├── _archived/                        ← Archived scripts & docs
+│   ├── python-scripts/               ← 34 DB migration scripts
+│   └── docs/                         ← Old implementation notes
+└── build/                            ← CMake build artifacts
 ```

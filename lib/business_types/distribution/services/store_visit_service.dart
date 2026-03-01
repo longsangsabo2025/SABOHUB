@@ -359,34 +359,47 @@ class StoreVisitService {
   Future<String?> checkIn({
     required String customerId,
     required Map<String, dynamic> location,
+    String? journeyPlanId,
     String? journeyPlanStopId,
-    String? objectives,
+    List<String>? visitPurpose,
+    String? visitType,
+    String? employeeId,
   }) async {
     final response = await _supabase.rpc('check_in_store', params: {
       'p_customer_id': customerId,
       'p_location': location,
-      'p_journey_stop_id': journeyPlanStopId,
-      'p_objectives': objectives,
+      'p_journey_plan_id': journeyPlanId,
+      'p_journey_plan_stop_id': journeyPlanStopId,
+      'p_visit_type': visitType ?? 'scheduled',
+      'p_visit_purpose': visitPurpose ?? ['sales'],
+      'p_employee_id': employeeId,
     });
     
-    return response?['visit_id'] as String?;
+    // DB returns UUID directly
+    if (response is String) return response;
+    if (response is Map) return response['check_in_store'] as String?;
+    return response?.toString();
   }
 
   /// Check out from store using database function
   Future<bool> checkOut({
     required String visitId,
     required Map<String, dynamic> location,
-    String? outcomes,
-    String? issuesReported,
+    String? storeStatus,
+    String? customerFeedback,
+    String? nextVisitNotes,
+    String? employeeId,
   }) async {
     final response = await _supabase.rpc('check_out_store', params: {
       'p_visit_id': visitId,
       'p_location': location,
-      'p_outcomes': outcomes,
-      'p_issues': issuesReported,
+      'p_store_status': storeStatus ?? 'open',
+      'p_customer_feedback': customerFeedback,
+      'p_next_visit_notes': nextVisitNotes,
+      'p_employee_id': employeeId,
     });
     
-    return response as bool;
+    return response == true;
   }
 
   /// Get today's visit stats for current user
@@ -644,15 +657,21 @@ class ActiveVisitNotifier extends Notifier<StoreVisit?> {
   Future<void> checkIn({
     required String customerId,
     required Map<String, dynamic> location,
+    String? journeyPlanId,
     String? journeyPlanStopId,
-    String? objectives,
+    List<String>? visitPurpose,
+    String? visitType,
+    String? employeeId,
   }) async {
     final service = ref.read(storeVisitServiceProvider);
     final visitId = await service.checkIn(
       customerId: customerId,
       location: location,
+      journeyPlanId: journeyPlanId,
       journeyPlanStopId: journeyPlanStopId,
-      objectives: objectives,
+      visitPurpose: visitPurpose,
+      visitType: visitType,
+      employeeId: employeeId,
     );
     
     if (visitId != null) {
@@ -662,8 +681,10 @@ class ActiveVisitNotifier extends Notifier<StoreVisit?> {
   
   Future<void> checkOut({
     required Map<String, dynamic> location,
-    String? outcomes,
-    String? issuesReported,
+    String? storeStatus,
+    String? customerFeedback,
+    String? nextVisitNotes,
+    String? employeeId,
   }) async {
     if (state == null) return;
     
@@ -671,8 +692,10 @@ class ActiveVisitNotifier extends Notifier<StoreVisit?> {
     await service.checkOut(
       visitId: state!.id,
       location: location,
-      outcomes: outcomes,
-      issuesReported: issuesReported,
+      storeStatus: storeStatus,
+      customerFeedback: customerFeedback,
+      nextVisitNotes: nextVisitNotes,
+      employeeId: employeeId,
     );
     
     state = null;

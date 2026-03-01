@@ -3,13 +3,14 @@ import '../models/session.dart';
 import '../services/session_service.dart';
 import '../../../providers/auth_provider.dart';
 
-// Session service provider
+// Session service provider — passes companyId from auth
 final sessionServiceProvider = Provider<SessionService>((ref) {
-  return SessionService();
+  final auth = ref.watch(authProvider);
+  return SessionService(companyId: auth.user?.companyId);
 });
 
 // All sessions provider
-final allSessionsProvider = FutureProvider<List<TableSession>>((ref) async {
+final allSessionsProvider = FutureProvider.autoDispose<List<TableSession>>((ref) async {
   final sessionService = ref.read(sessionServiceProvider);
   final auth = ref.watch(authProvider);
   
@@ -21,7 +22,7 @@ final allSessionsProvider = FutureProvider<List<TableSession>>((ref) async {
 });
 
 // Sessions by status provider (family)
-final sessionsByStatusProvider = FutureProvider.family<List<TableSession>, SessionStatus>((ref, status) async {
+final sessionsByStatusProvider = FutureProvider.autoDispose.family<List<TableSession>, SessionStatus>((ref, status) async {
   final sessionService = ref.read(sessionServiceProvider);
   final auth = ref.watch(authProvider);
   
@@ -33,7 +34,7 @@ final sessionsByStatusProvider = FutureProvider.family<List<TableSession>, Sessi
 });
 
 // Active sessions provider (for real-time monitoring)
-final activeSessionsProvider = FutureProvider<List<TableSession>>((ref) async {
+final activeSessionsProvider = FutureProvider.autoDispose<List<TableSession>>((ref) async {
   final sessionService = ref.read(sessionServiceProvider);
   final auth = ref.watch(authProvider);
   
@@ -45,7 +46,7 @@ final activeSessionsProvider = FutureProvider<List<TableSession>>((ref) async {
 });
 
 // Session stats provider
-final sessionStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final sessionStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final sessionService = ref.read(sessionServiceProvider);
   final auth = ref.watch(authProvider);
   
@@ -62,7 +63,7 @@ final sessionStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 });
 
 // Individual session provider (family)
-final sessionProvider = FutureProvider.family<TableSession?, String>((ref, sessionId) async {
+final sessionProvider = FutureProvider.autoDispose.family<TableSession?, String>((ref, sessionId) async {
   final sessionService = ref.read(sessionServiceProvider);
   final auth = ref.watch(authProvider);
   

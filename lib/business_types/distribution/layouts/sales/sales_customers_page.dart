@@ -7,6 +7,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../utils/app_logger.dart';
 import '../../../../widgets/customer_avatar.dart';
+import '../../../../widgets/customer_visits_sheet.dart';
+import '../../models/odori_customer.dart';
+import '../../pages/products/product_samples_page.dart';
 import '../../widgets/sales_features_widgets.dart';
 import 'sheets/sales_customer_form_sheet.dart';
 import 'sheets/sales_create_order_form.dart';
@@ -358,10 +361,9 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
     final hasDebt = totalDebt > 0;
     
     String tierEmoji = '🥉';
-    Color tierColor = Colors.brown;
-    if (tier == 'diamond') { tierEmoji = '💎'; tierColor = Colors.cyan; }
-    else if (tier == 'gold') { tierEmoji = '🥇'; tierColor = Colors.amber.shade700; }
-    else if (tier == 'silver') { tierEmoji = '🥈'; tierColor = Colors.grey.shade600; }
+    if (tier == 'diamond') { tierEmoji = '💎'; }
+    else if (tier == 'gold') { tierEmoji = '🥇'; }
+    else if (tier == 'silver') { tierEmoji = '🥈'; }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -677,6 +679,14 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
               Navigator.pop(context);
               _showOrderHistory(customer);
             }),
+            _buildActionTile(Icons.location_on, 'Lịch sử ghé thăm', Colors.teal, () {
+              Navigator.pop(context);
+              _showVisitHistory(customer);
+            }),
+            _buildActionTile(Icons.card_giftcard, 'Mẫu sản phẩm', Colors.pink, () {
+              Navigator.pop(context);
+              _showProductSamples();
+            }),
             _buildActionTile(Icons.edit, 'Chỉnh sửa', Colors.purple, () {
               Navigator.pop(context);
               _showEditCustomerDialog(customer);
@@ -864,12 +874,13 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
           ),
           TextButton(
             onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               Navigator.pop(context);
               try {
                 final supabase = Supabase.instance.client;
                 await supabase.from('customers').delete().eq('id', customer['id']);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(
                       content: Text('Đã xóa khách hàng ${customer['name']}'),
                       backgroundColor: Colors.green,
@@ -879,7 +890,7 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
                   );
                 }
@@ -889,6 +900,38 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
             child: const Text('Xóa'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showVisitHistory(Map<String, dynamic> customer) {
+    final odoriCustomer = OdoriCustomer.fromJson(customer);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: CustomerVisitsSheet(
+            customer: odoriCustomer,
+            onChanged: () => _loadCustomers(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showProductSamples() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ProductSamplesPage(),
       ),
     );
   }

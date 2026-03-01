@@ -7,13 +7,13 @@ final scheduleServiceProvider = Provider<ScheduleService>((ref) {
 });
 
 // All schedules provider
-final allSchedulesProvider = FutureProvider.family<List<Schedule>, String>((ref, companyId) async {
+final allSchedulesProvider = FutureProvider.autoDispose.family<List<Schedule>, String>((ref, companyId) async {
   final scheduleService = ref.read(scheduleServiceProvider);
   return scheduleService.getAllSchedules(companyId);
 });
 
 // Schedules by date range provider
-final schedulesByDateRangeProvider = FutureProvider.family<List<Schedule>, Map<String, dynamic>>((ref, params) async {
+final schedulesByDateRangeProvider = FutureProvider.autoDispose.family<List<Schedule>, Map<String, dynamic>>((ref, params) async {
   final scheduleService = ref.read(scheduleServiceProvider);
   return scheduleService.getSchedulesByDateRange(
     params['companyId'] as String,
@@ -23,19 +23,19 @@ final schedulesByDateRangeProvider = FutureProvider.family<List<Schedule>, Map<S
 });
 
 // Today's schedules provider
-final todaySchedulesProvider = FutureProvider.family<List<Schedule>, String>((ref, companyId) async {
+final todaySchedulesProvider = FutureProvider.autoDispose.family<List<Schedule>, String>((ref, companyId) async {
   final scheduleService = ref.read(scheduleServiceProvider);
   return scheduleService.getTodaySchedules(companyId);
 });
 
 // Upcoming schedules provider
-final upcomingSchedulesProvider = FutureProvider.family<List<Schedule>, String>((ref, companyId) async {
+final upcomingSchedulesProvider = FutureProvider.autoDispose.family<List<Schedule>, String>((ref, companyId) async {
   final scheduleService = ref.read(scheduleServiceProvider);
   return scheduleService.getUpcomingSchedules(companyId);
 });
 
 // Schedules by employee provider
-final schedulesByEmployeeProvider = FutureProvider.family<List<Schedule>, Map<String, String>>((ref, params) async {
+final schedulesByEmployeeProvider = FutureProvider.autoDispose.family<List<Schedule>, Map<String, String>>((ref, params) async {
   final scheduleService = ref.read(scheduleServiceProvider);
   return scheduleService.getSchedulesByEmployee(
     params['companyId']!,
@@ -44,13 +44,13 @@ final schedulesByEmployeeProvider = FutureProvider.family<List<Schedule>, Map<St
 });
 
 // Time-off requests provider
-final timeOffRequestsProvider = FutureProvider.family<List<TimeOffRequest>, String>((ref, companyId) async {
+final timeOffRequestsProvider = FutureProvider.autoDispose.family<List<TimeOffRequest>, String>((ref, companyId) async {
   final scheduleService = ref.read(scheduleServiceProvider);
   return scheduleService.getTimeOffRequests(companyId);
 });
 
 // Time-off requests by employee provider
-final timeOffRequestsByEmployeeProvider = FutureProvider.family<List<TimeOffRequest>, Map<String, String>>((ref, params) async {
+final timeOffRequestsByEmployeeProvider = FutureProvider.autoDispose.family<List<TimeOffRequest>, Map<String, String>>((ref, params) async {
   final scheduleService = ref.read(scheduleServiceProvider);
   return scheduleService.getTimeOffRequestsByEmployee(
     params['companyId']!,
@@ -59,7 +59,7 @@ final timeOffRequestsByEmployeeProvider = FutureProvider.family<List<TimeOffRequ
 });
 
 // Schedule statistics provider
-final scheduleStatsProvider = FutureProvider.family<Map<String, int>, String>((ref, companyId) async {
+final scheduleStatsProvider = FutureProvider.autoDispose.family<Map<String, int>, String>((ref, companyId) async {
   final scheduleService = ref.read(scheduleServiceProvider);
   return scheduleService.getScheduleStats(companyId);
 });

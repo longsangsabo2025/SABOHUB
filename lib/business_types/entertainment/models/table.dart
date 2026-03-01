@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../../core/theme/app_colors.dart';
 
 /// Table Status Enum
 enum TableStatus {
-  available('available', 'Trống', Color(0xFF10B981), Icons.check_circle),
-  occupied('occupied', 'Đang chơi', Color(0xFFEF4444), Icons.sports_esports),
-  reserved('reserved', 'Đã đặt', Color(0xFFF59E0B), Icons.bookmark),
+  available('available', 'Trống', AppColors.success, Icons.check_circle),
+  occupied('occupied', 'Đang chơi', AppColors.error, Icons.sports_esports),
+  reserved('reserved', 'Đã đặt', AppColors.warning, Icons.bookmark),
   maintenance('maintenance', 'Bảo trì', Color(0xFF6B7280), Icons.build),
-  cleaning('cleaning', 'Dọn dẹp', Color(0xFF8B5CF6), Icons.cleaning_services);
+  cleaning('cleaning', 'Dọn dẹp', AppColors.primary, Icons.cleaning_services);
 
   const TableStatus(this.id, this.label, this.color, this.icon);
 
@@ -36,41 +37,70 @@ class BilliardsTable {
   final String tableNumber;
   final String companyId;
   final TableStatus status;
+  final String? tableType;
+  final double hourlyRate;
   final DateTime? startTime;
   final double? currentAmount;
   final String? customerName;
   final String? notes;
+  final String? currentSessionId;
 
   const BilliardsTable({
     required this.id,
     required this.tableNumber,
     required this.companyId,
     required this.status,
+    this.tableType,
+    this.hourlyRate = 50000,
     this.startTime,
     this.currentAmount,
     this.customerName,
     this.notes,
+    this.currentSessionId,
   });
+
+  String get name => 'Bàn $tableNumber';
+
+  String get typeLabel {
+    switch (tableType?.toUpperCase()) {
+      case 'POOL':
+        return 'Pool (8-Ball)';
+      case 'LO':
+        return 'Lỗ (9-Ball)';
+      case 'CAROM':
+        return 'Carom';
+      case 'SNOOKER':
+        return 'Snooker';
+      default:
+        return tableType ?? 'Pool';
+    }
+  }
 
   BilliardsTable copyWith({
     String? id,
     String? tableNumber,
     String? companyId,
     TableStatus? status,
+    String? tableType,
+    double? hourlyRate,
     DateTime? startTime,
     double? currentAmount,
     String? customerName,
     String? notes,
+    String? currentSessionId,
   }) {
     return BilliardsTable(
       id: id ?? this.id,
       tableNumber: tableNumber ?? this.tableNumber,
       companyId: companyId ?? this.companyId,
       status: status ?? this.status,
+      tableType: tableType ?? this.tableType,
+      hourlyRate: hourlyRate ?? this.hourlyRate,
       startTime: startTime ?? this.startTime,
       currentAmount: currentAmount ?? this.currentAmount,
       customerName: customerName ?? this.customerName,
       notes: notes ?? this.notes,
+      currentSessionId: currentSessionId ?? this.currentSessionId,
     );
   }
 

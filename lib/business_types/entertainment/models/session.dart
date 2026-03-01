@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../../core/theme/app_colors.dart';
 
 enum SessionStatus {
-  active('Đang hoạt động', Color(0xFF10B981)),
-  paused('Tạm dừng', Color(0xFFF59E0B)),
+  active('Đang hoạt động', AppColors.success),
+  paused('Tạm dừng', AppColors.warning),
   completed('Hoàn thành', Color(0xFF6B7280)),
-  cancelled('Đã hủy', Color(0xFFEF4444));
+  cancelled('Đã hủy', AppColors.error);
 
   final String label;
   final Color color;

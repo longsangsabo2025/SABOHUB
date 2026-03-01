@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../providers/auth_provider.dart';
 import '../../services/manufacturing_service.dart';
 import '../../models/manufacturing_models.dart';
 import 'production_order_form_page.dart';
@@ -12,13 +13,14 @@ class ProductionOrdersPage extends ConsumerStatefulWidget {
 }
 
 class _ProductionOrdersPageState extends ConsumerState<ProductionOrdersPage> {
-  final _service = ManufacturingService();
+  late ManufacturingService _service;
   List<ProductionOrder> _orders = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
+    _service = ManufacturingService(companyId: ref.read(authProvider).user?.companyId);
     _loadOrders();
   }
 

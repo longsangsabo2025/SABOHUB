@@ -91,8 +91,11 @@ class _CSKHDashboardPageState extends ConsumerState<CSKHDashboardPage> {
           priority = 'high';
         }
 
-        if (ticketStatus == 'open') openTickets++;
-        else if (ticketStatus == 'pending') pendingTickets++;
+        if (ticketStatus == 'open') {
+          openTickets++;
+        } else if (ticketStatus == 'pending') {
+          pendingTickets++;
+        }
         
         if (createdAt.isAfter(rangeStart) && createdAt.isBefore(rangeEnd) && ticketStatus == 'resolved') {
           resolvedToday++;

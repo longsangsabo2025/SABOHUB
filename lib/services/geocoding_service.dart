@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../utils/app_logger.dart';
 
 /// Service to geocode addresses to coordinates using Nominatim (free, no API key).
 /// Works on all platforms including web.
@@ -124,7 +124,7 @@ class GeocodingService {
         }
       }
     } catch (e) {
-      debugPrint('GeocodingService error: $e');
+      AppLogger.error('GeocodingService error', e);
     }
     return null;
   }

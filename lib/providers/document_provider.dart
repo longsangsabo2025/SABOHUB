@@ -10,14 +10,14 @@ final documentServiceProvider = Provider<DocumentService>((ref) {
 
 /// Provider to get all documents for a company
 final companyDocumentsProvider =
-    FutureProvider.family<List<AIUploadedFile>, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<List<AIUploadedFile>, String>((ref, companyId) async {
   final service = ref.watch(documentServiceProvider);
   return service.getCompanyDocuments(companyId);
 });
 
 /// Provider to get document analysis/insights
 final documentInsightsProvider =
-    FutureProvider.family<Map<String, dynamic>, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, companyId) async {
   final service = ref.watch(documentServiceProvider);
   return service.analyzeDocuments(companyId);
 });

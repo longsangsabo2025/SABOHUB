@@ -511,8 +511,20 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
         'status': 'pending',
         'created_at': DateTime.now().toIso8601String(),
       });
+
+      // Update referrer's total_earned
+      final currentReferrer = await supabase
+          .from('referrers')
+          .select('total_earned')
+          .eq('id', referrerId)
+          .single();
+      final currentTotalEarned = (currentReferrer['total_earned'] ?? 0).toDouble();
+      await supabase
+          .from('referrers')
+          .update({'total_earned': currentTotalEarned + commissionAmount})
+          .eq('id', referrerId);
       
-      debugPrint('✅ Commission created: ${commissionAmount.toStringAsFixed(0)}đ for referrer $referrerId');
+      debugPrint('✅ Commission created: ${commissionAmount.toStringAsFixed(0)}đ for referrer $referrerId (total_earned updated)');
     } catch (e) {
       debugPrint('Error creating commission: $e');
       // Don't throw - commission creation failure shouldn't block order completion

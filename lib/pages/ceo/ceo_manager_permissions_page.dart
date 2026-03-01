@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/manager_permissions.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/manager_permissions_provider.dart';
 
 /// CEO Manager Permissions Page
@@ -23,11 +23,9 @@ class CEOManagerPermissionsPage extends ConsumerStatefulWidget {
 class _CEOManagerPermissionsPageState
     extends ConsumerState<CEOManagerPermissionsPage> {
   String? _selectedManagerId;
-  bool _isSaving = false;
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
     final allManagersAsync =
         ref.watch(allManagerPermissionsProvider(widget.companyId));
 
@@ -42,7 +40,7 @@ class _CEOManagerPermissionsPageState
             color: Colors.white,
           ),
         ),
-        backgroundColor: const Color(0xFF3B82F6),
+        backgroundColor: AppColors.info,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -117,12 +115,12 @@ class _CEOManagerPermissionsPageState
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? const Color(0xFF3B82F6).withValues(alpha: 0.1)
+                                    ? AppColors.info.withValues(alpha: 0.1)
                                     : Colors.transparent,
                                 border: Border(
                                   left: BorderSide(
                                     color: isSelected
-                                        ? const Color(0xFF3B82F6)
+                                        ? AppColors.info
                                         : Colors.transparent,
                                     width: 3,
                                   ),
@@ -132,12 +130,12 @@ class _CEOManagerPermissionsPageState
                                 children: [
                                   CircleAvatar(
                                     radius: 20,
-                                    backgroundColor: const Color(0xFF3B82F6)
+                                    backgroundColor: AppColors.info
                                         .withValues(alpha: 0.2),
                                     child: Text(
                                       managerName[0].toUpperCase(),
                                       style: const TextStyle(
-                                        color: Color(0xFF3B82F6),
+                                        color: AppColors.info,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -172,7 +170,7 @@ class _CEOManagerPermissionsPageState
                                     const Icon(
                                       Icons.arrow_forward_ios,
                                       size: 16,
-                                      color: Color(0xFF3B82F6),
+                                      color: AppColors.info,
                                     ),
                                 ],
                               ),
@@ -275,31 +273,11 @@ class _PermissionFormWidget extends ConsumerStatefulWidget {
 }
 
 class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
-  late Map<String, bool> _permissionValues;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _permissionValues = {
-      'can_view_overview': widget.permissions.canViewOverview,
-      'can_view_employees': widget.permissions.canViewEmployees,
-      'can_view_tasks': widget.permissions.canViewTasks,
-      'can_view_documents': widget.permissions.canViewDocuments,
-      'can_view_ai_assistant': widget.permissions.canViewAiAssistant,
-      'can_view_attendance': widget.permissions.canViewAttendance,
-      'can_view_accounting': widget.permissions.canViewAccounting,
-      'can_view_employee_docs': widget.permissions.canViewEmployeeDocs,
-      'can_view_business_law': widget.permissions.canViewBusinessLaw,
-      'can_view_settings': widget.permissions.canViewSettings,
-      'can_create_employee': widget.permissions.canCreateEmployee,
-      'can_edit_employee': widget.permissions.canEditEmployee,
-      'can_delete_employee': widget.permissions.canDeleteEmployee,
-      'can_create_task': widget.permissions.canCreateTask,
-      'can_edit_task': widget.permissions.canEditTask,
-      'can_delete_task': widget.permissions.canDeleteTask,
-      'can_approve_attendance': widget.permissions.canApproveAttendance,
-    };
   }
 
   @override
@@ -314,11 +292,11 @@ class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: const Color(0xFF3B82F6).withValues(alpha: 0.2),
+                backgroundColor: AppColors.info.withValues(alpha: 0.2),
                 child: Text(
                   widget.managerName[0].toUpperCase(),
                   style: const TextStyle(
-                    color: Color(0xFF3B82F6),
+                    color: AppColors.info,
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                   ),
@@ -411,7 +389,7 @@ class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
             child: ElevatedButton(
               onPressed: _isSaving ? null : () => _savePermissions(widget.permissions),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3B82F6),
+                backgroundColor: AppColors.info,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -460,7 +438,7 @@ class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(icon, size: 20, color: const Color(0xFF3B82F6)),
+                Icon(icon, size: 20, color: AppColors.info),
                 const SizedBox(width: 8),
                 Text(
                   title,
@@ -498,7 +476,7 @@ class _PermissionFormWidgetState extends ConsumerState<_PermissionFormWidget> {
           ),
           Switch(
             value: item.value,
-            activeColor: const Color(0xFF3B82F6),
+            activeColor: AppColors.info,
             onChanged: (newValue) {
               setState(() {
                 // Update permission value

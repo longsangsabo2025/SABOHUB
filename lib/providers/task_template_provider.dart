@@ -9,28 +9,28 @@ final taskTemplateServiceProvider = Provider<TaskTemplateService>((ref) {
 
 /// Provider for company task templates
 final companyTaskTemplatesProvider =
-    FutureProvider.family<List<TaskTemplate>, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<List<TaskTemplate>, String>((ref, companyId) async {
   final service = ref.read(taskTemplateServiceProvider);
   return service.getCompanyTemplates(companyId);
 });
 
 /// Provider for active task templates only
 final activeTaskTemplatesProvider =
-    FutureProvider.family<List<TaskTemplate>, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<List<TaskTemplate>, String>((ref, companyId) async {
   final service = ref.read(taskTemplateServiceProvider);
   return service.getActiveTemplates(companyId);
 });
 
 /// Provider for templates count
 final taskTemplatesCountProvider =
-    FutureProvider.family<int, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<int, String>((ref, companyId) async {
   final service = ref.read(taskTemplateServiceProvider);
   return service.getTemplatesCount(companyId);
 });
 
 /// Provider for active templates count
 final activeTaskTemplatesCountProvider =
-    FutureProvider.family<int, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<int, String>((ref, companyId) async {
   final service = ref.read(taskTemplateServiceProvider);
   return service.getActiveTemplatesCount(companyId);
 });

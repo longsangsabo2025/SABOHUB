@@ -338,19 +338,6 @@ class _CustomerCard extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'active':
-        return Colors.green;
-      case 'inactive':
-        return Colors.orange;
-      case 'blocked':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
   void _showCustomerDetail(BuildContext context) {
     showModalBottomSheet(
       context: context,

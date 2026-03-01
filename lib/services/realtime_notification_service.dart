@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/app_logger.dart';
 
 /// Notification model for in-app notifications
 class AppNotification {
@@ -159,11 +160,11 @@ class RealtimeNotificationService {
   /// Initialize service and subscribe to realtime updates
   /// [authUserId] is the Supabase auth user ID, we need to lookup the employee ID
   Future<void> initialize(String authUserId) async {
-    debugPrint('🔔 [NOTIF] initialize called with authUserId: $authUserId');
+    AppLogger.info('🔔 [NOTIF] initialize called with authUserId: $authUserId');
     
     // Skip if already initialized for this auth user
     if (_lastAuthUserId == authUserId && _currentUserId != null) {
-      debugPrint('🔔 [NOTIF] Already initialized, skipping. currentUserId: $_currentUserId');
+      AppLogger.info('🔔 [NOTIF] Already initialized, skipping. currentUserId: $_currentUserId');
       return;
     }
     
@@ -182,16 +183,16 @@ class RealtimeNotificationService {
       
       if (employeeResponse != null) {
         _currentUserId = employeeResponse['id'] as String;
-        debugPrint('📬 Notification service: using employee ID $_currentUserId');
+        AppLogger.auth('📬 Notification service: using employee ID $_currentUserId');
       } else {
         // Fallback: try using auth_user_id directly (for users table)
         _currentUserId = authUserId;
-        debugPrint('📬 Notification service: using auth user ID $authUserId (no employee found)');
+        AppLogger.auth('📬 Notification service: using auth user ID $authUserId (no employee found)');
       }
     } catch (e) {
       // Fallback to auth user ID
       _currentUserId = authUserId;
-      debugPrint('📬 Notification service: fallback to auth user ID due to error: $e');
+      AppLogger.warn('📬 Notification service: fallback to auth user ID due to error', e);
     }
     
     if (_currentUserId == null) return;
@@ -206,14 +207,14 @@ class RealtimeNotificationService {
 
   /// Load notifications from database
   Future<void> _loadNotifications() async {
-    debugPrint('🔔 [NOTIF] _loadNotifications called, currentUserId: $_currentUserId');
+    AppLogger.api('🔔 [NOTIF] _loadNotifications called, currentUserId: $_currentUserId');
     if (_currentUserId == null) {
-      debugPrint('🔔 [NOTIF] currentUserId is null, returning early');
+      AppLogger.warn('🔔 [NOTIF] currentUserId is null, returning early');
       return;
     }
 
     try {
-      debugPrint('🔔 [NOTIF] Querying notifications for user_id: $_currentUserId');
+      AppLogger.api('🔔 [NOTIF] Querying notifications for user_id: $_currentUserId');
       final response = await _supabase
           .from('notifications')
           .select()
@@ -221,20 +222,19 @@ class RealtimeNotificationService {
           .order('created_at', ascending: false)
           .limit(50);
 
-      debugPrint('🔔 [NOTIF] Raw response: ${response.length} items');
-      debugPrint('🔔 [NOTIF] First item: ${response.isNotEmpty ? response.first : "empty"}');
+      AppLogger.data('🔔 [NOTIF] Raw response: ${response.length} items');
+      AppLogger.data('🔔 [NOTIF] First item: ${response.isNotEmpty ? response.first : "empty"}');
       
       _notifications = (response as List)
           .map((json) => AppNotification.fromJson(json))
           .toList();
       
-      debugPrint('🔔 [NOTIF] Parsed ${_notifications.length} notifications, adding to stream');
+      AppLogger.data('🔔 [NOTIF] Parsed ${_notifications.length} notifications, adding to stream');
       _hasInitialData = true;
       _notificationsController.add(_notifications);
-      debugPrint('🔔 [NOTIF] Stream updated successfully');
+      AppLogger.info('🔔 [NOTIF] Stream updated successfully');
     } catch (e, stack) {
-      debugPrint('❌ [NOTIF] Error loading notifications: $e');
-      debugPrint('❌ [NOTIF] Stack: $stack');
+      AppLogger.error('❌ [NOTIF] Error loading notifications', e, stack);
     }
   }
 
@@ -252,7 +252,7 @@ class RealtimeNotificationService {
       _unreadCount = (response as List).length;
       _unreadCountController.add(_unreadCount);
     } catch (e) {
-      debugPrint('Error loading unread count: $e');
+      AppLogger.error('Error loading unread count', e);
     }
   }
 
@@ -302,7 +302,7 @@ class RealtimeNotificationService {
       )
       ..subscribe();
 
-    debugPrint('📡 Subscribed to notifications realtime for user: $_currentUserId');
+    AppLogger.api('📡 Subscribed to notifications realtime for user: $_currentUserId');
   }
 
   /// Handle new notification from realtime
@@ -323,9 +323,9 @@ class RealtimeNotificationService {
       // Emit new notification for popup/toast
       _newNotificationController.add(notification);
       
-      debugPrint('🔔 New notification: ${notification.title}');
+      AppLogger.info('🔔 New notification: ${notification.title}');
     } catch (e) {
-      debugPrint('Error handling new notification: $e');
+      AppLogger.error('Error handling new notification', e);
     }
   }
 
@@ -349,7 +349,7 @@ class RealtimeNotificationService {
         }
       }
     } catch (e) {
-      debugPrint('Error handling updated notification: $e');
+      AppLogger.error('Error handling updated notification', e);
     }
   }
 
@@ -371,7 +371,7 @@ class RealtimeNotificationService {
         }
       }
     } catch (e) {
-      debugPrint('Error handling deleted notification: $e');
+      AppLogger.error('Error handling deleted notification', e);
     }
   }
 
@@ -388,7 +388,7 @@ class RealtimeNotificationService {
       
       return true;
     } catch (e) {
-      debugPrint('Error marking notification as read: $e');
+      AppLogger.error('Error marking notification as read', e);
       return false;
     }
   }
@@ -432,7 +432,7 @@ class RealtimeNotificationService {
       
       return true;
     } catch (e) {
-      debugPrint('Error marking all notifications as read: $e');
+      AppLogger.error('Error marking all notifications as read', e);
       return false;
     }
   }
@@ -467,7 +467,7 @@ class RealtimeNotificationService {
       
       return response['id'] as String;
     } catch (e) {
-      debugPrint('Error sending notification: $e');
+      AppLogger.error('Error sending notification', e);
       return null;
     }
   }
@@ -481,30 +481,19 @@ class RealtimeNotificationService {
     bool excludeSelf = true,
   }) async {
     try {
-      // Get all users from both users and employees tables
-      var usersQuery = _supabase
-          .from('users')
-          .select('id')
-          .eq('company_id', companyId);
-      
+      // Get all employees in this company
       var employeesQuery = _supabase
           .from('employees')
           .select('id')
           .eq('company_id', companyId);
       
       if (excludeSelf && _currentUserId != null) {
-        usersQuery = usersQuery.neq('id', _currentUserId!);
         employeesQuery = employeesQuery.neq('id', _currentUserId!);
       }
       
-      final users = await usersQuery;
       final employees = await employeesQuery;
       
-      // Combine and dedupe user IDs
       final allUserIds = <String>{};
-      for (final user in users as List) {
-        allUserIds.add(user['id'] as String);
-      }
       for (final employee in employees as List) {
         allUserIds.add(employee['id'] as String);
       }
@@ -524,7 +513,7 @@ class RealtimeNotificationService {
       
       return count;
     } catch (e) {
-      debugPrint('Error sending company notification: $e');
+      AppLogger.error('Error sending company notification', e);
       return 0;
     }
   }
@@ -539,7 +528,7 @@ class RealtimeNotificationService {
       
       return true;
     } catch (e) {
-      debugPrint('Error deleting notification: $e');
+      AppLogger.error('Error deleting notification', e);
       return false;
     }
   }
@@ -559,5 +548,8 @@ class RealtimeNotificationService {
     _notifications = [];
     _unreadCount = 0;
     _hasInitialData = false;
+    _notificationsController.close();
+    _newNotificationController.close();
+    _unreadCountController.close();
   }
 }

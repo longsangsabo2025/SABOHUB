@@ -21,7 +21,7 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
   Map<String, dynamic>? _selectedCustomer;
   List<Map<String, dynamic>> _customers = [];
   List<Map<String, dynamic>> _products = [];
-  List<Map<String, dynamic>> _orderItems = [];
+  final List<Map<String, dynamic>> _orderItems = [];
   bool _isLoadingCustomers = true;
   bool _isLoadingProducts = true;
   
@@ -205,8 +205,8 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
             .eq('customer_id', _selectedCustomer!['id'])
             .eq('status', 'overdue')
             .limit(5);
-        if (overdueCheck is List && overdueCheck.isNotEmpty) {
-          final totalOverdue = (overdueCheck as List).fold<double>(
+        if (overdueCheck.isNotEmpty) {
+          final totalOverdue = overdueCheck.fold<double>(
               0, (s, r) => s + (((r['original_amount'] ?? 0) as num).toDouble() - ((r['paid_amount'] ?? 0) as num).toDouble()));
           if (!mounted) return;
           final proceed = await showDialog<bool>(

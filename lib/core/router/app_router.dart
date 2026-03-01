@@ -173,18 +173,36 @@ final currentUserRoleProvider = Provider<nav.UserRole>((Ref ref) {
 
 /// Route guard that checks user permissions
 class RouteGuard {
+  static const _sharedRoutes = [
+    '/employees/list',
+    '/employees/create',
+    '/employees/invite',
+    '/company/settings',
+    '/manager-reports',
+    '/entertainment/tables',
+    '/entertainment/sessions',
+    '/entertainment/menu',
+  ];
+
   static String? checkAccess(nav.UserRole userRole, String route) {
+    // CEO has full access to all routes
+    if (userRole == nav.UserRole.ceo) return null;
+
     // Get allowed routes for the current user role
     final allowedItems = nav.NavigationConfig.getItemsForRole(userRole);
     final allowedRoutes = allowedItems.map((item) => item.route).toList();
 
-    // Add routes that are always accessible
+    // Routes accessible by all authenticated users
     allowedRoutes.add(AppRoutes.home);
     allowedRoutes.add(AppRoutes.profile);
 
+    // Manager gets shared operational routes
+    if (userRole == nav.UserRole.manager) {
+      allowedRoutes.addAll(_sharedRoutes);
+    }
+
     // Check if route is allowed
     if (!allowedRoutes.contains(route)) {
-      // Redirect to appropriate dashboard based on role
       switch (userRole) {
         case nav.UserRole.superAdmin:
           return AppRoutes.superAdminDashboard;
@@ -195,7 +213,7 @@ class RouteGuard {
         case nav.UserRole.manager:
           return AppRoutes.managerDashboard;
         case nav.UserRole.ceo:
-          return AppRoutes.ceoAnalytics;
+          return null;
         case nav.UserRole.driver:
           return AppRoutes.driverDashboard;
         case nav.UserRole.warehouse:
@@ -207,37 +225,45 @@ class RouteGuard {
   }
 }
 
+/// Bridge between Riverpod auth state and GoRouter's refreshListenable.
+/// When auth state changes, this notifies GoRouter to re-evaluate redirects
+/// WITHOUT recreating the entire GoRouter (preserving widget state like CEO login toggle).
+class _RouterAuthNotifier extends ChangeNotifier {
+  _RouterAuthNotifier(Ref ref) {
+    ref.listen(authProvider, (_, __) => notifyListeners());
+    ref.listen(currentUserRoleProvider, (_, __) => notifyListeners());
+  }
+}
+
 final appRouterProvider = Provider<GoRouter>((Ref ref) {
-  final userRole = ref.watch(currentUserRoleProvider);
-  final authState = ref.watch(authProvider);
+  final routerNotifier = _RouterAuthNotifier(ref);
 
   return GoRouter(
     initialLocation: AppRoutes.login,
+    refreshListenable: routerNotifier,
     redirect: (BuildContext context, GoRouterState state) {
+      // ✅ FIX: Use ref.read() instead of ref.watch() so GoRouter is created ONCE.
+      // Auth changes trigger redirect re-evaluation via refreshListenable above.
+      final authState = ref.read(authProvider);
+      final userRole = ref.read(currentUserRoleProvider);
       final isLoggedIn = authState.isAuthenticated;
       final isLoading = authState.isLoading;
       final isAuthRoute = state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.signup ||
           state.matchedLocation == AppRoutes.forgotPassword;
 
-      // 🔍 DEBUG LOG - Remove after fixing
-      print('🚀 [ROUTER] ==================');
-      print('🚀 [ROUTER] matchedLocation: ${state.matchedLocation}');
-      print('🚀 [ROUTER] isLoggedIn: $isLoggedIn');
-      print('🚀 [ROUTER] isLoading: $isLoading');
-      print('🚀 [ROUTER] userRole: $userRole');
-      print('🚀 [ROUTER] user: ${authState.user?.name} (${authState.user?.role})');
-      print('🚀 [ROUTER] isAuthRoute: $isAuthRoute');
+      // Router navigation logging (debug only)
+      assert(() {
+        debugPrint('[ROUTER] ${state.matchedLocation} | auth=$isLoggedIn | role=$userRole');
+        return true;
+      }());
 
-      // ✅ FIX: Wait for session restore to complete before redirecting
-      // This prevents the race condition where user sees login page briefly
+      // Wait for session restore to complete before redirecting
       if (isLoading) {
-        print('🚀 [ROUTER] --> WAITING (isLoading)');
         return null; // Stay on current route while loading
       }
 
       // Email verification is accessible for both logged in and logged out users
-      // Check if path starts with email verification (to handle query parameters)
       final isEmailVerification =
           state.matchedLocation.startsWith(AppRoutes.emailVerification) ||
               state.uri.path == AppRoutes.emailVerification;
@@ -250,24 +276,20 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
           !isAuthRoute &&
           !isEmailVerification &&
           !isOnboarding) {
-        print('🚀 [ROUTER] --> REDIRECT TO LOGIN (not logged in)');
         return AppRoutes.login;
       }
 
       // If logged in and on auth pages (but not email verification), redirect to home
       if (isLoggedIn && isAuthRoute && !isEmailVerification) {
-        print('🚀 [ROUTER] --> REDIRECT TO HOME (logged in on auth page)');
         return AppRoutes.home;
       }
 
       // Check role-based access for authenticated users (skip email verification and onboarding)
       if (isLoggedIn && !isEmailVerification && !isOnboarding) {
         final redirectRoute = RouteGuard.checkAccess(userRole, state.matchedLocation);
-        print('🚀 [ROUTER] --> RouteGuard.checkAccess returned: $redirectRoute');
         return redirectRoute;
       }
 
-      print('🚀 [ROUTER] --> NO REDIRECT (null)');
       return null;
     },
     routes: [

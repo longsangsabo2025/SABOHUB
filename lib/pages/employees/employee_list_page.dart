@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/user.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/cached_data_providers.dart';
+import '../../core/theme/app_colors.dart';
 
-/// Employee List Page
+/// Employee List Page — REAL DATA from employees table
 /// Danh sách nhân viên với khả năng tìm kiếm và quản lý
 class EmployeeListPage extends ConsumerStatefulWidget {
   const EmployeeListPage({super.key});
@@ -19,49 +22,51 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
   UserRole? _filterRole;
   String _sortBy = 'name'; // name, role, created_date
 
-  // Mock data for demonstration
-  final List<EmployeeModel> _employees = [
-    EmployeeModel(
-      id: '1',
-      name: 'Nguyễn Văn Nam',
-      email: 'nam@sabohub.com',
-      phone: '0123456789',
-      role: UserRole.manager,
-      avatar: null,
-      isActive: true,
-      createdAt: DateTime.now().subtract(const Duration(days: 30)),
-    ),
-    EmployeeModel(
-      id: '2',
-      name: 'Trần Thị Lan',
-      email: 'lan@sabohub.com',
-      phone: '0987654321',
-      role: UserRole.shiftLeader,
-      avatar: null,
-      isActive: true,
-      createdAt: DateTime.now().subtract(const Duration(days: 15)),
-    ),
-    EmployeeModel(
-      id: '3',
-      name: 'Lê Hoàng Minh',
-      email: 'minh@sabohub.com',
-      phone: '0567891234',
-      role: UserRole.staff,
-      avatar: null,
-      isActive: false,
-      createdAt: DateTime.now().subtract(const Duration(days: 7)),
-    ),
-    EmployeeModel(
-      id: '4',
-      name: 'Phạm Thị Hoa',
-      email: 'hoa@sabohub.com',
-      phone: '0345678912',
-      role: UserRole.staff,
-      avatar: null,
-      isActive: true,
-      createdAt: DateTime.now().subtract(const Duration(days: 3)),
-    ),
-  ];
+  List<User> _employees = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEmployees();
+  }
+
+  Future<void> _loadEmployees() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final user = ref.read(authProvider).user;
+      final companyId = user?.companyId;
+      if (companyId == null) {
+        setState(() {
+          _error = 'Không tìm thấy công ty';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final service = ref.read(employeeServiceProvider);
+      final employees = await service.getCompanyEmployees(companyId);
+
+      if (mounted) {
+        setState(() {
+          _employees = employees;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -69,11 +74,13 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
     super.dispose();
   }
 
-  List<EmployeeModel> get _filteredEmployees {
+  List<User> get _filteredEmployees {
     var employees = _employees.where((employee) {
+      final name = employee.name ?? '';
+      final email = employee.email ?? '';
       final matchesSearch =
-          employee.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              employee.email.toLowerCase().contains(_searchQuery.toLowerCase());
+          name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              email.toLowerCase().contains(_searchQuery.toLowerCase());
       final matchesRole = _filterRole == null || employee.role == _filterRole;
       return matchesSearch && matchesRole;
     }).toList();
@@ -82,11 +89,11 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
     employees.sort((a, b) {
       switch (_sortBy) {
         case 'name':
-          return a.name.compareTo(b.name);
+          return (a.name ?? '').compareTo(b.name ?? '');
         case 'role':
           return a.role.index.compareTo(b.role.index);
         case 'created_date':
-          return b.createdAt.compareTo(a.createdAt);
+          return (b.createdAt ?? DateTime(2000)).compareTo(a.createdAt ?? DateTime(2000));
         default:
           return 0;
       }
@@ -116,18 +123,40 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.black54),
+            onPressed: _loadEmployees,
+          ),
+          IconButton(
             icon: const Icon(Icons.person_add, color: Colors.black87),
             onPressed: () => _navigateToCreateEmployee(),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildSearchAndFilter(),
-          _buildStatsCards(),
-          Expanded(child: _buildEmployeeList()),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text('Lỗi: $_error', textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadEmployees,
+                        child: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: [
+                    _buildSearchAndFilter(),
+                    _buildStatsCards(),
+                    Expanded(child: _buildEmployeeList()),
+                  ],
+                ),
     );
   }
 
@@ -249,7 +278,7 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
 
   Widget _buildStatsCards() {
     final totalEmployees = _employees.length;
-    final activeEmployees = _employees.where((e) => e.isActive).length;
+    final activeEmployees = _employees.where((e) => e.isActive == true).length;
     final inactiveEmployees = totalEmployees - activeEmployees;
 
     return Container(
@@ -359,16 +388,24 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: employees.length,
-      itemBuilder: (context, index) {
-        return _buildEmployeeCard(employees[index]);
-      },
+    return RefreshIndicator(
+      onRefresh: _loadEmployees,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: employees.length,
+        itemBuilder: (context, index) {
+          return _buildEmployeeCard(employees[index]);
+        },
+      ),
     );
   }
 
-  Widget _buildEmployeeCard(EmployeeModel employee) {
+  Widget _buildEmployeeCard(User employee) {
+    final name = employee.name ?? 'Không tên';
+    final email = employee.email ?? '';
+    final phone = employee.phone ?? '';
+    final isActive = employee.isActive == true;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -384,20 +421,14 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
               radius: 28,
               backgroundColor:
                   _getRoleColor(employee.role).withValues(alpha: 0.1),
-              child: employee.avatar != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(28),
-                      child: Image.network(
-                        employee.avatar!,
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                  : Text(
-                      employee.name
+              backgroundImage: employee.avatarUrl != null
+                  ? NetworkImage(employee.avatarUrl!)
+                  : null,
+              child: employee.avatarUrl == null
+                  ? Text(
+                      name
                           .split(' ')
-                          .map((word) => word[0])
+                          .map((word) => word.isNotEmpty ? word[0] : '')
                           .take(2)
                           .join(),
                       style: TextStyle(
@@ -405,7 +436,8 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
                         fontWeight: FontWeight.bold,
                         color: _getRoleColor(employee.role),
                       ),
-                    ),
+                    )
+                  : null,
             ),
             const SizedBox(width: 16),
             // Employee info
@@ -417,7 +449,7 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
                     children: [
                       Expanded(
                         child: Text(
-                          employee.name,
+                          name,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -425,45 +457,48 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
                           ),
                         ),
                       ),
-                      _buildStatusChip(employee.isActive),
+                      _buildStatusChip(isActive),
                     ],
                   ),
                   const SizedBox(height: 4),
+                  if (email.isNotEmpty)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.email_outlined,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            email,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 2),
                   Row(
                     children: [
-                      Icon(
-                        Icons.email_outlined,
-                        size: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          employee.email,
+                      if (phone.isNotEmpty) ...[
+                        Icon(
+                          Icons.phone_outlined,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          phone,
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade600,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.phone_outlined,
-                        size: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        employee.phone,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
+                      ],
                       const Spacer(),
                       _buildRoleChip(employee.role),
                     ],
@@ -487,16 +522,16 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
                   ),
                 ),
                 PopupMenuItem(
-                  value: employee.isActive ? 'deactivate' : 'activate',
+                  value: isActive ? 'deactivate' : 'activate',
                   child: Row(
                     children: [
                       Icon(
-                        employee.isActive ? Icons.block : Icons.check_circle,
+                        isActive ? Icons.block : Icons.check_circle,
                         size: 20,
-                        color: employee.isActive ? Colors.red : Colors.green,
+                        color: isActive ? Colors.red : Colors.green,
                       ),
                       const SizedBox(width: 12),
-                      Text(employee.isActive ? 'Tạm khóa' : 'Kích hoạt'),
+                      Text(isActive ? 'Tạm khóa' : 'Kích hoạt'),
                     ],
                   ),
                 ),
@@ -704,14 +739,13 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
     );
   }
 
-  void _handleEmployeeAction(String action, EmployeeModel employee) {
+  void _handleEmployeeAction(String action, User employee) {
     switch (action) {
       case 'edit':
-        // TODO: Navigate to edit employee page
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Chỉnh sửa thông tin ${employee.name}'),
-            backgroundColor: Colors.blue,
+            content: Text('Chỉnh sửa thông tin ${employee.name ?? ""}'),
+            backgroundColor: AppColors.info,
           ),
         );
         break;
@@ -725,30 +759,38 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
     }
   }
 
-  void _toggleEmployeeStatus(EmployeeModel employee) {
-    setState(() {
-      final index = _employees.indexWhere((e) => e.id == employee.id);
-      if (index != -1) {
-        _employees[index] = employee.copyWith(isActive: !employee.isActive);
-      }
-    });
+  Future<void> _toggleEmployeeStatus(User employee) async {
+    try {
+      final service = ref.read(employeeServiceProvider);
+      final wasActive = employee.isActive == true;
+      await service.toggleEmployeeStatus(employee.id, !wasActive);
+      await _loadEmployees();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${employee.isActive ? 'Kích hoạt' : 'Tạm khóa'} tài khoản ${employee.name} thành công',
-        ),
-        backgroundColor: employee.isActive ? Colors.green : Colors.orange,
-      ),
-    );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${!wasActive ? 'Kích hoạt' : 'Tạm khóa'} tài khoản ${employee.name ?? ""} thành công',
+            ),
+            backgroundColor: !wasActive ? AppColors.success : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
-  void _showDeleteConfirmDialog(EmployeeModel employee) {
+  void _showDeleteConfirmDialog(User employee) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Xác nhận xóa'),
-        content: Text('Bạn có chắc chắn muốn xóa tài khoản ${employee.name}?'),
+        content: Text('Bạn có chắc chắn muốn xóa tài khoản ${employee.name ?? ""}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -769,71 +811,30 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
     );
   }
 
-  void _deleteEmployee(EmployeeModel employee) {
-    setState(() {
-      _employees.removeWhere((e) => e.id == employee.id);
-    });
+  Future<void> _deleteEmployee(User employee) async {
+    try {
+      final service = ref.read(employeeServiceProvider);
+      await service.deleteEmployee(employee.id);
+      await _loadEmployees();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đã xóa tài khoản ${employee.name}'),
-        backgroundColor: Colors.red,
-      ),
-    );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã xóa tài khoản ${employee.name ?? ""}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi xóa: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   void _navigateToCreateEmployee() {
-    // TODO: Navigate to create employee page
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Chuyển đến trang tạo nhân viên'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-}
-
-/// Employee Model for demonstration
-class EmployeeModel {
-  final String id;
-  final String name;
-  final String email;
-  final String phone;
-  final UserRole role;
-  final String? avatar;
-  final bool isActive;
-  final DateTime createdAt;
-
-  EmployeeModel({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.phone,
-    required this.role,
-    this.avatar,
-    required this.isActive,
-    required this.createdAt,
-  });
-
-  EmployeeModel copyWith({
-    String? id,
-    String? name,
-    String? email,
-    String? phone,
-    UserRole? role,
-    String? avatar,
-    bool? isActive,
-    DateTime? createdAt,
-  }) {
-    return EmployeeModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      email: email ?? this.email,
-      phone: phone ?? this.phone,
-      role: role ?? this.role,
-      avatar: avatar ?? this.avatar,
-      isActive: isActive ?? this.isActive,
-      createdAt: createdAt ?? this.createdAt,
-    );
+    context.push('/employees/create').then((_) => _loadEmployees());
   }
 }

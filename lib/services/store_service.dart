@@ -17,7 +17,7 @@ class StoreService {
   Future<List<Store>> getAllStores({required String companyId}) async {
     try {
       final response = await _supabase
-          .from('stores')
+          .from('branches')
           .select()
           .eq('company_id', companyId)
           .order('created_at', ascending: false);
@@ -32,7 +32,7 @@ class StoreService {
   Future<Store?> getStoreById(String id, {required String companyId}) async {
     try {
       final response = await _supabase
-          .from('stores')
+          .from('branches')
           .select()
           .eq('id', id)
           .eq('company_id', companyId)
@@ -55,7 +55,7 @@ class StoreService {
   }) async {
     try {
       final response = await _supabase
-          .from('stores')
+          .from('branches')
           .insert({
             'name': name,
             'address': address,
@@ -77,7 +77,7 @@ class StoreService {
   Future<Store> updateStore(String id, Map<String, dynamic> updates, {required String companyId}) async {
     try {
       final response = await _supabase
-          .from('stores')
+          .from('branches')
           .update(updates)
           .eq('id', id)
           .eq('company_id', companyId)
@@ -90,10 +90,10 @@ class StoreService {
     }
   }
 
-  /// Delete store (with company validation)
+  /// Soft-delete store (with company validation)
   Future<void> deleteStore(String id, {required String companyId}) async {
     try {
-      await _supabase.from('stores').delete().eq('id', id).eq('company_id', companyId);
+      await _supabase.from('branches').update({'is_active': false}).eq('id', id).eq('company_id', companyId);
     } catch (e) {
       throw Exception('Failed to delete store: $e');
     }
@@ -126,7 +126,7 @@ class StoreService {
   /// Subscribe to store changes
   Stream<List<Store>> subscribeToStores() {
     return _supabase
-        .from('stores')
+        .from('branches')
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
         .map((data) => data.map((json) => Store.fromJson(json)).toList());

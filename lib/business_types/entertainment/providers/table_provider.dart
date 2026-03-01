@@ -11,7 +11,7 @@ final tableServiceProvider = Provider<TableService>((ref) {
 
 /// All Tables Provider
 /// Fetches tables for current company
-final tablesProvider = FutureProvider<List<BilliardsTable>>((ref) async {
+final tablesProvider = FutureProvider.autoDispose<List<BilliardsTable>>((ref) async {
   final service = ref.watch(tableServiceProvider);
   final authState = ref.watch(authProvider);
   
@@ -23,7 +23,7 @@ final tablesProvider = FutureProvider<List<BilliardsTable>>((ref) async {
 /// Tables by Status Provider
 /// Gets tables filtered by status
 final tablesByStatusProvider = 
-    FutureProvider.family<List<BilliardsTable>, TableStatus>((ref, status) async {
+    FutureProvider.autoDispose.family<List<BilliardsTable>, TableStatus>((ref, status) async {
   final service = ref.watch(tableServiceProvider);
   final authState = ref.watch(authProvider);
   
@@ -34,14 +34,14 @@ final tablesByStatusProvider =
 
 /// Single Table Provider
 /// Gets table details by ID
-final tableProvider = FutureProvider.family<BilliardsTable?, String>((ref, tableId) async {
+final tableProvider = FutureProvider.autoDispose.family<BilliardsTable?, String>((ref, tableId) async {
   final service = ref.watch(tableServiceProvider);
   return await service.getTableById(tableId);
 });
 
 /// Table Statistics Provider
 /// Gets table stats (available, occupied, etc.)
-final tableStatsProvider = FutureProvider<Map<String, int>>((ref) async {
+final tableStatsProvider = FutureProvider.autoDispose<Map<String, int>>((ref) async {
   final service = ref.watch(tableServiceProvider);
   final authState = ref.watch(authProvider);
   
@@ -52,7 +52,7 @@ final tableStatsProvider = FutureProvider<Map<String, int>>((ref) async {
 
 /// Tables Stream Provider
 /// Real-time tables stream (simulated with periodic refresh)
-final tablesStreamProvider = StreamProvider<List<BilliardsTable>>((ref) {
+final tablesStreamProvider = StreamProvider.autoDispose<List<BilliardsTable>>((ref) {
   final service = ref.watch(tableServiceProvider);
   final authState = ref.watch(authProvider);
   
@@ -105,6 +105,30 @@ class TableActions {
     return table;
   }
   
+  /// Update table properties
+  Future<BilliardsTable> updateTable({
+    required String tableId,
+    String? tableNumber,
+    String? tableType,
+    double? hourlyRate,
+  }) async {
+    final service = ref.read(tableServiceProvider);
+    
+    final table = await service.updateTable(
+      tableId: tableId,
+      tableNumber: tableNumber,
+      tableType: tableType,
+      hourlyRate: hourlyRate,
+    );
+    
+    ref.invalidate(tablesProvider);
+    ref.invalidate(tablesByStatusProvider);
+    ref.invalidate(tableProvider(tableId));
+    ref.invalidate(tableStatsProvider);
+    
+    return table;
+  }
+
   /// Update table status
   Future<BilliardsTable> updateTableStatus(String tableId, TableStatus status) async {
     final service = ref.read(tableServiceProvider);

@@ -5,13 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/error_boundary.dart';
 import '../../../widgets/bug_report_dialog.dart';
-// Entertainment pages
+import '../providers/table_provider.dart';
+import '../providers/session_provider.dart';
 import '../pages/tables/table_list_page.dart';
 import '../pages/sessions/session_list_page.dart';
 import '../pages/menu/menu_list_page.dart';
 
 /// Entertainment Manager Layout
-/// Layout cho Manager loại hình giải trí (billiards, restaurant, cafe, hotel, retail)
+/// Layout cho Manager loại hình vận hành cửa hàng (billiards, restaurant, cafe, hotel, retail)
 /// Tabs: Tổng quan, Bàn/Phòng, Phiên chơi, Thực đơn
 class EntertainmentManagerLayout extends ConsumerStatefulWidget {
   const EntertainmentManagerLayout({super.key});
@@ -29,11 +30,11 @@ class _EntertainmentManagerLayoutState
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final userName = authState.user?.name ?? 'Quản lý';
-    final companyName = authState.user?.companyName ?? 'Giải trí';
+    final companyName = authState.user?.companyName ?? 'Vận Hành';
     final businessType = authState.user?.businessType;
 
     final pages = <Widget>[
-      _EntertainmentDashboardPage(businessType: businessType?.label ?? 'Giải trí'),
+      _EntertainmentDashboardPage(businessType: businessType?.label ?? 'Vận Hành'),
       const TableListPage(),
       const SessionListPage(),
       const MenuListPage(),
@@ -208,7 +209,7 @@ class _EntertainmentManagerLayoutState
                 Icon(Icons.sports_bar, color: Colors.white, size: 40),
                 SizedBox(height: 8),
                 Text(
-                  'Giải Trí',
+                  'Vận Hành',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -216,7 +217,7 @@ class _EntertainmentManagerLayoutState
                   ),
                 ),
                 Text(
-                  'Quản lý cơ sở giải trí',
+                  'Quản lý cửa hàng',
                   style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
@@ -235,7 +236,12 @@ class _EntertainmentManagerLayoutState
             title: 'Lịch làm việc',
             onTap: () {
               Navigator.pop(context);
-              // Schedules
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Tính năng lịch làm việc đang phát triển. Sử dụng Check-in để theo dõi chấm công.'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
             },
           ),
           _buildDrawerItem(
@@ -281,85 +287,160 @@ class _EntertainmentManagerLayoutState
   }
 }
 
-/// Entertainment Dashboard - Tổng quan giải trí
-class _EntertainmentDashboardPage extends StatelessWidget {
+/// Entertainment Dashboard - Real-time operational overview
+class _EntertainmentDashboardPage extends ConsumerWidget {
   final String businessType;
 
   const _EntertainmentDashboardPage({required this.businessType});
 
   @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.purple.shade700, Colors.purple.shade500],
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '🎱 Dashboard $businessType',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tableStats = ref.watch(tableStatsProvider);
+    final sessionStats = ref.watch(sessionStatsProvider);
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(tableStatsProvider);
+        ref.invalidate(sessionStatsProvider);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.purple.shade700, Colors.purple.shade500],
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Tổng quan hoạt động kinh doanh',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '🎱 Dashboard $businessType',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Tổng quan hoạt động kinh doanh',
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.4,
+              children: [
+                _buildStatCard(
+                  icon: Icons.table_bar,
+                  title: tableStats.when(
+                    data: (s) => '${s['occupied'] ?? 0}/${s['total'] ?? 0}',
+                    loading: () => '...',
+                    error: (_, __) => '—',
+                  ),
+                  subtitle: 'Bàn đang chơi',
+                  color: Colors.blue,
+                ),
+                _buildStatCard(
+                  icon: Icons.timer,
+                  title: sessionStats.when(
+                    data: (s) => '${s['activeSessions'] ?? 0}',
+                    loading: () => '...',
+                    error: (_, __) => '—',
+                  ),
+                  subtitle: 'Phiên đang hoạt động',
+                  color: Colors.orange,
+                ),
+                _buildStatCard(
+                  icon: Icons.check_circle,
+                  title: sessionStats.when(
+                    data: (s) => '${s['completedToday'] ?? 0}',
+                    loading: () => '...',
+                    error: (_, __) => '—',
+                  ),
+                  subtitle: 'Hoàn thành hôm nay',
+                  color: Colors.green,
+                ),
+                _buildStatCard(
+                  icon: Icons.attach_money,
+                  title: sessionStats.when(
+                    data: (s) {
+                      final rev = (s['todayRevenue'] as num?)?.toDouble() ?? 0;
+                      if (rev >= 1000000) return '${(rev / 1000000).toStringAsFixed(1)}M';
+                      if (rev >= 1000) return '${(rev / 1000).toStringAsFixed(0)}K';
+                      return rev.toStringAsFixed(0);
+                    },
+                    loading: () => '...',
+                    error: (_, __) => '—',
+                  ),
+                  subtitle: 'Doanh thu hôm nay',
+                  color: Colors.red,
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // Quick stats grid
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.5,
-            children: [
-              _buildStatCard(
-                icon: Icons.table_bar,
-                title: 'Bàn',
-                subtitle: 'Quản lý bàn/phòng',
-                color: Colors.blue,
-              ),
-              _buildStatCard(
-                icon: Icons.timer,
-                title: 'Phiên',
-                subtitle: 'Phiên đang hoạt động',
-                color: Colors.orange,
-              ),
-              _buildStatCard(
-                icon: Icons.restaurant_menu,
-                title: 'Thực đơn',
-                subtitle: 'Món ăn & đồ uống',
-                color: Colors.green,
-              ),
-              _buildStatCard(
-                icon: Icons.attach_money,
-                title: 'Doanh thu',
-                subtitle: 'Hôm nay',
-                color: Colors.red,
-              ),
-            ],
+            tableStats.when(
+              data: (s) {
+                final available = s['available'] ?? 0;
+                final occupied = s['occupied'] ?? 0;
+                final reserved = s['reserved'] ?? 0;
+                final maintenance = s['maintenance'] ?? 0;
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Trạng thái bàn', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 12),
+                        _buildStatusRow('Trống', available, Colors.green),
+                        _buildStatusRow('Đang chơi', occupied, Colors.red),
+                        _buildStatusRow('Đã đặt', reserved, Colors.orange),
+                        _buildStatusRow('Bảo trì', maintenance, Colors.grey),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Lỗi: $e'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusRow(String label, int count, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 12, height: 12,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
+          const SizedBox(width: 8),
+          Text(label, style: const TextStyle(fontSize: 14)),
+          const Spacer(),
+          Text('$count', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: color)),
         ],
       ),
     );
@@ -376,10 +457,10 @@ class _EntertainmentDashboardPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withAlpha(50)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -393,7 +474,7 @@ class _EntertainmentDashboardPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: color),
           ),
           Text(
             subtitle,

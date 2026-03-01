@@ -234,7 +234,11 @@ class _CSKHCustomersPageState extends ConsumerState<CSKHCustomersPage> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Lịch sử giao dịch KH: ${customer['name'] ?? ''}'), duration: const Duration(seconds: 2)),
+                        );
+                      },
                       icon: const Icon(Icons.history),
                       label: const Text('Lịch sử'),
                     ),
@@ -242,7 +246,11 @@ class _CSKHCustomersPageState extends ConsumerState<CSKHCustomersPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Tạo yêu cầu hỗ trợ cho KH: ${customer['name'] ?? ''}'), duration: const Duration(seconds: 2)),
+                        );
+                      },
                       icon: const Icon(Icons.add),
                       label: const Text('Tạo yêu cầu'),
                     ),

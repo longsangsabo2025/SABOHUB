@@ -205,7 +205,7 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
     );
   }
 
-  Widget _buildTableSelection(List tables) {
+  Widget _buildTableSelection(List<BilliardsTable> tables) {
     if (tables.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -238,7 +238,7 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
             onTap: () {
               setState(() {
                 _selectedTableId = table.id;
-                _hourlyRate = table.hourlyRate; // Set the table's hourly rate
+                _hourlyRate = table.hourlyRate;
               });
             },
             borderRadius: BorderRadius.circular(8),
@@ -279,7 +279,7 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
                           ),
                         ),
                         Text(
-                          '${table.type} - ${(table.hourlyRate / 1000).toInt()}K/giờ',
+                          '${table.typeLabel} - ${(table.hourlyRate / 1000).toInt()}K/giờ',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade600,

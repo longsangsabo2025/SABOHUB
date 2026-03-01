@@ -9,7 +9,7 @@
 /// 3. Add debt badge to customer cards
 /// 4. Add promotions to order creation
 
-library sales_features_integration;
+library;
 
 export 'sales_features_service.dart';
 export '../widgets/sales_features_widgets.dart';

@@ -406,7 +406,7 @@ class WarehouseFormSheet {
                           addressParts.add(selectedDistrict!.name);
                         }
                         if (selectedCity != null) {
-                          addressParts.add(selectedCity!.name);
+                          addressParts.add(selectedCity.name);
                         }
                         final fullAddress = addressParts.join(', ');
 
@@ -478,6 +478,7 @@ class WarehouseFormSheet {
                         }
 
                         if (context.mounted) Navigator.pop(context);
+                        if (!context.mounted) return;
                         onSuccess();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -486,6 +487,7 @@ class WarehouseFormSheet {
                           ),
                         );
                       } catch (e) {
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
                         );
@@ -775,6 +777,9 @@ class StockOutSheet {
                 child: FutureBuilder<List<Map<String, dynamic>>>(
                   future: getWarehouseStock(warehouseId),
                   builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()));
+                    }
                     final stocks = snapshot.data ?? [];
 
                     return SingleChildScrollView(
@@ -1018,6 +1023,9 @@ class TransferStockSheet {
                 child: FutureBuilder<List<Map<String, dynamic>>>(
                   future: getWarehouseStock(fromWarehouseId),
                   builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()));
+                    }
                     final stocks = snapshot.data ?? [];
 
                     return SingleChildScrollView(
@@ -1146,9 +1154,6 @@ class TransferStockSheet {
                                   final userId = ref.read(authProvider).user?.id ?? '';
                                   final toWarehouse = allWarehouses.firstWhere((w) => w['id'] == toWarehouseId, orElse: () => {});
                                   final toWarehouseName = toWarehouse['name'] ?? 'kho đích';
-                                  final transferNote = noteController.text.isNotEmpty
-                                      ? noteController.text
-                                      : 'Chuyển từ $fromWarehouseName sang $toWarehouseName';
 
                                   // Create 2 separate movement records for better tracking
                                   // 1. Transfer-out from source warehouse

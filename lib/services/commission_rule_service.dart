@@ -129,20 +129,12 @@ class CommissionRuleService {
     final date = billDate ?? DateTime.now();
     final dateStr = date.toIso8601String().split('T')[0];
 
-    // Get employee info - check users table first, then employees
-    var employeeData = await _supabase
-        .from('users')
+    // Get employee info from employees table
+    final employeeData = await _supabase
+        .from('employees')
         .select('role')
         .eq('id', employeeId)
         .maybeSingle();
-    
-    if (employeeData == null) {
-      employeeData = await _supabase
-          .from('employees')
-          .select('role')
-          .eq('id', employeeId)
-          .maybeSingle();
-    }
 
     final employeeRole = employeeData?['role'] as String? ?? 'staff';
 

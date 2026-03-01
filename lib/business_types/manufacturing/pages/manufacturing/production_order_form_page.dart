@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../providers/auth_provider.dart';
-import '../../services/manufacturing_service.dart';
-import '../../models/manufacturing_models.dart';
 
 /// Local provider to load products for manufacturing (avoids cross-import from distribution)
 final _manufacturingProductsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {

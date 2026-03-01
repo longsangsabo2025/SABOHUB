@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/daily_work_report.dart';
 import '../../services/daily_work_report_service.dart';
@@ -19,8 +19,6 @@ class DailyReportsDashboardPage extends ConsumerStatefulWidget {
 
 class _DailyReportsDashboardPageState
     extends ConsumerState<DailyReportsDashboardPage> {
-  final _supabase = Supabase.instance.client;
-  
   DateTime _selectedDate = DateTime.now();
   String _selectedStatus = 'all';
   String _selectedPeriod = 'today'; // today, week, month, quarter, year
@@ -296,14 +294,14 @@ class _DailyReportsDashboardPageState
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+          colors: [AppColors.primary, Color(0xFF6366F1)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF8B5CF6).withValues(alpha: 0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -457,13 +455,13 @@ class _DailyReportsDashboardPageState
         _loadData();
       },
       backgroundColor: Colors.white,
-      selectedColor: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+      selectedColor: AppColors.primary.withValues(alpha: 0.2),
       labelStyle: TextStyle(
-        color: isSelected ? const Color(0xFF8B5CF6) : Colors.grey.shade700,
+        color: isSelected ? AppColors.primary : Colors.grey.shade700,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
       ),
       side: BorderSide(
-        color: isSelected ? const Color(0xFF8B5CF6) : Colors.grey.shade300,
+        color: isSelected ? AppColors.primary : Colors.grey.shade300,
       ),
     );
   }
@@ -956,7 +954,7 @@ class _DailyReportsDashboardPageState
                       icon: const Icon(Icons.check_circle),
                       label: const Text('Duyệt báo cáo'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF10B981),
+                        backgroundColor: AppColors.success,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.all(16),
                         shape: RoundedRectangleBorder(
@@ -987,7 +985,7 @@ class _DailyReportsDashboardPageState
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: const Color(0xFF8B5CF6)),
+              Icon(icon, size: 20, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -1044,7 +1042,7 @@ class _DailyReportsDashboardPageState
           Row(
             children: [
               const Icon(Icons.checklist,
-                  size: 20, color: Color(0xFF10B981)),
+                  size: 20, color: AppColors.success),
               const SizedBox(width: 8),
               const Text(
                 'Danh sách công việc',
@@ -1077,7 +1075,7 @@ class _DailyReportsDashboardPageState
           Row(
             children: [
               const Icon(Icons.check_circle,
-                  size: 16, color: Color(0xFF10B981)),
+                  size: 16, color: AppColors.success),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1200,7 +1198,7 @@ class _DailyReportsDashboardPageState
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ Đã duyệt báo cáo'),
-            backgroundColor: Color(0xFF10B981),
+            backgroundColor: AppColors.success,
           ),
         );
         _loadData();

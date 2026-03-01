@@ -62,6 +62,7 @@ class _ReferrersPageState extends ConsumerState<ReferrersPage> with SingleTicker
         children: [
           _ReferrerListTab(
             onAddEdit: (referrer) => _showAddEditSheet(context, referrer: referrer),
+            onShowDetail: (referrer) => _showDetailSheet(context, referrer),
           ),
           const _CommissionsTab(),
         ],
@@ -85,13 +86,33 @@ class _ReferrersPageState extends ConsumerState<ReferrersPage> with SingleTicker
       ),
     );
   }
+
+  void _showDetailSheet(BuildContext context, Referrer referrer) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ReferrerDetailSheet(
+        referrer: referrer,
+        onEdit: () {
+          Navigator.pop(context);
+          _showAddEditSheet(context, referrer: referrer);
+        },
+        onRefresh: () {
+          ref.invalidate(referrersProvider);
+          ref.invalidate(commissionsProvider);
+        },
+      ),
+    );
+  }
 }
 
 // ==================== REFERRER LIST TAB ====================
 class _ReferrerListTab extends ConsumerStatefulWidget {
   final Function(Referrer?) onAddEdit;
+  final Function(Referrer) onShowDetail;
   
-  const _ReferrerListTab({required this.onAddEdit});
+  const _ReferrerListTab({required this.onAddEdit, required this.onShowDetail});
 
   @override
   ConsumerState<_ReferrerListTab> createState() => _ReferrerListTabState();
@@ -199,7 +220,7 @@ class _ReferrerListTabState extends ConsumerState<_ReferrerListTab> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () => widget.onAddEdit(referrer),
+        onTap: () => widget.onShowDetail(referrer),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -323,18 +344,6 @@ class _ReferrerListTabState extends ConsumerState<_ReferrerListTab> {
       ],
     );
   }
-
-  void _showAddEditSheet(BuildContext context, {Referrer? referrer}) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _ReferrerFormSheet(
-        referrer: referrer,
-        onSaved: () => ref.invalidate(referrersProvider),
-      ),
-    );
-  }
 }
 
 class _ReferrerFormSheet extends ConsumerStatefulWidget {
@@ -357,10 +366,18 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
   final _bankHolderController = TextEditingController();
   final _commissionRateController = TextEditingController();
   final _notesController = TextEditingController();
+  final _customerSearchController = TextEditingController();
   
   String _commissionType = 'all_orders';
   String _status = 'active';
   bool _isLoading = false;
+  
+  // Customer selection
+  List<Map<String, dynamic>> _allCustomers = [];
+  List<Map<String, dynamic>> _filteredCustomers = [];
+  Map<String, dynamic>? _selectedCustomer;
+  bool _isLoadingCustomers = true;
+  bool _showCustomerDropdown = false;
 
   @override
   void initState() {
@@ -378,7 +395,70 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
       _status = widget.referrer!.status;
     } else {
       _commissionRateController.text = '3'; // Default 3%
+      _loadCustomers();
     }
+  }
+
+  Future<void> _loadCustomers() async {
+    try {
+      final authState = ref.read(authProvider);
+      final companyId = authState.user?.companyId;
+      if (companyId == null) return;
+
+      final data = await Supabase.instance.client
+          .from('customers')
+          .select('id, name, phone, email, address')
+          .eq('company_id', companyId)
+          .order('name');
+
+      if (mounted) {
+        setState(() {
+          _allCustomers = List<Map<String, dynamic>>.from(data);
+          _filteredCustomers = _allCustomers;
+          _isLoadingCustomers = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingCustomers = false);
+    }
+  }
+
+  void _filterCustomers(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredCustomers = _allCustomers;
+      } else {
+        final q = query.toLowerCase();
+        _filteredCustomers = _allCustomers.where((c) {
+          final name = (c['name'] ?? '').toString().toLowerCase();
+          final phone = (c['phone'] ?? '').toString().toLowerCase();
+          return name.contains(q) || phone.contains(q);
+        }).toList();
+      }
+      _showCustomerDropdown = true;
+    });
+  }
+
+  void _selectCustomer(Map<String, dynamic> customer) {
+    setState(() {
+      _selectedCustomer = customer;
+      _nameController.text = customer['name'] ?? '';
+      _phoneController.text = customer['phone'] ?? '';
+      _emailController.text = customer['email'] ?? '';
+      _customerSearchController.text = customer['name'] ?? '';
+      _showCustomerDropdown = false;
+    });
+  }
+
+  void _clearCustomerSelection() {
+    setState(() {
+      _selectedCustomer = null;
+      _customerSearchController.clear();
+      _nameController.clear();
+      _phoneController.clear();
+      _emailController.clear();
+      _showCustomerDropdown = false;
+    });
   }
 
   @override
@@ -391,6 +471,7 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
     _bankHolderController.dispose();
     _commissionRateController.dispose();
     _notesController.dispose();
+    _customerSearchController.dispose();
     super.dispose();
   }
 
@@ -460,6 +541,142 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Customer quick-select (only for new referrers)
+                    if (!isEditing) ...[
+                      const Text(
+                        '🔍 Chọn từ khách hàng có sẵn',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tìm và chọn KH để tự động điền thông tin, hoặc bỏ qua để nhập tay',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_selectedCustomer != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _selectedCustomer!['name'] ?? '',
+                                      style: TextStyle(fontWeight: FontWeight.w600, color: Colors.green.shade700),
+                                    ),
+                                    if (_selectedCustomer!['phone'] != null)
+                                      Text(
+                                        _selectedCustomer!['phone'],
+                                        style: TextStyle(fontSize: 12, color: Colors.green.shade600),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.close, size: 18, color: Colors.green.shade600),
+                                onPressed: _clearCustomerSelection,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Column(
+                          children: [
+                            TextFormField(
+                              controller: _customerSearchController,
+                              decoration: InputDecoration(
+                                labelText: 'Tìm khách hàng...',
+                                hintText: 'Nhập tên hoặc SĐT',
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: _customerSearchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear, size: 18),
+                                        onPressed: () {
+                                          _customerSearchController.clear();
+                                          _filterCustomers('');
+                                          setState(() => _showCustomerDropdown = false);
+                                        },
+                                      )
+                                    : null,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                filled: true,
+                                fillColor: Colors.indigo.shade50,
+                              ),
+                              onChanged: _filterCustomers,
+                              onTap: () {
+                                if (_allCustomers.isNotEmpty) {
+                                  setState(() => _showCustomerDropdown = true);
+                                }
+                              },
+                            ),
+                            if (_isLoadingCustomers)
+                              const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Center(child: SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+                              ),
+                            if (_showCustomerDropdown && _filteredCustomers.isNotEmpty)
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                constraints: const BoxConstraints(maxHeight: 200),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.08),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: ListView.separated(
+                                  shrinkWrap: true,
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  itemCount: _filteredCustomers.length > 20 ? 20 : _filteredCustomers.length,
+                                  separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
+                                  itemBuilder: (context, index) {
+                                    final c = _filteredCustomers[index];
+                                    return ListTile(
+                                      dense: true,
+                                      leading: CustomerAvatar(seed: c['name'] ?? '', radius: 16),
+                                      title: Text(c['name'] ?? '', style: const TextStyle(fontSize: 14)),
+                                      subtitle: Text(
+                                        [c['phone'], c['address']].where((s) => s != null && s.toString().isNotEmpty).join(' • '),
+                                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      onTap: () => _selectCustomer(c),
+                                    );
+                                  },
+                                ),
+                              ),
+                            if (_showCustomerDropdown && _filteredCustomers.isEmpty && _customerSearchController.text.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Text(
+                                  'Không tìm thấy KH nào',
+                                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                                ),
+                              ),
+                          ],
+                        ),
+                      const SizedBox(height: 16),
+                      Divider(color: Colors.grey.shade200),
+                      const SizedBox(height: 16),
+                    ],
                     // Name
                     TextFormField(
                       controller: _nameController,
@@ -478,11 +695,17 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
                           child: TextFormField(
                             controller: _phoneController,
                             decoration: InputDecoration(
-                              labelText: 'Số điện thoại',
+                              labelText: 'Số điện thoại *',
                               prefixIcon: const Icon(Icons.phone),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             keyboardType: TextInputType.phone,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return 'Vui lòng nhập SĐT';
+                              final cleaned = v.trim().replaceAll(RegExp(r'[\s\-]'), '');
+                              if (!RegExp(r'^0\d{9,10}$').hasMatch(cleaned)) return 'SĐT không hợp lệ';
+                              return null;
+                            },
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -495,6 +718,14 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             keyboardType: TextInputType.emailAddress,
+                            validator: (v) {
+                              if (v != null && v.trim().isNotEmpty) {
+                                if (!RegExp(r'^[\w.+-]+@[\w-]+\.[\w.]+$').hasMatch(v.trim())) {
+                                  return 'Email không hợp lệ';
+                                }
+                              }
+                              return null;
+                            },
                           ),
                         ),
                       ],
@@ -512,7 +743,7 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
                           child: TextFormField(
                             controller: _commissionRateController,
                             decoration: InputDecoration(
-                              labelText: 'Tỷ lệ hoa hồng (%)',
+                              labelText: 'Tỷ lệ hoa hồng (%) *',
                               prefixIcon: const Icon(Icons.percent),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
@@ -520,6 +751,12 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
                             inputFormatters: [
                               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
                             ],
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return 'Vui lòng nhập tỷ lệ';
+                              final rate = double.tryParse(v.trim());
+                              if (rate == null || rate <= 0 || rate > 100) return '0-100%';
+                              return null;
+                            },
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -698,8 +935,13 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
       }
     } catch (e) {
       if (mounted) {
+        final msg = e.toString().contains('duplicate') 
+            ? 'Người giới thiệu đã tồn tại với số điện thoại này'
+            : e.toString().contains('network') || e.toString().contains('SocketException')
+                ? 'Lỗi kết nối mạng. Vui lòng thử lại'
+                : 'Không thể lưu. Vui lòng thử lại sau';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(msg), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -748,8 +990,11 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
       }
     } catch (e) {
       if (mounted) {
+        final msg = e.toString().contains('foreign key') || e.toString().contains('referenced')
+            ? 'Không thể xóa vì còn hoa hồng liên quan'
+            : 'Không thể xóa. Vui lòng thử lại';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(msg), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -858,14 +1103,99 @@ class _CommissionsTabState extends ConsumerState<_CommissionsTab> {
               }
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: commissions.length,
-                itemBuilder: (context, index) => _buildCommissionCard(commissions[index]),
+                itemCount: commissions.length + (_selectedStatus == 'pending' && commissions.isNotEmpty ? 1 : 0),
+                itemBuilder: (context, index) {
+                  // Batch approve button at the end for pending list
+                  if (_selectedStatus == 'pending' && index == commissions.length) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: OutlinedButton.icon(
+                        onPressed: () => _batchApprove(commissions),
+                        icon: const Icon(Icons.done_all),
+                        label: Text('Duyệt tất cả ${commissions.length} hoa hồng'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.blue,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    );
+                  }
+                  return _buildCommissionCard(commissions[index]);
+                },
               );
             },
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _batchApprove(List<Commission> commissions) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Duyệt tất cả'),
+        content: Text('Duyệt ${commissions.length} hoa hồng đang chờ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+            child: const Text('Duyệt tất cả', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final authState = ref.read(authProvider);
+      final supabase = Supabase.instance.client;
+      final now = DateTime.now().toIso8601String();
+
+      for (final c in commissions) {
+        await supabase.from('commissions').update({
+          'status': 'approved',
+          'approved_at': now,
+          'approved_by': authState.user?.id,
+          'updated_at': now,
+        }).eq('id', c.id);
+      }
+
+      // Sync all affected referrer totals
+      final referrerIds = commissions.map((c) => c.referrerId).toSet();
+      for (final rid in referrerIds) {
+        final allC = await supabase
+            .from('commissions')
+            .select('commission_amount, status')
+            .eq('referrer_id', rid)
+            .neq('status', 'cancelled');
+        double totalEarned = 0, totalPaid = 0;
+        for (final c in allC) {
+          final amt = (c['commission_amount'] ?? 0).toDouble();
+          totalEarned += amt;
+          if (c['status'] == 'paid') totalPaid += amt;
+        }
+        await supabase.from('referrers').update({
+          'total_earned': totalEarned,
+          'total_paid': totalPaid,
+        }).eq('id', rid);
+      }
+
+      ref.invalidate(commissionsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đã duyệt ${commissions.length} hoa hồng'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không thể duyệt. Vui lòng thử lại'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Widget _buildStatsSummary() {
@@ -1042,6 +1372,546 @@ class _CommissionsTabState extends ConsumerState<_CommissionsTab> {
         onUpdated: () => ref.invalidate(commissionsProvider),
       ),
     );
+  }
+}
+
+// ==================== REFERRER DETAIL SHEET ====================
+class _ReferrerDetailSheet extends ConsumerStatefulWidget {
+  final Referrer referrer;
+  final VoidCallback onEdit;
+  final VoidCallback onRefresh;
+
+  const _ReferrerDetailSheet({
+    required this.referrer,
+    required this.onEdit,
+    required this.onRefresh,
+  });
+
+  @override
+  ConsumerState<_ReferrerDetailSheet> createState() => _ReferrerDetailSheetState();
+}
+
+class _ReferrerDetailSheetState extends ConsumerState<_ReferrerDetailSheet> {
+  final _currencyFormat = NumberFormat('#,###', 'vi_VN');
+  List<Map<String, dynamic>> _linkedCustomers = [];
+  List<Commission> _referrerCommissions = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Load linked customers with order stats
+      final customersData = await supabase
+          .from('customers')
+          .select('id, name, phone, status')
+          .eq('referrer_id', widget.referrer.id)
+          .order('name');
+
+      // Load commissions for this referrer
+      final commissionsData = await supabase
+          .from('commissions')
+          .select('*, customers(name)')
+          .eq('referrer_id', widget.referrer.id)
+          .order('created_at', ascending: false);
+
+      // Load order count per customer
+      final customerList = <Map<String, dynamic>>[];
+      for (final c in customersData) {
+        final ordersCount = await supabase
+            .from('sales_orders')
+            .select('id')
+            .eq('customer_id', c['id']);
+        final completedOrders = await supabase
+            .from('sales_orders')
+            .select('id, total')
+            .eq('customer_id', c['id'])
+            .eq('status', 'completed');
+        final totalRevenue = (completedOrders as List).fold<double>(
+          0, (sum, o) => sum + ((o['total'] ?? 0) as num).toDouble(),
+        );
+        customerList.add({
+          ...c,
+          'order_count': (ordersCount as List).length,
+          'completed_orders': completedOrders.length,
+          'total_revenue': totalRevenue,
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          _linkedCustomers = customerList;
+          _referrerCommissions = (commissionsData as List)
+              .map((j) => Commission.fromJson(j))
+              .toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        debugPrint('Error loading referrer detail: $e');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final referrer = widget.referrer;
+    final pendingAmount = referrer.pendingAmount;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.92,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                CustomerAvatar(seed: referrer.name, radius: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        referrer.name,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      if (referrer.phone != null)
+                        Text(referrer.phone!, style: TextStyle(color: Colors.grey.shade600)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Text(
+                    '${referrer.commissionRate}%',
+                    style: TextStyle(color: Colors.orange.shade700, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: widget.onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Chỉnh sửa',
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // Content
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Stats cards
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Đã tích lũy',
+                                '${_currencyFormat.format(referrer.totalEarned)}đ',
+                                Colors.green,
+                                Icons.trending_up,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Đã trả',
+                                '${_currencyFormat.format(referrer.totalPaid)}đ',
+                                Colors.blue,
+                                Icons.check_circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Còn lại',
+                                '${_currencyFormat.format(pendingAmount)}đ',
+                                pendingAmount > 0 ? Colors.orange : Colors.grey,
+                                Icons.schedule,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // Summary stats
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Khách hàng',
+                                '${_linkedCustomers.length}',
+                                Colors.indigo,
+                                Icons.people,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Hoa hồng',
+                                '${_referrerCommissions.length}',
+                                Colors.purple,
+                                Icons.receipt_long,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Loại',
+                                referrer.commissionTypeText,
+                                Colors.teal,
+                                Icons.settings,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Referrer info
+                        if (referrer.email != null || referrer.bankName != null) ...[
+                          _buildSectionHeader('📋 Thông tin', Icons.info_outline),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              children: [
+                                if (referrer.email != null)
+                                  _buildInfoRow('Email', referrer.email!),
+                                if (referrer.bankName != null)
+                                  _buildInfoRow('Ngân hàng', referrer.bankName!),
+                                if (referrer.bankAccount != null)
+                                  _buildInfoRow('STK', referrer.bankAccount!),
+                                if (referrer.bankHolder != null)
+                                  _buildInfoRow('Chủ TK', referrer.bankHolder!),
+                                if (referrer.notes != null && referrer.notes!.isNotEmpty)
+                                  _buildInfoRow('Ghi chú', referrer.notes!),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+
+                        // Linked customers
+                        _buildSectionHeader('👥 Khách hàng liên kết (${_linkedCustomers.length})', Icons.people),
+                        const SizedBox(height: 8),
+                        if (_linkedCustomers.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(Icons.person_off, size: 40, color: Colors.grey.shade400),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Chưa có khách hàng nào được liên kết',
+                                    style: TextStyle(color: Colors.grey.shade500),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          ...(_linkedCustomers.map((c) => _buildCustomerCard(c))),
+
+                        const SizedBox(height: 24),
+
+                        // Commission history
+                        _buildSectionHeader('💰 Lịch sử hoa hồng (${_referrerCommissions.length})', Icons.monetization_on),
+                        const SizedBox(height: 8),
+                        if (_referrerCommissions.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(Icons.monetization_on_outlined, size: 40, color: Colors.grey.shade400),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Chưa có hoa hồng nào',
+                                    style: TextStyle(color: Colors.grey.shade500),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          ...(_referrerCommissions.map((c) => _buildCommissionRow(c))),
+
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(fontSize: 10, color: color.withOpacity(0.8))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+          Flexible(
+            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13), textAlign: TextAlign.end),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomerCard(Map<String, dynamic> customer) {
+    final orderCount = customer['order_count'] ?? 0;
+    final completedOrders = customer['completed_orders'] ?? 0;
+    final totalRevenue = (customer['total_revenue'] ?? 0).toDouble();
+    final isActive = customer['status'] != 'inactive';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            CustomerAvatar(seed: customer['name'] ?? '', radius: 18),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          customer['name'] ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                      ),
+                      if (!isActive)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text('Ngưng', style: TextStyle(fontSize: 10, color: Colors.red.shade700)),
+                        ),
+                    ],
+                  ),
+                  if (customer['phone'] != null)
+                    Text(customer['phone'], style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.receipt_long, size: 13, color: Colors.grey.shade500),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$orderCount đơn ($completedOrders hoàn thành)',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      ),
+                      const Spacer(),
+                      if (totalRevenue > 0)
+                        Text(
+                          '${_currencyFormat.format(totalRevenue)}đ',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCommissionRow(Commission commission) {
+    final statusColor = _getCommissionStatusColor(commission.status);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: statusColor.withOpacity(0.1),
+              child: Icon(Icons.monetization_on, color: statusColor, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          commission.orderCode ?? '#${commission.orderId?.substring(0, 8) ?? '---'}',
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          commission.statusText,
+                          style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        '→ ${commission.customerName ?? 'KH'}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${_currencyFormat.format(commission.orderAmount)}đ × ${commission.commissionRate}% = ',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                      ),
+                      Text(
+                        '${_currencyFormat.format(commission.commissionAmount)}đ',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (commission.createdAt != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        DateFormat('dd/MM/yyyy HH:mm').format(commission.createdAt!),
+                        style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getCommissionStatusColor(String status) {
+    switch (status) {
+      case 'pending': return Colors.orange;
+      case 'approved': return Colors.blue;
+      case 'paid': return Colors.green;
+      case 'cancelled': return Colors.red;
+      default: return Colors.grey;
+    }
   }
 }
 
@@ -1308,10 +2178,8 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
           .update(updates)
           .eq('id', widget.commission.id);
 
-      // Update referrer total_earned if approved
-      if (newStatus == 'approved') {
-        await _updateReferrerTotals();
-      }
+      // Sync referrer totals from actual commission data
+      await _syncReferrerTotals();
 
       if (mounted) {
         Navigator.pop(context);
@@ -1326,7 +2194,7 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Không thể cập nhật trạng thái. Vui lòng thử lại'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1334,24 +2202,33 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
     }
   }
 
-  Future<void> _updateReferrerTotals() async {
+  /// Recalculate referrer totals from actual commission data to avoid drift
+  Future<void> _syncReferrerTotals() async {
     try {
-      // Get current referrer data
-      final referrerData = await Supabase.instance.client
-          .from('referrers')
-          .select('total_earned')
-          .eq('id', widget.commission.referrerId)
-          .single();
+      final supabase = Supabase.instance.client;
+      final referrerId = widget.commission.referrerId;
 
-      final currentTotal = (referrerData['total_earned'] ?? 0).toDouble();
-      final newTotal = currentTotal + widget.commission.commissionAmount;
+      // Sum all non-cancelled commissions = total_earned
+      final allCommissions = await supabase
+          .from('commissions')
+          .select('commission_amount, status')
+          .eq('referrer_id', referrerId)
+          .neq('status', 'cancelled');
 
-      await Supabase.instance.client
+      double totalEarned = 0;
+      double totalPaid = 0;
+      for (final c in allCommissions) {
+        final amount = (c['commission_amount'] ?? 0).toDouble();
+        totalEarned += amount;
+        if (c['status'] == 'paid') totalPaid += amount;
+      }
+
+      await supabase
           .from('referrers')
-          .update({'total_earned': newTotal})
-          .eq('id', widget.commission.referrerId);
+          .update({'total_earned': totalEarned, 'total_paid': totalPaid})
+          .eq('id', referrerId);
     } catch (e) {
-      debugPrint('Error updating referrer totals: $e');
+      debugPrint('Error syncing referrer totals: $e');
     }
   }
 
@@ -1412,8 +2289,8 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
           })
           .eq('id', widget.commission.id);
 
-      // Update referrer total_paid
-      await _updateReferrerPaid();
+      // Sync referrer totals from actual commission data
+      await _syncReferrerTotals();
 
       if (mounted) {
         Navigator.pop(context);
@@ -1425,7 +2302,7 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Thanh toán thất bại. Vui lòng thử lại'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1433,23 +2310,5 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
     }
   }
 
-  Future<void> _updateReferrerPaid() async {
-    try {
-      final referrerData = await Supabase.instance.client
-          .from('referrers')
-          .select('total_paid')
-          .eq('id', widget.commission.referrerId)
-          .single();
 
-      final currentPaid = (referrerData['total_paid'] ?? 0).toDouble();
-      final newPaid = currentPaid + widget.commission.commissionAmount;
-
-      await Supabase.instance.client
-          .from('referrers')
-          .update({'total_paid': newPaid})
-          .eq('id', widget.commission.referrerId);
-    } catch (e) {
-      debugPrint('Error updating referrer paid: $e');
-    }
-  }
 }

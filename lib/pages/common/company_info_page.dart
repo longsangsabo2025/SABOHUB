@@ -12,7 +12,7 @@ import '../ceo/company/overview_tab.dart';
 
 /// Company Info Page Provider
 final companyInfoProvider =
-    FutureProvider.family<Company?, String>((ref, id) async {
+    FutureProvider.autoDispose.family<Company?, String>((ref, id) async {
   ref.keepAlive();
   final service = ref.watch(companyServiceProvider);
   return await service.getCompanyById(id);

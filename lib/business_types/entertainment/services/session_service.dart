@@ -31,12 +31,14 @@ class SessionService {
           .from('table_sessions')
           .select('''
             *,
-            billiards_tables!inner(
-              name,
+            tables!inner(
+              table_number,
+              table_type,
+              hourly_rate,
               company_id
             )
           ''')
-          .eq('billiards_tables.company_id', cid)
+          .eq('tables.company_id', cid)
           .order('start_time', ascending: false);
 
       return response.map<TableSession>((data) => _mapToTableSession(data)).toList();
@@ -54,12 +56,14 @@ class SessionService {
           .from('table_sessions')
           .select('''
             *,
-            billiards_tables!inner(
-              name,
+            tables!inner(
+              table_number,
+              table_type,
+              hourly_rate,
               company_id
             )
           ''')
-          .eq('billiards_tables.company_id', cid)
+          .eq('tables.company_id', cid)
           .eq('status', status.name)
           .order('start_time', ascending: false);
 
@@ -83,13 +87,15 @@ class SessionService {
           .from('table_sessions')
           .select('''
             *,
-            billiards_tables!inner(
-              name,
+            tables!inner(
+              table_number,
+              table_type,
+              hourly_rate,
               company_id
             )
           ''')
           .eq('id', sessionId)
-          .eq('billiards_tables.company_id', cid)
+          .eq('tables.company_id', cid)
           .single();
 
       return _mapToTableSession(response);
@@ -124,8 +130,10 @@ class SessionService {
           .insert(sessionData)
           .select('''
             *,
-            billiards_tables!inner(
-              name,
+            tables!inner(
+              table_number,
+              table_type,
+              hourly_rate,
               company_id
             )
           ''')
@@ -133,7 +141,7 @@ class SessionService {
 
       // Update table status to occupied
       await _supabase
-          .from('billiards_tables')
+          .from('tables')
           .update({'status': 'occupied'})
           .eq('id', tableId);
 
@@ -155,8 +163,10 @@ class SessionService {
           .eq('id', sessionId)
           .select('''
             *,
-            billiards_tables!inner(
-              name,
+            tables!inner(
+              table_number,
+              table_type,
+              hourly_rate,
               company_id
             )
           ''')
@@ -190,8 +200,10 @@ class SessionService {
           .eq('id', sessionId)
           .select('''
             *,
-            billiards_tables!inner(
-              name,
+            tables!inner(
+              table_number,
+              table_type,
+              hourly_rate,
               company_id
             )
           ''')
@@ -211,7 +223,6 @@ class SessionService {
         throw Exception('Không tìm thấy phiên chơi');
       }
 
-      // Calculate final amounts
       final tableAmount = session.calculateTableAmount();
       final totalAmount = tableAmount + session.ordersAmount;
 
@@ -226,22 +237,57 @@ class SessionService {
           .eq('id', sessionId)
           .select('''
             *,
-            billiards_tables!inner(
-              name,
+            tables!inner(
+              table_number,
+              table_type,
+              hourly_rate,
               company_id
             )
           ''')
           .single();
 
-      // Update table status to available
       await _supabase
-          .from('billiards_tables')
+          .from('tables')
           .update({'status': 'available'})
           .eq('id', session.tableId);
+
+      _updateDailyRevenue(session.companyId, totalAmount);
 
       return _mapToTableSession(response);
     } catch (e) {
       throw Exception('Lỗi khi kết thúc phiên chơi: $e');
+    }
+  }
+
+  /// Best-effort update to daily_revenue when a session completes.
+  /// Failures here should not block the session end flow.
+  Future<void> _updateDailyRevenue(String companyId, double amount) async {
+    try {
+      if (companyId.isEmpty || amount <= 0) return;
+      final today = DateTime.now().toIso8601String().split('T')[0];
+
+      final existing = await _supabase
+          .from('daily_revenue')
+          .select('id, total_revenue')
+          .eq('company_id', companyId)
+          .eq('date', today)
+          .maybeSingle();
+
+      if (existing != null) {
+        final current = (existing['total_revenue'] as num?)?.toDouble() ?? 0;
+        await _supabase
+            .from('daily_revenue')
+            .update({'total_revenue': current + amount})
+            .eq('id', existing['id']);
+      } else {
+        await _supabase.from('daily_revenue').insert({
+          'company_id': companyId,
+          'date': today,
+          'total_revenue': amount,
+        });
+      }
+    } catch (_) {
+      // Non-critical: don't fail session completion if revenue tracking errors
     }
   }
 
@@ -262,8 +308,10 @@ class SessionService {
           .eq('id', sessionId)
           .select('''
             *,
-            billiards_tables!inner(
-              name,
+            tables!inner(
+              table_number,
+              table_type,
+              hourly_rate,
               company_id
             )
           ''')
@@ -271,7 +319,7 @@ class SessionService {
 
       // Update table status to available
       await _supabase
-          .from('billiards_tables')
+          .from('tables')
           .update({'status': 'available'})
           .eq('id', session.tableId);
 
@@ -297,8 +345,10 @@ class SessionService {
           .eq('id', sessionId)
           .select('''
             *,
-            billiards_tables!inner(
-              name,
+            tables!inner(
+              table_number,
+              table_type,
+              hourly_rate,
               company_id
             )
           ''')
@@ -332,8 +382,10 @@ class SessionService {
           .eq('id', sessionId)
           .select('''
             *,
-            billiards_tables!inner(
-              name,
+            tables!inner(
+              table_number,
+              table_type,
+              hourly_rate,
               company_id
             )
           ''')
@@ -376,13 +428,14 @@ class SessionService {
     }
   }
 
-  // Private helper method to map database response to TableSession
   TableSession _mapToTableSession(Map<String, dynamic> data) {
+    final tableData = data['tables'] as Map<String, dynamic>?;
+    final tableNumber = tableData?['table_number']?.toString() ?? '?';
     return TableSession(
       id: data['id'] ?? '',
       tableId: data['table_id'] ?? '',
-      tableName: data['billiards_tables']?['name'] ?? 'Không rõ',
-      companyId: data['billiards_tables']?['company_id'] ?? '',
+      tableName: 'Bàn $tableNumber',
+      companyId: tableData?['company_id'] ?? '',
       startTime: DateTime.parse(data['start_time']),
       endTime: data['end_time'] != null ? DateTime.parse(data['end_time']) : null,
       pauseTime: data['pause_time'] != null ? DateTime.parse(data['pause_time']) : null,

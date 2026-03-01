@@ -149,7 +149,7 @@ class AccountingService {
                 final product = item['products'] as Map<String, dynamic>?;
                 return product?['name']?.toString().trim();
               })
-              .where((name) => name != null && name!.isNotEmpty)
+              .where((name) => name != null && name.isNotEmpty)
               .cast<String>()
               .toList();
           final itemsSummary = itemNames.isEmpty

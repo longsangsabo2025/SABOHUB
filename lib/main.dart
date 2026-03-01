@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'core/config/sentry_config.dart';
 import 'core/config/supabase_config.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -54,7 +56,22 @@ void main() {
     debug: !kReleaseMode,
   );
 
-  runApp(const ProviderScope(child: SaboHubApp()));
+  // Initialize Sentry if DSN is configured
+    if (SentryConfig.isEnabled) {
+      await SentryFlutter.init(
+        (options) {
+          options.dsn = SentryConfig.dsn;
+          options.tracesSampleRate = SentryConfig.tracesSampleRate;
+          options.environment = SentryConfig.environment;
+          options.sendDefaultPii = false;
+          options.attachScreenshot = true;
+          options.debug = !kReleaseMode;
+        },
+        appRunner: () => runApp(const ProviderScope(child: SaboHubApp())),
+      );
+    } else {
+      runApp(const ProviderScope(child: SaboHubApp()));
+    }
   }, appName: 'sabo-hub');
 }
 

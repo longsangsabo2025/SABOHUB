@@ -21,7 +21,7 @@ import 'company/tasks_tab.dart';
 /// Company Details Page Provider
 /// Caches data to prevent unnecessary refetches when switching tabs
 final companyDetailsProvider =
-    FutureProvider.family<Company?, String>((ref, id) async {
+    FutureProvider.autoDispose.family<Company?, String>((ref, id) async {
   // Keep provider alive to cache company data across tab switches
   ref.keepAlive();
 
@@ -31,14 +31,14 @@ final companyDetailsProvider =
 
 /// Company Branches Provider
 final companyBranchesProvider =
-    FutureProvider.family<List<Branch>, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<List<Branch>, String>((ref, companyId) async {
   final service = BranchService();
   return await service.getAllBranches(companyId: companyId);
 });
 
 /// Company Stats Provider
 final companyStatsProvider =
-    FutureProvider.family<Map<String, dynamic>, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, companyId) async {
   final service = ref.watch(companyServiceProvider);
   return await service.getCompanyStats(companyId);
 });

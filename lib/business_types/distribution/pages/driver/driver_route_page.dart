@@ -194,7 +194,11 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
                           children: [
                             const Text('Đơn cần giao', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                             if (_todayDeliveries.isNotEmpty)
-                              TextButton(onPressed: () {}, child: Text('Xem tất cả (${_todayDeliveries.length})')),
+                              TextButton(onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Tất cả ${_todayDeliveries.length} đơn giao hôm nay'), duration: const Duration(seconds: 2)),
+                                );
+                              }, child: Text('Xem tất cả (${_todayDeliveries.length})')),
                           ],
                         ),
                       ),
@@ -278,8 +282,10 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
                     } else if (value == 'bug_report') {
                       BugReportDialog.show(context);
                     } else if (value == 'logout') {
+                      final router = GoRouter.of(context);
                       await ref.read(authProvider.notifier).logout();
-                      if (context.mounted) context.go('/login');
+                      if (!mounted) return;
+                      router.go('/login');
                     }
                   },
                   itemBuilder: (context) => [
@@ -406,6 +412,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
           .gte('completed_at', startOfDay.toIso8601String())
           .order('completed_at', ascending: false);
 
+      if (!mounted) return;
       Navigator.pop(context); // Close loading
 
       // Calculate stats by payment method
@@ -756,7 +763,6 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
   Widget _buildDeliveryCard(Map<String, dynamic> delivery) {
     final isFromSalesOrders = delivery['_source'] == 'sales_orders';
-    final isPendingMarker = delivery['_isPending'] == true;
     
     Map<String, dynamic>? customer;
     String orderNumber;
@@ -788,7 +794,6 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
     Color statusColor;
     String statusText;
     IconData statusIcon;
-    bool isPending = isPendingMarker;
 
     if (isFromSalesOrders) {
       switch (deliveryStatus) {
@@ -796,19 +801,16 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
           statusColor = Colors.orange;
           statusText = 'Chờ nhận';
           statusIcon = Icons.pending_actions;
-          isPending = true;
           break;
         case 'delivering':
           statusColor = Colors.blue;
           statusText = 'Đang giao';
           statusIcon = Icons.local_shipping;
-          isPending = false;
           break;
         default:
           statusColor = Colors.grey;
           statusText = deliveryStatus;
           statusIcon = Icons.help_outline;
-          isPending = true;
       }
     } else {
       switch (deliveryStatus) {
@@ -817,31 +819,26 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
           statusColor = Colors.orange;
           statusText = 'Chờ nhận';
           statusIcon = Icons.pending_actions;
-          isPending = true;
           break;
         case 'in_progress':
           statusColor = Colors.blue;
           statusText = 'Đang giao';
           statusIcon = Icons.local_shipping;
-          isPending = false;
           break;
         case 'completed':
           statusColor = Colors.green;
           statusText = 'Đã giao';
           statusIcon = Icons.check_circle;
-          isPending = false;
           break;
         case 'cancelled':
           statusColor = Colors.red;
           statusText = 'Đã hủy';
           statusIcon = Icons.cancel;
-          isPending = false;
           break;
         default:
           statusColor = Colors.grey;
           statusText = deliveryStatus;
           statusIcon = Icons.help_outline;
-          isPending = true;
       }
     }
 
@@ -1048,6 +1045,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
     
     String? selectedOption;
     
+    if (!mounted) return;
     final confirmed = await showDialog<String>(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1155,7 +1153,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
       if (isFromSalesOrders) {
         final now = DateTime.now().toIso8601String();
-        final newDelivery = await supabase.from('deliveries').insert({
+        await supabase.from('deliveries').insert({
           'company_id': companyId, 'order_id': orderId, 'driver_id': driverId,
           'delivery_number': 'DL-${DateTime.now().millisecondsSinceEpoch}',
           'delivery_date': DateTime.now().toIso8601String().split('T')[0],
@@ -1203,6 +1201,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
       final customerData = orderResponse['customers'] as Map<String, dynamic>?;
       final customerName = customerData?['name'] ?? 'Khách hàng';
 
+      if (!mounted) return;
       final result = await showDialog<Map<String, dynamic>>(
         context: context,
         builder: (context) => DeliveryCompletionDialog(

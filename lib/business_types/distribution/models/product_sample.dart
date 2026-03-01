@@ -239,4 +239,25 @@ class ProductSampleFilters {
     this.toDate,
     this.search,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProductSampleFilters &&
+          runtimeType == other.runtimeType &&
+          status == other.status &&
+          customerId == other.customerId &&
+          productId == other.productId &&
+          fromDate == other.fromDate &&
+          toDate == other.toDate &&
+          search == other.search;
+
+  @override
+  int get hashCode =>
+      status.hashCode ^
+      customerId.hashCode ^
+      productId.hashCode ^
+      fromDate.hashCode ^
+      toDate.hashCode ^
+      search.hashCode;
 }

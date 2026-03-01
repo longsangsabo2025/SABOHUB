@@ -15,7 +15,7 @@ class PurchaseOrderFormPage extends ConsumerStatefulWidget {
 class _PurchaseOrderFormPageState extends ConsumerState<PurchaseOrderFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
-  final _service = ManufacturingService();
+  late ManufacturingService _service;
 
   String? _selectedSupplierId;
   DateTime _orderDate = DateTime.now();
@@ -31,6 +31,7 @@ class _PurchaseOrderFormPageState extends ConsumerState<PurchaseOrderFormPage> {
   @override
   void initState() {
     super.initState();
+    _service = ManufacturingService(companyId: ref.read(authProvider).user?.companyId);
     _loadData();
   }
 

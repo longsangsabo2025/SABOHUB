@@ -1,5 +1,5 @@
-/// Customer Tier Classification - Phân loại khách hàng theo doanh số
-/// Dựa trên view v_sales_by_customer từ database
+// Customer Tier Classification - Phân loại khách hàng theo doanh số
+// Dựa trên view v_sales_by_customer từ database
 import 'package:flutter/material.dart';
 
 /// Tier phân loại khách hàng theo doanh số

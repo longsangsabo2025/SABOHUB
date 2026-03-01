@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'app_logger.dart';
+import '../core/config/sentry_config.dart';
 
 /// Comprehensive Error Tracking System for SABOHUB
 /// Captures, logs, and reports errors with context
@@ -67,6 +70,11 @@ class ErrorTracker {
     _addError(report);
     _logError(report);
     _storeErrors();
+
+    // Send to Sentry if available
+    if (SentryConfig.isEnabled) {
+      Sentry.captureException(error, stackTrace: stackTrace);
+    }
 
     // In production, you might want to send to crash reporting service
     if (kReleaseMode && severity == ErrorSeverity.critical) {
@@ -133,12 +141,12 @@ class ErrorTracker {
   void _logError(ErrorReport report) {
     if (kDebugMode) {
       final severity = report.severity.name.toUpperCase();
-      debugPrint('🚨 [$severity] ${report.context}: ${report.error}');
+      AppLogger.error('[$severity] ${report.context}: ${report.error}');
       if (report.stackTrace != null) {
-        debugPrint('Stack trace: ${report.stackTrace}');
+        AppLogger.error('Stack trace: ${report.stackTrace}');
       }
       if (report.additionalInfo.isNotEmpty) {
-        debugPrint('Additional info: ${report.additionalInfo}');
+        AppLogger.info('Additional info', report.additionalInfo);
       }
     }
   }
@@ -150,7 +158,7 @@ class ErrorTracker {
       final errorData = _errors.map((e) => e.toJson()).toList();
       await prefs.setString(_storageKey, jsonEncode(errorData));
     } catch (e) {
-      debugPrint('Failed to store errors: $e');
+      AppLogger.error('Failed to store errors', e);
     }
   }
 
@@ -166,7 +174,7 @@ class ErrorTracker {
         _errors.addAll(errorData.map((e) => ErrorReport.fromJson(e)));
       }
     } catch (e) {
-      debugPrint('Failed to load stored errors: $e');
+      AppLogger.error('Failed to load stored errors', e);
     }
   }
 
@@ -174,7 +182,7 @@ class ErrorTracker {
   Future<void> _sendToCrashReporting(ErrorReport report) async {
     // In production, implement actual crash reporting
     // Examples: Firebase Crashlytics, Sentry, Bugsnag
-    debugPrint('Sending critical error to crash reporting: ${report.error}');
+    AppLogger.error('Sending critical error to crash reporting: ${report.error}');
   }
 
   /// Get current user ID (from auth state)

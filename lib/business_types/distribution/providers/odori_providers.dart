@@ -200,7 +200,7 @@ final salesOrdersProvider = FutureProvider.autoDispose
     query = query.lte('order_date', filters.dateTo!.toIso8601String());
   }
 
-  final response = await query.order('order_date', ascending: false);
+  final response = await query.order('order_date', ascending: false).limit(500);
   print('✅ salesOrdersProvider: loaded ${(response as List).length} orders');
   return response.map((json) => OdoriSalesOrder.fromJson(json)).toList();
 });
@@ -277,7 +277,7 @@ final deliveriesProvider = FutureProvider.autoDispose
     query = query.eq('driver_id', filters.driverId!);
   }
 
-  final response = await query.order('delivery_date', ascending: false);
+  final response = await query.order('delivery_date', ascending: false).limit(500);
   return (response as List).map((json) => OdoriDelivery.fromJson(json)).toList();
 });
 
@@ -665,7 +665,8 @@ final allCustomersProvider = FutureProvider.autoDispose<List<OdoriCustomer>>((re
       .select('*, employees(full_name)')
       .eq('company_id', companyId)
       .eq('status', 'active')
-      .order('name');
+      .order('name')
+      .limit(1000);
 
   return (response as List).map((json) => OdoriCustomer.fromJson(json)).toList();
 });

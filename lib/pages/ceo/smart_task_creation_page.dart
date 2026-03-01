@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -27,6 +28,10 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
   String? _selectedManagerId;
   String? _selectedCompanyId;
   TaskPriority _selectedPriority = TaskPriority.medium;
+  TaskCategory _selectedCategory = TaskCategory.general;
+  String _selectedRecurrence = 'none';
+  final List<String> _checklistItems = [];
+  final _checklistItemController = TextEditingController();
   DateTime? _selectedDueDate;
 
   // Form keys for validation
@@ -57,6 +62,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
     _animationController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
+    _checklistItemController.dispose();
     super.dispose();
   }
 
@@ -181,13 +187,13 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
               color: isCompleted
                   ? Colors.green
                   : isActive
-                      ? const Color(0xFF3B82F6)
+                      ? AppColors.info
                       : Colors.grey.shade300,
               shape: BoxShape.circle,
               boxShadow: isActive
                   ? [
                       BoxShadow(
-                        color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                        color: AppColors.info.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -212,7 +218,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
             style: TextStyle(
               fontSize: 12,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              color: isActive ? const Color(0xFF3B82F6) : Colors.grey.shade600,
+              color: isActive ? AppColors.info : Colors.grey.shade600,
             ),
             textAlign: TextAlign.center,
           ),
@@ -320,14 +326,14 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFF3B82F6)
+                            ? AppColors.info
                             : Colors.grey.shade300,
                         width: isSelected ? 2 : 1,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF3B82F6)
+                                color: AppColors.info
                                     .withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
@@ -342,7 +348,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                           height: 48,
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? const Color(0xFF3B82F6)
+                                ? AppColors.info
                                 : Colors.purple.shade100,
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -365,7 +371,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: isSelected
-                                      ? const Color(0xFF3B82F6)
+                                      ? AppColors.info
                                       : Colors.black,
                                 ),
                               ),
@@ -377,7 +383,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                             width: 32,
                             height: 32,
                             decoration: const BoxDecoration(
-                              color: Color(0xFF3B82F6),
+                              color: AppColors.info,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -393,6 +399,38 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
               );
             }).toList(),
           ),
+        const SizedBox(height: 24),
+
+        // Category selector
+        Text(
+          '📂 Phân loại mảng',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: TaskCategory.values.map((cat) {
+            final isSelected = _selectedCategory == cat;
+            return ChoiceChip(
+              label: Text(cat.displayName),
+              selected: isSelected,
+              onSelected: (_) => setState(() => _selectedCategory = cat),
+              selectedColor: AppColors.info.withValues(alpha: 0.2),
+              side: BorderSide(
+                color: isSelected ? AppColors.info : Colors.grey.shade300,
+                width: isSelected ? 2 : 1,
+              ),
+              labelStyle: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? AppColors.info : Colors.grey.shade700,
+              ),
+            );
+          }).toList(),
+        ),
+
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(12),
@@ -575,7 +613,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                 return Theme(
                   data: Theme.of(context).copyWith(
                     colorScheme: const ColorScheme.light(
-                      primary: Color(0xFF3B82F6),
+                      primary: AppColors.info,
                     ),
                   ),
                   child: child!,
@@ -630,8 +668,125 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
             ),
           ),
         ),
+
+        const SizedBox(height: 24),
+
+        // Recurrence
+        Text(
+          '🔄 Lặp lại',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade800,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ('none', 'Không lặp'),
+            ('daily', 'Hằng ngày'),
+            ('weekly', 'Hằng tuần'),
+            ('monthly', 'Hằng tháng'),
+          ].map((e) {
+            final isSelected = _selectedRecurrence == e.$1;
+            return ChoiceChip(
+              label: Text(e.$2),
+              selected: isSelected,
+              onSelected: (_) => setState(() => _selectedRecurrence = e.$1),
+              selectedColor: Colors.orange.withValues(alpha: 0.2),
+              side: BorderSide(
+                color: isSelected ? Colors.orange : Colors.grey.shade300,
+              ),
+              labelStyle: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? Colors.orange.shade700 : Colors.grey.shade700,
+              ),
+            );
+          }).toList(),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Checklist builder
+        Text(
+          '✅ Checklist (các bước thực hiện)',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey.shade800,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _checklistItemController,
+                decoration: InputDecoration(
+                  hintText: 'VD: Tạo account, Thiết kế logo...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 10),
+                  isDense: true,
+                ),
+                onSubmitted: (_) => _addChecklistItemToForm(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: _addChecklistItemToForm,
+              icon: const Icon(Icons.add_circle),
+              color: Colors.blue,
+              tooltip: 'Thêm bước',
+            ),
+          ],
+        ),
+        if (_checklistItems.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ...List.generate(_checklistItems.length, (i) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Text(
+                    '${i + 1}.',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(_checklistItems[i]),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() => _checklistItems.removeAt(i));
+                    },
+                    icon: Icon(Icons.close, size: 18, color: Colors.red.shade400),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
       ],
     );
+  }
+
+  void _addChecklistItemToForm() {
+    final text = _checklistItemController.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _checklistItems.add(text);
+    });
+    _checklistItemController.clear();
   }
 
   // Step 3: Assignment (Manager Selection)
@@ -709,14 +864,14 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFF3B82F6)
+                            ? AppColors.info
                             : Colors.grey.shade300,
                         width: isSelected ? 2 : 1,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF3B82F6)
+                                color: AppColors.info
                                     .withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
@@ -729,7 +884,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                         CircleAvatar(
                           radius: 24,
                           backgroundColor: isSelected
-                              ? const Color(0xFF3B82F6)
+                              ? AppColors.info
                               : Colors.blue.shade100,
                           child: Text(
                             (manager['full_name'] as String)[0].toUpperCase(),
@@ -753,7 +908,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: isSelected
-                                      ? const Color(0xFF3B82F6)
+                                      ? AppColors.info
                                       : Colors.black,
                                 ),
                               ),
@@ -785,7 +940,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
                             width: 32,
                             height: 32,
                             decoration: const BoxDecoration(
-                              color: Color(0xFF3B82F6),
+                              color: AppColors.info,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -856,6 +1011,11 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
           ),
 
         _buildSummaryItem(
+          '📂 Mảng',
+          _selectedCategory.displayName,
+        ),
+
+        _buildSummaryItem(
           '⚡ Mức độ ưu tiên',
           _selectedPriority.label,
           color: _getPriorityColor(_selectedPriority),
@@ -865,6 +1025,23 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
           _buildSummaryItem(
             '📅 Hạn hoàn thành',
             DateFormat('dd/MM/yyyy').format(_selectedDueDate!),
+          ),
+
+        if (_selectedRecurrence != 'none')
+          _buildSummaryItem(
+            '🔄 Lặp lại',
+            _selectedRecurrence == 'daily'
+                ? 'Hằng ngày'
+                : _selectedRecurrence == 'weekly'
+                    ? 'Hằng tuần'
+                    : 'Hằng tháng',
+          ),
+
+        if (_checklistItems.isNotEmpty)
+          _buildSummaryItem(
+            '✅ Checklist',
+            '${_checklistItems.length} bước',
+            subtitle: _checklistItems.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n'),
           ),
 
         const SizedBox(height: 24),
@@ -988,7 +1165,7 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
             child: ElevatedButton(
               onPressed: _currentStep == 3 ? _createTask : _nextStep,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3B82F6),
+                backgroundColor: AppColors.info,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1076,6 +1253,19 @@ class _SmartTaskCreationPageState extends ConsumerState<SmartTaskCreationPage>
         assignedTo: _selectedManagerId!,
         companyId: _selectedCompanyId,
         dueDate: _selectedDueDate,
+        category: _selectedCategory.value,
+        recurrence: _selectedRecurrence,
+        checklist: _checklistItems.isNotEmpty
+            ? _checklistItems
+                .asMap()
+                .entries
+                .map((e) => {
+                      'id': '${DateTime.now().millisecondsSinceEpoch}_${e.key}',
+                      'title': e.value,
+                      'is_done': false,
+                    })
+                .toList()
+            : null,
       );
 
       if (mounted) {

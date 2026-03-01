@@ -7,11 +7,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dvhcvn/dvhcvn.dart' as dvhcvn;
 import '../../services/geocoding_service.dart';
 import '../../business_types/distribution/models/odori_customer.dart';
-import '../../models/customer_contact.dart';
 import '../../models/customer_address.dart';
 import '../../models/customer_tier.dart';
 import '../../models/referrer.dart';
 import '../../providers/auth_provider.dart';
+import '../../business_types/distribution/providers/odori_providers.dart';
+import '../../business_types/distribution/models/product_sample.dart';
 import '../../widgets/customer_tier_widgets.dart';
 import '../../widgets/customer_avatar.dart';
 import '../orders/order_form_page.dart';
@@ -37,7 +38,6 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
 
   // Data
   List<CustomerAddress> _addresses = [];
-  List<CustomerContact> _contacts = [];
   List<Map<String, dynamic>> _orders = [];
   List<Map<String, dynamic>> _visits = [];
   Referrer? _referrer; // Người giới thiệu
@@ -52,7 +52,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
   void initState() {
     super.initState();
     _customer = widget.customer;
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
     _loadAllData();
   }
 
@@ -111,15 +111,12 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
   }
 
   Future<void> _loadContacts() async {
-    final response = await supabase
+    await supabase
         .from('customer_contacts')
         .select('*, customer_addresses(name)')
         .eq('customer_id', _customer.id)
         .eq('is_active', true)
         .order('is_primary', ascending: false);
-
-    _contacts =
-        (response as List).map((e) => CustomerContact.fromJson(e)).toList();
   }
 
   Future<void> _loadOrders() async {
@@ -149,15 +146,59 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
   }
 
   Future<void> _loadVisits() async {
-    final response = await supabase
-        .from('customer_visits')
-        .select(
-            'id, visit_date, check_in_time, check_out_time, purpose, result, employee:employee_id(full_name), order:order_id(order_number)')
-        .eq('customer_id', _customer.id)
-        .order('visit_date', ascending: false)
-        .limit(50);
+    // Load from BOTH tables: customer_visits (manual) + store_visits (journey plan)
+    final results = await Future.wait([
+      supabase
+          .from('customer_visits')
+          .select(
+              'id, visit_date, check_in_time, check_out_time, purpose, result, employee:employee_id(full_name), order:order_id(order_number)')
+          .eq('customer_id', _customer.id)
+          .order('visit_date', ascending: false)
+          .limit(50),
+      supabase
+          .from('store_visits')
+          .select(
+              'id, visit_date, start_time, end_time, visit_type, visit_purpose, status, observations, duration_minutes, sales_rep:sales_rep_id(full_name)')
+          .eq('customer_id', _customer.id)
+          .order('visit_date', ascending: false)
+          .limit(50),
+    ]);
 
-    _visits = List<Map<String, dynamic>>.from(response);
+    final manualVisits = List<Map<String, dynamic>>.from(results[0]);
+    final storeVisits = List<Map<String, dynamic>>.from(results[1]);
+
+    // Normalize store_visits to same format + add source tag
+    for (final v in manualVisits) {
+      v['_source'] = 'manual';
+    }
+    for (final sv in storeVisits) {
+      sv['_source'] = 'journey';
+      // Map store_visit fields to common format
+      sv['check_in_time'] = sv['start_time'];
+      sv['check_out_time'] = sv['end_time'];
+      sv['employee'] = sv['sales_rep'];
+      // Map visit_purpose array to purpose string
+      final purposes = sv['visit_purpose'];
+      if (purposes is List && purposes.isNotEmpty) {
+        sv['purpose'] = purposes.first;
+      } else {
+        sv['purpose'] = sv['visit_type'];
+      }
+      // Map status to result
+      if (sv['status'] == 'completed') {
+        sv['result'] = 'ordered';
+      }
+    }
+
+    // Merge and sort by date descending
+    final merged = [...manualVisits, ...storeVisits];
+    merged.sort((a, b) {
+      final dateA = DateTime.tryParse(a['visit_date']?.toString() ?? '') ?? DateTime(2000);
+      final dateB = DateTime.tryParse(b['visit_date']?.toString() ?? '') ?? DateTime(2000);
+      return dateB.compareTo(dateA);
+    });
+
+    _visits = merged;
     _visitCount = _visits.length;
   }
 
@@ -215,6 +256,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                         _buildOverviewTab(),
                         _buildOrdersTab(),
                         _buildDebtTab(),
+                        _buildSamplesTab(),
                         _buildContactsTab(),
                         _buildVisitsTab(),
                       ],
@@ -270,25 +312,22 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            if (_customer.code != null)
-                              Text(
-                                _customer.code!,
-                                style: TextStyle(
+                            Text(
+                              _customer.code,
+                              style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.white.withOpacity(0.8)),
-                              ),
+                            ),
                             const SizedBox(height: 4),
                             Row(
                               children: [
                                 if (_customer.category != null)
                                   _buildHeaderChip(_customer.category!,
                                       Colors.white.withOpacity(0.2)),
-                                if (_customer.tier != null) ...[
-                                  const SizedBox(width: 8),
-                                  CustomerTierBadge(
-                                      tier: CustomerTierExtension.fromString(
-                                          _customer.tier)),
-                                ],
+                                const SizedBox(width: 8),
+                                CustomerTierBadge(
+                                    tier: CustomerTierExtension.fromString(
+                                        _customer.tier)),
                               ],
                             ),
                           ],
@@ -398,10 +437,15 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
   }
 
   String _formatCompact(double value) {
-    if (value >= 1000000000)
+    if (value >= 1000000000) {
       return '${(value / 1000000000).toStringAsFixed(1)}B';
-    if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M';
-    if (value >= 1000) return '${(value / 1000).toStringAsFixed(0)}K';
+    }
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(0)}K';
+    }
     return value.toStringAsFixed(0);
   }
 
@@ -418,6 +462,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
           Tab(text: 'Tổng quan'),
           Tab(text: 'Đơn hàng'),
           Tab(text: 'Công nợ'),
+          Tab(text: 'Mẫu SP'),
           Tab(text: 'Cơ sở'),
           Tab(text: 'Viếng thăm'),
         ],
@@ -469,6 +514,39 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
 
           const SizedBox(height: 16),
 
+          // Lead Status card
+          _buildSectionCard(
+            title: 'Trạng thái khách hàng',
+            icon: Icons.thermostat,
+            trailing: IconButton(
+              icon: const Icon(Icons.edit, size: 18),
+              onPressed: _showEditLeadStatus,
+              tooltip: 'Cập nhật trạng thái',
+            ),
+            children: [
+              Row(
+                children: [
+                  _buildLeadStatusBadge(_customer.leadStatus),
+                  const SizedBox(width: 12),
+                  Text(
+                    _leadStatusDescription(_customer.leadStatus),
+                    style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                  ),
+                ],
+              ),
+              if (_customer.lastInteractionNotes != null && _customer.lastInteractionNotes!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _buildInfoRow(Icons.notes, 'Ghi chú gần nhất', _customer.lastInteractionNotes!),
+              ],
+              if (_customer.lastInteractionDate != null) ...[
+                _buildInfoRow(Icons.access_time, 'Tương tác lần cuối',
+                    DateFormat('dd/MM/yyyy HH:mm').format(_customer.lastInteractionDate!)),
+              ],
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
           // Address card
           _buildSectionCard(
             title: 'Địa chỉ',
@@ -494,7 +572,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                 ...(_addresses.take(3).map((addr) => _buildAddressRow(addr))),
                 if (_addresses.length > 3)
                   TextButton(
-                    onPressed: () => _tabController.animateTo(3),
+                    onPressed: () => _tabController.animateTo(4),
                     child: Text('Xem thêm ${_addresses.length - 3} địa chỉ'),
                   ),
               ],
@@ -512,12 +590,10 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                 _buildInfoRow(Icons.category, 'Loại KH', _customer.type!),
               if (_customer.channel != null)
                 _buildInfoRow(Icons.storefront, 'Kênh', _customer.channel!),
-              if (_customer.paymentTerms != null)
-                _buildInfoRow(Icons.schedule, 'Kỳ hạn TT',
-                    '${_customer.paymentTerms} ngày'),
-              if (_customer.creditLimit != null)
-                _buildInfoRow(Icons.credit_card, 'Hạn mức',
-                    _currencyFormat.format(_customer.creditLimit)),
+              _buildInfoRow(Icons.schedule, 'Kỳ hạn TT',
+                  '${_customer.paymentTerms} ngày'),
+              _buildInfoRow(Icons.credit_card, 'Hạn mức',
+                  _currencyFormat.format(_customer.creditLimit)),
               if (_customer.taxCode != null)
                 _buildInfoRow(Icons.receipt, 'Mã số thuế', _customer.taxCode!),
               if (_customer.route != null)
@@ -627,6 +703,184 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
             if (onTap != null)
               Icon(Icons.chevron_right, size: 18, color: Colors.grey.shade400),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLeadStatusBadge(String status) {
+    Color color;
+    String label;
+    IconData icon;
+    switch (status) {
+      case 'hot':
+        color = Colors.red;
+        label = 'Hot';
+        icon = Icons.local_fire_department;
+        break;
+      case 'warm':
+        color = Colors.orange;
+        label = 'Warm';
+        icon = Icons.whatshot;
+        break;
+      default:
+        color = Colors.blue;
+        label = 'Cold';
+        icon = Icons.ac_unit;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  String _leadStatusDescription(String status) {
+    switch (status) {
+      case 'hot': return 'Khách hàng tiềm năng cao';
+      case 'warm': return 'Đang quan tâm sản phẩm';
+      default: return 'Chưa có nhu cầu rõ ràng';
+    }
+  }
+
+  void _showEditLeadStatus() async {
+    String selectedStatus = _customer.leadStatus;
+    final notesController = TextEditingController(text: _customer.lastInteractionNotes ?? '');
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.thermostat, color: Colors.deepPurple),
+                  SizedBox(width: 8),
+                  Text('Cập nhật trạng thái KH', style: TextStyle(fontSize: 16)),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Mức độ quan tâm:', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _buildLeadStatusOption('cold', '❄️ Cold', Colors.blue, selectedStatus, (v) {
+                          setDialogState(() => selectedStatus = v);
+                        }),
+                        const SizedBox(width: 8),
+                        _buildLeadStatusOption('warm', '🔥 Warm', Colors.orange, selectedStatus, (v) {
+                          setDialogState(() => selectedStatus = v);
+                        }),
+                        const SizedBox(width: 8),
+                        _buildLeadStatusOption('hot', '🔴 Hot', Colors.red, selectedStatus, (v) {
+                          setDialogState(() => selectedStatus = v);
+                        }),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    const Text('Ghi chú tương tác:', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: notesController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        hintText: 'Ví dụ: KH quan tâm SP mới, hẹn gặp lại...',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.all(12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
+                FilledButton.icon(
+                  onPressed: () => Navigator.pop(ctx, {
+                    'status': selectedStatus,
+                    'notes': notesController.text.trim(),
+                  }),
+                  icon: const Icon(Icons.save, size: 18),
+                  label: const Text('Lưu'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == null || !mounted) return;
+
+    try {
+      final currentUser = ref.read(authProvider).user;
+      await Supabase.instance.client.from('customers').update({
+        'lead_status': result['status'],
+        'last_interaction_notes': result['notes'],
+        'last_interaction_date': DateTime.now().toIso8601String(),
+        'last_interaction_by': currentUser?.id,
+      }).eq('id', _customer.id);
+
+      setState(() {
+        _customer = _customer.copyWith(
+          leadStatus: result['status'] as String,
+          lastInteractionNotes: result['notes'] as String?,
+          lastInteractionDate: DateTime.now(),
+          lastInteractionBy: currentUser?.id,
+        );
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã cập nhật trạng thái KH!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi cập nhật: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Widget _buildLeadStatusOption(String value, String label, Color color, String selected, ValueChanged<String> onSelected) {
+    final isSelected = value == selected;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onSelected(value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withValues(alpha: 0.15) : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? color : Colors.grey.shade300,
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Center(
+            child: Text(label, style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? color : Colors.grey.shade700,
+              fontSize: 13,
+            )),
+          ),
         ),
       ),
     );
@@ -1020,6 +1274,270 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
     );
   }
 
+  // ==================== MẪU SP TAB ====================
+  Widget _buildSamplesTab() {
+    final samplesAsync = ref.watch(productSamplesProvider(
+      ProductSampleFilters(customerId: _customer.id),
+    ));
+
+    return samplesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Lỗi tải dữ liệu: $e')),
+      data: (samples) {
+        if (samples.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.card_giftcard, size: 64, color: Colors.grey.shade300),
+                const SizedBox(height: 16),
+                Text('Chưa có mẫu SP nào', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+                const SizedBox(height: 8),
+                Text('Gửi mẫu SP từ Kế hoạch viếng thăm', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+              ],
+            ),
+          );
+        }
+
+        // Group by status
+        final statusOrder = ['pending', 'delivered', 'received', 'feedback_received', 'converted'];
+        final statusCounts = <String, int>{};
+        for (final s in samples) {
+          statusCounts[s.status] = (statusCounts[s.status] ?? 0) + 1;
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(productSamplesProvider(
+              ProductSampleFilters(customerId: _customer.id),
+            ));
+          },
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Summary chips
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildSampleStatusChip('Tất cả', samples.length, Colors.grey),
+                  for (final status in statusOrder)
+                    if (statusCounts.containsKey(status))
+                      _buildSampleStatusChip(
+                        _sampleStatusLabel(status),
+                        statusCounts[status]!,
+                        _sampleStatusColor(status),
+                      ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Sample list
+              ...samples.map((sample) => _buildSampleCard(sample)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSampleStatusChip(String label, int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$count', style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 13)),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(color: color, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSampleCard(ProductSample sample) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row: product name + status badge
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.deepOrange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.card_giftcard, size: 20, color: Colors.deepOrange),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sample.productName ?? 'Sản phẩm',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (sample.productSku != null)
+                        Text(
+                          'SKU: ${sample.productSku}',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _sampleStatusColor(sample.status).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    sample.statusText,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _sampleStatusColor(sample.status),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const Divider(height: 20),
+
+            // Details
+            Row(
+              children: [
+                _buildSampleDetail(Icons.inventory_2, 'SL: ${sample.quantity} ${sample.unit}'),
+                const SizedBox(width: 16),
+                _buildSampleDetail(Icons.calendar_today, DateFormat('dd/MM/yyyy').format(sample.sentDate)),
+                if (sample.sentByName != null) ...[
+                  const SizedBox(width: 16),
+                  _buildSampleDetail(Icons.person, sample.sentByName!),
+                ],
+              ],
+            ),
+
+            // Notes
+            if (sample.notes != null && sample.notes!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.notes, size: 14, color: Colors.grey.shade500),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      sample.notes!,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            // Feedback
+            if (sample.feedbackRating != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  ...List.generate(5, (i) => Icon(
+                    i < sample.feedbackRating! ? Icons.star : Icons.star_border,
+                    size: 16,
+                    color: Colors.amber,
+                  )),
+                  if (sample.feedbackNotes != null) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        sample.feedbackNotes!,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+
+            // Converted badge
+            if (sample.convertedToOrder) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle, size: 14, color: Colors.green),
+                    SizedBox(width: 4),
+                    Text('Đã chuyển đổi thành đơn hàng', style: TextStyle(fontSize: 11, color: Colors.green)),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSampleDetail(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: Colors.grey.shade500),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+      ],
+    );
+  }
+
+  String _sampleStatusLabel(String status) {
+    switch (status) {
+      case 'pending': return 'Chờ gửi';
+      case 'delivered': return 'Đã gửi';
+      case 'received': return 'Đã nhận';
+      case 'feedback_received': return 'Phản hồi';
+      case 'converted': return 'Đã mua';
+      default: return status;
+    }
+  }
+
+  Color _sampleStatusColor(String status) {
+    switch (status) {
+      case 'pending': return Colors.orange;
+      case 'delivered': return Colors.blue;
+      case 'received': return Colors.green;
+      case 'feedback_received': return Colors.purple;
+      case 'converted': return Colors.teal;
+      default: return Colors.grey;
+    }
+  }
+
   // ==================== CƠ SỞ TAB ====================
   Widget _buildContactsTab() {
     return RefreshIndicator(
@@ -1341,16 +1859,22 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
   Widget _buildVisitCard(Map<String, dynamic> visit) {
     final visitDate = DateTime.tryParse(visit['visit_date']?.toString() ?? '');
     final checkIn = DateTime.tryParse(visit['check_in_time']?.toString() ?? '');
+    final checkOut = DateTime.tryParse(visit['check_out_time']?.toString() ?? '');
     final result = visit['result'] as String?;
     final purpose = visit['purpose'] as String?;
     final employee = visit['employee'] as Map<String, dynamic>?;
     final order = visit['order'] as Map<String, dynamic>?;
+    final isJourney = visit['_source'] == 'journey';
+    final durationMin = visit['duration_minutes'] as int?;
+    final observations = visit['observations'] as String?;
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(
+          color: isJourney ? Colors.blue.shade200 : Colors.grey.shade200,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -1362,11 +1886,15 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _getResultColor(result).withOpacity(0.1),
+                    color: isJourney
+                        ? Colors.blue.withOpacity(0.1)
+                        : _getResultColor(result).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(_getResultIcon(result),
-                      color: _getResultColor(result)),
+                  child: Icon(
+                    isJourney ? Icons.route : _getResultIcon(result),
+                    color: isJourney ? Colors.blue : _getResultColor(result),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1381,7 +1909,15 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                       ),
                       if (checkIn != null)
                         Text(
-                          'Check-in: ${DateFormat('HH:mm').format(checkIn)}',
+                          checkOut != null
+                              ? '${DateFormat('HH:mm').format(checkIn)} → ${DateFormat('HH:mm').format(checkOut)}'
+                              : 'Check-in: ${DateFormat('HH:mm').format(checkIn)}',
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      if (durationMin != null)
+                        Text(
+                          'Thời gian: $durationMin phút',
                           style: TextStyle(
                               fontSize: 12, color: Colors.grey.shade600),
                         ),
@@ -1394,15 +1930,27 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                     ],
                   ),
                 ),
-                if (result != null)
-                  _buildStatusChip(
-                      _getResultText(result), _getResultColor(result)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _buildStatusChip(
+                      isJourney ? 'Hành trình' : 'Nhập tay',
+                      isJourney ? Colors.blue : Colors.grey,
+                    ),
+                    if (result != null) ...[
+                      const SizedBox(height: 4),
+                      _buildStatusChip(
+                          _getResultText(result), _getResultColor(result)),
+                    ],
+                  ],
+                ),
               ],
             ),
-            if (purpose != null || order != null) ...[
+            if (purpose != null || order != null || observations != null) ...[
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
+                runSpacing: 4,
                 children: [
                   if (purpose != null)
                     _buildStatusChip(_getPurposeText(purpose), Colors.blue),
@@ -1411,6 +1959,15 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                         'Đơn: ${order['order_number']}', Colors.green),
                 ],
               ),
+              if (observations != null && observations.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  observations,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
           ],
         ),
@@ -1611,7 +2168,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                     ),
                     items: resultOptions
                         .map((opt) => DropdownMenuItem(
-                              value: opt['value'] as String?,
+                              value: opt['value'],
                               child: Text(opt['label'] as String),
                             ))
                         .toList(),
@@ -1695,9 +2252,11 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                               : notesController.text.trim(),
                         });
 
+                        if (!context.mounted) return;
                         Navigator.pop(context, true);
                       } catch (e) {
                         setDialogState(() => isLoading = false);
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                               content: Text('Lỗi: $e'),
@@ -1974,7 +2533,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                     addressParts.add(selectedDistrict!.name);
                   }
                   if (selectedCity != null) {
-                    addressParts.add(selectedCity!.name);
+                    addressParts.add(selectedCity.name);
                   }
                   final fullAddress = addressParts.join(', ');
 
@@ -2023,13 +2582,15 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                     'city': selectedCity?.name
                         .replaceAll(RegExp(r'^(Thành phố |Tỉnh )'), ''),
                     'address': fullAddress.isNotEmpty ? fullAddress : null,
-                    'latitude': latitude,
-                    'longitude': longitude,
+                    'lat': latitude,
+                    'lng': longitude,
                     'updated_at': DateTime.now().toIso8601String(),
                   }).eq('id', _customer.id);
 
+                  if (!context.mounted) return;
                   Navigator.pop(context, true);
                 } catch (e) {
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                         content: Text('Lỗi: $e'), backgroundColor: Colors.red),
@@ -2288,8 +2849,10 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                     'is_default': isDefault,
                   }).eq('id', branch.id);
 
+                  if (!context.mounted) return;
                   Navigator.pop(context, true);
                 } catch (e) {
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                         content: Text('Lỗi: $e'), backgroundColor: Colors.red),
@@ -2598,8 +3161,10 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                     'is_active': true,
                   });
 
+                  if (!context.mounted) return;
                   Navigator.pop(context, true);
                 } catch (e) {
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                         content: Text('Lỗi: $e'), backgroundColor: Colors.red),
@@ -2841,6 +3406,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
       case 'sales':
         return 'Bán hàng';
       case 'collect':
+      case 'collection':
         return 'Thu tiền';
       case 'survey':
         return 'Khảo sát';
@@ -2850,6 +3416,13 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
         return 'Hỗ trợ';
       case 'introduction':
         return 'Giới thiệu SP';
+      case 'routine':
+      case 'scheduled':
+        return 'Ghé định kỳ';
+      case 'merchandising':
+        return 'Trưng bày';
+      case 'complaint':
+        return 'Khiếu nại';
       default:
         return purpose ?? 'Khác';
     }

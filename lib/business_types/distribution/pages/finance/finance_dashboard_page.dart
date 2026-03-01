@@ -91,7 +91,6 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
         }
       }
       overdueCustomers = overdueCustomerIds.length;
-      final customersData = unpaidOrders; // for backwards compat with count
 
       // Get payments in date range
       final paymentsData = await supabase
@@ -623,7 +622,11 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
                               ],
                             ),
                             TextButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Xem tất cả thanh toán tại tab Công nợ'), duration: Duration(seconds: 2)),
+                                  );
+                                },
                                 child: const Text('Xem tất cả')),
                           ],
                         ),

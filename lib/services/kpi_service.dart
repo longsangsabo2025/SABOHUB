@@ -1,5 +1,6 @@
 import '../core/services/supabase_service.dart';
 import '../models/kpi_target.dart';
+import '../utils/app_logger.dart';
 import 'performance_metrics_service.dart';
 
 /// KPI Service
@@ -265,7 +266,7 @@ class KPIService {
           evaluation['role'] = employee['role'];
           results.add(evaluation);
         } catch (e) {
-          print('Failed to evaluate ${employee['id']}: $e');
+          AppLogger.error('Failed to evaluate ${employee['id']}', e);
         }
       }
 

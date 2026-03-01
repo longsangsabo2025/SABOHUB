@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -24,7 +25,6 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
   
   bool _isEditing = false;
   bool _isLoading = false;
-  // TODO: Bật lại khi phát triển tính năng cài đặt ứng dụng
   // bool _notificationsEnabled = true;
   // bool _locationSharing = false;
   // bool _darkMode = false;
@@ -356,7 +356,6 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
             const SizedBox(height: 24),
             _buildEditableInfoSection(user),
             const SizedBox(height: 24),
-            // TODO: Bật lại khi phát triển tính năng cài đặt
             // _buildSettingsSection(user),
             // const SizedBox(height: 24),
             _buildSupportSection(user),
@@ -367,7 +366,7 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
   }
 
   PreferredSizeWidget _buildAppBar(app_user.User? user) {
-    final roleColor = user != null ? _getRoleColor(user.role) : const Color(0xFF10B981);
+    final roleColor = user != null ? _getRoleColor(user.role) : AppColors.success;
     return AppBar(
       elevation: 0,
       backgroundColor: roleColor,
@@ -399,7 +398,7 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
   }
 
   Widget _buildEditableInfoSection(app_user.User? user) {
-    final roleColor = user != null ? _getRoleColor(user.role) : const Color(0xFF10B981);
+    final roleColor = user != null ? _getRoleColor(user.role) : AppColors.success;
     final email = user?.email ?? _employeeData?['email'] ?? 'Chưa cập nhật';
     
     return Container(
@@ -510,15 +509,15 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
   Color _getRoleColor(SaboRole role) {
     switch (role) {
       case SaboRole.superAdmin:
-        return const Color(0xFFEF4444);
+        return AppColors.error;
       case SaboRole.ceo:
-        return const Color(0xFF8B5CF6);
+        return AppColors.primary;
       case SaboRole.manager:
-        return const Color(0xFF3B82F6);
+        return AppColors.info;
       case SaboRole.shiftLeader:
-        return const Color(0xFFF59E0B);
+        return AppColors.warning;
       case SaboRole.staff:
-        return const Color(0xFF10B981);
+        return AppColors.success;
       case SaboRole.driver:
         return const Color(0xFF0EA5E9);
       case SaboRole.warehouse:
@@ -527,7 +526,7 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
   }
 
   Widget _buildProfileHeader(app_user.User? user) {
-    final roleColor = user != null ? _getRoleColor(user.role) : const Color(0xFF10B981);
+    final roleColor = user != null ? _getRoleColor(user.role) : AppColors.success;
     final userName = user?.name ?? _fullNameController.text;
     final roleLabel = user != null ? _getRoleLabel(user.role) : 'Nhân viên';
     final companyName = _employeeData?['companies']?['name'] ?? user?.companyName ?? '';
@@ -773,13 +772,13 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
               size: 20,
-              color: const Color(0xFF10B981),
+              color: AppColors.success,
             ),
           ),
           const SizedBox(width: 16),
@@ -808,7 +807,7 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: const Color(0xFF10B981),
+            activeThumbColor: AppColors.success,
           ),
         ],
       ),
@@ -850,7 +849,7 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
             'Thay đổi mật khẩu đăng nhập',
             Icons.lock_outline,
             _changePassword,
-            iconColor: const Color(0xFF3B82F6),
+            iconColor: AppColors.info,
           ),
           // TODO: Bật lại khi phát triển tính năng lương thưởng
           // _buildActionItem(
@@ -905,7 +904,7 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
           //       ],
           //     );
           //   },
-          //   iconColor: const Color(0xFF8B5CF6),
+          //   iconColor: AppColors.primary,
           // ),
           _buildActionItem(
             'Đăng xuất',
@@ -915,7 +914,7 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
               _showLogoutDialog();
             },
             isLast: true,
-            textColor: const Color(0xFFEF4444),
+            textColor: AppColors.error,
           ),
         ],
       ),
@@ -931,7 +930,7 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
     Color? textColor,
     Color? iconColor,
   }) {
-    final defaultIconColor = iconColor ?? textColor ?? const Color(0xFF10B981);
+    final defaultIconColor = iconColor ?? textColor ?? AppColors.success;
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -1010,7 +1009,7 @@ class _StaffProfilePageState extends ConsumerState<StaffProfilePage> {
             },
             child: const Text(
               'Đăng xuất',
-              style: TextStyle(color: Color(0xFFEF4444)),
+              style: TextStyle(color: AppColors.error),
             ),
           ),
         ],

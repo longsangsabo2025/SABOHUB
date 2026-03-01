@@ -464,6 +464,14 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                       ),
                     ),
 
+                    // Active Promotions
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: ActivePromotionsList(compact: true),
+                      ),
+                    ),
+
                     // Recent Orders
                     SliverToBoxAdapter(
                       child: Padding(

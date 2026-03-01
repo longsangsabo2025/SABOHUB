@@ -896,7 +896,7 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),

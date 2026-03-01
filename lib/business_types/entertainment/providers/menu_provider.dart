@@ -11,7 +11,7 @@ final menuServiceProvider = Provider<MenuService>((ref) {
 
 /// All Menu Items Provider
 /// Fetches menu items for current company
-final menuItemsProvider = FutureProvider<List<MenuItem>>((ref) async {
+final menuItemsProvider = FutureProvider.autoDispose<List<MenuItem>>((ref) async {
   final service = ref.watch(menuServiceProvider);
   final authState = ref.watch(authProvider);
   
@@ -23,7 +23,7 @@ final menuItemsProvider = FutureProvider<List<MenuItem>>((ref) async {
 /// Menu Items by Category Provider
 /// Gets menu items filtered by category
 final menuItemsByCategoryProvider = 
-    FutureProvider.family<List<MenuItem>, MenuCategory>((ref, category) async {
+    FutureProvider.autoDispose.family<List<MenuItem>, MenuCategory>((ref, category) async {
   final service = ref.watch(menuServiceProvider);
   final authState = ref.watch(authProvider);
   
@@ -37,14 +37,14 @@ final menuItemsByCategoryProvider =
 
 /// Single Menu Item Provider
 /// Gets menu item details by ID
-final menuItemProvider = FutureProvider.family<MenuItem?, String>((ref, itemId) async {
+final menuItemProvider = FutureProvider.autoDispose.family<MenuItem?, String>((ref, itemId) async {
   final service = ref.watch(menuServiceProvider);
   return await service.getMenuItemById(itemId);
 });
 
 /// Menu Items Stream Provider
 /// Real-time menu items stream (simulated with periodic refresh)
-final menuItemsStreamProvider = StreamProvider<List<MenuItem>>((ref) {
+final menuItemsStreamProvider = StreamProvider.autoDispose<List<MenuItem>>((ref) {
   final service = ref.watch(menuServiceProvider);
   final authState = ref.watch(authProvider);
   

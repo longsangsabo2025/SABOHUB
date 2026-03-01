@@ -1,8 +1,8 @@
-// ignore_for_file: empty_catches
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../utils/app_logger.dart';
 
 import '../providers/auth_provider.dart';
 
@@ -40,7 +40,9 @@ class _QuickAccountSwitcherState extends ConsumerState<QuickAccountSwitcher> {
               accountsList.map((json) => SavedAccount.fromJson(json)).toList();
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      AppLogger.error('Failed to load saved accounts', e);
+    }
   }
 
   Future<void> _saveAccounts() async {
@@ -50,7 +52,9 @@ class _QuickAccountSwitcherState extends ConsumerState<QuickAccountSwitcher> {
         _savedAccounts.map((acc) => acc.toJson()).toList(),
       );
       await prefs.setString(_savedAccountsKey, accountsJson);
-    } catch (e) {}
+    } catch (e) {
+      AppLogger.error('Failed to save accounts', e);
+    }
   }
 
   Future<void> _switchAccount(SavedAccount account) async {
@@ -403,7 +407,9 @@ class _QuickAccountSwitcherHeaderState
               accountsList.map((json) => SavedAccount.fromJson(json)).toList();
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      AppLogger.error('Failed to load saved accounts (header)', e);
+    }
   }
 
   Future<void> _saveAccounts() async {
@@ -413,7 +419,9 @@ class _QuickAccountSwitcherHeaderState
         _savedAccounts.map((acc) => acc.toJson()).toList(),
       );
       await prefs.setString(_savedAccountsKey, accountsJson);
-    } catch (e) {}
+    } catch (e) {
+      AppLogger.error('Failed to save accounts (header)', e);
+    }
   }
 
   Future<void> _switchAccount(SavedAccount account) async {

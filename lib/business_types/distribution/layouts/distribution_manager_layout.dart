@@ -7,7 +7,6 @@ import '../../../widgets/error_boundary.dart';
 import '../../../widgets/notification_center.dart';
 import '../../../widgets/bug_report_dialog.dart';
 import '../services/odori_notification_service.dart';
-import '../../../services/employee_auth_service.dart';
 // Extracted pages
 import '../pages/manager/orders_management_page.dart';
 import '../pages/manager/customers_page.dart';
@@ -15,8 +14,9 @@ import '../pages/manager/inventory_page.dart';
 import '../pages/manager/reports_page.dart';
 import '../pages/manager/referrers_page.dart';
 // Distribution-specific layouts
+import 'distribution_warehouse_layout.dart';
+import 'distribution_finance_layout.dart';
 import '../pages/driver/distribution_driver_layout_refactored.dart';
-import 'distribution_finance_layout.dart' hide Text, Icon, SizedBox, Expanded;
 // Extracted sub-pages
 import 'manager/manager_dashboard_page.dart';
 
@@ -221,7 +221,7 @@ class _DistributionManagerLayoutState
                 context.push('/profile');
               },
             ),
-            // TODO: Tạm ẩn Cài đặt - uncomment khi cần
+            // Cài đặt - chỉ CEO mới cần
             // ListTile(
             //   leading: const Icon(Icons.settings_outlined),
             //   title: const Text('Cài đặt'),
@@ -256,119 +256,32 @@ class _DistributionManagerLayoutState
     );
   }
 
-  /// Switch to employee role by auto-login and navigate to their layout
-  /// Hardcoded accounts: driver1, ketoan1
-  Future<void> _switchToRole(BuildContext context, WidgetRef ref, String role) async {
+  /// Switch to employee role — navigate to that role's layout
+  /// Manager has full access so they can view any role's interface
+  void _switchToRole(BuildContext context, WidgetRef ref, String role) {
     debugPrint('🔄 [SWITCH ROLE] Starting switch to role: $role');
-    
-    // Hardcoded accounts with passwords for testing
-    // Employee login uses: companyName, username, password
-    final accountMap = {
-      'driver': {
-        'company': 'Odori',
-        'username': 'driver1',
-        'password': 'Odori@2026',
-      },
-      'finance': {
-        'company': 'Odori', 
-        'username': 'ketoan1',
-        'password': 'Odori@2026',
-      },
-    };
 
-    final account = accountMap[role];
-    if (account == null) {
-      debugPrint('❌ [SWITCH ROLE] Account not found for role: $role');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không tìm thấy tài khoản cho role "$role"')),
-      );
-      return;
-    }
-
-    debugPrint('📧 [SWITCH ROLE] Will login with: ${account['username']}@${account['company']}');
-
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Center(
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text('Đang chuyển sang ${role == 'driver' ? 'Tài xế' : 'Kế toán'}...'),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    try {
-      debugPrint('🔐 [SWITCH ROLE] Calling EmployeeAuthService.login()...');
-      
-      // Use EmployeeAuthService for employee login
-      final employeeAuthService = EmployeeAuthService();
-      final result = await employeeAuthService.login(
-        companyName: account['company']!,
-        username: account['username']!,
-        password: account['password']!,
-      );
-
-      debugPrint('✅ [SWITCH ROLE] Login result: success=${result.success}, error=${result.error}');
-
-      if (!context.mounted) {
-        debugPrint('⚠️ [SWITCH ROLE] Context not mounted after login');
+    Widget? targetLayout;
+    switch (role) {
+      case 'driver':
+        targetLayout = const DistributionDriverLayout();
+        break;
+      case 'finance':
+        targetLayout = const DistributionFinanceLayout();
+        break;
+      case 'warehouse':
+        targetLayout = const DistributionWarehouseLayout();
+        break;
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Vai trò "$role" chưa được hỗ trợ')),
+        );
         return;
-      }
-      Navigator.of(context).pop(); // Close loading dialog
-
-      if (result.success && result.employee != null) {
-        debugPrint('👤 [SWITCH ROLE] Employee: ${result.employee!.fullName}, role: ${result.employee!.role}');
-        
-        // Convert to User and update auth state
-        final user = result.employee!.toUser();
-        debugPrint('🔄 [SWITCH ROLE] Calling loginWithUser...');
-        await ref.read(authProvider.notifier).loginWithUser(user);
-        debugPrint('✅ [SWITCH ROLE] Auth state updated!');
-        
-        // Navigate directly to the appropriate layout
-        if (role == 'driver') {
-          debugPrint('🚚 [SWITCH ROLE] Navigating to DistributionDriverLayout...');
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const DistributionDriverLayout()),
-          );
-        } else if (role == 'finance') {
-          debugPrint('💰 [SWITCH ROLE] Navigating to DistributionFinanceLayout...');
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const DistributionFinanceLayout()),
-          );
-        }
-      } else {
-        debugPrint('❌ [SWITCH ROLE] Login failed: ${result.error}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Đăng nhập thất bại: ${result.error ?? 'Unknown error'}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e, stack) {
-      debugPrint('💥 [SWITCH ROLE] Exception: $e');
-      debugPrint('💥 [SWITCH ROLE] Stack: $stack');
-      if (context.mounted) {
-        Navigator.of(context).pop(); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
-        );
-      }
     }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => targetLayout!),
+    );
   }
 
   /// Build the role switcher drawer
@@ -472,22 +385,18 @@ class _DistributionManagerLayoutState
                   ),
                 ),
 
-                // Warehouse - TẠM ẨN
-                // _buildRoleSection(
-                //   icon: Icons.warehouse,
-                //   title: 'Kho (Warehouse)',
-                //   subtitle: 'Xuất kho, tồn kho, nhập hàng',
-                //   color: Colors.brown,
-                //   isActive: false,
-                //   onTap: () {
-                //     Navigator.pop(context);
-                //     Navigator.of(context).push(
-                //       MaterialPageRoute(
-                //         builder: (_) => const DistributionWarehouseLayout(),
-                //       ),
-                //     );
-                //   },
-                // ),
+                // Warehouse
+                _buildRoleSection(
+                  icon: Icons.warehouse,
+                  title: 'Kho (Warehouse)',
+                  subtitle: 'Xuất kho, tồn kho, nhập hàng',
+                  color: Colors.brown,
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _switchToRole(context, ref, 'warehouse');
+                  },
+                ),
 
                 // Driver - Login vào tài khoản driver
                 _buildRoleSection(

@@ -1,7 +1,7 @@
-/// Driver module exports
-/// 
-/// This file exports all driver-related pages and components
-/// for the distribution driver interface.
+// Driver module exports
+// 
+// This file exports all driver-related pages and components
+// for the distribution driver interface.
 
 // Main layout
 export 'distribution_driver_layout_refactored.dart'; // Main layout with DistributionDriverLayout class

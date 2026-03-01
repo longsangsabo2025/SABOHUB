@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -59,7 +60,7 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
               ref.invalidate(tasksByStatusProvider);
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                   content: Text('🔄 Đã làm mới'),
-                  backgroundColor: Color(0xFF8B5CF6)));
+                  backgroundColor: AppColors.primary));
             },
             icon: const Icon(Icons.refresh, color: Colors.black54),
           ),
@@ -71,9 +72,9 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
             color: Colors.white,
             child: TabBar(
               controller: _tabController,
-              labelColor: const Color(0xFF8B5CF6),
+              labelColor: AppColors.primary,
               unselectedLabelColor: Colors.grey,
-              indicatorColor: const Color(0xFF8B5CF6),
+              indicatorColor: AppColors.primary,
               tabs: const [
                 Tab(text: 'Chờ xử lý'),
                 Tab(text: 'Đang làm'),
@@ -87,7 +88,7 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateDialog,
-        backgroundColor: const Color(0xFF8B5CF6),
+        backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -107,7 +108,7 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
                 itemBuilder: (_, i) => _buildCard(tasks[i]),
               ),
         loading: () => const Center(
-            child: CircularProgressIndicator(color: Color(0xFF8B5CF6))),
+            child: CircularProgressIndicator(color: AppColors.primary)),
         error: (e, _) => Center(
             child: ElevatedButton(
                 onPressed: () => ref.invalidate(tasksByStatusProvider),
@@ -130,10 +131,10 @@ class _ShiftLeaderTasksPageState extends ConsumerState<ShiftLeaderTasksPage>
 
   Widget _buildCard(Task t) {
     final pc = [
-      const Color(0xFFEF4444),
-      const Color(0xFFF59E0B),
-      const Color(0xFF3B82F6),
-      const Color(0xFF10B981)
+      AppColors.error,
+      AppColors.warning,
+      AppColors.info,
+      AppColors.success
     ][t.priority.index];
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

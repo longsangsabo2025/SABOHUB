@@ -1166,7 +1166,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
       
       final orderResponse = await supabase
           .from('sales_orders')
-          .select('payment_method, payment_status, total, customer_id, customers(name, total_debt)')
+          .select('order_number, payment_method, payment_status, total, customer_id, customers(name, total_debt)')
           .eq('id', orderId)
           .single();
 
@@ -1177,10 +1177,12 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
       final customerData = orderResponse['customers'] as Map<String, dynamic>?;
       final customerName = customerData?['name'] ?? 'Khách hàng';
       final currentDebt = (customerData?['total_debt'] ?? 0).toDouble();
+      final orderNumber = orderResponse['order_number']?.toString() ?? orderId.substring(0, 8);
 
       final result = await _showPaymentMethodDialog(
         deliveryId: deliveryId,
         orderId: orderId,
+        orderNumber: orderNumber,
         customerName: customerName,
         paymentMethod: paymentMethod,
         paymentStatus: paymentStatus,
@@ -1255,6 +1257,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
   Future<Map<String, dynamic>?> _showPaymentMethodDialog({
     required String deliveryId,
     required String orderId,
+    required String orderNumber,
     required String customerName,
     required String paymentMethod,
     required String paymentStatus,
@@ -1360,7 +1363,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                       child: OutlinedButton.icon(
                         onPressed: () async {
                           Navigator.pop(context);
-                          await _showQRTransferDialog(totalAmount, orderId, deliveryId);
+                          await _showQRTransferDialog(totalAmount, orderId, orderNumber, deliveryId);
                         },
                         icon: const Icon(Icons.qr_code, size: 20),
                         label: const Text('Hiện QR cho khách quét'),
@@ -1436,8 +1439,8 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     );
   }
 
-  Future<void> _showQRTransferDialog(double amount, String orderId, String deliveryId) async {
-    debugPrint('🔷 _showQRTransferDialog called with amount: $amount, orderId: $orderId, deliveryId: $deliveryId');
+  Future<void> _showQRTransferDialog(double amount, String orderId, String orderNumber, String deliveryId) async {
+    debugPrint('🔷 _showQRTransferDialog called with amount: $amount, orderNumber: $orderNumber, deliveryId: $deliveryId');
     try {
       // Lấy companyId từ authProvider (không dùng supabase.auth.currentUser)
       final authState = ref.read(authProvider);
@@ -1461,15 +1464,13 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
       final supabase = Supabase.instance.client;
       final companyData = await supabase
           .from('companies')
-          .select('bank_name, bank_account_number, bank_account_name, bank_bin')
+          .select('bank_name, bank_account_number, bank_account_name, bank_bin, bank_name_2, bank_account_number_2, bank_account_name_2, bank_bin_2, active_bank_account')
           .eq('id', companyId)
           .maybeSingle();
       
       debugPrint('🔷 Company data: $companyData');
       
-      if (companyData == null || 
-          companyData['bank_bin'] == null || 
-          companyData['bank_account_number'] == null) {
+      if (companyData == null) {
         debugPrint('❌ Company bank info incomplete');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1482,13 +1483,39 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         return;
       }
       
-      final bankBin = companyData['bank_bin'];
-      final accountNumber = companyData['bank_account_number'];
-      final accountName = companyData['bank_account_name'] ?? '';
-      final bankName = companyData['bank_name'] ?? 'Ngân hàng';
+      final activeBank = (companyData['active_bank_account'] as int?) ?? 1;
+      final String? bankBin;
+      final String? accountNumber;
+      final String accountName;
+      final String bankName;
+      
+      if (activeBank == 2 && companyData['bank_bin_2'] != null) {
+        bankBin = companyData['bank_bin_2'];
+        accountNumber = companyData['bank_account_number_2'];
+        accountName = companyData['bank_account_name_2'] ?? '';
+        bankName = companyData['bank_name_2'] ?? 'Ngân hàng';
+      } else {
+        bankBin = companyData['bank_bin'];
+        accountNumber = companyData['bank_account_number'];
+        accountName = companyData['bank_account_name'] ?? '';
+        bankName = companyData['bank_name'] ?? 'Ngân hàng';
+      }
+      
+      if (bankBin == null || accountNumber == null) {
+        debugPrint('❌ Active bank account not configured');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Công ty chưa cấu hình tài khoản ngân hàng. Liên hệ Manager/CEO để cấu hình.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
       
       final amountInt = amount.toInt();
-      final content = 'TT $orderId';
+      final content = 'TT $orderNumber';
       final qrUrl = 'https://img.vietqr.io/image/$bankBin-$accountNumber-compact2.png?amount=$amountInt&addInfo=${Uri.encodeComponent(content)}&accountName=${Uri.encodeComponent(accountName)}';
       
       debugPrint('✅ QR URL: $qrUrl');
@@ -1553,7 +1580,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          accountNumber,
+                          accountNumber!,
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1),
                         ),
                         const SizedBox(height: 4),

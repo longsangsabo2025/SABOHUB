@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/customer_contact.dart';
+import '../../utils/app_logger.dart';
 import '../../models/customer_address.dart';
 import '../business_types/distribution/models/odori_customer.dart';
 import '../../providers/auth_provider.dart';
@@ -232,7 +233,7 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
         await launchUrl(phoneUri);
       }
     } catch (e) {
-      debugPrint('Error making call: $e');
+      AppLogger.error('Error making call', e);
     }
   }
 

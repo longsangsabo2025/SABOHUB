@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../providers/auth_provider.dart';
 import '../../services/manufacturing_service.dart';
 import '../../models/manufacturing_models.dart';
 
@@ -11,13 +12,14 @@ class PayablesPage extends ConsumerStatefulWidget {
 }
 
 class _PayablesPageState extends ConsumerState<PayablesPage> {
-  final _service = ManufacturingService();
+  late ManufacturingService _service;
   List<Payable> _payables = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
+    _service = ManufacturingService(companyId: ref.read(authProvider).user?.companyId);
     _loadPayables();
   }
 
@@ -107,7 +109,7 @@ class _PayablesPageState extends ConsumerState<PayablesPage> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              '${payable.totalAmount.toStringAsFixed(0)}',
+                              payable.totalAmount.toStringAsFixed(0),
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             if (payable.paidAmount > 0)

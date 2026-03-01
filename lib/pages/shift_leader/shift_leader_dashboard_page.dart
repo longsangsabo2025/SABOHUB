@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -91,7 +92,7 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('🔔 Thông báo'),
-                backgroundColor: Color(0xFF8B5CF6),
+                backgroundColor: AppColors.primary,
               ),
             );
           },
@@ -121,7 +122,7 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+          colors: [AppColors.primary, Color(0xFF6D28D9)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -180,7 +181,7 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
                 'Bàn hoạt động',
                 '${kpis['activeTables'] ?? 0}/${kpis['totalTables'] ?? 0}',
                 Icons.table_restaurant,
-                const Color(0xFF10B981),
+                AppColors.success,
               ),
             ),
             const SizedBox(width: 12),
@@ -189,7 +190,7 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
                 'Đơn hàng',
                 '${kpis['totalOrders'] ?? 0}',
                 Icons.receipt_long,
-                const Color(0xFF3B82F6),
+                AppColors.info,
               ),
             ),
           ],
@@ -302,7 +303,7 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -310,7 +311,7 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF10B981),
+                    color: AppColors.success,
                   ),
                 ),
               ),
@@ -324,7 +325,7 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
                   'Tổng NV',
                   '${stats['total'] ?? 0}',
                   Icons.people,
-                  const Color(0xFF8B5CF6),
+                  AppColors.primary,
                 ),
               ),
               const SizedBox(width: 12),
@@ -333,7 +334,7 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
                   'Đang làm',
                   '${stats['active'] ?? 0}',
                   Icons.work,
-                  const Color(0xFF10B981),
+                  AppColors.success,
                 ),
               ),
               const SizedBox(width: 12),
@@ -416,16 +417,16 @@ class ShiftLeaderDashboardPage extends ConsumerWidget {
               'Hiệu suất',
               '$performance%',
               performance >= 80
-                  ? const Color(0xFF10B981)
+                  ? AppColors.success
                   : const Color(0xFFFBBF24)),
           const SizedBox(height: 12),
           _buildSummaryRow(
               'Doanh thu',
               currencyFormat.format(kpis['revenue'] ?? 0),
-              const Color(0xFF3B82F6)),
+              AppColors.info),
           const SizedBox(height: 12),
           _buildSummaryRow(
-              'Số đơn', '${kpis['totalOrders'] ?? 0}', const Color(0xFF8B5CF6)),
+              'Số đơn', '${kpis['totalOrders'] ?? 0}', AppColors.primary),
           const SizedBox(height: 12),
           _buildSummaryRow(
               'Bàn đang dùng',

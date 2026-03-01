@@ -2,15 +2,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/company.dart';
+import '../utils/app_logger.dart';
 
 /// Provider to get all active companies for login dropdown
-final allCompaniesProvider = FutureProvider<List<Company>>((ref) async {
+final allCompaniesProvider = FutureProvider.autoDispose<List<Company>>((ref) async {
   try {
     final supabase = Supabase.instance.client;
     
     final response = await supabase
         .from('companies')
-        .select('*')
+        .select('id, name')
         .order('name', ascending: true);
     
     final List<Company> companies = (response as List)
@@ -19,7 +20,7 @@ final allCompaniesProvider = FutureProvider<List<Company>>((ref) async {
     
     return companies;
   } catch (e) {
-    print('Error fetching companies: $e');
+    AppLogger.error('Error fetching companies', e);
     return [];
   }
 });

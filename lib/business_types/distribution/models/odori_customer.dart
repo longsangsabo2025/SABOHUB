@@ -43,6 +43,10 @@ class OdoriCustomer {
   final double? tierRevenueThreshold;
   final String? referrerId; // Người giới thiệu
   final String? referrerName; // Tên người giới thiệu (joined)
+  final String leadStatus; // cold, warm, hot
+  final String? lastInteractionNotes;
+  final DateTime? lastInteractionDate;
+  final String? lastInteractionBy;
   final String? createdBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -92,6 +96,10 @@ class OdoriCustomer {
     this.tierRevenueThreshold,
     this.referrerId,
     this.referrerName,
+    this.leadStatus = 'cold',
+    this.lastInteractionNotes,
+    this.lastInteractionDate,
+    this.lastInteractionBy,
     this.createdBy,
     required this.createdAt,
     this.updatedAt,
@@ -164,6 +172,12 @@ class OdoriCustomer {
       tierRevenueThreshold: (json['tier_revenue_threshold'] as num?)?.toDouble(),
       referrerId: json['referrer_id'] as String?,
       referrerName: json['referrers']?['name'] as String?,
+      leadStatus: json['lead_status'] as String? ?? 'cold',
+      lastInteractionNotes: json['last_interaction_notes'] as String?,
+      lastInteractionDate: json['last_interaction_date'] != null
+          ? DateTime.parse(json['last_interaction_date'] as String)
+          : null,
+      lastInteractionBy: json['last_interaction_by'] as String?,
       createdBy: json['created_by'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: json['updated_at'] != null 
@@ -216,6 +230,10 @@ class OdoriCustomer {
       'tier': tier,
       'tier_revenue_threshold': tierRevenueThreshold,
       'referrer_id': referrerId,
+      'lead_status': leadStatus,
+      'last_interaction_notes': lastInteractionNotes,
+      'last_interaction_date': lastInteractionDate?.toIso8601String(),
+      'last_interaction_by': lastInteractionBy,
     };
   }
 
@@ -263,6 +281,10 @@ class OdoriCustomer {
     double? tierRevenueThreshold,
     String? referrerId,
     String? referrerName,
+    String? leadStatus,
+    String? lastInteractionNotes,
+    DateTime? lastInteractionDate,
+    String? lastInteractionBy,
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -312,6 +334,10 @@ class OdoriCustomer {
       tierRevenueThreshold: tierRevenueThreshold ?? this.tierRevenueThreshold,
       referrerId: referrerId ?? this.referrerId,
       referrerName: referrerName ?? this.referrerName,
+      leadStatus: leadStatus ?? this.leadStatus,
+      lastInteractionNotes: lastInteractionNotes ?? this.lastInteractionNotes,
+      lastInteractionDate: lastInteractionDate ?? this.lastInteractionDate,
+      lastInteractionBy: lastInteractionBy ?? this.lastInteractionBy,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// App theme configuration matching SABOHUB brand (purple/cyan) from web
@@ -6,9 +7,9 @@ class AppTheme {
   // Brand Colors (matching web CSS variables)
   static const Color primaryPurple = Color(0xFF7C3AED); // --primary: 262 83% 58%
   static const Color secondaryCyan = Color(0xFF06B6D4);  // --secondary: 188 94% 43%
-  static const Color successGreen = Color(0xFF10B981);
-  static const Color warningOrange = Color(0xFFF59E0B);
-  static const Color errorRed = Color(0xFFEF4444);
+  static const Color successGreen = AppColors.success;
+  static const Color warningOrange = AppColors.warning;
+  static const Color errorRed = AppColors.error;
   static const Color surfaceGray = Color(0xFFF8FAFC);
   static const Color borderGray = Color(0xFFE2E8F0);
   static const Color textDark = Color(0xFF1E293B);

@@ -15,7 +15,7 @@ import '../../../providers/auth_provider.dart';
 
 /// Accounting Summary Provider
 /// Caches summary data for 5 minutes to reduce API calls
-final accountingSummaryProvider = FutureProvider.family<
+final accountingSummaryProvider = FutureProvider.autoDispose.family<
     AccountingSummary,
     ({
       String companyId,
@@ -41,7 +41,7 @@ final accountingSummaryProvider = FutureProvider.family<
 );
 
 /// Transactions Provider
-final accountingTransactionsProvider = FutureProvider.family<
+final accountingTransactionsProvider = FutureProvider.autoDispose.family<
     List<AccountingTransaction>,
     ({
       String companyId,
@@ -63,7 +63,7 @@ final accountingTransactionsProvider = FutureProvider.family<
 );
 
 /// Daily Revenue Provider
-final dailyRevenueProvider = FutureProvider.family<
+final dailyRevenueProvider = FutureProvider.autoDispose.family<
     List<DailyRevenue>,
     ({
       String companyId,
@@ -1050,7 +1050,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
           .select('customer_id, customer_name, balance, aging_bucket, days_overdue')
           .eq('company_id', widget.companyId);
       
-      if (data == null || (data as List).isEmpty) return {};
+      if (data.isEmpty) return {};
       
       double totalOutstanding = 0;
       double totalOverdue = 0;

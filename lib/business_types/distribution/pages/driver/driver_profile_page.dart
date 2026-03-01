@@ -731,6 +731,7 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
         }
       }
 
+      if (!mounted) return;
       Navigator.pop(context); // Close loading
 
       if (!mounted) return;

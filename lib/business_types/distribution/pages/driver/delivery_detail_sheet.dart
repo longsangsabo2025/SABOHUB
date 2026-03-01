@@ -391,16 +391,34 @@ class DeliveryDetailSheet extends StatelessWidget {
         return;
       }
       
-      final companyData = await supabase.from('companies').select('bank_name, bank_account_number, bank_account_name, bank_bin').eq('id', companyId).maybeSingle();
-      if (companyData == null || companyData['bank_bin'] == null || companyData['bank_account_number'] == null) {
+      final companyData = await supabase.from('companies').select('bank_name, bank_account_number, bank_account_name, bank_bin, bank_name_2, bank_account_number_2, bank_account_name_2, bank_bin_2, active_bank_account').eq('id', companyId).maybeSingle();
+      if (companyData == null) {
         if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Công ty chưa cấu hình tài khoản ngân hàng'), backgroundColor: Colors.orange));
         return;
       }
       
-      final bankBin = companyData['bank_bin'];
-      final accountNumber = companyData['bank_account_number'];
-      final accountName = companyData['bank_account_name'] ?? '';
-      final bankName = companyData['bank_name'] ?? 'Ngân hàng';
+      final activeBank = (companyData['active_bank_account'] as int?) ?? 1;
+      final String? bankBin;
+      final String? accountNumber;
+      final String accountName;
+      final String bankName;
+      
+      if (activeBank == 2 && companyData['bank_bin_2'] != null) {
+        bankBin = companyData['bank_bin_2'];
+        accountNumber = companyData['bank_account_number_2'];
+        accountName = companyData['bank_account_name_2'] ?? '';
+        bankName = companyData['bank_name_2'] ?? 'Ngân hàng';
+      } else {
+        bankBin = companyData['bank_bin'];
+        accountNumber = companyData['bank_account_number'];
+        accountName = companyData['bank_account_name'] ?? '';
+        bankName = companyData['bank_name'] ?? 'Ngân hàng';
+      }
+      
+      if (bankBin == null || accountNumber == null) {
+        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Công ty chưa cấu hình tài khoản ngân hàng'), backgroundColor: Colors.orange));
+        return;
+      }
       
       final amountInt = amount.toInt();
       final content = 'TT $orderNumber';
@@ -430,7 +448,7 @@ class DeliveryDetailSheet extends StatelessWidget {
                     child: Column(children: [
                       Text(bankName, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade800)),
                       const SizedBox(height: 4),
-                      Text(accountNumber, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                      Text(accountNumber!, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
                       const SizedBox(height: 4),
                       Text(accountName, style: TextStyle(color: Colors.grey.shade700)),
                     ]),

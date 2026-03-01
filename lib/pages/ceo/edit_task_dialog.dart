@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/task.dart';
+import '../../utils/app_logger.dart';
 import '../../models/user.dart';
 import '../../providers/employee_provider.dart';
 import '../../services/task_service.dart';
@@ -103,7 +104,9 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
             final assignee =
                 employees.firstWhere((e) => e.id == _selectedAssigneeId);
             assigneeName = assignee.name ?? assignee.email;
-          } catch (_) {}
+          } catch (e) {
+            AppLogger.warn('Assignee not found: $_selectedAssigneeId');
+          }
         }
       }
 

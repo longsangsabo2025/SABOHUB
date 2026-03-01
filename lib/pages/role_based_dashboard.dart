@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,13 +11,17 @@ import '../business_types/distribution/layouts/distribution_sales_layout.dart';
 import '../business_types/distribution/layouts/distribution_warehouse_layout.dart';
 import '../business_types/distribution/pages/driver/distribution_driver_layout_refactored.dart';
 import '../business_types/distribution/layouts/distribution_customer_service_layout.dart';
-import '../business_types/distribution/layouts/distribution_finance_layout.dart' hide Text, Icon, SizedBox, Expanded;
+import '../business_types/distribution/layouts/distribution_finance_layout.dart';
 import '../business_types/manufacturing/layouts/manufacturing_manager_layout.dart';
 import '../business_types/entertainment/layouts/entertainment_manager_layout.dart';
+import '../business_types/entertainment/layouts/entertainment_staff_layout.dart';
 import '../layouts/shift_leader_main_layout.dart';
 import '../layouts/driver_main_layout.dart';
 import '../layouts/warehouse_main_layout.dart';
 import 'ceo/ceo_main_layout.dart';
+import 'ceo/distribution/distribution_ceo_layout.dart';
+import 'ceo/entertainment/entertainment_ceo_layout.dart';
+import 'ceo/manufacturing/manufacturing_ceo_layout.dart';
 import 'staff_main_layout.dart';
 import '../providers/auth_provider.dart';
 import '../models/user.dart' as app_user;
@@ -23,11 +29,11 @@ import '../utils/app_logger.dart';
 
 /// User Role Enum
 enum UserRole {
-  superAdmin('SUPER_ADMIN', 'Super Admin', Color(0xFFEF4444), Icons.admin_panel_settings),
-  ceo('CEO', 'Tổng Giám Đốc', Color(0xFF3B82F6), Icons.business_center),
-  manager('MANAGER', 'Quản Lý', Color(0xFF10B981), Icons.supervisor_account),
-  shiftLeader('SHIFT_LEADER', 'Trưởng Ca', Color(0xFF8B5CF6), Icons.group),
-  staff('STAFF', 'Nhân Viên', Color(0xFF10B981), Icons.person),
+  superAdmin('SUPER_ADMIN', 'Super Admin', AppColors.error, Icons.admin_panel_settings),
+  ceo('CEO', 'Tổng Giám Đốc', AppColors.info, Icons.business_center),
+  manager('MANAGER', 'Quản Lý', AppColors.success, Icons.supervisor_account),
+  shiftLeader('SHIFT_LEADER', 'Trưởng Ca', AppColors.primary, Icons.group),
+  staff('STAFF', 'Nhân Viên', AppColors.success, Icons.person),
   driver('DRIVER', 'Tài Xế', Color(0xFF0EA5E9), Icons.local_shipping),
   warehouse('WAREHOUSE', 'Nhân Viên Kho', Color(0xFFF97316), Icons.warehouse);
 
@@ -101,7 +107,11 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
     }
 
     if (_selectedRole != null) {
-      return _buildRoleLayout(_selectedRole!);
+      // Wrap in Listener to record activity for session timeout
+      return Listener(
+        onPointerDown: (_) => ref.read(authProvider.notifier).recordActivity(),
+        child: _buildRoleLayout(_selectedRole!),
+      );
     }
 
     // Only show role selection if user has no role (shouldn't happen normally)
@@ -120,19 +130,20 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
         ),
         actions: [
           // Quick test button - tap to go to Staff layout directly
-          TextButton.icon(
-            onPressed: () {
-              setState(() {
-                _selectedRole = UserRole.staff;
-              });
-            },
-            icon: const Icon(Icons.flash_on, size: 16),
-            label: const Text('Quick Test'),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF10B981),
-              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+          if (kDebugMode)
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _selectedRole = UserRole.staff;
+                });
+              },
+              icon: const Icon(Icons.flash_on, size: 16),
+              label: const Text('Quick Test'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.success,
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
           IconButton(
             onPressed: () {
               // Logout functionality would go here
@@ -166,14 +177,14 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF3B82F6),
+            AppColors.info,
             Color(0xFF1D4ED8),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+            color: AppColors.info.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -361,7 +372,7 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
         children: [
           const Row(
             children: [
-              Icon(Icons.info_outline, color: Color(0xFF3B82F6)),
+              Icon(Icons.info_outline, color: AppColors.info),
               SizedBox(width: 8),
               Text(
                 'Navigation Systems Completed',
@@ -383,12 +394,12 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Row(
               children: [
-                Icon(Icons.check_circle, color: Color(0xFF10B981)),
+                Icon(Icons.check_circle, color: AppColors.success),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -396,7 +407,7 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF10B981),
+                      color: AppColors.success,
                     ),
                   ),
                 ),
@@ -479,7 +490,20 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
         AppLogger.nav('→ Routing to SuperAdminMainLayout');
         return const SuperAdminMainLayout();
       case UserRole.ceo:
-        AppLogger.nav('→ Routing to CEOMainLayout');
+        // Route CEO to business-type-specific layout (same pattern as Manager)
+        if (businessType != null && businessType.isManufacturing) {
+          AppLogger.nav('→ Routing to ManufacturingCEOLayout (CEO + isManufacturing=true)');
+          return const ManufacturingCEOLayout();
+        }
+        if (businessType != null && businessType.isDistribution) {
+          AppLogger.nav('→ Routing to DistributionCEOLayout (CEO + isDistribution=true)');
+          return const DistributionCEOLayout();
+        }
+        if (businessType != null && businessType.isEntertainment) {
+          AppLogger.nav('→ Routing to EntertainmentCEOLayout (CEO + isEntertainment=true / Vận Hành)');
+          return const EntertainmentCEOLayout();
+        }
+        AppLogger.nav('→ Routing to CEOMainLayout (fallback)');
         return const CEOMainLayout();
       case UserRole.manager:
         // Route to different layout based on business type
@@ -492,7 +516,7 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
           return const DistributionManagerLayout();
         }
         if (businessType != null && businessType.isEntertainment) {
-          AppLogger.nav('→ Routing to EntertainmentManagerLayout (isEntertainment=true)');
+          AppLogger.nav('→ Routing to EntertainmentManagerLayout (isEntertainment=true / Vận Hành)');
           return const EntertainmentManagerLayout();
         }
         AppLogger.nav('→ Routing to ManagerMainLayout (default)');
@@ -524,6 +548,10 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
             return const DistributionFinanceLayout();
           }
           // Other distribution staff go to default staff layout for now
+        }
+        if (businessType != null && businessType.isEntertainment) {
+          AppLogger.nav('→ Routing to EntertainmentStaffLayout (staff + isEntertainment / Vận Hành)');
+          return const EntertainmentStaffLayout();
         }
         AppLogger.nav('→ Routing to StaffMainLayout');
         return const StaffMainLayout();

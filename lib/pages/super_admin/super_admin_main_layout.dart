@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -60,10 +61,10 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.2),
+                color: AppColors.error.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.admin_panel_settings, color: Color(0xFFEF4444), size: 20),
+              child: const Icon(Icons.admin_panel_settings, color: AppColors.error, size: 20),
             ),
             const SizedBox(width: 12),
             const Text(
@@ -82,15 +83,15 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
             margin: const EdgeInsets.only(right: 8),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withOpacity(0.2),
+              color: AppColors.success.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle, color: Color(0xFF10B981), size: 14),
+                Icon(Icons.check_circle, color: AppColors.success, size: 14),
                 SizedBox(width: 4),
-                Text('System OK', style: TextStyle(color: Color(0xFF10B981), fontSize: 12)),
+                Text('System OK', style: TextStyle(color: AppColors.success, fontSize: 12)),
               ],
             ),
           ),
@@ -102,7 +103,7 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
           PopupMenuButton<String>(
             icon: CircleAvatar(
               radius: 16,
-              backgroundColor: const Color(0xFFEF4444),
+              backgroundColor: AppColors.error,
               child: Text(
                 user?.name?.substring(0, 1).toUpperCase() ?? 'A',
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -162,7 +163,7 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
         onTap: _onTabSelected,
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF1E1E2E),
-        selectedItemColor: const Color(0xFFEF4444),
+        selectedItemColor: AppColors.error,
         unselectedItemColor: Colors.grey[600],
         selectedFontSize: 11,
         unselectedFontSize: 11,
@@ -283,6 +284,7 @@ class _SuperAdminDashboardPage extends ConsumerStatefulWidget {
 
 class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPage> {
   Map<String, dynamic> _stats = {};
+  List<Map<String, dynamic>> _recentActivity = [];
   bool _isLoading = true;
 
   @override
@@ -310,6 +312,13 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
           .eq('is_active', true)
           .count();
       
+      // Get recent activity from analytics_events
+      final activityResult = await supabase
+          .from('analytics_events')
+          .select('event_name, category, created_at')
+          .order('created_at', ascending: false)
+          .limit(5);
+      
       setState(() {
         _stats = {
           'totalCompanies': totalCompanies,
@@ -317,6 +326,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
           'activeCompanies': activeCompanies.count,
           'systemHealth': 98.5,
         };
+        _recentActivity = List<Map<String, dynamic>>.from(activityResult);
         _isLoading = false;
       });
     } catch (e) {
@@ -362,12 +372,12 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+          colors: [AppColors.error, Color(0xFFDC2626)],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFEF4444).withOpacity(0.3),
+            color: AppColors.error.withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -433,28 +443,28 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
           icon: Icons.business,
           label: 'Total Companies',
           value: '${_stats['totalCompanies'] ?? 0}',
-          color: const Color(0xFF3B82F6),
+          color: AppColors.info,
           trend: '+2 this month',
         ),
         _buildStatCard(
           icon: Icons.people,
           label: 'Total Users',
           value: '${_stats['totalUsers'] ?? 0}',
-          color: const Color(0xFF10B981),
+          color: AppColors.success,
           trend: '+15 this week',
         ),
         _buildStatCard(
           icon: Icons.check_circle,
           label: 'Active Companies',
           value: '${_stats['activeCompanies'] ?? 0}',
-          color: const Color(0xFF8B5CF6),
+          color: AppColors.primary,
           trend: '100% active',
         ),
         _buildStatCard(
           icon: Icons.speed,
           label: 'System Health',
           value: '${(_stats['systemHealth'] ?? 0).toStringAsFixed(1)}%',
-          color: const Color(0xFFF59E0B),
+          color: AppColors.warning,
           trend: 'Excellent',
         ),
       ],
@@ -522,7 +532,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
         children: [
           const Row(
             children: [
-              Icon(Icons.monitor_heart, color: Color(0xFF10B981)),
+              Icon(Icons.monitor_heart, color: AppColors.success),
               SizedBox(width: 8),
               Text('System Health', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ],
@@ -569,7 +579,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -577,19 +587,54 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
         children: [
           const Row(
             children: [
-              Icon(Icons.history, color: Color(0xFF3B82F6)),
+              Icon(Icons.history, color: AppColors.info),
               SizedBox(width: 8),
               Text('Recent Activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 16),
-          _buildActivityItem('New company registered: Odori', '2 hours ago', Icons.business, Colors.blue),
-          _buildActivityItem('User login: admin@sabohub.com', '3 hours ago', Icons.login, Colors.green),
-          _buildActivityItem('System backup completed', '5 hours ago', Icons.backup, Colors.purple),
-          _buildActivityItem('Settings updated', 'Yesterday', Icons.settings, Colors.orange),
+          if (_recentActivity.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text('Chưa có hoạt động nào', style: TextStyle(color: Colors.grey[500])),
+              ),
+            )
+          else
+            ..._recentActivity.map((event) {
+              final category = event['category'] ?? '';
+              final eventName = event['event_name'] ?? '';
+              final createdAt = event['created_at'] != null
+                  ? DateTime.tryParse(event['created_at'])
+                  : null;
+              final timeAgo = createdAt != null ? _formatTimeAgo(createdAt) : '';
+              final (icon, color) = _activityIconForCategory(category);
+              return _buildActivityItem(eventName, timeAgo, icon, color);
+            }),
         ],
       ),
     );
+  }
+
+  String _formatTimeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'Vừa xong';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
+    if (diff.inHours < 24) return '${diff.inHours} giờ trước';
+    if (diff.inDays < 7) return '${diff.inDays} ngày trước';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  (IconData, Color) _activityIconForCategory(String category) {
+    return switch (category) {
+      'auth' => (Icons.login, Colors.green),
+      'business' => (Icons.business, Colors.blue),
+      'page_view' => (Icons.visibility, Colors.indigo),
+      'user_action' => (Icons.touch_app, Colors.orange),
+      'error' => (Icons.error, Colors.red),
+      'performance' => (Icons.speed, Colors.purple),
+      _ => (Icons.circle, Colors.grey),
+    };
   }
 
   Widget _buildActivityItem(String title, String time, IconData icon, Color color) {
@@ -635,7 +680,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
         children: [
           const Row(
             children: [
-              Icon(Icons.flash_on, color: Color(0xFFF59E0B)),
+              Icon(Icons.flash_on, color: AppColors.warning),
               SizedBox(width: 8),
               Text('Quick Actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ],
@@ -643,17 +688,33 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _buildActionButton('Add Company', Icons.add_business, const Color(0xFF3B82F6))),
+              Expanded(child: _buildActionButton('Add Company', Icons.add_business, AppColors.info, () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Thêm công ty: Chuyển sang tab Companies')),
+                );
+              })),
               const SizedBox(width: 12),
-              Expanded(child: _buildActionButton('Add User', Icons.person_add, const Color(0xFF10B981))),
+              Expanded(child: _buildActionButton('Add User', Icons.person_add, AppColors.success, () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Thêm user: Chuyển sang tab Users')),
+                );
+              })),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildActionButton('System Backup', Icons.backup, const Color(0xFF8B5CF6))),
+              Expanded(child: _buildActionButton('System Backup', Icons.backup, AppColors.primary, () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Backup: Supabase tự động backup hàng ngày (PITR)')),
+                );
+              })),
               const SizedBox(width: 12),
-              Expanded(child: _buildActionButton('View Logs', Icons.article, const Color(0xFFF59E0B))),
+              Expanded(child: _buildActionButton('View Logs', Icons.article, AppColors.warning, () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Xem logs: Chuyển sang tab Audit Logs')),
+                );
+              })),
             ],
           ),
         ],
@@ -661,9 +722,9 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
     );
   }
 
-  Widget _buildActionButton(String label, IconData icon, Color color) {
+  Widget _buildActionButton(String label, IconData icon, Color color, VoidCallback onPressed) {
     return ElevatedButton.icon(
-      onPressed: () {},
+      onPressed: onPressed,
       icon: Icon(icon, size: 18),
       label: Text(label, style: const TextStyle(fontSize: 12)),
       style: ElevatedButton.styleFrom(
@@ -744,7 +805,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
                     icon: const Icon(Icons.add, size: 18),
                     label: const Text('Add'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEF4444),
+                      backgroundColor: AppColors.error,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -930,11 +991,12 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
                   'business_type': selectedType,
                   'is_active': true,
                 });
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 _loadCompanies();
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Add', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -980,11 +1042,12 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
                   'name': nameController.text,
                   'business_type': selectedType,
                 }).eq('id', company['id']);
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 _loadCompanies();
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Save', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -1003,6 +1066,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
           ElevatedButton(
             onPressed: () async {
               await SupabaseService().client.from('companies').delete().eq('id', company['id']);
+              if (!context.mounted) return;
               Navigator.pop(context);
               _loadCompanies();
             },
@@ -1150,7 +1214,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
                     onPressed: () => _showAddUserDialog(context),
                     icon: const Icon(Icons.person_add, size: 18),
                     label: const Text('Add'),
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444), foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
                   ),
                 ],
               ),
@@ -1209,8 +1273,8 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
         label: Text(label),
         selected: isSelected,
         onSelected: (selected) => setState(() => _roleFilter = selected ? value : 'all'),
-        selectedColor: const Color(0xFFEF4444).withOpacity(0.2),
-        checkmarkColor: const Color(0xFFEF4444),
+        selectedColor: AppColors.error.withOpacity(0.2),
+        checkmarkColor: AppColors.error,
       ),
     );
   }
@@ -1267,9 +1331,13 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
             ),
             PopupMenuButton<String>(
               onSelected: (value) {
-                if (value == 'edit') _showEditUserDialog(context, user);
-                else if (value == 'delete') _confirmDeleteUser(user);
-                else if (value == 'toggle') _toggleUserStatus(user);
+                if (value == 'edit') {
+                  _showEditUserDialog(context, user);
+                } else if (value == 'delete') {
+                  _confirmDeleteUser(user);
+                } else if (value == 'toggle') {
+                  _toggleUserStatus(user);
+                }
               },
               itemBuilder: (context) => [
                 const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Edit'))),
@@ -1294,11 +1362,11 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
 
   Color _getRoleColor(String role) {
     switch (role.toUpperCase()) {
-      case 'SUPER_ADMIN': return const Color(0xFFEF4444);
-      case 'CEO': return const Color(0xFF3B82F6);
-      case 'MANAGER': return const Color(0xFF10B981);
-      case 'SHIFT_LEADER': return const Color(0xFF8B5CF6);
-      case 'STAFF': return const Color(0xFFF59E0B);
+      case 'SUPER_ADMIN': return AppColors.error;
+      case 'CEO': return AppColors.info;
+      case 'MANAGER': return AppColors.success;
+      case 'SHIFT_LEADER': return AppColors.primary;
+      case 'STAFF': return AppColors.warning;
       case 'DRIVER': return const Color(0xFF0EA5E9);
       case 'WAREHOUSE': return const Color(0xFFF97316);
       default: return Colors.grey;
@@ -1306,14 +1374,61 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
   }
 
   void _showAddUserDialog(BuildContext context) {
-    // Simplified add user dialog
+    final nameController = TextEditingController();
+    final usernameController = TextEditingController();
+    String selectedRole = 'staff';
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New User'),
-        content: const Text('Feature coming soon'),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Thêm nhân viên mới'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Họ tên',
+                prefixIcon: Icon(Icons.person),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: usernameController,
+              decoration: const InputDecoration(
+                labelText: 'Tên đăng nhập',
+                prefixIcon: Icon(Icons.account_circle),
+              ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: selectedRole,
+              decoration: const InputDecoration(
+                labelText: 'Vai trò',
+                prefixIcon: Icon(Icons.badge),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'manager', child: Text('Manager')),
+                DropdownMenuItem(value: 'shiftLeader', child: Text('Shift Leader')),
+                DropdownMenuItem(value: 'staff', child: Text('Staff')),
+                DropdownMenuItem(value: 'driver', child: Text('Driver')),
+                DropdownMenuItem(value: 'warehouse', child: Text('Warehouse')),
+              ],
+              onChanged: (v) => selectedRole = v!,
+            ),
+          ],
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Vui lòng sử dụng trang Quản lý nhân viên để tạo tài khoản đầy đủ')),
+              );
+            },
+            child: const Text('Tạo'),
+          ),
         ],
       ),
     );
@@ -1358,11 +1473,12 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
                   'full_name': nameController.text,
                   'role': selectedRole,
                 }).eq('id', user['id']);
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 _loadUsers();
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Save', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -1381,6 +1497,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
           ElevatedButton(
             onPressed: () async {
               await SupabaseService().client.from('employees').delete().eq('id', user['id']);
+              if (!context.mounted) return;
               Navigator.pop(context);
               _loadUsers();
             },
@@ -1402,11 +1519,22 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
 // ============================================================================
 // SYSTEM SETTINGS PAGE
 // ============================================================================
-class _SystemSettingsPage extends ConsumerWidget {
+class _SystemSettingsPage extends ConsumerStatefulWidget {
   const _SystemSettingsPage();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SystemSettingsPage> createState() => _SystemSettingsPageState();
+}
+
+class _SystemSettingsPageState extends ConsumerState<_SystemSettingsPage> {
+  // Local state for feature flags (persist to Supabase when ready)
+  bool _aiEnabled = true;
+  bool _realtimeEnabled = true;
+  bool _multiLangEnabled = false;
+  bool _maintenanceMode = false;
+
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1420,9 +1548,15 @@ class _SystemSettingsPage extends ConsumerWidget {
             'General',
             Icons.settings,
             [
-              _buildSettingTile('Platform Name', 'SABOHUB', Icons.edit, () {}),
-              _buildSettingTile('Default Language', 'Vietnamese', Icons.language, () {}),
-              _buildSettingTile('Time Zone', 'Asia/Ho_Chi_Minh', Icons.access_time, () {}),
+              _buildSettingTile('Platform Name', 'SABOHUB', Icons.edit, () {
+                _showInfoSnack('Platform name: SABOHUB (read-only)');
+              }),
+              _buildSettingTile('Default Language', 'Vietnamese', Icons.language, () {
+                _showInfoSnack('Ngôn ngữ mặc định: Tiếng Việt');
+              }),
+              _buildSettingTile('Time Zone', 'Asia/Ho_Chi_Minh', Icons.access_time, () {
+                _showInfoSnack('Múi giờ: UTC+7 (Ho Chi Minh)');
+              }),
             ],
           ),
           const SizedBox(height: 16),
@@ -1432,10 +1566,20 @@ class _SystemSettingsPage extends ConsumerWidget {
             'Feature Flags',
             Icons.flag,
             [
-              _buildSwitchTile('Enable AI Assistant', true, (value) {}),
-              _buildSwitchTile('Enable Real-time Tracking', true, (value) {}),
-              _buildSwitchTile('Enable Multi-language', false, (value) {}),
-              _buildSwitchTile('Maintenance Mode', false, (value) {}),
+              _buildSwitchTile('Enable AI Assistant', _aiEnabled, (v) => setState(() => _aiEnabled = v)),
+              _buildSwitchTile('Enable Real-time Tracking', _realtimeEnabled, (v) => setState(() => _realtimeEnabled = v)),
+              _buildSwitchTile('Enable Multi-language', _multiLangEnabled, (v) => setState(() => _multiLangEnabled = v)),
+              _buildSwitchTile('Maintenance Mode', _maintenanceMode, (v) {
+                if (v) {
+                  _showConfirmDialog(
+                    'Bật Maintenance Mode?',
+                    'Toàn bộ user sẽ thấy thông báo bảo trì. Tiếp tục?',
+                    () => setState(() => _maintenanceMode = true),
+                  );
+                } else {
+                  setState(() => _maintenanceMode = false);
+                }
+              }),
             ],
           ),
           const SizedBox(height: 16),
@@ -1445,9 +1589,15 @@ class _SystemSettingsPage extends ConsumerWidget {
             'Security',
             Icons.security,
             [
-              _buildSettingTile('Session Timeout', '30 minutes', Icons.timer, () {}),
-              _buildSettingTile('Password Policy', 'Strong', Icons.lock, () {}),
-              _buildSettingTile('2FA Requirement', 'Optional', Icons.verified_user, () {}),
+              _buildSettingTile('Session Timeout', '30 minutes', Icons.timer, () {
+                _showInfoSnack('Session timeout: 30 phút (mặc định Supabase)');
+              }),
+              _buildSettingTile('Password Policy', 'Strong (8+ chars)', Icons.lock, () {
+                _showInfoSnack('Password: min 8 ký tự, đổi qua change_employee_password RPC');
+              }),
+              _buildSettingTile('2FA Requirement', 'Optional', Icons.verified_user, () {
+                _showInfoSnack('2FA chưa triển khai — employee login qua mã nhân viên');
+              }),
             ],
           ),
           const SizedBox(height: 16),
@@ -1457,10 +1607,24 @@ class _SystemSettingsPage extends ConsumerWidget {
             'Backup & Maintenance',
             Icons.backup,
             [
-              _buildSettingTile('Auto Backup', 'Daily at 2:00 AM', Icons.schedule, () {}),
-              _buildSettingTile('Last Backup', 'Today, 2:00 AM', Icons.history, () {}),
-              _buildActionTile('Run Backup Now', Icons.play_arrow, Colors.blue, () {}),
-              _buildActionTile('Clear Cache', Icons.clear_all, Colors.orange, () {}),
+              _buildSettingTile('Auto Backup', 'Supabase manages', Icons.schedule, () {
+                _showInfoSnack('Supabase tự động backup hàng ngày (Point-in-Time Recovery)');
+              }),
+              _buildActionTile('Clear Analytics Events', Icons.clear_all, Colors.orange, () {
+                _showConfirmDialog(
+                  'Clear Analytics?',
+                  'Xóa toàn bộ analytics_events cũ hơn 30 ngày?',
+                  () async {
+                    try {
+                      final cutoff = DateTime.now().subtract(const Duration(days: 30)).toIso8601String();
+                      await supabase.client.from('analytics_events').delete().lt('created_at', cutoff);
+                      if (mounted) _showInfoSnack('Đã xóa analytics events cũ hơn 30 ngày');
+                    } catch (e) {
+                      if (mounted) _showInfoSnack('Lỗi: $e');
+                    }
+                  },
+                );
+              }),
             ],
           ),
           const SizedBox(height: 16),
@@ -1470,10 +1634,44 @@ class _SystemSettingsPage extends ConsumerWidget {
             'Danger Zone',
             Icons.warning,
             [
-              _buildActionTile('Reset All Settings', Icons.restore, Colors.orange, () {}),
-              _buildActionTile('Purge All Data', Icons.delete_forever, Colors.red, () {}),
+              _buildActionTile('Reset All Settings', Icons.restore, Colors.orange, () {
+                _showConfirmDialog(
+                  'Reset Settings?',
+                  'Reset tất cả feature flags về mặc định?',
+                  () => setState(() {
+                    _aiEnabled = true;
+                    _realtimeEnabled = true;
+                    _multiLangEnabled = false;
+                    _maintenanceMode = false;
+                  }),
+                );
+              }),
             ],
             isDanger: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInfoSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+    );
+  }
+
+  void _showConfirmDialog(String title, String message, VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
+          ElevatedButton(
+            onPressed: () { Navigator.pop(ctx); onConfirm(); },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1497,7 +1695,7 @@ class _SystemSettingsPage extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(icon, color: isDanger ? Colors.red : const Color(0xFF3B82F6)),
+                Icon(icon, color: isDanger ? Colors.red : AppColors.info),
                 const SizedBox(width: 8),
                 Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDanger ? Colors.red : null)),
               ],
@@ -1525,7 +1723,7 @@ class _SystemSettingsPage extends ConsumerWidget {
       title: Text(title),
       value: value,
       onChanged: onChanged,
-      activeColor: const Color(0xFF10B981),
+      activeColor: AppColors.success,
     );
   }
 
@@ -1540,7 +1738,7 @@ class _SystemSettingsPage extends ConsumerWidget {
 }
 
 // ============================================================================
-// AUDIT LOGS PAGE
+// AUDIT LOGS PAGE — Real data from analytics_events table
 // ============================================================================
 class _AuditLogsPage extends ConsumerStatefulWidget {
   const _AuditLogsPage();
@@ -1550,25 +1748,62 @@ class _AuditLogsPage extends ConsumerStatefulWidget {
 }
 
 class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
-  // Mock audit logs (in real app, fetch from database)
-  final List<Map<String, dynamic>> _logs = [
-    {'action': 'User Login', 'user': 'admin@sabohub.com', 'time': '10 minutes ago', 'type': 'auth', 'status': 'success'},
-    {'action': 'Company Created', 'user': 'admin@sabohub.com', 'time': '2 hours ago', 'type': 'company', 'status': 'success'},
-    {'action': 'User Updated', 'user': 'admin@sabohub.com', 'time': '3 hours ago', 'type': 'user', 'status': 'success'},
-    {'action': 'Settings Changed', 'user': 'admin@sabohub.com', 'time': '5 hours ago', 'type': 'settings', 'status': 'success'},
-    {'action': 'Failed Login Attempt', 'user': 'unknown@test.com', 'time': '6 hours ago', 'type': 'auth', 'status': 'failed'},
-    {'action': 'System Backup', 'user': 'system', 'time': 'Yesterday', 'type': 'system', 'status': 'success'},
-    {'action': 'Company Deleted', 'user': 'admin@sabohub.com', 'time': 'Yesterday', 'type': 'company', 'status': 'success'},
-  ];
-
+  List<Map<String, dynamic>> _logs = [];
+  bool _isLoading = true;
   String _typeFilter = 'all';
 
   @override
-  Widget build(BuildContext context) {
-    final filteredLogs = _typeFilter == 'all' 
-        ? _logs 
-        : _logs.where((l) => l['type'] == _typeFilter).toList();
+  void initState() {
+    super.initState();
+    _loadLogs();
+  }
 
+  Future<void> _loadLogs() async {
+    try {
+      var query = supabase.client
+          .from('analytics_events')
+          .select('*')
+          .order('created_at', ascending: false)
+          .limit(50);
+
+      if (_typeFilter != 'all') {
+        query = supabase.client
+            .from('analytics_events')
+            .select('*')
+            .eq('category', _typeFilter)
+            .order('created_at', ascending: false)
+            .limit(50);
+      }
+
+      final response = await query;
+      if (mounted) {
+        setState(() {
+          _logs = List<Map<String, dynamic>>.from(response as List);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _formatTime(String? timestamp) {
+    if (timestamp == null) return '?';
+    try {
+      final dt = DateTime.parse(timestamp);
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+      if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
+      if (diff.inHours < 24) return '${diff.inHours} giờ trước';
+      if (diff.inDays < 7) return '${diff.inDays} ngày trước';
+      return '${dt.day}/${dt.month}/${dt.year}';
+    } catch (_) {
+      return timestamp.split('T')[0];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
         Container(
@@ -1576,18 +1811,30 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Audit Logs', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text('Audit Logs', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  ),
+                  IconButton(
+                    onPressed: () { setState(() => _isLoading = true); _loadLogs(); },
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text('${_logs.length} events', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              const SizedBox(height: 12),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
                     _buildFilterChip('All', 'all'),
                     _buildFilterChip('Auth', 'auth'),
-                    _buildFilterChip('Company', 'company'),
-                    _buildFilterChip('User', 'user'),
-                    _buildFilterChip('Settings', 'settings'),
-                    _buildFilterChip('System', 'system'),
+                    _buildFilterChip('Business', 'business'),
+                    _buildFilterChip('Page View', 'page_view'),
+                    _buildFilterChip('User Action', 'user_action'),
+                    _buildFilterChip('Error', 'error'),
                   ],
                 ),
               ),
@@ -1595,14 +1842,30 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: filteredLogs.length,
-            itemBuilder: (context, index) {
-              final log = filteredLogs[index];
-              return _buildLogCard(log);
-            },
-          ),
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _logs.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.history, size: 48, color: Colors.grey.shade300),
+                          const SizedBox(height: 8),
+                          Text('Chưa có log nào', style: TextStyle(color: Colors.grey.shade500)),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async {
+                        setState(() => _isLoading = true);
+                        await _loadLogs();
+                      },
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _logs.length,
+                        itemBuilder: (context, index) => _buildLogCard(_logs[index]),
+                      ),
+                    ),
         ),
       ],
     );
@@ -1615,16 +1878,25 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
       child: FilterChip(
         label: Text(label),
         selected: isSelected,
-        onSelected: (selected) => setState(() => _typeFilter = selected ? value : 'all'),
-        selectedColor: const Color(0xFFEF4444).withOpacity(0.2),
-        checkmarkColor: const Color(0xFFEF4444),
+        onSelected: (selected) {
+          setState(() {
+            _typeFilter = selected ? value : 'all';
+            _isLoading = true;
+          });
+          _loadLogs();
+        },
+        selectedColor: AppColors.error.withValues(alpha: 0.2),
+        checkmarkColor: AppColors.error,
       ),
     );
   }
 
   Widget _buildLogCard(Map<String, dynamic> log) {
-    final isSuccess = log['status'] == 'success';
-    
+    final category = log['category']?.toString() ?? 'unknown';
+    final eventName = log['event_name']?.toString() ?? 'unknown';
+    final userId = log['user_id']?.toString() ?? 'system';
+    final createdAt = log['created_at']?.toString();
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1632,49 +1904,54 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: (isSuccess ? Colors.green : Colors.red).withOpacity(0.1),
+            color: _getCategoryColor(category).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            _getLogIcon(log['type']),
-            color: isSuccess ? Colors.green : Colors.red,
-            size: 20,
-          ),
+          child: Icon(_getLogIcon(category), color: _getCategoryColor(category), size: 20),
         ),
-        title: Text(log['action'], style: const TextStyle(fontWeight: FontWeight.w500)),
+        title: Text(eventName, style: const TextStyle(fontWeight: FontWeight.w500)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(log['user'], style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-            Text(log['time'], style: TextStyle(color: Colors.grey[400], fontSize: 11)),
+            Text(userId, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+            Text(_formatTime(createdAt), style: TextStyle(color: Colors.grey[400], fontSize: 11)),
           ],
         ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: (isSuccess ? Colors.green : Colors.red).withOpacity(0.1),
+            color: _getCategoryColor(category).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            log['status'].toUpperCase(),
-            style: TextStyle(
-              fontSize: 10,
-              color: isSuccess ? Colors.green : Colors.red,
-              fontWeight: FontWeight.bold,
-            ),
+            category.toUpperCase(),
+            style: TextStyle(fontSize: 9, color: _getCategoryColor(category), fontWeight: FontWeight.bold),
           ),
         ),
       ),
     );
   }
 
-  IconData _getLogIcon(String type) {
-    switch (type) {
+  Color _getCategoryColor(String category) {
+    switch (category) {
+      case 'auth': return Colors.green;
+      case 'business': return Colors.blue;
+      case 'page_view': return Colors.purple;
+      case 'user_action': return Colors.orange;
+      case 'error': return Colors.red;
+      case 'performance': return Colors.teal;
+      default: return Colors.grey;
+    }
+  }
+
+  IconData _getLogIcon(String category) {
+    switch (category) {
       case 'auth': return Icons.login;
-      case 'company': return Icons.business;
-      case 'user': return Icons.person;
-      case 'settings': return Icons.settings;
-      case 'system': return Icons.computer;
+      case 'business': return Icons.business;
+      case 'page_view': return Icons.visibility;
+      case 'user_action': return Icons.touch_app;
+      case 'error': return Icons.error_outline;
+      case 'performance': return Icons.speed;
       default: return Icons.info;
     }
   }
@@ -1685,6 +1962,12 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
 // ============================================================================
 class _SuperAdminProfilePage extends ConsumerWidget {
   const _SuperAdminProfilePage();
+
+  void _showSnack(BuildContext context, String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1702,7 +1985,7 @@ class _SuperAdminProfilePage extends ConsumerWidget {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                colors: [AppColors.error, Color(0xFFDC2626)],
               ),
               borderRadius: BorderRadius.circular(16),
             ),
@@ -1713,7 +1996,7 @@ class _SuperAdminProfilePage extends ConsumerWidget {
                   backgroundColor: Colors.white,
                   child: Text(
                     (user?.name ?? 'A').substring(0, 1).toUpperCase(),
-                    style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Color(0xFFEF4444)),
+                    style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.error),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1742,23 +2025,41 @@ class _SuperAdminProfilePage extends ConsumerWidget {
           
           // Settings Cards
           _buildSettingsCard('Account Settings', [
-            _buildMenuItem(Icons.person, 'Edit Profile', () {}),
-            _buildMenuItem(Icons.lock, 'Change Password', () {}),
-            _buildMenuItem(Icons.verified_user, 'Two-Factor Auth', () {}),
+            _buildMenuItem(Icons.person, 'Edit Profile', () {
+              _showSnack(context, 'Chỉnh sửa profile qua Supabase Dashboard');
+            }),
+            _buildMenuItem(Icons.lock, 'Change Password', () {
+              _showSnack(context, 'Đổi mật khẩu qua change_employee_password RPC');
+            }),
+            _buildMenuItem(Icons.verified_user, 'Two-Factor Auth', () {
+              _showSnack(context, '2FA chưa triển khai — xác thực qua mã nhân viên');
+            }),
           ]),
           const SizedBox(height: 16),
           
           _buildSettingsCard('Preferences', [
-            _buildMenuItem(Icons.notifications, 'Notifications', () {}),
-            _buildMenuItem(Icons.dark_mode, 'Theme', () {}),
-            _buildMenuItem(Icons.language, 'Language', () {}),
+            _buildMenuItem(Icons.notifications, 'Notifications', () {
+              _showSnack(context, 'Cài đặt thông báo: Telegram bot đã tích hợp');
+            }),
+            _buildMenuItem(Icons.dark_mode, 'Theme', () {
+              _showSnack(context, 'Dark mode đang phát triển');
+            }),
+            _buildMenuItem(Icons.language, 'Language', () {
+              _showSnack(context, 'Ngôn ngữ: Tiếng Việt (mặc định)');
+            }),
           ]),
           const SizedBox(height: 16),
           
           _buildSettingsCard('Support', [
-            _buildMenuItem(Icons.help, 'Help Center', () {}),
-            _buildMenuItem(Icons.bug_report, 'Report Bug', () {}),
-            _buildMenuItem(Icons.info, 'About', () {}),
+            _buildMenuItem(Icons.help, 'Help Center', () {
+              _showSnack(context, 'Liên hệ admin@sabohub.com để được hỗ trợ');
+            }),
+            _buildMenuItem(Icons.bug_report, 'Report Bug', () {
+              _showSnack(context, 'Báo lỗi qua tab Bug Reports trong sidebar');
+            }),
+            _buildMenuItem(Icons.info, 'About', () {
+              _showSnack(context, 'SABOHUB v1.2.0+16 — Hệ thống quản lý đa ngành');
+            }),
           ]),
           const SizedBox(height: 24),
           

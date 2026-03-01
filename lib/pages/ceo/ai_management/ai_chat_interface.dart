@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// AI Chat Interface - Popup chat window
@@ -88,6 +89,25 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
 
     return Column(
       children: [
+        // Coming Soon Banner
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          color: Colors.amber.shade100,
+          child: const Row(
+            children: [
+              Icon(Icons.construction, color: Colors.orange, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Tính năng AI đang phát triển. Dữ liệu hiển thị là mô phỏng.',
+                  style: TextStyle(fontSize: 13, color: Colors.brown),
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // Header with Assistant Selector
         Container(
           padding: const EdgeInsets.all(16),
@@ -281,7 +301,7 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
                 height: 44,
                 decoration: BoxDecoration(
                   color: _inputController.text.trim().isNotEmpty && !_isLoading
-                      ? const Color(0xFF3B82F6)
+                      ? AppColors.info
                       : const Color(0xFFD1D5DB),
                   borderRadius: BorderRadius.circular(22),
                 ),
@@ -316,7 +336,7 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: const Color(0xFF3B82F6),
+                color: AppColors.info,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Center(
@@ -335,7 +355,7 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
               ),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isUser ? const Color(0xFF3B82F6) : Colors.white,
+                color: isUser ? AppColors.info : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border:
                     !isUser ? Border.all(color: const Color(0xFFE5E7EB)) : null,
@@ -389,7 +409,7 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: const Color(0xFF3B82F6),
+                color: AppColors.info,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: const Icon(

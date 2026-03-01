@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -103,7 +104,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
               const SnackBar(
                 content: Text('📬 Thông báo đang được phát triển'),
                 duration: Duration(seconds: 2),
-                backgroundColor: Color(0xFF10B981),
+                backgroundColor: AppColors.success,
               ),
             );
           },
@@ -139,7 +140,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF34D399), Color(0xFF10B981)],
+          colors: [Color(0xFF34D399), AppColors.success],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -198,7 +199,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF34D399), Color(0xFF10B981)],
+          colors: [Color(0xFF34D399), AppColors.success],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -270,7 +271,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 'Doanh thu hôm nay',
                 _currencyFormat.format(revenue),
                 Icons.attach_money,
-                const Color(0xFF3B82F6),
+                AppColors.info,
                 '${revenueChange >= 0 ? '+' : ''}${revenueChange.toStringAsFixed(0)}%',
               ),
             ),
@@ -280,7 +281,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 'Khách hàng',
                 '$customers',
                 Icons.person,
-                const Color(0xFF8B5CF6),
+                AppColors.primary,
                 '${customerChange >= 0 ? '+' : ''}${customerChange.toStringAsFixed(0)}%',
               ),
             ),
@@ -294,7 +295,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 'Đơn hàng',
                 '$orders',
                 Icons.receipt,
-                const Color(0xFF10B981),
+                AppColors.success,
                 '${orderChange >= 0 ? '+' : ''}${orderChange.toStringAsFixed(0)}%',
               ),
             ),
@@ -304,7 +305,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 'Hiệu suất',
                 '${performance.toStringAsFixed(0)}%',
                 Icons.trending_up,
-                const Color(0xFFF59E0B),
+                AppColors.warning,
                 '${performanceChange >= 0 ? '+' : ''}${performanceChange.toStringAsFixed(0)}%',
               ),
             ),
@@ -365,7 +366,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -373,7 +374,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF10B981),
+                    color: AppColors.success,
                   ),
                 ),
               ),
@@ -435,7 +436,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 'Quản lý bàn',
                 'Theo dõi bàn',
                 Icons.table_restaurant,
-                const Color(0xFF3B82F6),
+                AppColors.info,
               ),
             ),
             const SizedBox(width: 12),
@@ -444,7 +445,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 'Đơn hàng',
                 'Xử lý đơn',
                 Icons.receipt_long,
-                const Color(0xFF10B981),
+                AppColors.success,
               ),
             ),
           ],
@@ -457,7 +458,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 'Kho hàng',
                 'Kiểm tra tồn',
                 Icons.inventory,
-                const Color(0xFFF59E0B),
+                AppColors.warning,
               ),
             ),
             const SizedBox(width: 12),
@@ -466,7 +467,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 'Báo cáo',
                 'Tạo báo cáo',
                 Icons.assessment,
-                const Color(0xFF8B5CF6),
+                AppColors.primary,
               ),
             ),
           ],
@@ -792,6 +793,12 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
     return FutureBuilder<Map<String, dynamic>>(
       future: _loadCongNoData(companyId),
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
         if (!snapshot.hasData || (snapshot.data?.isEmpty ?? true)) {
           return const SizedBox.shrink();
         }

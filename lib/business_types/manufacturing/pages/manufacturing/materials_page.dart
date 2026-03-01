@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../providers/auth_provider.dart';
 import '../../services/manufacturing_service.dart';
 import '../../models/manufacturing_models.dart';
 
@@ -11,13 +12,14 @@ class MaterialsPage extends ConsumerStatefulWidget {
 }
 
 class _MaterialsPageState extends ConsumerState<MaterialsPage> {
-  final _service = ManufacturingService();
+  late ManufacturingService _service;
   List<ManufacturingMaterial> _materials = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
+    _service = ManufacturingService(companyId: ref.read(authProvider).user?.companyId);
     _loadMaterials();
   }
 

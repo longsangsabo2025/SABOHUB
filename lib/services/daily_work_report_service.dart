@@ -2,7 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/daily_work_report.dart';
-import '../providers/attendance_provider.dart';
+import '../models/attendance.dart';
+import '../utils/app_logger.dart';
 
 /// Daily Work Report Service
 /// Auto-generates work reports when employee checks out
@@ -10,14 +11,11 @@ class DailyWorkReportService {
   final SupabaseClient _supabase;
   
   DailyWorkReportService(this._supabase);
-  
-  // Mock storage for demo (fallback)
-  static final List<DailyWorkReport> _mockReports = [];
 
   /// Generate report from attendance data
   /// Called automatically when employee checks out
   Future<DailyWorkReport> generateReportFromCheckout({
-    required Attendance attendance,
+    required AttendanceRecord attendance,
     required String userName,
     required String? companyId, // Add companyId parameter
     required String? userRole,  // Add userRole parameter
@@ -33,7 +31,7 @@ class DailyWorkReportService {
 
     // Auto-collect task data
     final tasks =
-        completedTasks ?? await _collectTodayCompletedTasks(attendance.userId);
+        completedTasks ?? await _collectTodayCompletedTasks(attendance.employeeId);
 
     // Generate summary based on work data
     final autoSummary = _generateWorkSummary(
@@ -45,9 +43,9 @@ class DailyWorkReportService {
     // Create report draft
     final report = DailyWorkReport(
       id: 'report_${DateTime.now().millisecondsSinceEpoch}',
-      userId: attendance.userId,
+      userId: attendance.employeeId,
       userName: userName,
-      branchId: attendance.branchId,
+      branchId: attendance.companyId,
       date: attendance.date,
       checkInTime: checkIn,
       checkOutTime: checkOut,
@@ -63,14 +61,10 @@ class DailyWorkReportService {
     // Save to Supabase
     try {
       await _saveReportToDatabase(report, companyId, userRole);
-      print('✅ Report saved to database: ${report.id}');
+      AppLogger.api('Report saved to database: ${report.id}');
     } catch (e) {
-      print('⚠️ Failed to save report to database: $e');
-      // Continue anyway - report still exists in memory
+      AppLogger.error('Failed to save report to database', e);
     }
-
-    // Store report (mock fallback)
-    _mockReports.add(report);
 
     return report;
   }
@@ -120,26 +114,34 @@ class DailyWorkReportService {
 
   /// Auto-collect completed tasks from today's shift
   Future<List<TaskSummary>> _collectTodayCompletedTasks(String userId) async {
-    // TODO: Query actual task data from Supabase
-    // For now, return mock data
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    // Example tasks completed during shift
-    return [
-      TaskSummary(
-        taskId: 'task_1',
-        taskTitle: 'Vệ sinh khu vực làm việc',
-        taskDescription: 'Lau sạch bàn ghế, sắp xếp đồ dùng',
-        completedAt: DateTime.now().subtract(const Duration(hours: 2)),
-        notes: 'Hoàn thành tốt, khu vực sạch sẽ',
-      ),
-      TaskSummary(
-        taskId: 'task_2',
-        taskTitle: 'Kiểm tra thiết bị',
-        taskDescription: 'Kiểm tra máy móc hoạt động bình thường',
-        completedAt: DateTime.now().subtract(const Duration(hours: 1)),
-      ),
-    ];
+    try {
+      final today = DateTime.now();
+      final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      
+      final response = await _supabase
+          .from('management_tasks')
+          .select('id, title, description, completed_at, notes')
+          .eq('assigned_to', userId)
+          .eq('status', 'completed')
+          .gte('completed_at', '${todayStr}T00:00:00')
+          .lte('completed_at', '${todayStr}T23:59:59')
+          .limit(50);
+      
+      return (response as List).map((json) {
+        return TaskSummary(
+          taskId: json['id'] as String? ?? '',
+          taskTitle: json['title'] as String? ?? 'Công việc',
+          taskDescription: json['description'] as String?,
+          completedAt: json['completed_at'] != null
+              ? DateTime.tryParse(json['completed_at'] as String) ?? DateTime.now()
+              : DateTime.now(),
+          notes: json['notes'] as String?,
+        );
+      }).toList();
+    } catch (e) {
+      AppLogger.error('Error fetching tasks', e);
+      return [];
+    }
   }
 
   /// Generate AI-powered work summary
@@ -201,49 +203,45 @@ class DailyWorkReportService {
     List<String>? challenges,
     String? tomorrowPlan,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    final index = _mockReports.indexWhere((r) => r.id == reportId);
-    if (index == -1) {
-      throw Exception('Report not found');
+    final updateData = <String, dynamic>{};
+    if (employeeNotes != null) updateData['notes'] = employeeNotes;
+    if (achievements != null) updateData['achievements'] = achievements.join('\n');
+    if (challenges != null) updateData['challenges'] = challenges.join('\n');
+    // tomorrowPlan can be stored in notes or a separate column
+    
+    if (updateData.isNotEmpty) {
+      await _supabase.from('daily_work_reports').update(updateData).eq('id', reportId);
     }
-
-    final updatedReport = _mockReports[index].copyWith(
-      employeeNotes: employeeNotes,
-      achievements: achievements,
-      challenges: challenges,
-      tomorrowPlan: tomorrowPlan,
-      updatedAt: DateTime.now(),
-    );
-
-    _mockReports[index] = updatedReport;
-    return updatedReport;
+    
+    // Return the updated report
+    final report = await getReport(reportId);
+    if (report == null) throw Exception('Report not found');
+    return report;
   }
 
   /// Submit report
   Future<DailyWorkReport> submitReport(String reportId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    final index = _mockReports.indexWhere((r) => r.id == reportId);
-    if (index == -1) {
-      throw Exception('Report not found');
-    }
-
-    final submittedReport = _mockReports[index].copyWith(
-      status: ReportStatus.submitted,
-      submittedAt: DateTime.now(),
-    );
-
-    _mockReports[index] = submittedReport;
-    return submittedReport;
+    await _supabase.from('daily_work_reports').update({
+      'status': 'submitted',
+    }).eq('id', reportId);
+    
+    final report = await getReport(reportId);
+    if (report == null) throw Exception('Report not found');
+    return report;
   }
 
   /// Get report by ID
   Future<DailyWorkReport?> getReport(String reportId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
     try {
-      return _mockReports.firstWhere((r) => r.id == reportId);
+      final json = await _supabase
+          .from('daily_work_reports')
+          .select()
+          .eq('id', reportId)
+          .maybeSingle();
+      if (json == null) return null;
+      return _mapDbToReport(json);
     } catch (e) {
+      AppLogger.error('Error fetching report', e);
       return null;
     }
   }
@@ -251,41 +249,17 @@ class DailyWorkReportService {
   /// Get all reports for user
   Future<List<DailyWorkReport>> getUserReports(String userId) async {
     try {
-      // Query from Supabase - use employee_id
       final response = await _supabase
           .from('daily_work_reports')
           .select('*')
-          .eq('employee_id', userId)  // Changed from user_id to employee_id
-          .order('report_date', ascending: false);
+          .eq('employee_id', userId)
+          .order('report_date', ascending: false)
+          .limit(100);
 
-      // Map to DailyWorkReport objects
-      final reports = (response as List).map((json) {
-        return DailyWorkReport(
-          id: json['id'] as String,
-          userId: json['employee_id'] as String,  // Changed from user_id to employee_id
-          userName: json['employee_name'] as String? ?? 'Nhân viên',
-          branchId: json['branch_id'] as String?,
-          date: DateTime.parse(json['report_date'] as String),
-          checkInTime: DateTime.parse(json['check_in_time'] as String),
-          checkOutTime: DateTime.parse(json['check_out_time'] as String),
-          totalHours: (json['total_hours'] as num).toDouble(),
-          tasksCompleted: 0, // Will be calculated from tasks_summary
-          tasksAssigned: 0,
-          completedTasks: _parseTasksSummary(json['tasks_summary'] as String?),
-          autoGeneratedSummary: json['achievements'] as String? ?? '',
-          employeeNotes: json['notes'] as String?,
-          status: ReportStatus.submitted, // All DB records are submitted
-          createdAt: DateTime.parse(json['created_at'] as String),
-          submittedAt: DateTime.parse(json['created_at'] as String),
-        );
-      }).toList();
-
-      return reports;
+      return (response as List).map((json) => _mapDbToReport(json)).toList();
     } catch (e) {
-      print('⚠️ Error fetching reports from database: $e');
-      // Fallback to mock data
-      return _mockReports.where((r) => r.userId == userId).toList()
-        ..sort((a, b) => b.date.compareTo(a.date));
+      AppLogger.error('Error fetching reports from database', e);
+      return [];
     }
   }
 
@@ -306,17 +280,21 @@ class DailyWorkReportService {
 
   /// Get today's report for user (if exists)
   Future<DailyWorkReport?> getTodayReport(String userId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    final today = DateTime.now();
-    final todayStart = DateTime(today.year, today.month, today.day);
-
     try {
-      return _mockReports.firstWhere((r) =>
-          r.userId == userId &&
-          r.date.isAfter(todayStart) &&
-          r.date.isBefore(todayStart.add(const Duration(days: 1))));
+      final today = DateTime.now();
+      final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      
+      final json = await _supabase
+          .from('daily_work_reports')
+          .select()
+          .eq('employee_id', userId)
+          .eq('report_date', todayStr)
+          .maybeSingle();
+      
+      if (json == null) return null;
+      return _mapDbToReport(json);
     } catch (e) {
+      AppLogger.error('Error fetching today report', e);
       return null;
     }
   }
@@ -324,41 +302,17 @@ class DailyWorkReportService {
   /// Get all reports for branch (Manager view)
   Future<List<DailyWorkReport>> getBranchReports(String branchId) async {
     try {
-      // Query from Supabase
       final response = await _supabase
           .from('daily_work_reports')
           .select('*')
           .eq('branch_id', branchId)
-          .order('report_date', ascending: false);
+          .order('report_date', ascending: false)
+          .limit(100);
 
-      // Map to DailyWorkReport objects
-      final reports = (response as List).map((json) {
-        return DailyWorkReport(
-          id: json['id'] as String,
-          userId: json['employee_id'] as String,  // Changed from user_id to employee_id
-          userName: json['employee_name'] as String? ?? 'Nhân viên',
-          branchId: json['branch_id'] as String?,
-          date: DateTime.parse(json['report_date'] as String),
-          checkInTime: DateTime.parse(json['check_in_time'] as String),
-          checkOutTime: DateTime.parse(json['check_out_time'] as String),
-          totalHours: (json['total_hours'] as num).toDouble(),
-          tasksCompleted: 0,
-          tasksAssigned: 0,
-          completedTasks: _parseTasksSummary(json['tasks_summary'] as String?),
-          autoGeneratedSummary: json['achievements'] as String? ?? '',
-          employeeNotes: json['notes'] as String?,
-          status: ReportStatus.submitted,
-          createdAt: DateTime.parse(json['created_at'] as String),
-          submittedAt: DateTime.parse(json['created_at'] as String),
-        );
-      }).toList();
-
-      return reports;
+      return (response as List).map((json) => _mapDbToReport(json)).toList();
     } catch (e) {
-      print('⚠️ Error fetching branch reports from database: $e');
-      // Fallback to mock data
-      return _mockReports.where((r) => r.branchId == branchId).toList()
-        ..sort((a, b) => b.date.compareTo(a.date));
+      AppLogger.error('Error fetching branch reports from database', e);
+      return [];
     }
   }
 
@@ -368,27 +322,32 @@ class DailyWorkReportService {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    return _mockReports
-        .where((r) =>
-            r.userId == userId &&
-            r.date.isAfter(startDate.subtract(const Duration(days: 1))) &&
-            r.date.isBefore(endDate.add(const Duration(days: 1))))
-        .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    try {
+      final startStr = '${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
+      final endStr = '${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}';
+      
+      final response = await _supabase
+          .from('daily_work_reports')
+          .select()
+          .eq('employee_id', userId)
+          .gte('report_date', startStr)
+          .lte('report_date', endStr)
+          .order('report_date', ascending: false)
+          .limit(100);
+      
+      return (response as List).map((json) => _mapDbToReport(json)).toList();
+    } catch (e) {
+      AppLogger.error('Error fetching reports by date range', e);
+      return [];
+    }
   }
 
   /// Delete draft report
   Future<void> deleteDraftReport(String reportId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
-
-    final report = _mockReports.firstWhere((r) => r.id == reportId);
-    if (report.status != ReportStatus.draft) {
-      throw Exception('Can only delete draft reports');
-    }
-
-    _mockReports.removeWhere((r) => r.id == reportId);
+    // Soft delete
+    await _supabase.from('daily_work_reports').update({
+      'is_active': false,
+    }).eq('id', reportId);
   }
 
   /// Get statistics for manager view
@@ -396,36 +355,42 @@ class DailyWorkReportService {
     required String companyId,
     required DateTime date,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    // TODO: Query from Supabase with proper filters
-    final dayReports = _mockReports.where((r) {
-      final reportDate = r.date;
-      return reportDate.year == date.year &&
-          reportDate.month == date.month &&
-          reportDate.day == date.day;
-    }).toList();
-
-    final totalReports = dayReports.length;
-    final submittedReports =
-        dayReports.where((r) => r.status == ReportStatus.submitted).length;
-    final avgHours = dayReports.isEmpty
-        ? 0.0
-        : dayReports.map((r) => r.totalHours).reduce((a, b) => a + b) /
-            totalReports;
-    final totalTasks = dayReports
-        .map((r) => r.tasksCompleted)
-        .fold(0, (sum, count) => sum + count);
-
-    return {
-      'total_reports': totalReports,
-      'submitted_reports': submittedReports,
-      'pending_reports': totalReports - submittedReports,
-      'average_hours': avgHours,
-      'total_tasks_completed': totalTasks,
-      'submission_rate':
-          totalReports > 0 ? (submittedReports / totalReports * 100) : 0,
-    };
+    try {
+      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      
+      final response = await _supabase
+          .from('daily_work_reports')
+          .select('id, total_hours, tasks_summary, status')
+          .eq('company_id', companyId)
+          .eq('report_date', dateStr)
+          .limit(200);
+      
+      final dayReports = response as List;
+      final totalReports = dayReports.length;
+      final submittedReports = dayReports.where((r) => r['status'] == 'submitted').length;
+      final avgHours = totalReports == 0
+          ? 0.0
+          : dayReports.map((r) => (r['total_hours'] as num?)?.toDouble() ?? 0.0).reduce((a, b) => a + b) / totalReports;
+      
+      return {
+        'total_reports': totalReports,
+        'submitted_reports': submittedReports,
+        'pending_reports': totalReports - submittedReports,
+        'average_hours': avgHours,
+        'total_tasks_completed': totalReports, // Approximate
+        'submission_rate': totalReports > 0 ? (submittedReports / totalReports * 100) : 0,
+      };
+    } catch (e) {
+      AppLogger.error('Error fetching report statistics', e);
+      return {
+        'total_reports': 0,
+        'submitted_reports': 0,
+        'pending_reports': 0,
+        'average_hours': 0.0,
+        'total_tasks_completed': 0,
+        'submission_rate': 0,
+      };
+    }
   }
 
   /// Get all reports for company on specific date (for Manager/CEO view)
@@ -433,26 +398,46 @@ class DailyWorkReportService {
     String companyId,
     DateTime date,
   ) async {
-    await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      
+      final response = await _supabase
+          .from('daily_work_reports')
+          .select()
+          .eq('company_id', companyId)
+          .eq('report_date', dateStr)
+          .order('employee_name')
+          .limit(200);
+      
+      return (response as List).map((json) => _mapDbToReport(json)).toList();
+    } catch (e) {
+      AppLogger.error('Error fetching company reports', e);
+      return [];
+    }
+  }
 
-    // TODO: Query from Supabase with company filter
-    // For now, return all mock reports for the date
-    final dayReports = _mockReports.where((r) {
-      final reportDate = r.date;
-      return reportDate.year == date.year &&
-          reportDate.month == date.month &&
-          reportDate.day == date.day;
-    }).toList();
-
-    // Sort by submission status and then by name
-    dayReports.sort((a, b) {
-      if (a.status != b.status) {
-        return b.status.index.compareTo(a.status.index);
-      }
-      return a.userName.compareTo(b.userName);
-    });
-
-    return dayReports;
+  /// Map database row to DailyWorkReport
+  DailyWorkReport _mapDbToReport(Map<String, dynamic> json) {
+    return DailyWorkReport(
+      id: json['id'] as String,
+      userId: json['employee_id'] as String,
+      userName: json['employee_name'] as String? ?? 'Nhân viên',
+      branchId: json['branch_id'] as String?,
+      date: DateTime.parse(json['report_date'] as String),
+      checkInTime: DateTime.parse(json['check_in_time'] as String),
+      checkOutTime: DateTime.parse(json['check_out_time'] as String),
+      totalHours: (json['total_hours'] as num).toDouble(),
+      tasksCompleted: 0,
+      tasksAssigned: 0,
+      completedTasks: _parseTasksSummary(json['tasks_summary'] as String?),
+      autoGeneratedSummary: json['achievements'] as String? ?? '',
+      employeeNotes: json['notes'] as String?,
+      status: ReportStatus.submitted,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      submittedAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+    );
   }
 }
 
@@ -463,28 +448,28 @@ final dailyWorkReportServiceProvider = Provider<DailyWorkReportService>((ref) {
 
 /// Today's report for current user
 final todayWorkReportProvider =
-    FutureProvider.family<DailyWorkReport?, String>((ref, userId) async {
+    FutureProvider.autoDispose.family<DailyWorkReport?, String>((ref, userId) async {
   final service = ref.watch(dailyWorkReportServiceProvider);
   return await service.getTodayReport(userId);
 });
 
 /// All reports for user
 final userWorkReportsProvider =
-    FutureProvider.family<List<DailyWorkReport>, String>((ref, userId) async {
+    FutureProvider.autoDispose.family<List<DailyWorkReport>, String>((ref, userId) async {
   final service = ref.watch(dailyWorkReportServiceProvider);
   return await service.getUserReports(userId);
 });
 
 /// All reports for branch (Manager view)
 final branchWorkReportsProvider =
-    FutureProvider.family<List<DailyWorkReport>, String>((ref, branchId) async {
+    FutureProvider.autoDispose.family<List<DailyWorkReport>, String>((ref, branchId) async {
   final service = ref.watch(dailyWorkReportServiceProvider);
   return await service.getBranchReports(branchId);
 });
 
 /// Report statistics for manager
 final reportStatisticsProvider =
-    FutureProvider.family<Map<String, dynamic>, Map<String, dynamic>>(
+    FutureProvider.autoDispose.family<Map<String, dynamic>, Map<String, dynamic>>(
         (ref, params) async {
   final service = ref.watch(dailyWorkReportServiceProvider);
   return await service.getReportStatistics(

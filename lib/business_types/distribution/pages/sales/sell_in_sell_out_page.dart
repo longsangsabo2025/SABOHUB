@@ -659,9 +659,21 @@ class _SellInSellOutPageState extends ConsumerState<SellInSellOutPage>
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // TODO: Add date range picker
-            // TODO: Add distributor selector
-            const Text('Tính năng đang phát triển'),
+            ListTile(
+              leading: const Icon(Icons.date_range),
+              title: const Text('Theo tuần'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: const Text('Theo tháng'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: const Text('Theo quý'),
+              onTap: () => Navigator.pop(context),
+            ),
           ],
         ),
         actions: [

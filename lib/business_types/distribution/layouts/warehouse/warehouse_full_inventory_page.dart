@@ -115,7 +115,7 @@ class _FullInventoryPageState extends ConsumerState<WarehouseFullInventoryPage> 
         query = query.lt('quantity', 10);
       }
 
-      final data = await query.order('products(name)');
+      final data = await query.order('products(name)').limit(1000);
 
       setState(() {
         _inventory = List<Map<String, dynamic>>.from(data);

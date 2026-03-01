@@ -68,7 +68,38 @@ class _StockAdjustmentPageState extends ConsumerState<StockAdjustmentPage> {
       }
 
       final companyId = appUser.companyId;
+      if (companyId == null) {
+        throw Exception('Không tìm thấy công ty');
+      }
       final quantity = int.parse(_quantityController.text);
+
+      // Fetch current stock from inventory table
+      final inventoryData = await supabase
+          .from('inventory')
+          .select('quantity')
+          .eq('company_id', companyId)
+          .eq('product_id', _selectedProductId!)
+          .maybeSingle();
+      final currentStock = (inventoryData?['quantity'] as num?)?.toInt() ?? 0;
+
+      // Validate stock for 'out' type
+      if (_movementType == 'out' && quantity > currentStock) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không đủ hàng trong kho (tồn: $currentStock)'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final afterQuantity = _movementType == 'out'
+          ? currentStock - quantity
+          : _movementType == 'in'
+              ? currentStock + quantity
+              : quantity; // adjustment sets to exact value
 
       // Insert inventory movement
       await supabase.from('inventory_movements').insert({
@@ -77,8 +108,8 @@ class _StockAdjustmentPageState extends ConsumerState<StockAdjustmentPage> {
         'type': _movementType,
         'reason': _reasonController.text.isNotEmpty ? _reasonController.text : null,
         'quantity': quantity,
-        'before_quantity': 0,
-        'after_quantity': _movementType == 'out' ? -quantity : quantity,
+        'before_quantity': currentStock,
+        'after_quantity': afterQuantity,
         'notes': _notesController.text.isNotEmpty ? _notesController.text : null,
         'created_by': appUser.id,
       });

@@ -30,7 +30,7 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
   bool _isLoading = true;
   DateTimeRange? _invoiceDateFilter;
   final _invoiceSearchController = TextEditingController();
-  Set<String> _selectedOrderIds = {};
+  final Set<String> _selectedOrderIds = {};
   bool _isSelectMode = false;
 
   @override
@@ -375,7 +375,7 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
                         _buildTableCell(currencyFormat.format(lineTotal), align: pw.TextAlign.right),
                       ],
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
 

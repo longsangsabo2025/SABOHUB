@@ -634,38 +634,32 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
     
     IconData typeIcon;
     Color typeColor;
-    String typeLabel;
     String prefix;
     
     switch (type) {
       case 'in':
         typeIcon = Icons.add_box;
         typeColor = Colors.green;
-        typeLabel = 'Nhập';
         prefix = '+';
         break;
       case 'out':
         typeIcon = Icons.outbox;
         typeColor = Colors.red;
-        typeLabel = 'Xuất';
         prefix = '-';
         break;
       case 'transfer_in':
         typeIcon = Icons.call_received;
         typeColor = Colors.blue;
-        typeLabel = 'Nhận';
         prefix = '+';
         break;
       case 'transfer_out':
         typeIcon = Icons.call_made;
         typeColor = Colors.orange;
-        typeLabel = 'Chuyển';
         prefix = '-';
         break;
       default:
         typeIcon = Icons.swap_horiz;
         typeColor = Colors.grey;
-        typeLabel = type;
         prefix = '';
     }
     

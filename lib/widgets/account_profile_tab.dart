@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
+import '../utils/app_logger.dart';
 import 'bug_report_dialog.dart';
 
 /// Reusable Account/Profile Tab for all roles
@@ -70,7 +71,7 @@ class _AccountProfileTabState extends ConsumerState<AccountProfileTab> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading employee data: $e');
+      AppLogger.error('Error loading employee data', e);
     }
   }
 
@@ -245,6 +246,7 @@ class _AccountProfileTabState extends ConsumerState<AccountProfileTab> {
               'password_hash': newPasswordController.text, // Will be hashed by trigger
             }).eq('id', user!.id);
 
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('✅ Đã đổi mật khẩu!'),
@@ -252,6 +254,7 @@ class _AccountProfileTabState extends ConsumerState<AccountProfileTab> {
               ),
             );
           } catch (e2) {
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Lỗi: $e2'), backgroundColor: Colors.red),
             );

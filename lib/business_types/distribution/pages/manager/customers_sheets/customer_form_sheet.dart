@@ -43,6 +43,7 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
   List<dvhcvn.Level3> _wards = [];
   
   String _selectedChannel = 'GT Sỉ';
+  String _selectedType = 'retail';
   String _selectedStatus = 'active';
   String _selectedTier = 'bronze';
   String? _selectedReferrerId;
@@ -62,6 +63,7 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
       _creditLimitController.text = widget.customer!.creditLimit.toString();
       _paymentTermsController.text = widget.customer!.paymentTerms.toString();
       _selectedChannel = widget.customer!.channel ?? 'GT Sỉ';
+      _selectedType = widget.customer!.type ?? 'retail';
       _selectedStatus = widget.customer!.status;
       _selectedTier = widget.customer!.tier;
       _selectedReferrerId = widget.customer!.referrerId;
@@ -234,9 +236,10 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
         'district': _selectedDistrict?.name.replaceAll('Quận ', '').replaceAll('Huyện ', '').replaceAll('Thành phố ', '').replaceAll('Thị xã ', ''),
         'city': _selectedCity?.name.replaceAll('Thành phố ', '').replaceAll('Tỉnh ', ''),
         'address': fullAddress.isEmpty ? null : fullAddress,
-        'latitude': latitude,
-        'longitude': longitude,
+        'lat': latitude,
+        'lng': longitude,
         'channel': _selectedChannel,
+        'type': _selectedType,
         'status': _selectedStatus,
         'tier': _selectedTier,
         'referrer_id': _selectedReferrerId,
@@ -485,6 +488,31 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
               ),
               const SizedBox(height: 12),
               
+              // Loại khách hàng
+              DropdownButtonFormField<String>(
+                value: _selectedType,
+                decoration: InputDecoration(
+                  labelText: 'Loại khách hàng',
+                  prefixIcon: Icon(
+                    _selectedType == 'distributor' ? Icons.business : 
+                    _selectedType == 'wholesale' ? Icons.store :
+                    _selectedType == 'horeca' ? Icons.restaurant :
+                    _selectedType == 'other' ? Icons.more_horiz :
+                    Icons.shopping_bag,
+                  ),
+                  border: const OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'retail', child: Text('🛒 Khách lẻ')),
+                  DropdownMenuItem(value: 'wholesale', child: Text('🛍️ Khách sỉ')),
+                  DropdownMenuItem(value: 'distributor', child: Text('🏢 Nhà phân phối (NPP)')),
+                  DropdownMenuItem(value: 'horeca', child: Text('🍽️ Horeca')),
+                  DropdownMenuItem(value: 'other', child: Text('📋 Khác')),
+                ],
+                onChanged: (value) => setState(() => _selectedType = value!),
+              ),
+              const SizedBox(height: 12),
+              
               // Phân loại khách hàng
               DropdownButtonFormField<String>(
                 value: _selectedTier,
@@ -612,7 +640,7 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
                 items: const [
                   DropdownMenuItem(value: 'active', child: Text('🟢 Đang hoạt động')),
                   DropdownMenuItem(value: 'inactive', child: Text('🔴 Ngưng hoạt động')),
-                  DropdownMenuItem(value: 'inactive', child: Text('📦 Lưu trữ')),
+                  DropdownMenuItem(value: 'blocked', child: Text('⛔ Chặn')),
                 ],
                 onChanged: (value) => setState(() => _selectedStatus = value!),
               ),

@@ -11,8 +11,8 @@ import 'package:flutter/foundation.dart';
 /// ```
 class AppLogger {
   static bool _enabled = true;
-  static bool _showTimestamp = true;
-  static bool _showEmoji = true;
+  static final bool _showTimestamp = true;
+  static final bool _showEmoji = true;
 
   // ANSI Colors for terminal (works in Chrome DevTools too)
   static const String _reset = '\x1B[0m';

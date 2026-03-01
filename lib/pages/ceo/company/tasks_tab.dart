@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../models/company.dart';
 import '../../../models/task.dart';
@@ -336,7 +335,7 @@ class _TasksTabState extends ConsumerState<TasksTab>
   }
 
   Widget _buildTasksList(AsyncValue<List<Task>> tasksAsync) {
-    print('🎯 [TasksTab] Building tasks list, async state: ${tasksAsync}');
+    print('🎯 [TasksTab] Building tasks list, async state: $tasksAsync');
     
     return tasksAsync.when(
         data: (tasks) {

@@ -11,7 +11,7 @@ final branchServiceProvider = Provider<BranchService>((ref) {
 /// All Branches Provider
 /// Fetches and caches all branches from Supabase
 final branchesProvider =
-    FutureProvider.family<List<Branch>, String?>((ref, companyId) async {
+    FutureProvider.autoDispose.family<List<Branch>, String?>((ref, companyId) async {
   final service = ref.watch(branchServiceProvider);
   return await service.getAllBranches(companyId: companyId);
 });
@@ -19,14 +19,14 @@ final branchesProvider =
 /// Active Branches Provider
 /// Fetches only active branches
 final activeBranchesProvider =
-    FutureProvider.family<List<Branch>, String?>((ref, companyId) async {
+    FutureProvider.autoDispose.family<List<Branch>, String?>((ref, companyId) async {
   final service = ref.watch(branchServiceProvider);
   return await service.getActiveBranches(companyId: companyId);
 });
 
 /// Single Branch Provider
 /// Gets a specific branch by ID
-final branchProvider = FutureProvider.family<Branch?, String>((ref, id) async {
+final branchProvider = FutureProvider.autoDispose.family<Branch?, String>((ref, id) async {
   final service = ref.watch(branchServiceProvider);
   return await service.getBranchById(id);
 });
@@ -34,7 +34,7 @@ final branchProvider = FutureProvider.family<Branch?, String>((ref, id) async {
 /// Branch Stats Provider
 /// Fetches branch statistics
 final branchStatsProvider =
-    FutureProvider.family<Map<String, dynamic>, String>((ref, branchId) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, branchId) async {
   final service = ref.watch(branchServiceProvider);
   return await service.getBranchStats(branchId);
 });
@@ -42,7 +42,7 @@ final branchStatsProvider =
 /// Branches Stream Provider
 /// Real-time stream of branches
 final branchesStreamProvider =
-    StreamProvider.family<List<Branch>, String?>((ref, companyId) {
+    StreamProvider.autoDispose.family<List<Branch>, String?>((ref, companyId) {
   final service = ref.watch(branchServiceProvider);
   return service.subscribeToBranches(companyId: companyId);
 });

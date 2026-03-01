@@ -1,8 +1,8 @@
 import 'dart:convert';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/app_logger.dart';
 
 /// Service to import/export customers in CSV format
 class CustomerImportExportService {
@@ -96,9 +96,9 @@ class CustomerImportExportService {
       
       html.Url.revokeObjectUrl(url);
       
-      debugPrint('Exported ${data.length} customers to $fileName');
+      AppLogger.api('Exported ${data.length} customers to $fileName');
     } catch (e) {
-      debugPrint('Export error: $e');
+      AppLogger.error('Export error', e);
       rethrow;
     }
   }
@@ -121,19 +121,33 @@ class CustomerImportExportService {
       final colMap = <String, int>{};
       for (var i = 0; i < headers.length; i++) {
         final h = headers[i].toLowerCase().trim();
-        if (h.contains('mã') || h == 'code') colMap['code'] = i;
-        else if (h.contains('tên') || h == 'name') colMap['name'] = i;
-        else if (h.contains('sđt') && !h.contains('2') || h == 'phone') colMap['phone'] = i;
-        else if (h.contains('sđt 2') || h == 'phone2') colMap['phone2'] = i;
-        else if (h.contains('email')) colMap['email'] = i;
-        else if (h.contains('số nhà') || h == 'street_number') colMap['street_number'] = i;
-        else if (h.contains('đường') || h == 'street') colMap['street'] = i;
-        else if (h.contains('phường') || h == 'ward') colMap['ward'] = i;
-        else if (h.contains('quận') || h == 'district') colMap['district'] = i;
-        else if (h.contains('thành phố') || h == 'city') colMap['city'] = i;
-        else if (h.contains('loại') || h == 'type') colMap['type'] = i;
-        else if (h.contains('kênh') || h == 'channel') colMap['channel'] = i;
-        else if (h.contains('hạng') || h == 'tier') colMap['tier'] = i;
+        if (h.contains('mã') || h == 'code') {
+          colMap['code'] = i;
+        } else if (h.contains('tên') || h == 'name') {
+          colMap['name'] = i;
+        } else if (h.contains('sđt') && !h.contains('2') || h == 'phone') {
+          colMap['phone'] = i;
+        } else if (h.contains('sđt 2') || h == 'phone2') {
+          colMap['phone2'] = i;
+        } else if (h.contains('email')) {
+          colMap['email'] = i;
+        } else if (h.contains('số nhà') || h == 'street_number') {
+          colMap['street_number'] = i;
+        } else if (h.contains('đường') || h == 'street') {
+          colMap['street'] = i;
+        } else if (h.contains('phường') || h == 'ward') {
+          colMap['ward'] = i;
+        } else if (h.contains('quận') || h == 'district') {
+          colMap['district'] = i;
+        } else if (h.contains('thành phố') || h == 'city') {
+          colMap['city'] = i;
+        } else if (h.contains('loại') || h == 'type') {
+          colMap['type'] = i;
+        } else if (h.contains('kênh') || h == 'channel') {
+          colMap['channel'] = i;
+        } else if (h.contains('hạng') || h == 'tier') {
+          colMap['tier'] = i;
+        }
       }
 
       if (!colMap.containsKey('name')) {
@@ -164,7 +178,7 @@ class CustomerImportExportService {
           .ilike('code', 'KH-%')
           .order('code', ascending: false)
           .limit(1);
-      if (lastCodeData is List && lastCodeData.isNotEmpty) {
+      if (lastCodeData.isNotEmpty) {
         final lastCode = lastCodeData[0]['code'] as String?;
         if (lastCode != null && lastCode.startsWith('KH-')) {
           nextCodeNum = (int.tryParse(lastCode.substring(3)) ?? 0) + 1;
@@ -246,7 +260,7 @@ class CustomerImportExportService {
         errors: errors,
       );
     } catch (e) {
-      debugPrint('Import error: $e');
+      AppLogger.error('Import error', e);
       rethrow;
     }
   }

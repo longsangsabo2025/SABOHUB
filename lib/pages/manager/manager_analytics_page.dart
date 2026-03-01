@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../providers/cached_data_providers.dart';
@@ -63,11 +65,17 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
         const MultiAccountSwitcher(),
         IconButton(
           onPressed: () {
+            final authState = ref.read(authProvider);
+            final branchId = authState.user?.branchId;
+            final companyId = authState.user?.companyId;
+            ref.invalidate(cachedManagerDashboardKPIsProvider(branchId));
+            ref.invalidate(cachedStaffStatsProvider(companyId ?? ''));
+            ref.invalidate(cachedCompanyEmployeesProvider(companyId ?? ''));
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('🔄 Làm mới dữ liệu $_selectedPeriod'),
-                duration: const Duration(seconds: 2),
-                backgroundColor: const Color(0xFF10B981),
+              const SnackBar(
+                content: Text('Đã làm mới dữ liệu'),
+                duration: Duration(seconds: 1),
+                backgroundColor: AppColors.success,
               ),
             );
           },
@@ -75,11 +83,16 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
         ),
         IconButton(
           onPressed: () {
+            final now = DateFormat('dd/MM/yyyy').format(DateTime.now());
+            final report = 'Báo cáo phân tích - $now\n'
+                'Kỳ: $_selectedPeriod\n'
+                '---\nXem chi tiết tại SABOHUB App';
+            Clipboard.setData(ClipboardData(text: report));
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('📤 Chia sẻ báo cáo $_selectedPeriod'),
-                duration: const Duration(seconds: 2),
-                backgroundColor: const Color(0xFF3B82F6),
+              const SnackBar(
+                content: Text('Đã sao chép báo cáo'),
+                duration: Duration(seconds: 1),
+                backgroundColor: AppColors.success,
               ),
             );
           },
@@ -122,7 +135,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF10B981) : Colors.transparent,
+            color: isSelected ? AppColors.success : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
@@ -140,7 +153,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildTabBar() {
-    const tabs = ['Doanh thu', 'Khách hàng', 'Sản phẩm'];
+    const tabs = ['Doanh thu', 'Nhân viên', 'Vận hành'];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -168,7 +181,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color:
-                      isSelected ? const Color(0xFF3B82F6) : Colors.transparent,
+                      isSelected ? AppColors.info : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -286,7 +299,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                   'Doanh thu',
                   _currencyFormat.format(revenue),
                   '${revenueChange >= 0 ? '+' : ''}${revenueChange.toStringAsFixed(1)}%',
-                  const Color(0xFF10B981),
+                  AppColors.success,
                   Icons.attach_money,
                 ),
               ),
@@ -296,7 +309,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                   'Đơn hàng',
                   '$orders',
                   '${orderChange >= 0 ? '+' : ''}${orderChange.toStringAsFixed(1)}%',
-                  const Color(0xFF3B82F6),
+                  AppColors.info,
                   Icons.receipt,
                 ),
               ),
@@ -310,7 +323,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                   'Khách hàng',
                   '$customers',
                   '${customerChange >= 0 ? '+' : ''}${customerChange.toStringAsFixed(1)}%',
-                  const Color(0xFF8B5CF6),
+                  AppColors.primary,
                   Icons.people,
                 ),
               ),
@@ -320,7 +333,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                   'TB/Đơn',
                   orders > 0 ? _currencyFormat.format(revenue / orders) : '0₫',
                   '',
-                  const Color(0xFFF59E0B),
+                  AppColors.warning,
                   Icons.analytics,
                 ),
               ),
@@ -380,7 +393,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                   totalStaff > 0
                       ? '${(activeStaff / totalStaff * 100).toStringAsFixed(0)}%'
                       : '0%',
-                  const Color(0xFF10B981),
+                  AppColors.success,
                   Icons.check_circle,
                 ),
               ),
@@ -394,7 +407,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                   'Nghỉ phép',
                   '$onLeave',
                   '',
-                  const Color(0xFFF59E0B),
+                  AppColors.warning,
                   Icons.event_busy,
                 ),
               ),
@@ -404,7 +417,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                   'Ngừng làm',
                   '$inactiveStaff',
                   '',
-                  const Color(0xFFEF4444),
+                  AppColors.error,
                   Icons.cancel,
                 ),
               ),
@@ -452,7 +465,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                   'Hiệu suất',
                   '${performance.toStringAsFixed(0)}%',
                   '${performanceChange >= 0 ? '+' : ''}${performanceChange.toStringAsFixed(1)}%',
-                  const Color(0xFF10B981),
+                  AppColors.success,
                   Icons.trending_up,
                 ),
               ),
@@ -464,7 +477,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                   totalTables > 0
                       ? '${(activeTables / totalTables * 100).toStringAsFixed(0)}%'
                       : '0%',
-                  const Color(0xFF3B82F6),
+                  AppColors.info,
                   Icons.table_restaurant,
                 ),
               ),
@@ -611,7 +624,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   Widget _buildCustomerMetric(String title, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, size: 32, color: const Color(0xFF8B5CF6)),
+        Icon(icon, size: 32, color: AppColors.primary),
         const SizedBox(height: 8),
         Text(
           value,
@@ -687,15 +700,15 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                 String displayName;
                 switch (e.key) {
                   case 'manager':
-                    color = const Color(0xFFF59E0B);
+                    color = AppColors.warning;
                     displayName = 'Quản lý';
                     break;
                   case 'shift_leader':
-                    color = const Color(0xFF10B981);
+                    color = AppColors.success;
                     displayName = 'Trưởng ca';
                     break;
                   case 'staff':
-                    color = const Color(0xFF3B82F6);
+                    color = AppColors.info;
                     displayName = 'Nhân viên';
                     break;
                   default:
@@ -869,7 +882,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -877,7 +890,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF10B981),
+                color: AppColors.success,
               ),
             ),
           ),

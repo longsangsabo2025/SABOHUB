@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../providers/notification_provider.dart';
 import '../services/realtime_notification_service.dart';
@@ -161,7 +162,13 @@ class RealtimeNotificationsSheet extends ConsumerWidget {
                           notification: notification,
                           onTap: () {
                             actions.markAsRead(notification.id);
-                            // TODO: Navigate to notification target
+                            if (notification.actionUrl != null &&
+                                notification.actionUrl!.isNotEmpty) {
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                context.go(notification.actionUrl!);
+                              }
+                            }
                           },
                           onDismiss: () {
                             actions.deleteNotification(notification.id);
@@ -425,7 +432,12 @@ class _RealtimeNotificationListenerState extends ConsumerState<RealtimeNotificat
           onTap: () {
             _currentToast?.remove();
             _currentToast = null;
-            // TODO: Navigate to notification target
+            if (notification.actionUrl != null &&
+                notification.actionUrl!.isNotEmpty) {
+              if (context.mounted) {
+                context.go(notification.actionUrl!);
+              }
+            }
           },
           onDismiss: () {
             _currentToast?.remove();
