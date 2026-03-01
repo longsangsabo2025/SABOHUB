@@ -1,6 +1,6 @@
 import 'dart:convert';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'download_helper_stub.dart'
+    if (dart.library.html) 'download_helper_web.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/app_logger.dart';
 
@@ -85,16 +85,8 @@ class CustomerImportExportService {
       
       // Create blob and download
       final bytes = utf8.encode(csvWithBom);
-      final blob = html.Blob([bytes], 'text/csv;charset=utf-8');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      
       final fileName = 'khach_hang_${DateTime.now().toIso8601String().split('T')[0]}.csv';
-      
-      html.AnchorElement(href: url)
-        ..setAttribute('download', fileName)
-        ..click();
-      
-      html.Url.revokeObjectUrl(url);
+      downloadFile(bytes, fileName, 'text/csv;charset=utf-8');
       
       AppLogger.api('Exported ${data.length} customers to $fileName');
     } catch (e) {
