@@ -4,11 +4,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as p;
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/odori_models.dart';
-// TODO: Re-enable when OdoriService methods are implemented
-// import 'odori_service.dart';
 
 /// Sync Operation Types
 enum SyncOperation {
@@ -99,9 +98,11 @@ class OfflineSyncService {
     return _database!;
   }
 
+  SupabaseClient get _supabase => Supabase.instance.client;
+
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, _dbName);
+    final path = p.join(dbPath, _dbName);
 
     return await openDatabase(
       path,
@@ -302,121 +303,73 @@ class OfflineSyncService {
   }
 
   Future<void> _syncCustomer(PendingSyncItem item) async {
-    // TODO: Re-enable when OdoriService methods are implemented
-    // switch (item.operation) {
-    //   case SyncOperation.create:
-    //     await odoriService.createCustomer(
-    //       code: item.data['customer_code'],
-    //       name: item.data['name'],
-    //       type: CustomerType.values.byName(item.data['customer_type']),
-    //       phone: item.data['phone'],
-    //       email: item.data['email'],
-    //       address: item.data['address'],
-    //       city: item.data['city'],
-    //       district: item.data['district'],
-    //       ward: item.data['ward'],
-    //       latitude: item.data['latitude'],
-    //       longitude: item.data['longitude'],
-    //     );
-    //     break;
-    //   case SyncOperation.update:
-    //     await odoriService.updateCustomer(item.recordId, item.data);
-    //     break;
-    //   case SyncOperation.delete:
-    //     await odoriService.deleteCustomer(item.recordId);
-    //     break;
-    // }
-    throw UnimplementedError('Customer sync not yet implemented');
+    switch (item.operation) {
+      case SyncOperation.create:
+        await _supabase.from('customers').insert(item.data);
+        break;
+      case SyncOperation.update:
+        await _supabase.from('customers').update(item.data).eq('id', item.recordId);
+        break;
+      case SyncOperation.delete:
+        await _supabase.from('customers').update({'deleted_at': DateTime.now().toIso8601String()}).eq('id', item.recordId);
+        break;
+    }
   }
 
   Future<void> _syncProduct(PendingSyncItem item) async {
-    // TODO: Re-enable when OdoriService methods are implemented
-    // switch (item.operation) {
-    //   case SyncOperation.create:
-    //     await odoriService.createProduct(
-    //       sku: item.data['sku'],
-    //       name: item.data['name'],
-    //       categoryId: item.data['category_id'],
-    //       barcode: item.data['barcode'],
-    //       unit: item.data['unit'],
-    //       basePrice: (item.data['base_price'] as num).toDouble(),
-    //       wholesalePrice: item.data['wholesale_price'] != null 
-    //           ? (item.data['wholesale_price'] as num).toDouble() 
-    //           : null,
-    //       retailPrice: item.data['retail_price'] != null 
-    //           ? (item.data['retail_price'] as num).toDouble() 
-    //           : null,
-    //     );
-    //     break;
-    //   case SyncOperation.update:
-    //     await odoriService.updateProduct(item.recordId, item.data);
-    //     break;
-    //   case SyncOperation.delete:
-    //     await odoriService.deleteProduct(item.recordId);
-    //     break;
-    // }
-    throw UnimplementedError('Product sync not yet implemented');
+    switch (item.operation) {
+      case SyncOperation.create:
+        await _supabase.from('products').insert(item.data);
+        break;
+      case SyncOperation.update:
+        await _supabase.from('products').update(item.data).eq('id', item.recordId);
+        break;
+      case SyncOperation.delete:
+        await _supabase.from('products').update({'deleted_at': DateTime.now().toIso8601String()}).eq('id', item.recordId);
+        break;
+    }
   }
 
   Future<void> _syncOrder(PendingSyncItem item) async {
-    // TODO: Re-enable when OdoriService methods are implemented
-    // switch (item.operation) {
-    //   case SyncOperation.create:
-    //     await odoriService.createSalesOrder(
-    //       customerId: item.data['customer_id'],
-    //       orderDate: DateTime.parse(item.data['order_date']),
-    //       expectedDeliveryDate: item.data['expected_delivery_date'] != null
-    //           ? DateTime.parse(item.data['expected_delivery_date'])
-    //           : null,
-    //       notes: item.data['notes'],
-    //       items: (item.data['items'] as List).map((i) => {
-    //         'product_id': i['product_id'],
-    //         'quantity': i['quantity'],
-    //         'unit_price': i['unit_price'],
-    //         'discount_percent': i['discount_percent'] ?? 0,
-    //       }).toList(),
-    //     );
-    //     break;
-    //   case SyncOperation.update:
-    //     // Handle update if needed
-    //     break;
-    //   case SyncOperation.delete:
-    //     // Handle delete if needed
-    //     break;
-    // }
-    throw UnimplementedError('Order sync not yet implemented');
+    switch (item.operation) {
+      case SyncOperation.create:
+        await _supabase.from('sales_orders').insert(item.data);
+        break;
+      case SyncOperation.update:
+        await _supabase.from('sales_orders').update(item.data).eq('id', item.recordId);
+        break;
+      case SyncOperation.delete:
+        await _supabase.from('sales_orders').update({'status': 'cancelled'}).eq('id', item.recordId);
+        break;
+    }
   }
 
   Future<void> _syncDelivery(PendingSyncItem item) async {
-    // TODO: Re-enable when OdoriService methods are implemented
-    // switch (item.operation) {
-    //   case SyncOperation.update:
-    //     if (item.data['completed_at'] != null) {
-    //       await odoriService.completeDelivery(
-    //         item.recordId,
-    //         latitude: item.data['completed_latitude'],
-    //         longitude: item.data['completed_longitude'],
-    //       );
-    //     }
-    //     break;
-    //   default:
-    //     break;
-    // }
-    throw UnimplementedError('Delivery sync not yet implemented');
+    switch (item.operation) {
+      case SyncOperation.create:
+        await _supabase.from('deliveries').insert(item.data);
+        break;
+      case SyncOperation.update:
+        await _supabase.from('deliveries').update(item.data).eq('id', item.recordId);
+        break;
+      case SyncOperation.delete:
+        await _supabase.from('deliveries').update({'status': 'cancelled'}).eq('id', item.recordId);
+        break;
+    }
   }
 
   Future<void> _syncPayment(PendingSyncItem item) async {
-    // TODO: Re-enable when OdoriService methods are implemented
-    // if (item.operation == SyncOperation.create) {
-    //   await odoriService.recordPayment(
-    //     receivableId: item.data['receivable_id'],
-    //     amount: (item.data['amount'] as num).toDouble(),
-    //     paymentMethod: item.data['payment_method'],
-    //     reference: item.data['reference'],
-    //     notes: item.data['notes'],
-    //   );
-    // }
-    throw UnimplementedError('Payment sync not yet implemented');
+    switch (item.operation) {
+      case SyncOperation.create:
+        await _supabase.from('payments').insert(item.data);
+        break;
+      case SyncOperation.update:
+        await _supabase.from('payments').update(item.data).eq('id', item.recordId);
+        break;
+      case SyncOperation.delete:
+        await _supabase.from('payments').delete().eq('id', item.recordId);
+        break;
+    }
   }
 
   Future<void> _updateSyncStatus(
@@ -455,24 +408,23 @@ class OfflineSyncService {
 
   /// Cache customers
   Future<void> cacheCustomers(List<OdoriCustomer> customers) async {
-    // TODO: Re-enable when OdoriCustomer.toJson() is implemented
-    // final db = await database;
-    // final batch = db.batch();
-    // final now = DateTime.now().toIso8601String();
-    //
-    // for (final customer in customers) {
-    //   batch.insert(
-    //     'cached_customers',
-    //     {
-    //       'id': customer.id,
-    //       'data': jsonEncode(customer.toJson()),
-    //       'cached_at': now,
-    //     },
-    //     conflictAlgorithm: ConflictAlgorithm.replace,
-    //   );
-    // }
-    //
-    // await batch.commit(noResult: true);
+    final db = await database;
+    final batch = db.batch();
+    final now = DateTime.now().toIso8601String();
+
+    for (final customer in customers) {
+      batch.insert(
+        'cached_customers',
+        {
+          'id': customer.id,
+          'data': jsonEncode(customer.toJson()),
+          'cached_at': now,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+
+    await batch.commit(noResult: true);
   }
 
   /// Get cached customers
@@ -487,25 +439,24 @@ class OfflineSyncService {
 
   /// Cache products
   Future<void> cacheProducts(List<OdoriProduct> products) async {
-    // TODO: Re-enable when OdoriProduct.toJson() is implemented
-    // final db = await database;
-    // final batch = db.batch();
-    // final now = DateTime.now().toIso8601String();
-    //
-    // for (final product in products) {
-    //   batch.insert(
-    //     'cached_products',
-    //     {
-    //       'id': product.id,
-    //       'barcode': product.barcode,
-    //       'data': jsonEncode(product.toJson()),
-    //       'cached_at': now,
-    //     },
-    //     conflictAlgorithm: ConflictAlgorithm.replace,
-    //   );
-    // }
-    //
-    // await batch.commit(noResult: true);
+    final db = await database;
+    final batch = db.batch();
+    final now = DateTime.now().toIso8601String();
+
+    for (final product in products) {
+      batch.insert(
+        'cached_products',
+        {
+          'id': product.id,
+          'barcode': product.barcode,
+          'data': jsonEncode(product.toJson()),
+          'cached_at': now,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+
+    await batch.commit(noResult: true);
   }
 
   /// Get cached products
@@ -536,24 +487,23 @@ class OfflineSyncService {
 
   /// Cache orders
   Future<void> cacheOrders(List<OdoriSalesOrder> orders) async {
-    // TODO: Re-enable when OdoriSalesOrder.toJson() is implemented
-    // final db = await database;
-    // final batch = db.batch();
-    // final now = DateTime.now().toIso8601String();
-    //
-    // for (final order in orders) {
-    //   batch.insert(
-    //     'cached_orders',
-    //     {
-    //       'id': order.id,
-    //       'data': jsonEncode(order.toJson()),
-    //       'cached_at': now,
-    //     },
-    //     conflictAlgorithm: ConflictAlgorithm.replace,
-    //   );
-    // }
-    //
-    // await batch.commit(noResult: true);
+    final db = await database;
+    final batch = db.batch();
+    final now = DateTime.now().toIso8601String();
+
+    for (final order in orders) {
+      batch.insert(
+        'cached_orders',
+        {
+          'id': order.id,
+          'data': jsonEncode(order.toJson()),
+          'cached_at': now,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+
+    await batch.commit(noResult: true);
   }
 
   /// Get cached orders
@@ -568,24 +518,23 @@ class OfflineSyncService {
 
   /// Cache deliveries
   Future<void> cacheDeliveries(List<OdoriDelivery> deliveries) async {
-    // TODO: Re-enable when OdoriDelivery.toJson() is implemented
-    // final db = await database;
-    // final batch = db.batch();
-    // final now = DateTime.now().toIso8601String();
-    //
-    // for (final delivery in deliveries) {
-    //   batch.insert(
-    //     'cached_deliveries',
-    //     {
-    //       'id': delivery.id,
-    //       'data': jsonEncode(delivery.toJson()),
-    //       'cached_at': now,
-    //     },
-    //     conflictAlgorithm: ConflictAlgorithm.replace,
-    //   );
-    // }
-    //
-    // await batch.commit(noResult: true);
+    final db = await database;
+    final batch = db.batch();
+    final now = DateTime.now().toIso8601String();
+
+    for (final delivery in deliveries) {
+      batch.insert(
+        'cached_deliveries',
+        {
+          'id': delivery.id,
+          'data': jsonEncode(delivery.toJson()),
+          'cached_at': now,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+
+    await batch.commit(noResult: true);
   }
 
   /// Get cached deliveries

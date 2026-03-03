@@ -1,3 +1,7 @@
+// ⚠️ DEPRECATED — This file is a stale backup (.bak) and is NOT referenced
+// anywhere in the project. Safe to delete during next cleanup.
+// Marked deprecated: 2026-02-25
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

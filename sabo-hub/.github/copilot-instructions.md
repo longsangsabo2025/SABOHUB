@@ -6,10 +6,18 @@ Flutter web app + Supabase backend.
 
 ## CRITICAL: Đọc docs trước khi làm việc
 Trước khi bắt đầu bất kỳ task nào, ĐỌC các file sau:
+- `sabohub-app/SABOHUB/docs/PROGRESS.md` — ⭐ ĐỌC ĐẦU TIÊN: Trạng thái dự án, tiến độ, changelog, backlog
 - `sabohub-app/SABOHUB/docs/ARCHITECTURE.md` — Cấu trúc codebase, routing, state management
 - `sabohub-app/SABOHUB/docs/DATABASE_SCHEMA.md` — Schema DB, table names, column names, RPCs
 - `sabohub-app/SABOHUB/docs/BUSINESS_LOGIC.md` — Business rules, role permissions, workflows
 - `sabohub-app/SABOHUB/docs/DEVELOPMENT_GUIDE.md` — Build commands, conventions, patterns
+
+## CRITICAL: Cập nhật PROGRESS.md sau mỗi session
+Sau khi hoàn thành task, CẬP NHẬT `sabohub-app/SABOHUB/docs/PROGRESS.md`:
+- Thêm changelog entry mới
+- Cập nhật health metrics
+- Check/uncheck feature checklist
+- Cập nhật backlog & known issues
 
 ## Quick Reference
 

@@ -227,6 +227,23 @@ class OdoriProduct extends Equatable {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'company_id': companyId,
+    'sku': sku,
+    'barcode': barcode,
+    'name': name,
+    'description': description,
+    'category_id': categoryId,
+    'unit': unit,
+    'base_price': basePrice,
+    'cost_price': costPrice,
+    'weight': weight,
+    'volume': volume,
+    'image_url': imageUrl,
+    'is_active': isActive,
+  };
+
   String get formattedPrice {
     return '${basePrice.toStringAsFixed(0).replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -350,6 +367,25 @@ class OdoriSalesOrder extends Equatable {
       case OrderStatus.cancelled: return 'Đã hủy';
     }
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'company_id': companyId,
+    'customer_id': customerId,
+    'order_number': orderNumber,
+    'order_date': orderDate.toIso8601String(),
+    'expected_delivery_date': expectedDeliveryDate?.toIso8601String(),
+    'status': status.name,
+    'subtotal': subtotal,
+    'discount_total': discountTotal,
+    'tax_total': taxTotal,
+    'total_amount': totalAmount,
+    'shipping_address': shippingAddress,
+    'notes': notes,
+    'sales_rep_id': salesRepId,
+    'approved_by': approvedBy,
+    'item_count': itemCount,
+  };
 
   String get formattedTotal {
     return '${totalAmount.toStringAsFixed(0).replaceAllMapped(
@@ -537,6 +573,30 @@ class OdoriDelivery extends Equatable {
       case DeliveryStatus.returned: return 'Hoàn trả';
     }
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'company_id': companyId,
+    'order_id': orderId,
+    'customer_id': customerId,
+    'delivery_number': deliveryNumber,
+    'expected_date': expectedDate.toIso8601String(),
+    'status': status.name,
+    'driver_id': driverId,
+    'vehicle_info': vehicleInfo,
+    'shipping_address': shippingAddress,
+    'notes': notes,
+    'started_at': startedAt?.toIso8601String(),
+    'completed_at': completedAt?.toIso8601String(),
+    'start_latitude': startLatitude,
+    'start_longitude': startLongitude,
+    'end_latitude': endLatitude,
+    'end_longitude': endLongitude,
+    'current_latitude': currentLatitude,
+    'current_longitude': currentLongitude,
+    'signature_url': signatureUrl,
+    'failure_reason': failureReason,
+  };
 
   bool get hasLocation => currentLatitude != null && currentLongitude != null;
 
