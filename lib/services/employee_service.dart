@@ -283,6 +283,25 @@ class EmployeeService {
     }
   }
 
+  /// Get ALL employees across all companies (for CEO view)
+  /// Returns all active employees from all companies
+  Future<List<app_models.User>> getAllEmployees() async {
+    try {
+      final response = await _supabase
+          .from('employees')
+          .select(
+              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
+          .eq('is_active', true)
+          .order('created_at', ascending: false);
+
+      return (response as List)
+          .map((json) => app_models.User.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get all employees: $e');
+    }
+  }
+
   /// Get all employees for a company from employees table only
   /// Note: CEOs are in users table, employees are in employees table
   Future<List<app_models.User>> getCompanyEmployees(String companyId) async {

@@ -44,7 +44,12 @@ enum TaskCategory {
   billiards('billiards', 'Billiards', '🎱'),
   media('media', 'Media', '📱'),
   arena('arena', 'Arena', '🎮'),
-  operations('operations', 'Vận hành', '⚙️');
+  operations('operations', 'Vận hành', '⚙️'),
+  videoProduction('video_production', 'Sản xuất Video', '🎬'),
+  socialMedia('social_media', 'MXH & Upload', '📲'),
+  marketing('marketing', 'Marketing', '📢'),
+  eventPlanning('event_planning', 'Tổ chức sự kiện', '🎪'),
+  hr('hr', 'Nhân sự', '👥');
 
   final String value;
   final String label;

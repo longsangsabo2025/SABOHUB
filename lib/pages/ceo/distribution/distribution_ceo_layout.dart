@@ -17,7 +17,7 @@ import 'distribution_ceo_finance.dart';
 import 'distribution_ceo_team.dart';
 
 /// Distribution CEO Layout — 5 tabs focused on distribution business
-/// Dashboard | Kinh doanh | Vận hành | Tài chính | Đội ngũ
+/// Dashboard | Kinh doanh | Vận hành | Tài chính | Nhiệm vụ
 class DistributionCEOLayout extends ConsumerStatefulWidget {
   const DistributionCEOLayout({super.key});
 
@@ -144,9 +144,9 @@ class _DistributionCEOLayoutState
             label: 'Tài chính',
           ),
           NavigationDestination(
-            icon: Icon(Icons.people_outlined),
-            selectedIcon: Icon(Icons.people, color: AppColors.primary),
-            label: 'Đội ngũ',
+            icon: Icon(Icons.assignment_outlined),
+            selectedIcon: Icon(Icons.assignment, color: AppColors.primary),
+            label: 'Nhiệm vụ',
           ),
         ],
       ),

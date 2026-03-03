@@ -301,11 +301,18 @@ class _TaskTemplatesPageState extends ConsumerState<TaskTemplatesPage> {
 
       if (confirmed != true || selectedManager == null) return;
 
+      // Resolve assignee name
+      final matchedManager = managers.where((m) => m['id'] == selectedManager).toList();
+      final managerName = matchedManager.isNotEmpty ? matchedManager.first['full_name'] as String? : null;
+      final managerRole = matchedManager.isNotEmpty ? matchedManager.first['role'] as String? : null;
+
       await service.createTask(
         title: template.title,
         description: template.description,
         priority: template.priority,
         assignedTo: selectedManager!,
+        assignedToName: managerName,
+        assignedToRole: managerRole,
         category: template.category,
         recurrence: template.recurrencePattern,
         dueDate: dueDate,

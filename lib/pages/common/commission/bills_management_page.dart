@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../business_types/entertainment/models/bill.dart';
-import '../../../business_types/entertainment/services/bill_service.dart';
+import '../../../business_types/service/models/bill.dart';
+import '../../../business_types/service/services/bill_service.dart';
 import '../../../services/commission_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../manager/commission/manager_upload_bill_page.dart';

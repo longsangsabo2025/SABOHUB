@@ -11,6 +11,7 @@ class TaskComment {
   // Resolved from user lookup
   final String? userName;
   final String? userRole;
+  final String? userAvatarUrl;
 
   const TaskComment({
     required this.id,
@@ -21,9 +22,13 @@ class TaskComment {
     required this.updatedAt,
     this.userName,
     this.userRole,
+    this.userAvatarUrl,
   });
 
   factory TaskComment.fromJson(Map<String, dynamic> json) {
+    // Handle nested employee data from join
+    final employee = json['employees'] as Map<String, dynamic>?;
+    
     return TaskComment(
       id: json['id'] as String,
       taskId: json['task_id'] as String,
@@ -31,8 +36,9 @@ class TaskComment {
       comment: json['comment'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      userName: json['user_name'] as String?,
-      userRole: json['user_role'] as String?,
+      userName: employee?['full_name'] as String? ?? json['user_name'] as String?,
+      userRole: employee?['role'] as String? ?? json['user_role'] as String?,
+      userAvatarUrl: employee?['avatar_url'] as String?,
     );
   }
 

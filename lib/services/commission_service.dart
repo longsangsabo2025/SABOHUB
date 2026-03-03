@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../business_types/entertainment/models/bill_commission.dart';
+import '../business_types/service/models/bill_commission.dart';
 import '../models/commission_summary.dart';
 
 /// Commission Service - Quản lý hoa hồng nhân viên

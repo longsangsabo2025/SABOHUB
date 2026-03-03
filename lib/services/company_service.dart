@@ -28,6 +28,7 @@ class CompanyService extends BaseService {
 
   /// Get companies owned by current user (CEO)
   /// This is the PRIMARY method for CEO dashboard - only shows their companies
+  /// Checks both employee_id AND auth_user_id since companies table may reference either
   Future<List<Company>> getMyCompanies({String? userId}) async {
     return safeCall(
       operation: 'getMyCompanies',
@@ -37,12 +38,26 @@ class CompanyService extends BaseService {
           return [];
         }
         
-        logInfo('getMyCompanies', 'Fetching for user $userId');
+        // Also get the Supabase auth user ID (different from employee_id)
+        // Companies may have owner_id/created_by referencing auth.users.id
+        final authUserId = client.auth.currentUser?.id;
+        
+        // Build OR filter with both employee_id and auth_user_id
+        final filters = <String>[
+          'created_by.eq.$userId',
+          'owner_id.eq.$userId',
+        ];
+        if (authUserId != null && authUserId != userId) {
+          filters.add('created_by.eq.$authUserId');
+          filters.add('owner_id.eq.$authUserId');
+        }
+        
+        logInfo('getMyCompanies', 'Fetching for employee=$userId, auth=$authUserId');
         
         final response = await client
             .from('companies')
             .select('*')
-            .or('created_by.eq.$userId,owner_id.eq.$userId')
+            .or(filters.join(','))
             .isFilter('deleted_at', null)
             .order('created_at', ascending: false);
 
@@ -223,9 +238,9 @@ class CompanyService extends BaseService {
         }
 
         return {
-          'employeeCount': totalEmployees,
-          'branchCount': (branchesResponse as List).length,
-          'tableCount': (tablesResponse as List).length,
+          'employees': totalEmployees,
+          'branches': (branchesResponse as List).length,
+          'tables': (tablesResponse as List).length,
           'monthlyRevenue': monthlyRevenue,
         };
       },

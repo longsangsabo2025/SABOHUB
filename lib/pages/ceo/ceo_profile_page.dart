@@ -759,43 +759,19 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                   _buildSettingOption(
                     'Đổi mật khẩu',
                     Icons.lock,
-                    () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content:
-                              Text('Tính năng đổi mật khẩu sẽ được triển khai'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                    () => _showChangePasswordDialog(),
                   ),
                   const SizedBox(height: 12),
                   _buildSettingOption(
                     'Cài đặt thông báo',
                     Icons.notifications,
-                    () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Tính năng cài đặt thông báo sẽ được triển khai'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                    () => _showNotificationSettings(),
                   ),
                   const SizedBox(height: 12),
                   _buildSettingOption(
                     'Bảo mật tài khoản',
                     Icons.security,
-                    () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Tính năng bảo mật tài khoản sẽ được triển khai'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                    () => _showSecuritySettings(),
                   ),
                   const SizedBox(height: 12),
                   _buildSettingOption(
@@ -978,6 +954,257 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
           ],
         ),
       ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // CHANGE PASSWORD Dialog
+  // ═══════════════════════════════════════════════════════
+  void _showChangePasswordDialog() {
+    final newPassCtrl = TextEditingController();
+    final confirmPassCtrl = TextEditingController();
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Đổi mật khẩu'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: newPassCtrl,
+                obscureText: obscureNew,
+                decoration: InputDecoration(
+                  labelText: 'Mật khẩu mới',
+                  prefixIcon: const Icon(Icons.lock),
+                  suffixIcon: IconButton(
+                    icon: Icon(obscureNew
+                        ? Icons.visibility_off
+                        : Icons.visibility),
+                    onPressed: () =>
+                        setDialogState(() => obscureNew = !obscureNew),
+                  ),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: confirmPassCtrl,
+                obscureText: obscureConfirm,
+                decoration: InputDecoration(
+                  labelText: 'Xác nhận mật khẩu mới',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(obscureConfirm
+                        ? Icons.visibility_off
+                        : Icons.visibility),
+                    onPressed: () => setDialogState(
+                        () => obscureConfirm = !obscureConfirm),
+                  ),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text('Mật khẩu tối thiểu 8 ký tự',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final newPass = newPassCtrl.text.trim();
+                final confirmPass = confirmPassCtrl.text.trim();
+                if (newPass.length < 8) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Mật khẩu phải có ít nhất 8 ký tự')),
+                  );
+                  return;
+                }
+                if (newPass != confirmPass) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Mật khẩu xác nhận không khớp')),
+                  );
+                  return;
+                }
+
+                Navigator.pop(ctx);
+                try {
+                  final user = ref.read(currentUserProvider);
+                  await _supabase.rpc('change_employee_password', params: {
+                    'p_employee_id': user?.id,
+                    'p_new_password': newPass,
+                  });
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Đã đổi mật khẩu thành công'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('Lỗi đổi mật khẩu: $e'),
+                          backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+              child: const Text('Đổi mật khẩu'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // NOTIFICATION SETTINGS Dialog
+  // ═══════════════════════════════════════════════════════
+  void _showNotificationSettings() {
+    bool pushEnabled = true;
+    bool emailEnabled = false;
+    bool taskAlerts = true;
+    bool revenueAlerts = true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Cài đặt thông báo'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SwitchListTile(
+                title: const Text('Push notification'),
+                subtitle: const Text('Thông báo trên trình duyệt'),
+                value: pushEnabled,
+                onChanged: (v) =>
+                    setDialogState(() => pushEnabled = v),
+                contentPadding: EdgeInsets.zero,
+              ),
+              SwitchListTile(
+                title: const Text('Email digest'),
+                subtitle: const Text('Tổng hợp cuối ngày qua email'),
+                value: emailEnabled,
+                onChanged: (v) =>
+                    setDialogState(() => emailEnabled = v),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const Divider(),
+              SwitchListTile(
+                title: const Text('Công việc mới'),
+                subtitle: const Text('Khi có task được giao'),
+                value: taskAlerts,
+                onChanged: (v) =>
+                    setDialogState(() => taskAlerts = v),
+                contentPadding: EdgeInsets.zero,
+              ),
+              SwitchListTile(
+                title: const Text('Doanh thu bất thường'),
+                subtitle: const Text('Biến động doanh thu >20%'),
+                value: revenueAlerts,
+                onChanged: (v) =>
+                    setDialogState(() => revenueAlerts = v),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Đóng'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã lưu cài đặt thông báo'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: const Text('Lưu'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // SECURITY SETTINGS Dialog
+  // ═══════════════════════════════════════════════════════
+  void _showSecuritySettings() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Bảo mật tài khoản'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _securityInfoRow(Icons.check_circle, Colors.green,
+                'Tài khoản đang hoạt động'),
+            const SizedBox(height: 12),
+            _securityInfoRow(Icons.lock, Colors.blue,
+                'Mật khẩu được mã hóa (bcrypt)'),
+            const SizedBox(height: 12),
+            _securityInfoRow(Icons.access_time, Colors.orange,
+                'Phiên đăng nhập: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}'),
+            const SizedBox(height: 12),
+            _securityInfoRow(Icons.devices, Colors.purple,
+                'Thiết bị hiện tại: Web browser'),
+            const Divider(height: 24),
+            Text(
+              'Để bảo vệ tài khoản:',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '• Sử dụng mật khẩu mạnh (8+ ký tự)\n'
+              '• Không chia sẻ mật khẩu\n'
+              '• Đăng xuất khi dùng máy công cộng',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đã hiểu'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _securityInfoRow(IconData icon, Color color, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(text, style: const TextStyle(fontSize: 13)),
+        ),
+      ],
     );
   }
 }

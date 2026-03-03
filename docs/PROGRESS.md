@@ -10,17 +10,291 @@
 
 | Hạng mục | Trạng thái |
 |----------|-----------|
-| **Version** | v1.2.0+16 |
-| **Production URL** | https://sabohub-app.vercel.app |
-| **Vercel Project** | `sabohub-app` (dashboard: https://vercel.com/dsmhs-projects/sabohub-app) |
+| **Version** | v1.4.0+18 |
+| **Production URL** | https://sabohub.vercel.app |
+| **Vercel Project** | `sabohub` (dashboard: https://vercel.com/dsmhs-projects/sabohub) |
 | **Vercel Token** | `oo1EcKsmpnbAN9bD0jBvsDQr` |
 | **Build** | PASS (0 errors, 0 warnings, 0 info) |
-| **Last Deploy** | 2026-03-02 (App Polish Sprint) |
+| **Last Deploy** | 2026-03-03 (Gamification Nav + Deploy) |
 | **Last Cleanup** | 2026-03-01 |
 
 ---
 
 ## Lịch Sử Phát Triển (Changelog)
+
+### 2026-03-03 — Gamification Navigation & Vercel Deploy
+- [x] **FIX**: CeoGameSummaryCard added to Service CEO Layout Command tab — gamification now visible on CEO dashboard
+- [x] **NEW**: Quest Hub quick action chips — horizontal scroll bar linking to 4 hidden pages:
+  - 🏪 Cửa hàng Uy Tín → `/uytin-store`
+  - 🎫 Season Pass → `/season-pass`
+  - ⚔️ Guild War → `/company-ranking`
+  - 📊 Xếp hạng CEO → `/leaderboard`
+- [x] **DEPLOY**: Vercel production deploy — https://sabohub.vercel.app
+- [x] Build pass: **0 errors**
+
+### 2026-03-05 — Gamification E2E Testing & Critical Bug Fixes
+- [x] **E2E TEST**: Comprehensive 20-step end-to-end test (`_e2e_gamification_test.py`) — **89/89 PASSED**
+  - Authenticates via Supabase Auth → simulates exact Flutter app Supabase queries
+  - Tests: login, profile load, quest init, daily login, active/completed quests, daily quests, achievements, staff leaderboard, evaluate RPCs, XP history, skills, seasons, store, model validation
+- [x] **CRITICAL FIX**: Company ID mismatch — CEO `company_id = feef10d3` (SABO Corp) but gamification data was on `d6ff05cc` (Quán bida SABO)
+  - Migrated 47 rows (1 ceo_profiles + 35 quest_progress + 10 xp_transactions + 1 daily_quest_log) to SABO Corp
+- [x] **CRITICAL FIX**: RLS `auth.uid()` mismatch — gamification tables stored `employee_id` in `user_id` column but RLS checked `user_id = auth.uid()` (which returns Supabase Auth UUID, a different value)
+  - Replaced RLS policies on 8 tables: ceo_profiles, quest_progress, xp_transactions, daily_quest_log, user_achievements, game_notifications, achievements (read-only), employee_game_profiles
+  - New policy: `user_id IN (SELECT id FROM employees WHERE auth_user_id = auth.uid())`
+- [x] **FIX**: 8 gamification RPCs changed to `SECURITY DEFINER` (were SECURITY INVOKER, blocked by RLS)
+  - record_daily_login, add_xp, evaluate_user_quests, evaluate_daily_quests, evaluate_achievements, get_staff_leaderboard, use_streak_freeze, calculate_employee_scores
+- [x] **FIX**: Added `sort_order` column to `skill_definitions` table (was missing, caused 400 error)
+- [x] **DATA**: Added 3 daily quest definitions (daily_login, daily_review_sales, daily_approve_task) with valid categories (operate, sell)
+- [x] **RESULT**: CEO profile now Level 7, 1920 XP, "Chủ Tiệm" title, 5 achievements unlocked, 9 quests completed, 11 available
+- [x] Build pass: **0 errors**
+
+### 2026-03-05 — Gamification System Activated for SABO
+- [x] **ACTIVATED**: CEO gamification for longsangsabo@gmail.com on SABO Corp
+  - Seeded operational data: 5 employees, 8 tables, 18 menu items, 20 sessions, 10 tasks, 28+ attendance
+  - CEO profile: Level 3, 1060 XP, Title "Tan Binh", 150 Reputation
+  - 9 quests completed: Act I (6/7) + Act II Entertainment (3/5)
+  - 11 quests available, 15 locked (Act III/IV)
+  - Business Health: 65/100, Streak: 1 day
+- [x] **FIX**: `_unlock_next_quests()` PL/pgSQL function
+  - Bug: `FOREACH v_prereqs SLICE 0` used TEXT[] variable (needs TEXT scalar)
+  - Fix: Removed dead FOREACH loop, kept `r.prerequisites <@ v_completed_codes` logic
+- [x] **DATA**: Patched SABO employees with valid departments (sales, customer_service, management, finance)
+- [x] **DATA**: Full attendance day (5/5) for quest evaluation
+- [x] Build pass: **0 errors**
+
+### 2026-03-05 — Project/Sub-Project Structure Implementation
+- [x] **DB**: New `projects` table
+  - id, company_id, name, description, status, priority, start_date, end_date
+  - progress (0-100), manager_id, created_by, timestamps
+  - status enum: planning, in_progress, on_hold, completed, cancelled
+  - priority enum: low, medium, high, critical
+- [x] **DB**: New `sub_projects` table
+  - id, project_id, name, description, status, priority, progress
+  - assigned_to, sort_order, timestamps
+- [x] **DB**: Sample data — "Sản xuất 30 Video YouTube — SABO Billiards"
+  - 5 sub-projects: Kịch bản 1-10 (100%), Quay 1-10 (60%), Edit 1-10 (30%), etc.
+- [x] **NEW**: `lib/models/project.dart`
+  - `Project` model with fromJson, toJson, copyWith
+  - `SubProject` model
+  - `ProjectStatus` enum with color, icon, label
+  - `ProjectPriority` enum with color, label
+- [x] **NEW**: `lib/providers/project_provider.dart`
+  - `companyProjectsProvider`: get projects for a company
+  - `projectWithSubProjectsProvider`: get project with sub-projects
+  - `allProjectsProvider`: get all projects (for CEO)
+  - `ProjectService`: CRUD for projects and sub-projects
+- [x] **Manager Dự án Tab**: Projects section UI
+  - `_buildProjectsSection(companyId)`: list projects with progress bars
+  - `_buildProjectTile(project)`: project card with status, priority, progress
+  - `_ProjectDetailSheet`: bottom sheet with project details and sub-projects
+- [x] Build pass: **0 errors**
+
+### 2026-03-05 — CEO Interface Fixes
+- [x] **FIX**: Task detail sheet for CEO — now shows all tabs (Chi tiết, Bình luận, Tệp đính kèm, Thêm)
+  - Changed `_showTaskDetail()` to use `TaskDetailSheet` for ALL modes
+- [x] **FIX**: CEO Employees tab — shows all employees across ALL companies
+  - Added `getAllEmployees()` method to `employee_service.dart`
+  - Employee cards show company name with business icon
+  - Added `_companyNames` map for lookup
+- [x] **DB**: Assigned Võ Ngọc Diễm as manager of SABO company
+  - Now manages 2 companies: Quán bida SABO (primary), SABO
+
+### 2026-03-05 — Company Alert Badges on Dashboard
+- [x] **NEW**: `lib/providers/company_alerts_provider.dart`
+  - `CompanyAlerts` model: overdueTasksCount, pendingApprovalCount, newReportsCount, unreadMessagesCount
+  - `companyAlertsProvider`: fetches alert counts for single company
+  - `multiCompanyAlertsProvider`: fetches alerts for multiple companies
+- [x] **Manager Dự án Tab**: Added notification badges on company cards
+  - Red badge: "Quá hạn" (overdue tasks)
+  - Orange badge: "Chờ duyệt" (pending approval)
+  - Blue badge: "Báo cáo" (new reports this month)
+  - Purple badge: "Tin nhắn" (unread comments today)
+- [x] **CEO service_ceo_layout.dart**: Same notification badges on company cards
+- [x] `_alertBadge()` helper widget: icon + count + label in colored container
+- [x] Build pass: **0 errors**
+
+### 2026-03-05 — Manager Multi-Company Support
+- [x] **DB**: New `manager_companies` table (many-to-many relationship)
+  - `manager_id`, `company_id`, `is_primary`, `granted_by`, timestamps
+  - Unique constraint on (manager_id, company_id)
+  - Migrated existing MANAGER company_id assignments
+- [x] **CEO Phân quyền Dialog**: Multi-select companies
+  - Replaced dropdown with checkbox list (max height 150px scrollable)
+  - Shows company icon + name + "Chính" badge for primary company
+  - When multiple selected, dropdown to choose primary company
+  - Save: updates `manager_companies` table + sets `employees.company_id` to primary
+- [x] **Manager Dự án Tab**: Support multiple companies
+  - Single company: same view as before (card + stats + financial dashboard)
+  - Multiple companies: list view with company cards, "Chính" badge on primary
+  - Loads from `manager_companies` table instead of `employees.company_id`
+- [x] Build pass: **0 errors**
+
+### 2026-03-05 — Manager Interface: Dự án Tab (Replaces Vận Hành)
+- [x] **REPLACE**: Manager layout "Vận Hành" tab → "Dự án" tab (differentiated from CEO)
+  - Navigation bar: `storefront` icon → `business` icon, label "Vận Hành" → "Dự án"
+  - New `_ManagerProjectsTab` class — shows **ONLY** manager's own company (filtered by `user.companyId`)
+  - Simplified UI: No filter chips (Manager has 1 company), direct company card on main view
+  - **Quick Stats panel**: Employees, Branches, Tables counts for manager's company
+  - Company card: type icon colored border, name, address, phone, email, created date
+  - Detail bottom sheet: stats, bank info, **Import Báo Cáo button** (Manager CAN import)
+  - **Full Financial Dashboard** (same as CEO): latest month P&L, 12-month totals, growth percentage
+  - Empty state: "Chưa được gán công ty" with message to contact CEO
+- [x] **DEPRECATED**: `_OperationsCommandTab` kept for reference but no longer used
+- [x] **IMPORTS**: Added `Company`, `companiesProvider`, `companyStatsProvider`, `financialSummaryProvider`, `MonthlyPnl`, `DailyCashflowImportPage`
+- [x] Build pass: **0 errors**
+
+### 2026-03-02 — Quán Bida SABO: Live Financial Dashboard
+- [x] **DB**: "Quán bida SABO" company (billiards) created — ID: `d6ff05cc-9440-4e8e-985a-eb6219dec3ec`
+- [x] **DB**: "Chi nhánh trung tâm" branch linked — ID: `4ccdc579-3902-43bf-b4dd-50532aca8eed`
+- [x] **DB**: 35 months P&L data (T2/2023 → T12/2025) in `monthly_pnl` table
+- [x] **NEW**: `lib/business_types/service/models/monthly_pnl.dart` — MonthlyPnl model (30 fields, computed margins, labels)
+- [x] **NEW**: `lib/business_types/service/services/monthly_pnl_service.dart` — getPnlHistory, getPnlByYear, getLatestPnl, getFinancialSummary
+- [x] **NEW**: `lib/business_types/service/providers/monthly_pnl_provider.dart` — financialSummaryProvider, pnlHistoryProvider, pnlByYearProvider, latestPnlProvider
+- [x] **FIX**: `company_service.dart` stats key mismatch — `employeeCount` → `employees`, `branchCount` → `branches`, `tableCount` → `tables`
+- [x] **ENHANCE**: Dự án tab company detail bottom sheet — live financial dashboard:
+  - Latest month P&L summary card (revenue, profit, margin %, growth %)
+  - 12-month totals (accumulated revenue & profit)
+  - Mini bar chart with revenue trend (profit/loss color-coded)
+  - Gradient card styling based on profitability
+- [x] **ENHANCE**: Dự án tab filter bar — added 🏢 Tổng Công Ty chip for corporation type
+- [x] **FIX**: Stats bar label "Giải trí" → "Dịch vụ", excludes corporation from count
+- [x] Build pass: **0 errors**
+
+### 2026-03-04 — Manager Command Center Redesign (Musk Style)
+- [x] **REWRITE**: `service_manager_layout.dart` — 488 → ~780 lines. Full CEO-style command center
+  - Dark navy AppBar (0xFF1E293B), RealtimeNotificationBell, PopupMenu (profile/notifications/settings/bug report/more)
+  - 4 bottom tabs: **Command | Vận Hành | Nhiệm vụ | Media**
+  - **Command tab**: Revenue (today/week), Operations (tables/sessions), Team & Tasks, Media stats, Table status breakdown, Quick actions
+  - **Vận Hành tab**: 3 sub-tabs (Bàn | Phiên | Thực đơn) — embeds TableListPage, SessionListPage, MenuListPage
+  - **Nhiệm vụ tab**: 2 sub-tabs (Công việc=ManagerTasksPage | Nhân viên=CEOEmployeesPage)
+  - **Media tab**: 3 sub-tabs (Kênh | Dự án | Nội dung) — channels grouped by platform, projects with progress bars, content pipeline
+- [x] **REMOVED**: Old drawer menu, old purple gradient theme, old flat tabs
+- [x] **REUSES**: CEOProfilePage, CEONotificationsPage, CEOSettingsPage, CEOMorePage, CEOEmployeesPage, ManagerTasksPage
+- [x] Build pass: **0 errors**
+
+### 2026-03-04 — Media Project Management (Dự án)
+- [x] **DB**: Created `media_projects` table (id, company_id, name, description, status, priority, platforms[], start_date, end_date, budget, spent, manager_id, tags[], color, notes, is_active, timestamps)
+- [x] **DB**: Added `project_id` FK column to `content_calendar`, indexes, RLS policy
+- [x] **DB**: Seeded 4 sample projects (SABO Brand Awareness Q1, TikTok Growth, YouTube Tutorial, Social Media Daily)
+- [x] **NEW**: `lib/business_types/service/models/media_project.dart` (~212 lines) — Full model with fromJson/toJson, computed props (statusLabel, priorityLabel, platformIcons, progress, budgetUsage, isOverdue, daysRemaining), copyWith
+- [x] **NEW**: `lib/business_types/service/providers/media_project_provider.dart` (~100 lines) — mediaProjectsProvider, mediaProjectStatsProvider, MediaProjectActions (create/update/delete)
+- [x] **ENHANCE**: Media Command Center → 4 sub-tabs: **Tổng quan | Kênh | Dự án | Nội dung** (was 3)
+- [x] **NEW**: `_MediaProjectsSubTab` (~550 lines) in service_ceo_layout.dart:
+  - Stats bar (total/active/planning/completed)
+  - FilterChip status filter (Tất cả, Đang chạy, Lên KH, Tạm dừng, Xong)
+  - Project cards: color-coded left border, name, status badge, priority icon, platform emojis, date range, content progress bar, budget usage bar, tags
+  - Project detail bottom sheet: full info, edit/delete actions
+  - Create/Edit dialog: name, description, status, priority, platform multi-select, date pickers, budget, notes
+- [x] Build pass: **0 errors**
+
+### 2026-03-03 — Task System: Unified Architecture (Elon Musk Mode)
+- [x] **ARCHITECTURE**: Consolidated 29 task files (~12,556 lines) into unified widget system
+  - ONE TaskBoard widget replaces 7 duplicate task card impls, 6 duplicate create/edit dialogs
+  - TaskBoardConfig with role factories: .ceo(), .managerAssigned(), .managerCreated(), .staff(), .companyView()
+  - TaskBoardMode enum: ceoCreated, managerCreated, assigned, company
+- [x] **NEW**: `lib/widgets/task/task_badges.dart` (~135 lines) — PriorityBadge, StatusBadge, TaskProgressBar
+- [x] **NEW**: `lib/widgets/task/task_card.dart` (~265 lines) — UnifiedTaskCard with configurable visibility
+- [x] **NEW**: `lib/widgets/task/task_create_dialog.dart` (~310 lines) — TaskCreateEditDialog (create/edit dual mode)
+- [x] **NEW**: `lib/widgets/task/task_board.dart` (~900 lines) — THE main reusable widget: stats, search, filter, task list, FAB, detail sheet
+- [x] **REWRITE**: `ceo_tasks_page.dart` — 1,665 → 381 lines (-77%). Clean 2-tab: Nhiệm vụ (TaskBoard) + Phê duyệt
+- [x] **REWRITE**: `manager_tasks_page.dart` — 1,355 → 84 lines (-94%). 2-tab: Từ CEO + Đã giao
+- [x] **REWRITE**: `staff_tasks_page.dart` — 637 → 38 lines (-94%). Single TaskBoard
+- [x] **REWRITE**: `shift_leader_tasks_page.dart` — 445 → 38 lines (-91%)
+- [x] **ENHANCE**: `ManagementTaskService` — Added `getTasksByCompany()` method
+- [x] **DELETE**: 5 dead source files + 4 backups removed:
+  - `ceo_task_management_page.dart` (754 lines), `smart_task_creation_page.dart`, `management_task_detail_dialog.dart` (774 lines)
+  - `management_task_provider_cached.dart`, `task_test_widget.dart`
+- [x] Build pass: **0 errors** (41s)
+- **Net reduction: ~4,100+ lines eliminated. 4 pages rewritten, 9 files deleted.**
+
+### 2026-03-03 — Task Management Core Feature: Complete Overhaul
+- [x] **AUDIT**: Comprehensive 30-file audit of task management system (~14,600 lines)
+  - Found: dual task systems (ManagementTask + Task) sharing `tasks` DB table
+  - Found: 12 dead-end buttons across CEO, Manager, Staff pages
+  - Found: TaskTestWidget debug code in production
+  - Found: hardcoded mock data in Manager stats/progress
+  - Found: ~580 lines of dead mock code in Staff page
+- [x] **FIX**: `ManagementTaskService` — Added generic `updateTask()` method
+  - Supports: title, description, priority, status, category, assignedTo, progress, dueDate, recurrence, checklist
+  - Auto-sets `completed_at` when status = completed
+- [x] **FIX**: `ceo_task_management_page.dart` — Wired dead create/edit buttons
+  - Create: Now navigates to `SmartTaskCreationPage` with onSuccess callback
+  - Edit: Full dialog with title, description, priority, status, category, due date
+- [x] **FIX**: `company/tasks_tab.dart` — Removed TaskTestWidget debug code from production
+- [x] **FIX**: `manager_tasks_page.dart` — Major overhaul (7 fixes):
+  - Search: AppBar toggle search bar filtering by title/description/assignee 
+  - Filter: Bottom sheet with TaskCategory picker (emoji icons)
+  - Quick Stats: Replaced hardcoded "2","1","12" → real computed values from provider
+  - Personal Progress: Replaced hardcoded 8/11 → real computed from task completion
+  - "Việc của tôi" tab: Fixed duplicate of "Từ CEO" → now merges assigned + self-created tasks, grouped by status (In Progress/Pending/Completed)
+  - More menu: Replaced empty `() {}` → PopupMenuButton with Start/Complete/Edit/Cancel actions
+  - "Giao bởi": Fixed showing UUID → now shows `createdByName` with UUID fallback
+  - "Giao việc" tab: Applied search/filter to assigned tasks tab
+  - Edit dialog: Full edit form with title, description, priority, status, category, due date
+- [x] **FIX**: `staff_tasks_page.dart` — Major cleanup + feature wiring:
+  - FAB: Wired dead button → navigates to "Đang làm" tab for quick completion
+  - Filter: Replaced SnackBar-only filter → real filter by priority (urgent/high/medium/low) + deadline sort
+  - Help: Replaced SnackBar → real help dialog with usage instructions
+  - Cleanup: Removed ~580 lines of dead mock code (4 unused methods with hardcoded data)
+  - File reduced from 1210 → ~640 lines (47% smaller)
+- [x] Build pass: **0 errors, 0 warnings**
+- **5 files modified, ~580 lines dead code removed, 12 dead-end buttons fixed, 0 hardcoded mock data remaining**
+
+### 2026-03-03 — CEO Command Center: Complete CRUD & Polish Sprint
+- [x] **NEW**: `TournamentFormPage` (~350 lines) — Full CREATE/EDIT form for tournaments
+  - All fields: name, description, tournamentType, gameType, status, dates (start/end/deadline), venue, max participants, entry fee, prize pool, sponsors, rules, banner, livestream
+  - Edit mode loads existing data, includes delete with confirmation dialog
+- [x] **NEW**: `EventFormPage` (~350 lines) — Full CREATE/EDIT form for SABO events
+  - All fields: title, description, eventType (8 types), status, dates, venue with isOnline toggle (online URL vs venue address), budget, expected attendees, banner, notes, tags
+- [x] **NEW**: `ContentFormPage` (~330 lines) — Full CREATE/EDIT form for content calendar
+  - All fields: title, description, contentType (9 types), status (9-stage pipeline), channel picker (from mediaChannelsProvider), platform, dates (planned/deadline), URLs (thumbnail/content/script), notes, tags
+- [x] **WIRE**: `EntertainmentCEOLayout` — Connected all 3 form pages:
+  - Tournament: Create button in empty state + add icon in list header + edit button on each card
+  - Event: Create button always visible + edit icon on each card
+  - Content: Create button in Media Command tab's Content Pipeline section
+- [x] **FIX**: `CeoProfilePage` — Replaced 3 dead-end SnackBar buttons with functional dialogs:
+  - Change Password: Real dialog with new/confirm password fields, calls `change_employee_password` RPC
+  - Notification Settings: Toggle switches for push, email digest, task alerts, revenue alerts
+  - Security Settings: Account info, encryption details, session info, security tips
+- [x] **FIX**: `CeoTasksPage` — Implemented filter & search (were TODO placeholders):
+  - Filter: Bottom sheet with all TaskCategory values (general, billiards, media, arena, operations)
+  - Search: Toggle search bar filtering by title, description, and assignee name
+- [x] **FIX**: `MediaDashboardPage` — Added channel management actions:
+  - "Sửa kênh" button → edit dialog (name, URL, target followers, target videos)
+  - "Xóa" button → confirmation dialog with soft delete via `deleteChannel()`
+- [x] Build pass: **0 errors, 0 warnings** (42s build time)
+- **3 new form pages created, 4 existing pages fixed** — zero dead-end buttons remaining in CEO module
+
+### 2026-03-03 — SABO Corporation Command Center: Multi-Vertical Entertainment Module
+- [x] **ARCHITECTURE**: Redesigned entertainment module from single billiard POS → multi-vertical corporation system
+  - SABO = Media + Tournaments + Venue (billiards) + Technology
+  - Applied Elon Musk first-principles thinking: modular, scalable, data-driven
+- [x] **DB**: Created 6 new production tables with indexes and RLS:
+  - `tournaments` (name, game_type, format, prize_pool, max_participants, status workflow)
+  - `tournament_registrations` (player management, seeding, fees)
+  - `tournament_matches` (bracket system, scoring, round tracking)
+  - `events` (multi-type: tournament, media_production, brand_activation, workshop, livestream, etc.)
+  - `content_calendar` (production pipeline: idea→planned→scripting→filming→editing→review→scheduled→published)
+  - `content_items` (individual content pieces linked to calendar)
+- [x] **NEW**: `MediaChannel` model — connects to existing `media_channels` table (5 channels already in DB but had NO Flutter UI)
+  - platformIcon helper, followerProgress, videoProgress tracking
+- [x] **NEW**: `Tournament` model — full tournament lifecycle with TournamentType, GameType, TournamentStatus enums
+  - Includes TournamentRegistration + TournamentMatch models
+- [x] **NEW**: `Event` model — EventType (8 types) + EventStatus enums for all SABO events
+- [x] **NEW**: `ContentCalendar` model — ContentType (video, short, reel, story, etc.) + ContentStatus pipeline (8 stages)
+- [x] **NEW**: 4 service files — `media_channel_service`, `tournament_service`, `event_service`, `content_service`
+  - Full CRUD + aggregation stats + tournament bracket generation + content pipeline progression
+- [x] **NEW**: 4 provider files — Riverpod providers for all services with stats, filters, actions
+- [x] **REWRITE**: `EntertainmentCEOLayout` → Corporation CEO Command Center
+  - 5 tabs: Command (overview all divisions) | Media | Giải đấu | Đội ngũ | Tăng trưởng
+  - Tab 1: Real-time metrics across Media channels, Tournaments, Venue operations
+  - Tab 2: Media Command — channel cards with follower/view/revenue stats, content pipeline visualization
+  - Tab 3: Tournament Command — tournament cards with status/game type/participants, event list
+  - Tab 4: Team (preserved existing Tasks + Employees)
+  - Tab 5: Growth (preserved existing MoM comparison + 30-day trend chart)
+- [x] Build pass: **0 errors, 0 warnings** (42s build time)
+- **15 new files created**, 1 file rewritten, 6 DB tables created
+- **Next**: Create CRUD pages for tournaments/events/content, update Manager & Staff layouts
 
 ### 2026-03-02 — App Polish Sprint: Real Data, Loading States, Report Fixes
 - [x] **FIX**: 5 compile errors/warnings — null safety in stock_adjustment_page, unused vars in journey_plan_page & integration_test, unnecessary `!` operators in delivery_detail_sheet & driver_deliveries_page

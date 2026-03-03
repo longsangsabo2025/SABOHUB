@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:go_router/go_router.dart';
+
+import '../../core/router/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/ceo_business_provider.dart';
 import '../../providers/ceo_tab_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../widgets/gamification/ceo_game_summary_card.dart';
 import '../../widgets/multi_account_switcher.dart';
 import 'ceo_main_layout.dart';
 import 'ceo_notifications_page.dart';
@@ -46,6 +50,12 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 0. CEO GAME PROFILE — RPG Summary
+              CeoGameSummaryCard(
+                onTap: () => context.push(AppRoutes.questHub),
+              ),
+              const SizedBox(height: 16),
+
               // 1. TODAY'S PULSE — First thing CEO sees
               _buildTodayPulse(pulseAsync),
               const SizedBox(height: 20),

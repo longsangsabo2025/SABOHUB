@@ -42,15 +42,26 @@ import '../../business_types/manufacturing/pages/manufacturing/bom_page.dart';
 import '../../business_types/manufacturing/pages/manufacturing/purchase_orders_page.dart';
 import '../../business_types/manufacturing/pages/manufacturing/production_orders_page.dart';
 import '../../business_types/manufacturing/pages/manufacturing/payables_page.dart';
-// Entertainment Module Pages
-import '../../business_types/entertainment/pages/tables/table_list_page.dart';
-import '../../business_types/entertainment/pages/sessions/session_list_page.dart';
-import '../../business_types/entertainment/pages/menu/menu_list_page.dart';
+// Service Module Pages
+import '../../business_types/service/pages/tables/table_list_page.dart';
+import '../../business_types/service/pages/sessions/session_list_page.dart';
+import '../../business_types/service/pages/menu/menu_list_page.dart';
 // Map & GPS Module Pages - TEMPORARILY DISABLED for web compatibility
 // import '../../pages/map/map_overview_page.dart';
 // import '../../pages/map/delivery_tracking_page.dart';
 // import '../../pages/map/staff_tracking_page.dart';
 // import '../../pages/map/route_planning_page.dart';
+// Gamification Module Pages
+import '../../pages/gamification/quest_hub_page.dart';
+import '../../pages/gamification/ceo_game_profile_page.dart';
+import '../../pages/gamification/staff_performance_page.dart';
+import '../../pages/gamification/uytin_store_page.dart';
+import '../../pages/gamification/season_pass_page.dart';
+import '../../pages/gamification/company_ranking_page.dart';
+import '../../pages/gamification/leaderboard_page.dart';
+import '../../pages/gamification/gamification_analytics_page.dart';
+import '../../pages/gamification/game_notifications_page.dart';
+import '../../pages/gamification/ai_quest_config_page.dart';
 import '../../providers/auth_provider.dart';
 import '../navigation/navigation_models.dart' as nav;
 
@@ -138,6 +149,18 @@ class AppRoutes {
   static const String mapDeliveryTracking = '/map/delivery-tracking';
   static const String mapStaffTracking = '/map/staff-tracking';
   static const String mapRoutePlanning = '/map/route-planning';
+
+  // Gamification routes
+  static const String questHub = '/quest-hub';
+  static const String ceoGameProfile = '/ceo/game-profile';
+  static const String staffPerformance = '/staff-performance';
+  static const String uytinStore = '/uytin-store';
+  static const String seasonPass = '/season-pass';
+  static const String companyRanking = '/company-ranking';
+  static const String leaderboard = '/leaderboard';
+  static const String gamificationAnalytics = '/gamification-analytics';
+  static const String gameNotifications = '/game-notifications';
+  static const String aiQuestConfig = '/ai-quest-config';
 
   // Debug routes (temporarily disabled)
   // static const String debugSettings = '/debug/settings';
@@ -533,6 +556,48 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.manufacturingPayables,
         builder: (BuildContext context, GoRouterState state) => const PayablesPage(),
+      ),
+
+      // Gamification routes
+      GoRoute(
+        path: AppRoutes.questHub,
+        builder: (BuildContext context, GoRouterState state) => const QuestHubPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.ceoGameProfile,
+        builder: (BuildContext context, GoRouterState state) => const CeoGameProfilePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.staffPerformance,
+        builder: (BuildContext context, GoRouterState state) => const StaffPerformancePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.uytinStore,
+        builder: (BuildContext context, GoRouterState state) => const UytinStorePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.seasonPass,
+        builder: (BuildContext context, GoRouterState state) => const SeasonPassPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.companyRanking,
+        builder: (BuildContext context, GoRouterState state) => const CompanyRankingPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.leaderboard,
+        builder: (BuildContext context, GoRouterState state) => const LeaderboardPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.gamificationAnalytics,
+        builder: (BuildContext context, GoRouterState state) => const GamificationAnalyticsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.gameNotifications,
+        builder: (BuildContext context, GoRouterState state) => const GameNotificationsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.aiQuestConfig,
+        builder: (BuildContext context, GoRouterState state) => const AiQuestConfigPage(),
       ),
 
       // Map & GPS routes - TEMPORARILY DISABLED for web compatibility

@@ -223,6 +223,20 @@ class _MediaDashboardPageState extends ConsumerState<MediaDashboardPage> {
                 label: const Text('Cập nhật'),
                 onPressed: () => _showUpdateStatsDialog(channel),
               ),
+              const SizedBox(width: 4),
+              TextButton.icon(
+                icon: const Icon(Icons.settings, size: 16),
+                label: const Text('Sửa kênh'),
+                onPressed: () => _showEditChannelDialog(channel),
+              ),
+              const SizedBox(width: 4),
+              TextButton.icon(
+                icon: Icon(Icons.delete_outline,
+                    size: 16, color: Colors.red.shade400),
+                label: Text('Xóa',
+                    style: TextStyle(color: Colors.red.shade400)),
+                onPressed: () => _confirmDeleteChannel(channel),
+              ),
             ],
           ),
         ],
@@ -491,6 +505,145 @@ class _MediaDashboardPageState extends ConsumerState<MediaDashboardPage> {
               }
             },
             child: const Text('Lưu'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditChannelDialog(MediaChannel channel) {
+    final nameCtrl = TextEditingController(text: channel.name);
+    final urlCtrl = TextEditingController(text: channel.channelUrl ?? '');
+    final targetFollowersCtrl =
+        TextEditingController(text: '${channel.targetFollowers}');
+    final targetVideosCtrl =
+        TextEditingController(text: '${channel.targetVideos}');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Sửa ${channel.name}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Tên kênh'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: urlCtrl,
+                decoration: const InputDecoration(labelText: 'URL kênh'),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: targetFollowersCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration:
+                          const InputDecoration(labelText: 'Mục tiêu followers'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: targetVideosCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration:
+                          const InputDecoration(labelText: 'Mục tiêu videos'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              try {
+                await ref.read(_mediaServiceProvider).updateChannel(
+                      channel.id,
+                      {
+                        if (nameCtrl.text.trim().isNotEmpty)
+                          'name': nameCtrl.text.trim(),
+                        if (urlCtrl.text.trim().isNotEmpty)
+                          'channel_url': urlCtrl.text.trim(),
+                        if (targetFollowersCtrl.text.isNotEmpty)
+                          'target_followers':
+                              int.tryParse(targetFollowersCtrl.text),
+                        if (targetVideosCtrl.text.isNotEmpty)
+                          'target_videos':
+                              int.tryParse(targetVideosCtrl.text),
+                      },
+                    );
+                ref.invalidate(_mediaChannelsProvider);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Đã cập nhật kênh'),
+                        backgroundColor: Colors.green),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Lỗi: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Lưu'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteChannel(MediaChannel channel) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa kênh?'),
+        content: Text(
+            'Bạn có chắc chắn muốn xóa "${channel.name}"? Hành động này sẽ vô hiệu hóa kênh.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await ref
+                    .read(_mediaServiceProvider)
+                    .deleteChannel(channel.id);
+                ref.invalidate(_mediaChannelsProvider);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Đã xóa kênh'),
+                        backgroundColor: Colors.orange),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Lỗi: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

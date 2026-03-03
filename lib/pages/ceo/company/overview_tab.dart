@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../models/company.dart';
 import '../../../providers/cached_data_providers.dart';
+import '../../../business_types/service/providers/monthly_pnl_provider.dart';
+import '../../../business_types/service/models/monthly_pnl.dart';
 import 'widgets/stat_card.dart';
 
 /// Overview Tab - Hiển thị thông tin tổng quan về công ty
@@ -37,6 +39,10 @@ class OverviewTab extends ConsumerWidget {
             error: (_, __) => const SizedBox.shrink(),
             data: (stats) => _buildStatsCards(stats),
           ),
+          const SizedBox(height: 32),
+
+          // Financial Dashboard
+          _buildFinancialDashboard(ref),
           const SizedBox(height: 32),
 
           // Company Information
@@ -286,6 +292,368 @@ class OverviewTab extends ConsumerWidget {
   String _formatCurrency(double amount) {
     final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
     return formatter.format(amount);
+  }
+
+  String _formatCompactCurrency(double amount) {
+    if (amount.abs() >= 1000000000) {
+      return '${(amount / 1000000000).toStringAsFixed(1)}tỷ';
+    } else if (amount.abs() >= 1000000) {
+      return '${(amount / 1000000).toStringAsFixed(1)}tr';
+    } else if (amount.abs() >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(0)}k';
+    }
+    return amount.toStringAsFixed(0);
+  }
+
+  // ── Financial Dashboard Widget ──
+  Widget _buildFinancialDashboard(WidgetRef ref) {
+    final summaryAsync = ref.watch(financialSummaryProvider(companyId));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.analytics, size: 20, color: Colors.green[700]),
+            const SizedBox(width: 8),
+            Text(
+              'Báo cáo tài chính',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.green[700],
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Live',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green[700],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        summaryAsync.when(
+          loading: () => Card(
+            elevation: 0,
+            color: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: const Padding(
+              padding: EdgeInsets.all(40),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+          ),
+          error: (e, _) => Card(
+            elevation: 0,
+            color: Colors.red[50],
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red[400]),
+                  const SizedBox(width: 12),
+                  Text('Lỗi tải dữ liệu tài chính', style: TextStyle(color: Colors.red[700])),
+                ],
+              ),
+            ),
+          ),
+          data: (summary) {
+            if (summary['hasData'] != true) {
+              return Card(
+                elevation: 0,
+                color: Colors.grey[50],
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Icon(Icons.analytics_outlined, size: 32, color: Colors.grey[400]),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'Chưa có dữ liệu tài chính',
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            final records = summary['records'] as List<MonthlyPnl>;
+            final latestRevenue = summary['latestNetRevenue'] as double;
+            final latestProfit = summary['latestNetProfit'] as double;
+            final latestMargin = summary['latestNetMargin'] as double;
+            final growthPct = summary['revenueGrowthPct'] as double;
+            final totalRevenue12m = summary['totalRevenue12m'] as double;
+            final totalProfit12m = summary['totalProfit12m'] as double;
+            final latestMonth = summary['latestMonth'] as String;
+            final isProfitable = summary['isProfitable'] as bool;
+
+            return Column(
+              children: [
+                // Latest month summary card
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isProfitable
+                            ? [Colors.green[50]!, Colors.green[100]!]
+                            : [Colors.red[50]!, Colors.red[100]!],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isProfitable ? Colors.green[200]! : Colors.red[200]!,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Tháng $latestMonth',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const Spacer(),
+                            if (growthPct != 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: growthPct > 0 ? Colors.green[700] : Colors.red[700],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${growthPct > 0 ? '+' : ''}${growthPct.toStringAsFixed(1)}%',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _financialMetric(
+                                'Doanh thu',
+                                _formatCompactCurrency(latestRevenue),
+                                Icons.trending_up,
+                                Colors.blue[700]!,
+                              ),
+                            ),
+                            Container(width: 1, height: 50, color: Colors.grey[300]),
+                            Expanded(
+                              child: _financialMetric(
+                                'Lợi nhuận',
+                                _formatCompactCurrency(latestProfit),
+                                isProfitable ? Icons.arrow_upward : Icons.arrow_downward,
+                                isProfitable ? Colors.green[700]! : Colors.red[700]!,
+                              ),
+                            ),
+                            Container(width: 1, height: 50, color: Colors.grey[300]),
+                            Expanded(
+                              child: _financialMetric(
+                                'Biên LN',
+                                '${latestMargin.toStringAsFixed(1)}%',
+                                Icons.percent,
+                                Colors.orange[700]!,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 12-month totals
+                Card(
+                  elevation: 0,
+                  color: Colors.grey[50],
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tổng 12 tháng gần nhất',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Doanh thu', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _formatCompactCurrency(totalRevenue12m),
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Lợi nhuận', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _formatCompactCurrency(totalProfit12m),
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: totalProfit12m >= 0 ? Colors.green[700] : Colors.red[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Mini revenue chart
+                if (records.length >= 3) ...[
+                  Text(
+                    'Xu hướng doanh thu',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildMiniRevenueChart(records.reversed.toList()),
+                ],
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _financialMetric(String label, String value, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniRevenueChart(List<MonthlyPnl> records) {
+    final data = records.length > 12 ? records.sublist(records.length - 12) : records;
+    final maxRevenue = data.fold<double>(0, (max, r) => r.netRevenue > max ? r.netRevenue : max);
+
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SizedBox(
+          height: 140,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: data.map((r) {
+              final heightPct = maxRevenue > 0 ? r.netRevenue / maxRevenue : 0.0;
+              final isProfitable = r.netProfit > 0;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // Profit indicator dot
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isProfitable ? Colors.green : Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      // Bar
+                      Flexible(
+                        child: Container(
+                          width: double.infinity,
+                          height: (heightPct * 80).clamp(4.0, 80.0),
+                          decoration: BoxDecoration(
+                            color: isProfitable ? Colors.green[300] : Colors.red[300],
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Month label
+                      Text(
+                        'T${r.reportMonth.month}',
+                        style: TextStyle(fontSize: 9, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _launchPhone(BuildContext context, String phoneNumber) async {

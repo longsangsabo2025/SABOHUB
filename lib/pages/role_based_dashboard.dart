@@ -13,14 +13,14 @@ import '../business_types/distribution/pages/driver/distribution_driver_layout_r
 import '../business_types/distribution/layouts/distribution_customer_service_layout.dart';
 import '../business_types/distribution/layouts/distribution_finance_layout.dart';
 import '../business_types/manufacturing/layouts/manufacturing_manager_layout.dart';
-import '../business_types/entertainment/layouts/entertainment_manager_layout.dart';
-import '../business_types/entertainment/layouts/entertainment_staff_layout.dart';
+import '../business_types/service/layouts/service_manager_layout.dart';
+import '../business_types/service/layouts/service_staff_layout.dart';
 import '../layouts/shift_leader_main_layout.dart';
 import '../layouts/driver_main_layout.dart';
 import '../layouts/warehouse_main_layout.dart';
 import 'ceo/ceo_main_layout.dart';
 import 'ceo/distribution/distribution_ceo_layout.dart';
-import 'ceo/entertainment/entertainment_ceo_layout.dart';
+import 'ceo/service/service_ceo_layout.dart';
 import 'ceo/manufacturing/manufacturing_ceo_layout.dart';
 import 'staff_main_layout.dart';
 import '../providers/auth_provider.dart';
@@ -499,9 +499,9 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
           AppLogger.nav('→ Routing to DistributionCEOLayout (CEO + isDistribution=true)');
           return const DistributionCEOLayout();
         }
-        if (businessType != null && businessType.isEntertainment) {
-          AppLogger.nav('→ Routing to EntertainmentCEOLayout (CEO + isEntertainment=true / Vận Hành)');
-          return const EntertainmentCEOLayout();
+        if (businessType != null && businessType.isService) {
+          AppLogger.nav('→ Routing to ServiceCEOLayout (CEO + isService=true / Vận Hành)');
+          return const ServiceCEOLayout();
         }
         AppLogger.nav('→ Routing to CEOMainLayout (fallback)');
         return const CEOMainLayout();
@@ -515,9 +515,9 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
           AppLogger.nav('→ Routing to DistributionManagerLayout (isDistribution=true)');
           return const DistributionManagerLayout();
         }
-        if (businessType != null && businessType.isEntertainment) {
-          AppLogger.nav('→ Routing to EntertainmentManagerLayout (isEntertainment=true / Vận Hành)');
-          return const EntertainmentManagerLayout();
+        if (businessType != null && businessType.isService) {
+          AppLogger.nav('→ Routing to ServiceManagerLayout (isService=true / Vận Hành)');
+          return const ServiceManagerLayout();
         }
         AppLogger.nav('→ Routing to ManagerMainLayout (default)');
         return const ManagerMainLayout();
@@ -549,9 +549,9 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
           }
           // Other distribution staff go to default staff layout for now
         }
-        if (businessType != null && businessType.isEntertainment) {
-          AppLogger.nav('→ Routing to EntertainmentStaffLayout (staff + isEntertainment / Vận Hành)');
-          return const EntertainmentStaffLayout();
+        if (businessType != null && businessType.isService) {
+          AppLogger.nav('→ Routing to ServiceStaffLayout (staff + isService / Vận Hành)');
+          return const ServiceStaffLayout();
         }
         AppLogger.nav('→ Routing to StaffMainLayout');
         return const StaffMainLayout();

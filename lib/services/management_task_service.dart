@@ -98,6 +98,24 @@ class ManagementTaskService {
     }
   }
 
+  /// Get tasks by company ID (for company task board)
+  Future<List<ManagementTask>> getTasksByCompany(String companyId) async {
+    try {
+      final response = await _supabase
+          .from('tasks')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('created_at', ascending: false);
+
+      return (response as List).map((json) {
+        final flatJson = Map<String, dynamic>.from(json);
+        return ManagementTask.fromJson(flatJson);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch company tasks: $e');
+    }
+  }
+
   /// Get tasks created by current user (Manager assigning to staff)
   /// Used in Manager Tasks Page - Assign Tasks tab
   Future<List<ManagementTask>> getTasksCreatedByMe() async {
@@ -157,6 +175,8 @@ class ManagementTaskService {
     String? description,
     required String priority,
     required String assignedTo,
+    String? assignedToName,
+    String? assignedToRole,
     String? companyId,
     String? branchId,
     DateTime? dueDate,
@@ -165,7 +185,8 @@ class ManagementTaskService {
     List<Map<String, dynamic>>? checklist,
   }) async {
     try {
-      final userId = _ref.read(authProvider).user?.id;
+      final currentUser = _ref.read(authProvider).user;
+      final userId = currentUser?.id;
       if (userId == null) throw Exception('User not authenticated');
 
       final taskData = {
@@ -175,7 +196,10 @@ class ManagementTaskService {
         'status': 'pending',
         'progress': 0,
         'created_by': userId,
+        'created_by_name': currentUser?.name ?? 'Unknown',
         'assigned_to': assignedTo,
+        if (assignedToName != null) 'assigned_to_name': assignedToName,
+        if (assignedToRole != null) 'assigned_to_role': assignedToRole,
         'company_id': companyId,
         'branch_id': branchId,
         'due_date': dueDate?.toIso8601String(),
@@ -248,6 +272,48 @@ class ManagementTaskService {
       );
     } catch (e) {
       throw Exception('Failed to update task status: $e');
+    }
+  }
+
+  /// Update task fields (generic update for edit dialog)
+  Future<void> updateTask({
+    required String taskId,
+    String? title,
+    String? description,
+    String? priority,
+    String? status,
+    String? category,
+    String? assignedTo,
+    String? companyId,
+    int? progress,
+    DateTime? dueDate,
+    String? recurrence,
+    List<Map<String, dynamic>>? checklist,
+  }) async {
+    try {
+      final updateData = <String, dynamic>{};
+      if (title != null) updateData['title'] = title;
+      if (description != null) updateData['description'] = description;
+      if (priority != null) updateData['priority'] = priority;
+      if (status != null) updateData['status'] = status;
+      if (category != null) updateData['category'] = category;
+      if (assignedTo != null) updateData['assigned_to'] = assignedTo;
+      if (companyId != null) updateData['company_id'] = companyId;
+      if (progress != null) updateData['progress'] = progress;
+      if (dueDate != null) updateData['due_date'] = dueDate.toIso8601String();
+      if (recurrence != null) updateData['recurrence'] = recurrence;
+      if (checklist != null) updateData['checklist'] = checklist;
+
+      if (status == 'completed') {
+        updateData['completed_at'] = DateTime.now().toIso8601String();
+        updateData['progress'] = 100;
+      }
+
+      if (updateData.isNotEmpty) {
+        await _supabase.from('tasks').update(updateData).eq('id', taskId);
+      }
+    } catch (e) {
+      throw Exception('Failed to update task: $e');
     }
   }
 
@@ -631,8 +697,11 @@ class ManagementTaskService {
 
       // Generate unique file name
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final extension = fileName.split('.').last;
+      final extension = fileName.split('.').last.toLowerCase();
       final uniqueFileName = 'task_${taskId}_$timestamp.$extension';
+      
+      // Convert extension to proper MIME type
+      final mimeType = _getMimeType(extension);
       
       // Upload to Supabase Storage
       final storagePath = 'task-attachments/$taskId/$uniqueFileName';
@@ -641,7 +710,7 @@ class ManagementTaskService {
         storagePath,
         Uint8List.fromList(fileBytes),
         fileOptions: FileOptions(
-          contentType: fileType,
+          contentType: mimeType,
           upsert: false,
         ),
       );
@@ -657,7 +726,7 @@ class ManagementTaskService {
             'file_name': fileName,
             'file_url': fileUrl,
             'file_size': fileBytes.length,
-            'file_type': fileType,
+            'file_type': mimeType,
             'uploaded_by': employeeId,
           })
           .select()
@@ -670,6 +739,58 @@ class ManagementTaskService {
     } catch (e) {
       throw Exception('Failed to upload attachment: $e');
     }
+  }
+
+  /// Convert file extension to proper MIME type
+  String _getMimeType(String extension) {
+    const mimeTypes = {
+      // Images
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'bmp': 'image/bmp',
+      'svg': 'image/svg+xml',
+      'ico': 'image/x-icon',
+      // Documents
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'ppt': 'application/vnd.ms-powerpoint',
+      'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'txt': 'text/plain',
+      'csv': 'text/csv',
+      'rtf': 'application/rtf',
+      // Data
+      'json': 'application/json',
+      'xml': 'application/xml',
+      'html': 'text/html',
+      'css': 'text/css',
+      'js': 'application/javascript',
+      // Archives
+      'zip': 'application/zip',
+      'rar': 'application/x-rar-compressed',
+      '7z': 'application/x-7z-compressed',
+      'tar': 'application/x-tar',
+      'gz': 'application/gzip',
+      // Audio
+      'mp3': 'audio/mpeg',
+      'wav': 'audio/wav',
+      'ogg': 'audio/ogg',
+      'm4a': 'audio/mp4',
+      // Video
+      'mp4': 'video/mp4',
+      'avi': 'video/x-msvideo',
+      'mov': 'video/quicktime',
+      'wmv': 'video/x-ms-wmv',
+      'webm': 'video/webm',
+      'mkv': 'video/x-matroska',
+    };
+    
+    return mimeTypes[extension.toLowerCase()] ?? 'application/octet-stream';
   }
 
   /// Delete attachment
@@ -817,7 +938,14 @@ class ManagementTaskService {
     try {
       final response = await _supabase
           .from('task_comments')
-          .select('*')
+          .select('''
+            *,
+            employees:user_id (
+              full_name,
+              role,
+              avatar_url
+            )
+          ''')
           .eq('task_id', taskId)
           .order('created_at', ascending: true);
 
@@ -837,11 +965,28 @@ class ManagementTaskService {
       final userId = _ref.read(authProvider).user?.id;
       if (userId == null) throw Exception('User not authenticated');
 
-      final response = await _supabase.from('task_comments').insert({
+      // Insert the comment
+      final insertResponse = await _supabase.from('task_comments').insert({
         'task_id': taskId,
         'user_id': userId,
         'comment': comment,
-      }).select().single();
+      }).select('id').single();
+
+      final commentId = insertResponse['id'] as String;
+
+      // Fetch the comment with employee data
+      final response = await _supabase
+          .from('task_comments')
+          .select('''
+            *,
+            employees:user_id (
+              full_name,
+              role,
+              avatar_url
+            )
+          ''')
+          .eq('id', commentId)
+          .single();
 
       return TaskComment.fromJson(response);
     } catch (e) {
@@ -959,6 +1104,130 @@ class ManagementTaskService {
       }).eq('user_id', userId).eq('is_read', false);
     } catch (e) {
       AppLogger.warn('Failed to mark all notifications read', e);
+    }
+  }
+
+  // ============================================================================
+  // LINK ATTACHMENTS (External URLs)
+  // ============================================================================
+
+  /// Add external link as attachment (YouTube, Google Drive, etc.)
+  Future<TaskAttachment> addTaskLinkAttachment({
+    required String taskId,
+    required String linkUrl,
+    String? linkTitle,
+  }) async {
+    try {
+      final currentUser = _ref.read(authProvider).user;
+      final employeeId = currentUser?.id;
+      
+      if (employeeId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Determine link type and icon
+      String fileType = 'link';
+      String fileName = linkTitle ?? linkUrl;
+      
+      if (linkUrl.contains('youtube.com') || linkUrl.contains('youtu.be')) {
+        fileType = 'youtube';
+        fileName = linkTitle ?? 'YouTube Video';
+      } else if (linkUrl.contains('drive.google.com')) {
+        fileType = 'google_drive';
+        fileName = linkTitle ?? 'Google Drive';
+      } else if (linkUrl.contains('docs.google.com')) {
+        fileType = 'google_docs';
+        fileName = linkTitle ?? 'Google Docs';
+      } else if (linkUrl.contains('figma.com')) {
+        fileType = 'figma';
+        fileName = linkTitle ?? 'Figma Design';
+      } else if (linkUrl.contains('canva.com')) {
+        fileType = 'canva';
+        fileName = linkTitle ?? 'Canva Design';
+      }
+
+      // Save to database
+      final response = await _supabase
+          .from('task_attachments')
+          .insert({
+            'task_id': taskId,
+            'file_name': fileName,
+            'file_url': linkUrl,
+            'file_size': null, // No file size for links
+            'file_type': fileType,
+            'uploaded_by': employeeId,
+          })
+          .select()
+          .single();
+
+      // Send notification to task creator
+      await _sendFileUploadNotification(taskId: taskId, fileName: fileName);
+
+      return TaskAttachment.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to add link attachment: $e');
+    }
+  }
+
+  // ============================================================================
+  // DEADLINE EXTENSION REQUEST
+  // ============================================================================
+
+  /// Request deadline extension for a task
+  Future<void> requestDeadlineExtension({
+    required String taskId,
+    required String reason,
+    required DateTime proposedDate,
+  }) async {
+    try {
+      final currentUser = _ref.read(authProvider).user;
+      final userId = currentUser?.id;
+      
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Get task details
+      final taskResponse = await _supabase
+          .from('tasks')
+          .select('title, company_id, due_date, created_by')
+          .eq('id', taskId)
+          .single();
+
+      // Create approval request
+      await _supabase.from('task_approvals').insert({
+        'title': 'Yêu cầu gia hạn: ${taskResponse['title']}',
+        'description': reason,
+        'type': 'deadline_extension',
+        'task_id': taskId,
+        'submitted_by': userId,
+        'company_id': taskResponse['company_id'],
+        'status': 'pending',
+      });
+
+      // Send notification to task creator (CEO)
+      final createdBy = taskResponse['created_by'] as String?;
+      if (createdBy != null) {
+        await _supabase.from('notifications').insert({
+          'user_id': createdBy,
+          'type': 'deadline_extension_request',
+          'title': 'Yêu cầu gia hạn',
+          'message': '${currentUser?.name ?? "Nhân viên"} yêu cầu gia hạn deadline cho nhiệm vụ "${taskResponse['title']}"',
+          'data': {
+            'task_id': taskId,
+            'requested_by': userId,
+            'requested_by_name': currentUser?.name,
+            'current_due_date': taskResponse['due_date'],
+            'proposed_date': proposedDate.toIso8601String(),
+            'reason': reason,
+          },
+          'is_read': false,
+        });
+      }
+
+      AppLogger.info('📬 [ManagementTaskService] Deadline extension request submitted for task: $taskId');
+    } catch (e) {
+      throw Exception('Failed to request deadline extension: $e');
     }
   }
 

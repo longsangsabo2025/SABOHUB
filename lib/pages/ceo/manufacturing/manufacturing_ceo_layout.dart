@@ -24,7 +24,7 @@ import '../ceo_tasks_page.dart';
 import '../ceo_employees_page.dart';
 
 /// Manufacturing CEO Layout — 5 tabs focused on manufacturing business
-/// Dashboard | Sản xuất | Mua hàng | Tài chính | Đội ngũ
+/// Dashboard | Sản xuất | Mua hàng | Tài chính | Nhiệm vụ
 class ManufacturingCEOLayout extends ConsumerStatefulWidget {
   const ManufacturingCEOLayout({super.key});
 
@@ -150,9 +150,9 @@ class _ManufacturingCEOLayoutState
             label: 'Tài chính',
           ),
           NavigationDestination(
-            icon: Icon(Icons.people_outlined),
-            selectedIcon: Icon(Icons.people, color: AppColors.primary),
-            label: 'Đội ngũ',
+            icon: Icon(Icons.assignment_outlined),
+            selectedIcon: Icon(Icons.assignment, color: AppColors.primary),
+            label: 'Nhiệm vụ',
           ),
         ],
       ),

@@ -175,6 +175,15 @@ class NavigationConfig {
       allowedRoles: [UserRole.ceo],
     )),
 
+    // Quest Hub (Gamification)
+    SingleNav(const NavigationItem(
+      route: '/quest-hub',
+      icon: Icons.emoji_events,
+      activeIcon: Icons.emoji_events,
+      label: 'Quest Hub',
+      allowedRoles: [UserRole.ceo],
+    )),
+
     // Core Operations Group
     GroupNav(NavigationGroup(
       title: 'Vận hành',

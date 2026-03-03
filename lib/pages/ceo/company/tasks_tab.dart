@@ -10,7 +10,7 @@ import '../../../providers/cached_data_providers.dart';
 import '../../../providers/data_action_providers.dart';
 import '../../../providers/cache_provider.dart';
 import '../../../services/task_service.dart';
-import '../../../widgets/task_test_widget.dart';
+// import '../../../widgets/task_test_widget.dart'; // Removed from production
 import '../create_task_dialog.dart';
 import '../edit_task_dialog.dart';
 import '../task_details_dialog.dart';
@@ -149,9 +149,6 @@ class _TasksTabState extends ConsumerState<TasksTab>
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Add test widget for debugging
-          TaskTestWidget(),
           const SizedBox(height: 16),
           statsAsync.when(
             data: (stats) => Row(

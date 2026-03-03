@@ -30,8 +30,11 @@ enum BusinessType {
   /// Check if this is specifically manufacturing (not pure distribution)
   bool get isManufacturing => this == BusinessType.manufacturing;
 
-  /// Entertainment/retail or corporation with entertainment operations
-  bool get isEntertainment => !isDistribution;
+  /// Service businesses (billiards, restaurant, hotel, cafe, retail)
+  bool get isService => !isDistribution;
+
+  /// Backward compatibility alias
+  bool get isEntertainment => isService;
 
   /// CEO-facing label
   String get ceoLabel {
