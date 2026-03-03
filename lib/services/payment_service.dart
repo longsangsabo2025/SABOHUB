@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/payment.dart';
-import '../models/session.dart';
+import '../business_types/entertainment/models/session.dart';
 
 /// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
 /// **EMPLOYEE KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
@@ -33,12 +33,12 @@ class PaymentService {
           .select('''
             *,
             table_sessions!inner(
-              billiards_tables!inner(
+              tables!inner(
                 company_id
               )
             )
           ''')
-          .eq('table_sessions.billiards_tables.company_id', cid)
+          .eq('table_sessions.tables.company_id', cid)
           .order('paid_at', ascending: false);
 
       return response.map<Payment>((data) => _mapToPayment(data)).toList();
@@ -57,12 +57,12 @@ class PaymentService {
           .select('''
             *,
             table_sessions!inner(
-              billiards_tables!inner(
+              tables!inner(
                 company_id
               )
             )
           ''')
-          .eq('table_sessions.billiards_tables.company_id', cid)
+          .eq('table_sessions.tables.company_id', cid)
           .eq('status', status.name)
           .order('paid_at', ascending: false);
 
@@ -210,7 +210,7 @@ class PaymentService {
           .from('table_sessions')
           .select('''
             *,
-            billiards_tables!inner(
+            tables!inner(
               name,
               company_id
             )
@@ -221,8 +221,8 @@ class PaymentService {
       final session = TableSession(
         id: sessionResponse['id'],
         tableId: sessionResponse['table_id'],
-        tableName: sessionResponse['billiards_tables']['name'],
-        companyId: sessionResponse['billiards_tables']['company_id'],
+        tableName: sessionResponse['tables']['name'],
+        companyId: sessionResponse['tables']['company_id'],
         startTime: DateTime.parse(sessionResponse['start_time']),
         endTime: sessionResponse['end_time'] != null 
             ? DateTime.parse(sessionResponse['end_time']) 
@@ -262,7 +262,7 @@ class PaymentService {
 
       // Update table status to available
       await _supabase
-          .from('billiards_tables')
+          .from('tables')
           .update({'status': 'available'})
           .eq('id', session.tableId);
 

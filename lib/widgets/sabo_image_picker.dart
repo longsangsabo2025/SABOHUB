@@ -500,7 +500,6 @@ class AvatarPicker extends StatefulWidget {
 }
 
 class _AvatarPickerState extends State<AvatarPicker> {
-  XFile? _selectedImage;
   Uint8List? _previewBytes;
 
   @override
@@ -621,7 +620,6 @@ class _AvatarPickerState extends State<AvatarPicker> {
     if (image != null) {
       final bytes = await image.readAsBytes();
       setState(() {
-        _selectedImage = image;
         _previewBytes = bytes;
       });
       widget.onImageSelected(image);
@@ -630,7 +628,6 @@ class _AvatarPickerState extends State<AvatarPicker> {
 
   void _removeImage() {
     setState(() {
-      _selectedImage = null;
       _previewBytes = null;
     });
     widget.onImageSelected(null);

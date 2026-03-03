@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_colors.dart';
+import '../../providers/auth_provider.dart';
+import '../../models/company.dart';
 
-/// CEO Company Overview Page
-/// Overview of all companies in the CEO's portfolio
+/// CEO Company Overview Page — REAL DATA from Supabase
+/// Shows all companies owned by the CEO with live stats
 class CEOCompanyOverviewPage extends ConsumerStatefulWidget {
   const CEOCompanyOverviewPage({super.key});
 
@@ -17,152 +21,148 @@ class _CEOCompanyOverviewPageState
     extends ConsumerState<CEOCompanyOverviewPage> {
   String _sortBy = 'revenue';
   String _filterBy = 'all';
+  bool _loading = true;
+  List<_CompanyStats> _companies = [];
+  final _fmt = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
 
-  // Mock data for companies
-  final List<CompanyData> _companies = [
-    CompanyData(
-      id: '1',
-      name: 'Quán Bida Diamond',
-      type: 'Billiards',
-      revenue: 125000000,
-      profit: 45000000,
-      employees: 25,
-      customers: 1200,
-      status: 'active',
-      growth: 12.5,
-    ),
-    CompanyData(
-      id: '2',
-      name: 'Nhà Hàng Royal',
-      type: 'Restaurant',
-      revenue: 85000000,
-      profit: 28000000,
-      employees: 35,
-      customers: 850,
-      status: 'active',
-      growth: 8.2,
-    ),
-    CompanyData(
-      id: '3',
-      name: 'Café Sunrise',
-      type: 'Cafe',
-      revenue: 45000000,
-      profit: 18000000,
-      employees: 15,
-      customers: 650,
-      status: 'active',
-      growth: 15.8,
-    ),
-    CompanyData(
-      id: '4',
-      name: 'Hotel Paradise',
-      type: 'Hotel',
-      revenue: 200000000,
-      profit: 65000000,
-      employees: 80,
-      customers: 2500,
-      status: 'active',
-      growth: 6.7,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadCompanies();
+  }
+
+  Future<void> _loadCompanies() async {
+    setState(() => _loading = true);
+    try {
+      final user = ref.read(authProvider).user;
+      if (user == null) return;
+
+      final client = Supabase.instance.client;
+
+      // Get companies via employee relationships (CEO role)
+      final empRecords = await client
+          .from('employees')
+          .select('company_id')
+          .eq('auth_user_id', user.id)
+          .eq('is_active', true);
+
+      final companyIds = (empRecords as List)
+          .map((e) => e['company_id'] as String)
+          .toSet()
+          .toList();
+
+      if (companyIds.isEmpty) {
+        setState(() {
+          _companies = [];
+          _loading = false;
+        });
+        return;
+      }
+
+      // Get company details
+      final companiesRaw = await client
+          .from('companies')
+          .select('*')
+          .inFilter('id', companyIds)
+          .isFilter('deleted_at', null)
+          .order('name');
+
+      final companies =
+          (companiesRaw as List).map((j) => Company.fromJson(j)).toList();
+
+      // Get stats for each company
+      final now = DateTime.now();
+      final firstDayOfMonth =
+          DateFormat('yyyy-MM-dd').format(DateTime(now.year, now.month, 1));
+
+      final statsList = <_CompanyStats>[];
+
+      for (final company in companies) {
+        final results = await Future.wait([
+          // Employee count
+          client
+              .from('employees')
+              .select('id')
+              .eq('company_id', company.id)
+              .eq('is_active', true),
+          // Monthly revenue (sales_orders)
+          client
+              .from('sales_orders')
+              .select('total')
+              .eq('company_id', company.id)
+              .gte('created_at', '${firstDayOfMonth}T00:00:00')
+              .inFilter('status', ['completed', 'delivered', 'confirmed']),
+          // Customer count
+          client
+              .from('customers')
+              .select('id')
+              .eq('company_id', company.id)
+              .eq('is_active', true),
+        ]);
+
+        final employees = (results[0] as List).length;
+        final orders = results[1] as List;
+        final customers = (results[2] as List).length;
+
+        double revenue = 0;
+        for (final o in orders) {
+          revenue += ((o['total'] ?? 0) as num).toDouble();
+        }
+
+        statsList.add(_CompanyStats(
+          company: company,
+          employeeCount: employees,
+          customerCount: customers,
+          monthlyRevenue: revenue,
+          orderCount: orders.length,
+        ));
+      }
+
+      setState(() {
+        _companies = statsList;
+        _loading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading companies: $e');
+      setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          _buildFilterBar(),
-          _buildStatsOverview(),
-          Expanded(child: _buildCompanyList()),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        title: const Text(
+          'Quản lý công ty',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: _loadCompanies,
+            icon: const Icon(Icons.refresh, color: Colors.black54),
+          ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Add new company
-        },
-        backgroundColor: AppTheme.primaryPurple,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: Colors.white,
-      title: const Text(
-        'Quản lý công ty',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-      ),
-      actions: [
-        IconButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Tìm kiếm trong công ty...'),
-                backgroundColor: Colors.blue,
-                duration: Duration(seconds: 2),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadCompanies,
+              child: Column(
+                children: [
+                  _buildFilterBar(),
+                  _buildStatsOverview(),
+                  Expanded(child: _buildCompanyList()),
+                ],
               ),
-            );
-          },
-          icon: const Icon(Icons.search, color: Colors.black54),
-        ),
-        IconButton(
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              builder: (context) => Container(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.edit),
-                      title: const Text('Chỉnh sửa công ty'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Đang mở trang chỉnh sửa...')),
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.share),
-                      title: const Text('Chia sẻ thông tin'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content:
-                                  Text('Đang chia sẻ thông tin công ty...')),
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.download),
-                      title: const Text('Xuất báo cáo'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Đang xuất báo cáo...')),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-          icon: const Icon(Icons.more_vert, color: Colors.black54),
-        ),
-      ],
+            ),
     );
   }
 
@@ -172,17 +172,11 @@ class _CEOCompanyOverviewPageState
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Expanded(
-            child: _buildFilterChip('Tất cả', 'all'),
-          ),
+          Expanded(child: _buildFilterChip('Tất cả', 'all')),
           const SizedBox(width: 8),
-          Expanded(
-            child: _buildFilterChip('Hoạt động', 'active'),
-          ),
+          Expanded(child: _buildFilterChip('Hoạt động', 'active')),
           const SizedBox(width: 8),
-          Expanded(
-            child: _buildFilterChip('Tạm dừng', 'inactive'),
-          ),
+          Expanded(child: _buildFilterChip('Tạm dừng', 'inactive')),
           const SizedBox(width: 16),
           _buildSortDropdown(),
         ],
@@ -193,15 +187,11 @@ class _CEOCompanyOverviewPageState
   Widget _buildFilterChip(String label, String value) {
     bool isSelected = _filterBy == value;
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _filterBy = value;
-        });
-      },
+      onTap: () => setState(() => _filterBy = value),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryPurple : Colors.grey.shade200,
+          color: isSelected ? AppColors.primary : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -228,23 +218,27 @@ class _CEOCompanyOverviewPageState
         value: _sortBy,
         underline: const SizedBox(),
         icon: const Icon(Icons.sort, size: 16),
+        isDense: true,
         style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
         items: const [
           DropdownMenuItem(value: 'revenue', child: Text('Doanh thu')),
-          DropdownMenuItem(value: 'profit', child: Text('Lợi nhuận')),
-          DropdownMenuItem(value: 'growth', child: Text('Tăng trưởng')),
+          DropdownMenuItem(value: 'employees', child: Text('Nhân viên')),
+          DropdownMenuItem(value: 'customers', child: Text('Khách hàng')),
           DropdownMenuItem(value: 'name', child: Text('Tên')),
         ],
-        onChanged: (value) {
-          setState(() {
-            _sortBy = value!;
-          });
-        },
+        onChanged: (value) => setState(() => _sortBy = value!),
       ),
     );
   }
 
   Widget _buildStatsOverview() {
+    final totalRevenue =
+        _companies.fold(0.0, (sum, c) => sum + c.monthlyRevenue);
+    final totalEmployees =
+        _companies.fold(0, (sum, c) => sum + c.employeeCount);
+    final totalCustomers =
+        _companies.fold(0, (sum, c) => sum + c.customerCount);
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16),
@@ -252,37 +246,37 @@ class _CEOCompanyOverviewPageState
         children: [
           Expanded(
             child: _buildStatCard(
-              'Tổng công ty',
+              'Công ty',
               '${_companies.length}',
               Icons.business,
-              AppTheme.primaryPurple,
+              AppColors.primary,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
               'Doanh thu',
-              '${(_companies.fold(0.0, (sum, c) => sum + c.revenue) / 1000000).toStringAsFixed(1)}M',
+              _shortCurrency(totalRevenue),
               Icons.attach_money,
-              const Color(0xFF4CAF50),
+              AppColors.success,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
               'Nhân viên',
-              '${_companies.fold(0, (sum, c) => sum + c.employees)}',
+              '$totalEmployees',
               Icons.people,
-              const Color(0xFF9C27B0),
+              AppColors.info,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: _buildStatCard(
               'Khách hàng',
-              '${_companies.fold(0, (sum, c) => sum + c.customers)}',
+              '$totalCustomers',
               Icons.person,
-              const Color(0xFFFF9800),
+              AppColors.warning,
             ),
           ),
         ],
@@ -305,17 +299,14 @@ class _CEOCompanyOverviewPageState
           Text(
             value,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -323,37 +314,59 @@ class _CEOCompanyOverviewPageState
   }
 
   Widget _buildCompanyList() {
-    List<CompanyData> filteredCompanies = _companies.where((company) {
+    var filtered = _companies.where((c) {
       if (_filterBy == 'all') return true;
-      return company.status == _filterBy;
+      if (_filterBy == 'active') return c.company.status == 'active';
+      return c.company.status != 'active';
     }).toList();
 
-    // Sort companies
-    filteredCompanies.sort((a, b) {
+    filtered.sort((a, b) {
       switch (_sortBy) {
         case 'revenue':
-          return b.revenue.compareTo(a.revenue);
-        case 'profit':
-          return b.profit.compareTo(a.profit);
-        case 'growth':
-          return b.growth.compareTo(a.growth);
+          return b.monthlyRevenue.compareTo(a.monthlyRevenue);
+        case 'employees':
+          return b.employeeCount.compareTo(a.employeeCount);
+        case 'customers':
+          return b.customerCount.compareTo(a.customerCount);
         case 'name':
-          return a.name.compareTo(b.name);
+          return a.company.name.compareTo(b.company.name);
         default:
           return 0;
       }
     });
 
+    if (filtered.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.business_outlined,
+                size: 64, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(
+              _filterBy == 'all'
+                  ? 'Chưa có công ty nào'
+                  : 'Không có công ty ${_filterBy == 'active' ? 'đang hoạt động' : 'tạm dừng'}',
+              style: TextStyle(color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: filteredCompanies.length,
-      itemBuilder: (context, index) {
-        return _buildCompanyCard(filteredCompanies[index]);
-      },
+      itemCount: filtered.length,
+      itemBuilder: (context, index) => _buildCompanyCard(filtered[index]),
     );
   }
 
-  Widget _buildCompanyCard(CompanyData company) {
+  Widget _buildCompanyCard(_CompanyStats stats) {
+    final company = stats.company;
+    final typeColor = _getTypeColor(company.type.name);
+    final typeIcon = _getTypeIcon(company.type.name);
+    final isActive = company.status == 'active';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -377,14 +390,10 @@ class _CEOCompanyOverviewPageState
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: _getTypeColor(company.type).withValues(alpha: 0.1),
+                  color: typeColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(24),
                 ),
-                child: Icon(
-                  _getTypeIcon(company.type),
-                  color: _getTypeColor(company.type),
-                  size: 24,
-                ),
+                child: Icon(typeIcon, color: typeColor, size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -400,7 +409,7 @@ class _CEOCompanyOverviewPageState
                       ),
                     ),
                     Text(
-                      company.type,
+                      company.type.label,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -410,19 +419,20 @@ class _CEOCompanyOverviewPageState
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: company.growth >= 0
-                      ? Colors.green.withValues(alpha: 0.1)
-                      : Colors.red.withValues(alpha: 0.1),
+                  color: isActive
+                      ? AppColors.success.withValues(alpha: 0.1)
+                      : Colors.grey.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${company.growth >= 0 ? '+' : ''}${company.growth.toStringAsFixed(1)}%',
+                  isActive ? 'Hoạt động' : 'Tạm dừng',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: company.growth >= 0 ? Colors.green : Colors.red,
+                    color: isActive ? AppColors.success : Colors.grey,
                   ),
                 ),
               ),
@@ -433,60 +443,52 @@ class _CEOCompanyOverviewPageState
             children: [
               Expanded(
                 child: _buildMetricItem(
-                  'Doanh thu',
-                  '${(company.revenue / 1000000).toStringAsFixed(1)}M',
+                  'Doanh thu tháng',
+                  _shortCurrency(stats.monthlyRevenue),
                   Icons.attach_money,
                 ),
               ),
               Expanded(
                 child: _buildMetricItem(
-                  'Lợi nhuận',
-                  '${(company.profit / 1000000).toStringAsFixed(1)}M',
-                  Icons.trending_up,
+                  'Đơn hàng',
+                  '${stats.orderCount}',
+                  Icons.receipt_long,
                 ),
               ),
               Expanded(
                 child: _buildMetricItem(
                   'Nhân viên',
-                  '${company.employees}',
+                  '${stats.employeeCount}',
                   Icons.people,
                 ),
               ),
               Expanded(
                 child: _buildMetricItem(
                   'Khách hàng',
-                  '${company.customers}',
+                  '${stats.customerCount}',
                   Icons.person,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    // View details
-                  },
-                  child: const Text('Chi tiết'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Quick actions
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryPurple,
-                    foregroundColor: Colors.white,
+          if (company.address.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.location_on, size: 14, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    company.address,
+                    style:
+                        TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  child: const Text('Quản lý'),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -500,32 +502,47 @@ class _CEOCompanyOverviewPageState
         Text(
           value,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
         ),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
+  String _shortCurrency(double amount) {
+    if (amount >= 1000000000) {
+      return '${(amount / 1000000000).toStringAsFixed(1)}B';
+    } else if (amount >= 1000000) {
+      return '${(amount / 1000000).toStringAsFixed(1)}M';
+    } else if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(0)}K';
+    }
+    return _fmt.format(amount);
+  }
+
   Color _getTypeColor(String type) {
     switch (type.toLowerCase()) {
+      case 'distribution':
+        return AppColors.primary;
+      case 'manufacturing':
+        return Colors.blue;
       case 'billiards':
-        return AppTheme.primaryPurple;
+        return Colors.purple;
       case 'restaurant':
-        return const Color(0xFF4CAF50);
+        return AppColors.success;
       case 'cafe':
-        return const Color(0xFF9C27B0);
+        return Colors.brown;
       case 'hotel':
-        return const Color(0xFFFF9800);
+        return AppColors.warning;
+      case 'retail':
+        return AppColors.info;
       default:
         return Colors.grey;
     }
@@ -533,6 +550,10 @@ class _CEOCompanyOverviewPageState
 
   IconData _getTypeIcon(String type) {
     switch (type.toLowerCase()) {
+      case 'distribution':
+        return Icons.local_shipping;
+      case 'manufacturing':
+        return Icons.precision_manufacturing;
       case 'billiards':
         return Icons.sports_bar;
       case 'restaurant':
@@ -541,33 +562,27 @@ class _CEOCompanyOverviewPageState
         return Icons.coffee;
       case 'hotel':
         return Icons.hotel;
+      case 'retail':
+        return Icons.store;
       default:
         return Icons.business;
     }
   }
 }
 
-/// Company Data Model
-class CompanyData {
-  final String id;
-  final String name;
-  final String type;
-  final double revenue;
-  final double profit;
-  final int employees;
-  final int customers;
-  final String status;
-  final double growth;
+/// Internal stats model combining Company with live metrics
+class _CompanyStats {
+  final Company company;
+  final int employeeCount;
+  final int customerCount;
+  final double monthlyRevenue;
+  final int orderCount;
 
-  CompanyData({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.revenue,
-    required this.profit,
-    required this.employees,
-    required this.customers,
-    required this.status,
-    required this.growth,
+  const _CompanyStats({
+    required this.company,
+    required this.employeeCount,
+    required this.customerCount,
+    required this.monthlyRevenue,
+    required this.orderCount,
   });
 }

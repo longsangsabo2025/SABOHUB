@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -705,8 +706,86 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
   }
 
   void _showAttendanceReport(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Chức năng báo cáo đang phát triển')),
+    final params = AttendanceQueryParams(
+      companyId: widget.companyId,
+      date: _selectedDate,
+    );
+    final statsAsync = ref.read(cachedAttendanceStatsProvider(params));
+    final dateStr = DateFormat('dd/MM/yyyy').format(_selectedDate);
+
+    statsAsync.when(
+      data: (stats) {
+        final report = 'Báo cáo chấm công - $dateStr\n'
+            'Công ty: ${widget.company.name}\n'
+            '---\n'
+            'Tổng nhân viên: ${stats.totalEmployees}\n'
+            'Có mặt: ${stats.presentCount}\n'
+            'Đi trễ: ${stats.lateCount}\n'
+            'Vắng mặt: ${stats.absentCount}\n'
+            'Nghỉ phép: ${stats.onLeaveCount}\n'
+            'Tỷ lệ: ${stats.attendanceRate.toStringAsFixed(1)}%';
+
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text('Báo cáo chấm công $dateStr'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildReportRow('Tổng nhân viên', '${stats.totalEmployees}'),
+                _buildReportRow('Có mặt', '${stats.presentCount}'),
+                _buildReportRow('Đi trễ', '${stats.lateCount}'),
+                _buildReportRow('Vắng mặt', '${stats.absentCount}'),
+                _buildReportRow('Nghỉ phép', '${stats.onLeaveCount}'),
+                const Divider(),
+                _buildReportRow(
+                  'Tỷ lệ chấm công',
+                  '${stats.attendanceRate.toStringAsFixed(1)}%',
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Đóng'),
+              ),
+              FilledButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: report));
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Đã sao chép báo cáo')),
+                  );
+                },
+                icon: const Icon(Icons.copy, size: 16),
+                label: const Text('Sao chép'),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đang tải dữ liệu...')),
+      ),
+      error: (_, __) => ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể tải dữ liệu chấm công')),
+      ),
+    );
+  }
+
+  Widget _buildReportRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 14)),
+          Text(value,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        ],
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/company.dart';
@@ -18,7 +19,7 @@ import '../ceo/company/tasks_tab.dart';
 
 /// Company Info Provider for Manager
 final managerCompanyInfoProvider =
-    FutureProvider.family<Company?, String>((ref, id) async {
+    FutureProvider.autoDispose.family<Company?, String>((ref, id) async {
   ref.keepAlive();
   final service = ref.watch(companyServiceProvider);
   return await service.getCompanyById(id);
@@ -241,8 +242,30 @@ class _ManagerCompanyInfoPageState
       case 3:
         return DocumentsTab(company: company);
       case 4:
-        return const Center(
-          child: Text('Trợ lý AI - Coming soon'),
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Icon(Icons.smart_toy, size: 64, color: Colors.blue.shade200),
+              const SizedBox(height: 16),
+              const Text('Trợ lý AI', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(
+                'Hỏi AI về doanh thu, tồn kho, công nợ, nhân sự.\nTính năng đang được phát triển và sẽ ra mắt sớm.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 8,
+                children: [
+                  Chip(label: const Text('Doanh thu hôm nay?'), avatar: const Icon(Icons.trending_up, size: 16)),
+                  Chip(label: const Text('Top khách hàng'), avatar: const Icon(Icons.people, size: 16)),
+                  Chip(label: const Text('Tồn kho thấp'), avatar: const Icon(Icons.inventory, size: 16)),
+                ],
+              ),
+            ],
+          ),
         );
       case 5:
         return AttendanceTab(company: company, companyId: widget.companyId);
@@ -309,7 +332,7 @@ class _ManagerCompanyInfoPageState
                   children: [
                     Icon(
                       enabledIcons[index],
-                      color: isActive ? const Color(0xFF3B82F6) : Colors.grey,
+                      color: isActive ? AppColors.info : Colors.grey,
                       size: 24,
                     ),
                     const SizedBox(height: 4),
@@ -317,7 +340,7 @@ class _ManagerCompanyInfoPageState
                       tabNames[index],
                       style: TextStyle(
                         fontSize: 11,
-                        color: isActive ? const Color(0xFF3B82F6) : Colors.grey,
+                        color: isActive ? AppColors.info : Colors.grey,
                         fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),

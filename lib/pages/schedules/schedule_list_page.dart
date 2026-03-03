@@ -104,10 +104,22 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
           ),
           // Calendar view
           IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tính năng đang phát triển')),
+            onPressed: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+                locale: const Locale('vi', 'VN'),
               );
+              if (picked != null && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Xem lịch ngày ${picked.day}/${picked.month}/${picked.year}'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
             },
             icon: const Icon(Icons.calendar_month),
             tooltip: 'Xem lịch',

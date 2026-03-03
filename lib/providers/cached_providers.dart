@@ -714,7 +714,7 @@ class DriverDeliveryCache {
       orderNumber: order?['order_number'] as String?,
       totalAmount: (order?['total'] as num?)?.toDouble() ?? (json['total_amount'] as num?)?.toDouble(),
       customerName: customer?['name'] as String?,
-      customerAddress: customer?['address'] as String?,
+      customerAddress: json['delivery_address'] as String? ?? order?['delivery_address'] as String? ?? customer?['address'] as String?,
       customerPhone: customer?['phone'] as String?,
       latitude: (customer?['lat'] as num?)?.toDouble(),
       longitude: (customer?['lng'] as num?)?.toDouble(),
@@ -984,7 +984,7 @@ class WarehouseOrderItemCache {
     return WarehouseOrderItemCache(
       id: json['id'] as String,
       productId: json['product_id'] as String,
-      productName: product?['name'] as String? ?? 'Unknown',
+      productName: product?['name'] as String? ?? json['product_name'] as String? ?? 'Unknown',
       sku: product?['sku'] as String?,
       unit: product?['unit'] as String? ?? 'pcs',
       quantity: json['quantity'] as int? ?? 0,

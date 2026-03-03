@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/task.dart';
+import '../utils/app_logger.dart';
 // import 'notification_service.dart'; // Commented out for now
 
 /// Task Service
@@ -75,10 +76,10 @@ class TaskService {
 
   /// Create a new task
   Future<Task> createTask(Task task) async {
-    print('🔍 DEBUG: Starting task creation...');
-    print('🔍 Task title: ${task.title}');
-    print('🔍 Task assigned_to: ${task.assignedTo}');
-    print('🔍 Task created_by: ${task.createdBy}');
+    AppLogger.api('🔍 DEBUG: Starting task creation...');
+    AppLogger.data('🔍 Task title: ${task.title}');
+    AppLogger.data('🔍 Task assigned_to: ${task.assignedTo}');
+    AppLogger.data('🔍 Task created_by: ${task.createdBy}');
     
     try {
       final insertData = {
@@ -100,8 +101,8 @@ class TaskService {
         'progress': 0,
       };
       
-      print('🔍 DEBUG: Insert data prepared');
-      print('🔍 DEBUG: Calling .from("tasks").insert()...');
+      AppLogger.api('🔍 DEBUG: Insert data prepared');
+      AppLogger.api('🔍 DEBUG: Calling .from("tasks").insert()...');
       
       final response = await _supabase
           .from('tasks')
@@ -109,10 +110,10 @@ class TaskService {
           .select()
           .single();
           
-      print('🔍 DEBUG: Insert successful! Response: $response');
+      AppLogger.api('🔍 DEBUG: Insert successful! Response: $response');
 
       final createdTask = _taskFromJson(response);
-      print('🔍 DEBUG: Task parsed successfully: ${createdTask.id}');
+      AppLogger.data('🔍 DEBUG: Task parsed successfully: ${createdTask.id}');
 
       // Send notification to assigned user (commented out for now)
       // if (task.assignedTo != null) {
@@ -126,16 +127,15 @@ class TaskService {
 
       return createdTask;
     } catch (e) {
-      print('❌ DEBUG: Exception caught!');
-      print('❌ Exception type: ${e.runtimeType}');
-      print('❌ Exception message: $e');
-      print('❌ Stack trace: ${StackTrace.current}');
+      AppLogger.error('❌ DEBUG: Exception caught!', e, StackTrace.current);
+      AppLogger.error('❌ Exception type: ${e.runtimeType}');
+      AppLogger.error('❌ Exception message: $e');
       
       // Check if it's PostgREST specific error
       if (e.toString().contains('PGRST')) {
-        print('❌ POSTGREST ERROR DETECTED!');
-        print('❌ This is a PostgREST schema cache issue');
-        print('❌ Error suggests: ${e.toString().split('hint:').last}');
+        AppLogger.error('❌ POSTGREST ERROR DETECTED!');
+        AppLogger.error('❌ This is a PostgREST schema cache issue');
+        AppLogger.error('❌ Error suggests: ${e.toString().split('hint:').last}');
       }
       
       throw Exception('Failed to create task: $e');
@@ -246,7 +246,7 @@ class TaskService {
   /// Get all tasks for a company
   Future<List<Task>> getTasksByCompany(String companyId) async {
     try {
-      print('🔍 [TaskService] Fetching tasks for company: $companyId');
+      AppLogger.api('🔍 [TaskService] Fetching tasks for company: $companyId');
       
       // NOTE: Cannot use JOIN without foreign keys
       // Name fields should be populated by database triggers or app logic
@@ -257,24 +257,23 @@ class TaskService {
           .isFilter('deleted_at', null) // ✅ CRITICAL: Filter out soft deleted tasks
           .order('created_at', ascending: false);
 
-      print('📦 [TaskService] Raw response: ${response}');
-      print('📊 [TaskService] Response length: ${(response as List).length}');
+      AppLogger.data('📦 [TaskService] Raw response: $response');
+      AppLogger.data('📊 [TaskService] Response length: ${(response as List).length}');
       
       if ((response as List).isEmpty) {
-        print('⚠️ [TaskService] No tasks found for company $companyId');
+        AppLogger.warn('⚠️ [TaskService] No tasks found for company $companyId');
         return [];
       }
       
       final tasks = (response as List).map((json) {
-        print('🔄 [TaskService] Parsing task: ${json['id']} - ${json['title']}');
+        AppLogger.data('🔄 [TaskService] Parsing task: ${json['id']} - ${json['title']}');
         return _taskFromJson(json);
       }).toList();
       
-      print('✅ [TaskService] Successfully parsed ${tasks.length} tasks');
+      AppLogger.info('✅ [TaskService] Successfully parsed ${tasks.length} tasks');
       return tasks;
     } catch (e, stackTrace) {
-      print('❌ [TaskService] Error fetching tasks: $e');
-      print('📍 [TaskService] Stack trace: $stackTrace');
+      AppLogger.error('❌ [TaskService] Error fetching tasks', e, stackTrace);
       throw Exception('Failed to fetch tasks by company: $e');
     }
   }

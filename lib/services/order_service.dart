@@ -1,5 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../core/services/base_service.dart';
 import '../models/order.dart';
 
 /// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
@@ -8,47 +7,48 @@ import '../models/order.dart';
 /// - ❌ KHÔNG ĐƯỢC dùng `_supabase.auth.currentUser`
 /// - ✅ Caller PHẢI truyền employeeId từ authProvider
 
-/// Order Service
+/// Order Service (Entertainment)
 /// Handles all order-related database operations
-class OrderService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+class OrderService extends BaseService {
 
   /// Get all orders
   Future<List<Order>> getAllOrders({String? companyId, String? tableId}) async {
-    try {
-      var query = _supabase.from('orders').select('*');
+    return safeCall(
+      operation: 'getAllOrders',
+      action: () async {
+        var query = client.from('orders').select('*');
 
-      if (companyId != null) {
-        query = query.eq('company_id', companyId);
-      }
-      if (tableId != null) {
-        query = query.eq('table_id', tableId);
-      }
+        if (companyId != null) {
+          query = query.eq('company_id', companyId);
+        }
+        if (tableId != null) {
+          query = query.eq('table_id', tableId);
+        }
 
-      final response = await query.order('created_at', ascending: false);
-      return (response as List).map((json) => _orderFromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Failed to fetch orders: $e');
-    }
+        final response = await query.order('created_at', ascending: false);
+        return (response as List).map((json) => _orderFromJson(json)).toList();
+      },
+    );
   }
 
   /// Get orders by status
   Future<List<Order>> getOrdersByStatus(OrderStatus status,
       {String? companyId}) async {
-    try {
-      var query = _supabase.from('orders').select('*');
+    return safeCall(
+      operation: 'getOrdersByStatus',
+      action: () async {
+        var query = client.from('orders').select('*');
 
-      if (companyId != null) {
-        query = query.eq('company_id', companyId);
-      }
+        if (companyId != null) {
+          query = query.eq('company_id', companyId);
+        }
 
-      query = query.eq('status', status.name);
-      final response = await query.order('created_at', ascending: false);
+        query = query.eq('status', status.name);
+        final response = await query.order('created_at', ascending: false);
 
-      return (response as List).map((json) => _orderFromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Failed to fetch orders by status: $e');
-    }
+        return (response as List).map((json) => _orderFromJson(json)).toList();
+      },
+    );
   }
 
   /// Create new order
@@ -62,86 +62,90 @@ class OrderService {
     String? notes,
     String? employeeId,
   }) async {
-    try {
-      final orderData = {
-        'id': null, // Auto-generated UUID
-        'company_id': companyId,
-        'table_id': tableId,
-        'table_name': tableName,
-        'status': OrderStatus.pending.name,
-        'customer_name': customerName,
-        'notes': notes,
-        'created_by': employeeId,
-        'created_at': DateTime.now().toIso8601String(),
-      };
+    return safeCall(
+      operation: 'createOrder',
+      action: () async {
+        final orderData = {
+          'id': null, // Auto-generated UUID
+          'company_id': companyId,
+          'table_id': tableId,
+          'table_name': tableName,
+          'status': OrderStatus.pending.name,
+          'customer_name': customerName,
+          'notes': notes,
+          'created_by': employeeId,
+          'created_at': DateTime.now().toIso8601String(),
+        };
 
-      // Insert order header
-      final orderResponse =
-          await _supabase.from('orders').insert(orderData).select().single();
+        // Insert order header
+        final orderResponse =
+            await client.from('orders').insert(orderData).select().single();
 
-      final orderId = orderResponse['id'] as String;
+        final orderId = orderResponse['id'] as String;
 
-      // Insert order items
-      final orderItemsData = items.map((item) => {
-            'order_id': orderId,
-            'menu_item_id': item.menuItemId,
-            'menu_item_name': item.menuItemName,
-            'quantity': item.quantity,
-            'unit_price': item.price,
-            'total_price': item.totalPrice,
-            'notes': item.notes,
-          });
+        // Insert order items
+        final orderItemsData = items.map((item) => {
+              'order_id': orderId,
+              'menu_item_id': item.menuItemId,
+              'menu_item_name': item.menuItemName,
+              'quantity': item.quantity,
+              'unit_price': item.price,
+              'total_price': item.totalPrice,
+              'notes': item.notes,
+            });
 
-      await _supabase.from('order_items').insert(orderItemsData.toList());
+        await client.from('order_items').insert(orderItemsData.toList());
 
-      return _orderFromJson(orderResponse);
-    } catch (e) {
-      throw Exception('Failed to create order: $e');
-    }
+        return _orderFromJson(orderResponse);
+      },
+    );
   }
 
   /// Update order status
   Future<Order> updateOrderStatus(String orderId, OrderStatus status) async {
-    try {
-      final response = await _supabase
-          .from('orders')
-          .update({'status': status.name, 'updated_at': DateTime.now().toIso8601String()})
-          .eq('id', orderId)
-          .select()
-          .single();
+    return safeCall(
+      operation: 'updateOrderStatus',
+      action: () async {
+        final response = await client
+            .from('orders')
+            .update({'status': status.name, 'updated_at': DateTime.now().toIso8601String()})
+            .eq('id', orderId)
+            .select()
+            .single();
 
-      return _orderFromJson(response);
-    } catch (e) {
-      throw Exception('Failed to update order status: $e');
-    }
+        return _orderFromJson(response);
+      },
+    );
   }
 
   /// Delete order
   Future<void> deleteOrder(String orderId) async {
-    try {
-      // Delete order items first
-      await _supabase.from('order_items').delete().eq('order_id', orderId);
-      
-      // Then delete order
-      await _supabase.from('orders').delete().eq('id', orderId);
-    } catch (e) {
-      throw Exception('Failed to delete order: $e');
-    }
+    return safeCall(
+      operation: 'deleteOrder',
+      action: () async {
+        // Delete order items first
+        await client.from('order_items').delete().eq('order_id', orderId);
+        
+        // Then delete order
+        await client.from('orders').delete().eq('id', orderId);
+      },
+    );
   }
 
   /// Get order details with items
   Future<Order?> getOrderDetails(String orderId) async {
-    try {
-      final response = await _supabase
-          .from('orders')
-          .select('*, order_items(*)')
-          .eq('id', orderId)
-          .single();
+    return safeCall(
+      operation: 'getOrderDetails',
+      action: () async {
+        final response = await client
+            .from('orders')
+            .select('*, order_items(*)')
+            .eq('id', orderId)
+            .single();
 
-      return _orderFromJson(response);
-    } catch (e) {
-      return null;
-    }
+        return _orderFromJson(response);
+      },
+    );
   }
 
   /// Convert JSON to Order model

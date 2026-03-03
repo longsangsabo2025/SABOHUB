@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../features/documents/models/document.dart';
 import '../features/documents/repositories/documents_repository.dart';
 import '../features/documents/services/google_drive_service.dart';
+import '../utils/app_logger.dart';
 
 /// Provider for Supabase client
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
@@ -71,7 +71,7 @@ class DocumentsNotifier extends Notifier<DocumentsState> {
         isSignedInToDrive: _driveService.isSignedIn,
       );
     } catch (e) {
-      debugPrint('❌ Error initializing Google Drive: $e');
+      AppLogger.error('Error initializing Google Drive', e);
     }
   }
 
@@ -100,7 +100,7 @@ class DocumentsNotifier extends Notifier<DocumentsState> {
       await _driveService.signOut();
       state = state.copyWith(isSignedInToDrive: false);
     } catch (e) {
-      debugPrint('❌ Error signing out: $e');
+      AppLogger.error('Error signing out', e);
     }
   }
 
@@ -337,7 +337,7 @@ final documentsProvider = NotifierProvider<DocumentsNotifier, DocumentsState>(
 );
 
 /// Stream provider for real-time documents
-final documentsStreamProvider = StreamProvider.family<List<Document>, String>(
+final documentsStreamProvider = StreamProvider.autoDispose.family<List<Document>, String>(
   (ref, companyId) {
     final repository = ref.watch(documentsRepositoryProvider);
     return repository.streamDocuments(companyId);

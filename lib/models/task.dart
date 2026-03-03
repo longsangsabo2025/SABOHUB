@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../core/theme/app_colors.dart';
 
 enum TaskPriority {
   low('Thấp', Color(0xFF6B7280)),
-  medium('Trung bình', Color(0xFF3B82F6)),
-  high('Cao', Color(0xFFF59E0B)),
-  urgent('Khẩn cấp', Color(0xFFEF4444));
+  medium('Trung bình', AppColors.info),
+  high('Cao', AppColors.warning),
+  urgent('Khẩn cấp', AppColors.error);
 
   final String label;
   final Color color;
@@ -13,9 +14,9 @@ enum TaskPriority {
 
 enum TaskStatus {
   todo('Cần làm', Color(0xFF6B7280)),
-  inProgress('Đang làm', Color(0xFF3B82F6)),
-  completed('Hoàn thành', Color(0xFF10B981)),
-  cancelled('Đã hủy', Color(0xFFEF4444));
+  inProgress('Đang làm', AppColors.info),
+  completed('Hoàn thành', AppColors.success),
+  cancelled('Đã hủy', AppColors.error);
 
   final String label;
   final Color color;
@@ -53,10 +54,10 @@ enum TaskStatus {
 }
 
 enum TaskCategory {
-  operations('Vận hành', Color(0xFF3B82F6)),
-  maintenance('Bảo trì', Color(0xFFF59E0B)),
-  inventory('Kho hàng', Color(0xFF8B5CF6)),
-  customerService('Khách hàng', Color(0xFF10B981)),
+  operations('Vận hành', AppColors.info),
+  maintenance('Bảo trì', AppColors.warning),
+  inventory('Kho hàng', AppColors.primary),
+  customerService('Khách hàng', AppColors.success),
   other('Khác', Color(0xFF6B7280));
 
   final String label;
@@ -66,10 +67,10 @@ enum TaskCategory {
 
 enum TaskRecurrence {
   none('Không lặp lại', Icons.event_note, Color(0xFF6B7280)),
-  daily('Hằng ngày', Icons.today, Color(0xFF10B981)),
-  weekly('Hằng tuần', Icons.date_range, Color(0xFF3B82F6)),
-  monthly('Hằng tháng', Icons.calendar_month, Color(0xFF8B5CF6)),
-  adhoc('Đột xuất', Icons.flash_on, Color(0xFFF59E0B)),
+  daily('Hằng ngày', Icons.today, AppColors.success),
+  weekly('Hằng tuần', Icons.date_range, AppColors.info),
+  monthly('Hằng tháng', Icons.calendar_month, AppColors.primary),
+  adhoc('Đột xuất', Icons.flash_on, AppColors.warning),
   project('Dự án', Icons.work, Color(0xFF06B6D4));
 
   final String label;

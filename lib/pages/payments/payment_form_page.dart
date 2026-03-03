@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/odori_providers.dart';
+import '../../business_types/distribution/providers/odori_providers.dart';
 
 class PaymentFormPage extends ConsumerStatefulWidget {
   const PaymentFormPage({super.key});

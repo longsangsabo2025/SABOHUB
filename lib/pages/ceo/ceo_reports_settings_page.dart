@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../providers/auth_provider.dart';
 
-/// CEO Reports Page
-/// Generate and view comprehensive business reports
+/// CEO Reports Page — Real aggregated data from Supabase
 class CEOReportsPage extends ConsumerStatefulWidget {
   const CEOReportsPage({super.key});
 
@@ -15,193 +17,224 @@ class CEOReportsPage extends ConsumerStatefulWidget {
 
 class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
   String _selectedReportType = 'financial';
+  bool _isLoading = true;
+  final _currencyFmt = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
+
+  // Real aggregated data
+  Map<String, dynamic> _financialData = {};
+  Map<String, dynamic> _operationsData = {};
+  Map<String, dynamic> _hrData = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReportData();
+  }
+
+  Future<void> _loadReportData() async {
+    try {
+      final user = ref.read(authProvider).user;
+      if (user == null) return;
+
+      final supabase = Supabase.instance.client;
+
+      // Get company IDs for this CEO
+      final companies = await supabase
+          .from('companies')
+          .select('id, name')
+          .eq('owner_id', user.id)
+          .limit(50);
+      final companyIds =
+          (companies as List).map((c) => c['id'] as String).toList();
+
+      if (companyIds.isEmpty) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      final now = DateTime.now();
+      final thisMonthStart = DateTime(now.year, now.month, 1);
+      final lastMonthStart = DateTime(now.year, now.month - 1, 1);
+      final thisMonthStr = thisMonthStart.toIso8601String().split('T')[0];
+      final lastMonthStr = lastMonthStart.toIso8601String().split('T')[0];
+
+      // Parallel queries
+      final results = await Future.wait([
+        // 0. This month orders
+        supabase
+            .from('sales_orders')
+            .select('id, total, status, payment_status')
+            .inFilter('company_id', companyIds)
+            .gte('order_date', thisMonthStr)
+            .limit(1000),
+        // 1. Last month orders
+        supabase
+            .from('sales_orders')
+            .select('id, total, status')
+            .inFilter('company_id', companyIds)
+            .gte('order_date', lastMonthStr)
+            .lt('order_date', thisMonthStr)
+            .limit(1000),
+        // 2. Active employees
+        supabase
+            .from('employees')
+            .select('id, role, branch_id')
+            .inFilter('company_id', companyIds)
+            .eq('is_active', true)
+            .limit(500),
+        // 3. Active customers
+        supabase
+            .from('customers')
+            .select('id, total_debt, status')
+            .inFilter('company_id', companyIds)
+            .eq('status', 'active')
+            .limit(1000),
+        // 4. This month deliveries
+        supabase
+            .from('deliveries')
+            .select('id, status')
+            .inFilter('company_id', companyIds)
+            .gte('created_at', thisMonthStr)
+            .limit(1000),
+        // 5. Branches
+        supabase
+            .from('branches')
+            .select('id')
+            .inFilter('company_id', companyIds)
+            .eq('is_active', true)
+            .limit(100),
+        // 6. This month payments
+        supabase
+            .from('customer_payments')
+            .select('id, amount')
+            .inFilter('company_id', companyIds)
+            .gte('payment_date', thisMonthStr)
+            .limit(1000),
+      ]);
+
+      final thisMonthOrders = results[0] as List;
+      final lastMonthOrders = results[1] as List;
+      final employees = results[2] as List;
+      final customers = results[3] as List;
+      final deliveries = results[4] as List;
+      final branches = results[5] as List;
+      final payments = results[6] as List;
+
+      // --- FINANCIAL ---
+      double thisRevenue = 0;
+      double lastRevenue = 0;
+      int paidOrders = 0;
+      int unpaidOrders = 0;
+      for (final o in thisMonthOrders) {
+        final total = ((o['total'] ?? 0) as num).toDouble();
+        thisRevenue += total;
+        if (o['payment_status'] == 'paid') {
+          paidOrders++;
+        } else {
+          unpaidOrders++;
+        }
+      }
+      for (final o in lastMonthOrders) {
+        lastRevenue += ((o['total'] ?? 0) as num).toDouble();
+      }
+      double totalDebt = 0;
+      for (final c in customers) {
+        totalDebt += ((c['total_debt'] ?? 0) as num).toDouble();
+      }
+      double totalPayments = 0;
+      for (final p in payments) {
+        totalPayments += ((p['amount'] ?? 0) as num).toDouble();
+      }
+      final revenueGrowth = lastRevenue > 0
+          ? ((thisRevenue - lastRevenue) / lastRevenue * 100)
+          : 0.0;
+
+      _financialData = {
+        'thisRevenue': thisRevenue,
+        'lastRevenue': lastRevenue,
+        'revenueGrowth': revenueGrowth,
+        'totalOrders': thisMonthOrders.length,
+        'paidOrders': paidOrders,
+        'unpaidOrders': unpaidOrders,
+        'totalDebt': totalDebt,
+        'totalPayments': totalPayments,
+      };
+
+      // --- OPERATIONS ---
+      int completedDeliveries = 0;
+      int pendingDeliveries = 0;
+      for (final d in deliveries) {
+        if (d['status'] == 'completed') {
+          completedDeliveries++;
+        } else {
+          pendingDeliveries++;
+        }
+      }
+      final deliveryRate = deliveries.isNotEmpty
+          ? (completedDeliveries / deliveries.length * 100)
+          : 0.0;
+
+      _operationsData = {
+        'totalCustomers': customers.length,
+        'totalBranches': branches.length,
+        'totalDeliveries': deliveries.length,
+        'completedDeliveries': completedDeliveries,
+        'pendingDeliveries': pendingDeliveries,
+        'deliveryRate': deliveryRate,
+        'totalOrders': thisMonthOrders.length,
+      };
+
+      // --- HR ---
+      final roleCount = <String, int>{};
+      for (final e in employees) {
+        final role = e['role'] as String? ?? 'staff';
+        roleCount[role] = (roleCount[role] ?? 0) + 1;
+      }
+
+      _hrData = {
+        'totalEmployees': employees.length,
+        'roleCount': roleCount,
+        'totalCompanies': companyIds.length,
+      };
+
+      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      debugPrint('❌ CEO Reports load error: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: _buildAppBar(),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Báo cáo',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              setState(() => _isLoading = true);
+              _loadReportData();
+            },
+            icon: const Icon(Icons.refresh, color: Colors.black54),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           _buildReportTypeSelector(),
-          Expanded(child: _buildReportsList()),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildReportContent(),
+          ),
         ],
       ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: Colors.white,
-      title: const Text(
-        'Báo cáo',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-      ),
-      actions: [
-        IconButton(
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              builder: (context) => Container(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Lọc báo cáo',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ListTile(
-                      leading: const Icon(Icons.calendar_today),
-                      title: const Text('Theo thời gian'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Chọn khoảng thời gian')),
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.business),
-                      title: const Text('Theo công ty'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Chọn công ty')),
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.people),
-                      title: const Text('Theo bộ phận'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Chọn bộ phận')),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-          icon: const Icon(Icons.filter_list, color: Colors.black54),
-        ),
-        IconButton(
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              builder: (context) => Container(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Cài đặt báo cáo',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SwitchListTile(
-                      title: const Text('Tự động tạo báo cáo'),
-                      subtitle: const Text('Tạo báo cáo định kỳ hàng tuần'),
-                      value: true,
-                      onChanged: (value) {},
-                    ),
-                    SwitchListTile(
-                      title: const Text('Gửi email thông báo'),
-                      subtitle: const Text('Nhận thông báo khi có báo cáo mới'),
-                      value: false,
-                      onChanged: (value) {},
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.format_list_bulleted),
-                      title: const Text('Định dạng mặc định'),
-                      trailing: const Text('PDF'),
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          builder: (context) => Container(
-                            padding: const EdgeInsets.symmetric(vertical: 20),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ListTile(
-                                  leading: const Icon(Icons.picture_as_pdf),
-                                  title: const Text('PDF'),
-                                  trailing: const Icon(Icons.check,
-                                      color: Colors.green),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              'Định dạng PDF đã được chọn')),
-                                    );
-                                  },
-                                ),
-                                ListTile(
-                                  leading: const Icon(Icons.table_chart),
-                                  title: const Text('Excel'),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              'Định dạng Excel đã được chọn')),
-                                    );
-                                  },
-                                ),
-                                ListTile(
-                                  leading: const Icon(Icons.description),
-                                  title: const Text('Word'),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              'Định dạng Word đã được chọn')),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-          icon: const Icon(Icons.settings, color: Colors.black54),
-        ),
-      ],
     );
   }
 
@@ -228,20 +261,15 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFF59E0B) : Colors.white,
+            color: isSelected ? AppColors.warning : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color:
-                  isSelected ? const Color(0xFFF59E0B) : Colors.grey.shade300,
+              color: isSelected ? AppColors.warning : Colors.grey.shade300,
             ),
           ),
           child: Column(
             children: [
-              Icon(
-                icon,
-                color: isSelected ? Colors.white : Colors.grey.shade600,
-                size: 20,
-              ),
+              Icon(icon, color: isSelected ? Colors.white : Colors.grey.shade600, size: 20),
               const SizedBox(height: 4),
               Text(
                 label,
@@ -258,327 +286,259 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
     );
   }
 
-  Widget _buildReportsList() {
-    final reports = _getReportsForType(_selectedReportType);
-    return ListView.builder(
+  Widget _buildReportContent() {
+    switch (_selectedReportType) {
+      case 'financial':
+        return _buildFinancialReport();
+      case 'operations':
+        return _buildOperationsReport();
+      case 'hr':
+        return _buildHRReport();
+      default:
+        return _buildFinancialReport();
+    }
+  }
+
+  // ──────────────── FINANCIAL REPORT ────────────────
+  Widget _buildFinancialReport() {
+    final thisRevenue = (_financialData['thisRevenue'] as num?)?.toDouble() ?? 0;
+    final lastRevenue = (_financialData['lastRevenue'] as num?)?.toDouble() ?? 0;
+    final growth = (_financialData['revenueGrowth'] as num?)?.toDouble() ?? 0;
+    final totalOrders = _financialData['totalOrders'] ?? 0;
+    final paidOrders = _financialData['paidOrders'] ?? 0;
+    final unpaidOrders = _financialData['unpaidOrders'] ?? 0;
+    final totalDebt = (_financialData['totalDebt'] as num?)?.toDouble() ?? 0;
+    final totalPayments = (_financialData['totalPayments'] as num?)?.toDouble() ?? 0;
+
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: reports.length,
-      itemBuilder: (context, index) => _buildReportCard(reports[index]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Doanh thu tháng ${DateFormat('MM/yyyy').format(DateTime.now())}'),
+          _buildStatRow([
+            _buildStatCard('Doanh thu', _currencyFmt.format(thisRevenue), AppColors.success,
+                subtitle: growth >= 0
+                    ? '+${growth.toStringAsFixed(1)}% vs tháng trước'
+                    : '${growth.toStringAsFixed(1)}% vs tháng trước',
+                subtitleColor: growth >= 0 ? Colors.green : Colors.red),
+            _buildStatCard('Tháng trước', _currencyFmt.format(lastRevenue), Colors.grey),
+          ]),
+          const SizedBox(height: 16),
+          _buildSectionHeader('Đơn hàng'),
+          _buildStatRow([
+            _buildStatCard('Tổng đơn', '$totalOrders', AppColors.info),
+            _buildStatCard('Đã thanh toán', '$paidOrders', AppColors.success),
+            _buildStatCard('Chưa TT', '$unpaidOrders', AppColors.warning),
+          ]),
+          const SizedBox(height: 16),
+          _buildSectionHeader('Công nợ & Thu tiền'),
+          _buildStatRow([
+            _buildStatCard('Tổng nợ KH', _currencyFmt.format(totalDebt), AppColors.error),
+            _buildStatCard('Đã thu tháng này', _currencyFmt.format(totalPayments), AppColors.success),
+          ]),
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 
-  Widget _buildReportCard(Map<String, dynamic> report) {
+  // ──────────────── OPERATIONS REPORT ────────────────
+  Widget _buildOperationsReport() {
+    final totalCustomers = _operationsData['totalCustomers'] ?? 0;
+    final totalBranches = _operationsData['totalBranches'] ?? 0;
+    final totalDeliveries = _operationsData['totalDeliveries'] ?? 0;
+    final completedDel = _operationsData['completedDeliveries'] ?? 0;
+    final pendingDel = _operationsData['pendingDeliveries'] ?? 0;
+    final deliveryRate = (_operationsData['deliveryRate'] as num?)?.toDouble() ?? 0;
+    final totalOrders = _operationsData['totalOrders'] ?? 0;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Tổng quan vận hành'),
+          _buildStatRow([
+            _buildStatCard('Khách hàng', '$totalCustomers', AppColors.info),
+            _buildStatCard('Chi nhánh', '$totalBranches', AppColors.primary),
+            _buildStatCard('Đơn hàng', '$totalOrders', AppColors.warning),
+          ]),
+          const SizedBox(height: 16),
+          _buildSectionHeader('Giao hàng tháng này'),
+          _buildStatRow([
+            _buildStatCard('Tổng giao', '$totalDeliveries', AppColors.info),
+            _buildStatCard('Hoàn thành', '$completedDel', AppColors.success),
+            _buildStatCard('Đang xử lý', '$pendingDel', AppColors.warning),
+          ]),
+          const SizedBox(height: 12),
+          _buildProgressBar('Tỷ lệ giao thành công', deliveryRate, AppColors.success),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  // ──────────────── HR REPORT ────────────────
+  Widget _buildHRReport() {
+    final totalEmployees = _hrData['totalEmployees'] ?? 0;
+    final roleCount = _hrData['roleCount'] as Map<String, int>? ?? {};
+    final totalCompanies = _hrData['totalCompanies'] ?? 0;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Tổng quan nhân sự'),
+          _buildStatRow([
+            _buildStatCard('Tổng NV', '$totalEmployees', AppColors.primary),
+            _buildStatCard('Công ty', '$totalCompanies', AppColors.info),
+          ]),
+          const SizedBox(height: 16),
+          _buildSectionHeader('Phân bổ theo vai trò'),
+          ...roleCount.entries.map((e) => _buildRoleRow(e.key, e.value, totalEmployees)),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  // ──────────────── SHARED WIDGETS ────────────────
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+    );
+  }
+
+  Widget _buildStatRow(List<Widget> children) {
+    return Row(
+      children: children
+          .map((c) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: c)))
+          .toList(),
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, Color color,
+      {String? subtitle, Color? subtitleColor}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(value,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(subtitle,
+                style: TextStyle(fontSize: 10, color: subtitleColor ?? Colors.grey.shade500)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressBar(String label, double percent, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              Text('${percent.toStringAsFixed(1)}%',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percent / 100,
+              backgroundColor: Colors.grey.shade200,
+              color: color,
+              minHeight: 6,
+            ),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+
+  Widget _buildRoleRow(String role, int count, int total) {
+    final pct = total > 0 ? (count / total * 100) : 0.0;
+    final roleLabels = {
+      'ceo': 'CEO',
+      'manager': 'Manager',
+      'staff': 'Nhân viên',
+      'driver': 'Tài xế',
+      'warehouse': 'Kho',
+      'shiftLeader': 'Trưởng ca',
+      'superAdmin': 'Super Admin',
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: report['color'].withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    report['icon'],
-                    color: report['color'],
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        report['title'],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        report['description'],
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuButton(
-                  onSelected: (value) => _handleReportAction(value, report),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'view',
-                      child: Row(
-                        children: [
-                          Icon(Icons.visibility, size: 16),
-                          SizedBox(width: 8),
-                          Text('Xem'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'download',
-                      child: Row(
-                        children: [
-                          Icon(Icons.download, size: 16),
-                          SizedBox(width: 8),
-                          Text('Tải xuống'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'share',
-                      child: Row(
-                        children: [
-                          Icon(Icons.share, size: 16),
-                          SizedBox(width: 8),
-                          Text('Chia sẻ'),
-                        ],
-                      ),
-                    ),
-                  ],
-                  child: const Icon(Icons.more_vert, color: Colors.grey),
-                ),
-              ],
+            Expanded(
+              child: Text(roleLabels[role] ?? role,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
             ),
-            const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildMetricChip(
-                    'Cập nhật',
-                    report['lastUpdated'],
-                    Icons.access_time,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildMetricChip(
-                    'Kích thước',
-                    report['size'],
-                    Icons.description,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildMetricChip(
-                    'Định dạng',
-                    report['format'],
-                    Icons.file_present,
-                  ),
-                ],
+            Text('$count người',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 60,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: pct / 100,
+                  backgroundColor: Colors.grey.shade200,
+                  color: AppColors.primary,
+                  minHeight: 4,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _handleReportAction('view', report),
-                    icon: const Icon(Icons.visibility, size: 16),
-                    label: const Text('Xem'),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: report['color']),
-                      foregroundColor: report['color'],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _handleReportAction('download', report),
-                    icon: const Icon(Icons.download, size: 16),
-                    label: const Text('Tải xuống'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: report['color'],
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 40,
+              child: Text('${pct.toStringAsFixed(0)}%',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
             ),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildMetricChip(String label, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: Colors.grey.shade600),
-          const SizedBox(width: 4),
-          Text(
-            '$label: $value',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey.shade600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Map<String, dynamic>> _getReportsForType(String type) {
-    switch (type) {
-      case 'financial':
-        return _financialReports;
-      case 'operations':
-        return _operationsReports;
-      case 'hr':
-        return _hrReports;
-      default:
-        return _financialReports;
-    }
-  }
-
-  void _handleReportAction(String action, Map<String, dynamic> report) {
-    switch (action) {
-      case 'view':
-        _viewReport(report);
-        break;
-      case 'download':
-        _downloadReport(report);
-        break;
-      case 'share':
-        _shareReport(report);
-        break;
-    }
-  }
-
-  void _viewReport(Map<String, dynamic> report) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(report['title']),
-        content: const Text('Xem báo cáo chi tiết sẽ được triển khai.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _downloadReport(Map<String, dynamic> report) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đang tải xuống ${report['title']}...'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _shareReport(Map<String, dynamic> report) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Chia sẻ ${report['title']}'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
 }
-
-// Mock data
-final List<Map<String, dynamic>> _financialReports = [
-  {
-    'title': 'Báo cáo tài chính tháng',
-    'description': 'Tổng hợp doanh thu, chi phí và lợi nhuận tháng 10/2024',
-    'lastUpdated': '2 giờ trước',
-    'size': '2.4 MB',
-    'format': 'PDF',
-    'icon': Icons.assessment,
-    'color': const Color(0xFF10B981),
-  },
-  {
-    'title': 'Phân tích dòng tiền',
-    'description': 'Chi tiết thu chi và dòng tiền các công ty',
-    'lastUpdated': '1 ngày trước',
-    'size': '1.8 MB',
-    'format': 'Excel',
-    'icon': Icons.trending_up,
-    'color': const Color(0xFF3B82F6),
-  },
-  {
-    'title': 'Báo cáo thuế quý',
-    'description': 'Báo cáo thuế quý 4/2024 cho tất cả công ty',
-    'lastUpdated': '3 ngày trước',
-    'size': '3.2 MB',
-    'format': 'PDF',
-    'icon': Icons.receipt_long,
-    'color': const Color(0xFFF59E0B),
-  },
-];
-
-final List<Map<String, dynamic>> _operationsReports = [
-  {
-    'title': 'Hiệu suất vận hành',
-    'description': 'Đánh giá hiệu suất hoạt động của từng công ty',
-    'lastUpdated': '4 giờ trước',
-    'size': '1.2 MB',
-    'format': 'PDF',
-    'icon': Icons.speed,
-    'color': const Color(0xFF8B5CF6),
-  },
-  {
-    'title': 'Báo cáo khách hàng',
-    'description': 'Thống kê lưu lượng và hành vi khách hàng',
-    'lastUpdated': '6 giờ trước',
-    'size': '950 KB',
-    'format': 'Excel',
-    'icon': Icons.people,
-    'color': const Color(0xFF06B6D4),
-  },
-];
-
-final List<Map<String, dynamic>> _hrReports = [
-  {
-    'title': 'Báo cáo nhân sự',
-    'description': 'Tổng hợp thông tin nhân viên toàn hệ thống',
-    'lastUpdated': '1 ngày trước',
-    'size': '800 KB',
-    'format': 'Excel',
-    'icon': Icons.badge,
-    'color': const Color(0xFF10B981),
-  },
-  {
-    'title': 'Chấm công và lương',
-    'description': 'Báo cáo chấm công và tính lương tháng 10',
-    'lastUpdated': '2 ngày trước',
-    'size': '1.5 MB',
-    'format': 'PDF',
-    'icon': Icons.access_time,
-    'color': const Color(0xFFEF4444),
-  },
-];
 
 /// CEO Settings Page
 /// System-wide configuration and preferences
@@ -597,11 +557,11 @@ class CEOSettingsPage extends ConsumerWidget {
           children: [
             _buildUserProfile(context, ref),
             const SizedBox(height: 24),
-            _buildSystemSettings(),
+            _buildSystemSettings(context),
             const SizedBox(height: 24),
             _buildCompanySettings(context),
             const SizedBox(height: 24),
-            _buildSecuritySettings(),
+            _buildSecuritySettings(context),
             const SizedBox(height: 24),
             _buildSupportSection(context, ref),
           ],
@@ -659,7 +619,7 @@ class CEOSettingsPage extends ConsumerWidget {
             height: 60,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                colors: [AppColors.info, Color(0xFF1D4ED8)],
               ),
               borderRadius: BorderRadius.circular(30),
             ),
@@ -723,7 +683,7 @@ class CEOSettingsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSystemSettings() {
+  Widget _buildSystemSettings(BuildContext context) {
     return _buildSettingsSection(
       'Cài đặt hệ thống',
       [
@@ -731,25 +691,25 @@ class CEOSettingsPage extends ConsumerWidget {
           'Ngôn ngữ',
           'Tiếng Việt',
           Icons.language,
-          () {},
+          () => _snack(context, 'Ngôn ngữ mặc định: Tiếng Việt'),
         ),
         _buildSettingItem(
           'Múi giờ',
           'GMT+7 (Hồ Chí Minh)',
           Icons.access_time,
-          () {},
+          () => _snack(context, 'Múi giờ: UTC+7 (Ho Chi Minh)'),
         ),
         _buildSettingItem(
           'Định dạng tiền tệ',
           'VND (₫)',
           Icons.attach_money,
-          () {},
+          () => _snack(context, 'Định dạng: VND (₫)'),
         ),
         _buildSettingItem(
           'Thông báo',
           'Bật',
           Icons.notifications,
-          () {},
+          () => _snack(context, 'Telegram bot đã tích hợp — cấu hình trong .env'),
           hasSwitch: true,
         ),
       ],
@@ -764,32 +724,32 @@ class CEOSettingsPage extends ConsumerWidget {
           'Thêm công ty mới',
           '',
           Icons.add_business,
-          () {},
+          () => _snack(context, 'Thêm công ty: Chuyển sang tab Quản lý công ty'),
         ),
         _buildSettingItem(
           'Cấu hình chung',
           'Áp dụng cho tất cả công ty',
           Icons.settings,
-          () {},
+          () => _snack(context, 'Cấu hình chung qua Company Settings mỗi công ty'),
         ),
         _buildSettingItem(
           'Quyền truy cập',
           'Phân quyền nhân viên',
           Icons.security,
-          () {},
+          () => _snack(context, 'Phân quyền qua role (CEO/Manager/Staff/...) khi thêm nhân viên'),
         ),
         _buildSettingItem(
           'Backup dữ liệu',
           'Tự động hàng ngày',
           Icons.backup,
-          () {},
+          () => _snack(context, 'Supabase tự động backup hàng ngày (Point-in-Time Recovery)'),
           hasSwitch: true,
         ),
       ],
     );
   }
 
-  Widget _buildSecuritySettings() {
+  Widget _buildSecuritySettings(BuildContext context) {
     return _buildSettingsSection(
       'Bảo mật',
       [
@@ -797,26 +757,26 @@ class CEOSettingsPage extends ConsumerWidget {
           'Đổi mật khẩu',
           '',
           Icons.lock,
-          () {},
+          () => _snack(context, 'Đổi mật khẩu qua change_employee_password RPC'),
         ),
         _buildSettingItem(
           'Xác thực 2 bước',
           'Bật',
           Icons.verified_user,
-          () {},
+          () => _snack(context, '2FA chưa triển khai — xác thực qua mã nhân viên'),
           hasSwitch: true,
         ),
         _buildSettingItem(
           'Phiên đăng nhập',
           'Quản lý thiết bị',
           Icons.devices,
-          () {},
+          () => _snack(context, 'Session timeout: 30 phút không hoạt động → auto logout'),
         ),
         _buildSettingItem(
           'Lịch sử hoạt động',
           '',
           Icons.history,
-          () {},
+          () => _snack(context, 'Xem analytics_events trong Supabase Dashboard'),
         ),
       ],
     );
@@ -830,19 +790,19 @@ class CEOSettingsPage extends ConsumerWidget {
           'Trung tâm trợ giúp',
           '',
           Icons.help,
-          () {},
+          () => _snack(context, 'Liên hệ admin@sabohub.com để được hỗ trợ'),
         ),
         _buildSettingItem(
           'Liên hệ hỗ trợ',
           '',
           Icons.contact_support,
-          () {},
+          () => _snack(context, 'Email: admin@sabohub.com | Telegram: đã tích hợp'),
         ),
         _buildSettingItem(
           'Về ứng dụng',
-          'Phiên bản 1.0.0',
+          'SABOHUB v1.2.0+16',
           Icons.info,
-          () {},
+          () => _snack(context, 'SABOHUB v1.2.0+16 — Hệ thống quản lý đa ngành'),
         ),
         _buildSettingItem(
           'Đăng xuất',
@@ -876,7 +836,7 @@ class CEOSettingsPage extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('✅ Đã đăng xuất thành công'),
-                    backgroundColor: Color(0xFF10B981),
+                    backgroundColor: AppColors.success,
                   ),
                 );
                 context.go('/login');
@@ -965,9 +925,19 @@ class CEOSettingsPage extends ConsumerWidget {
           ? Switch(
               value: true,
               onChanged: (value) {},
-              activeThumbColor: const Color(0xFF10B981),
+              activeThumbColor: AppColors.success,
             )
           : const Icon(Icons.chevron_right, color: Colors.grey),
+    );
+  }
+
+  void _snack(BuildContext context, String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 }

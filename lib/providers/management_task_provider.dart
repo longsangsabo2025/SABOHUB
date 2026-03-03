@@ -9,7 +9,7 @@ export 'cached_providers.dart' show managementTaskServiceProvider;
 /// CEO Strategic Tasks Provider
 /// Fetches all tasks created by CEO
 final ceoStrategicTasksProvider =
-    FutureProvider<List<ManagementTask>>((ref) async {
+    FutureProvider.autoDispose<List<ManagementTask>>((ref) async {
   final service = ref.read(managementTaskServiceProvider);
   return service.getCEOStrategicTasks();
 });
@@ -17,7 +17,7 @@ final ceoStrategicTasksProvider =
 /// Manager Assigned Tasks Provider
 /// Fetches tasks assigned to current manager from CEO
 final managerAssignedTasksProvider =
-    FutureProvider<List<ManagementTask>>((ref) async {
+    FutureProvider.autoDispose<List<ManagementTask>>((ref) async {
   final service = ref.read(managementTaskServiceProvider);
   return service.getTasksAssignedToMe();
 });
@@ -25,7 +25,7 @@ final managerAssignedTasksProvider =
 /// Manager Created Tasks Provider
 /// Fetches tasks created by current manager (assigned to staff)
 final managerCreatedTasksProvider =
-    FutureProvider<List<ManagementTask>>((ref) async {
+    FutureProvider.autoDispose<List<ManagementTask>>((ref) async {
   final service = ref.read(managementTaskServiceProvider);
   return service.getTasksCreatedByMe();
 });
@@ -33,14 +33,14 @@ final managerCreatedTasksProvider =
 /// Pending Approvals Provider
 /// Fetches approval requests waiting for CEO review
 final pendingApprovalsProvider =
-    FutureProvider<List<TaskApproval>>((ref) async {
+    FutureProvider.autoDispose<List<TaskApproval>>((ref) async {
   final service = ref.read(managementTaskServiceProvider);
   return service.getPendingApprovals();
 });
 
 /// Task Statistics Provider
 /// Fetches task statistics for CEO dashboard
-final taskStatisticsProvider = FutureProvider<Map<String, int>>((ref) async {
+final taskStatisticsProvider = FutureProvider.autoDispose<Map<String, int>>((ref) async {
   final service = ref.read(managementTaskServiceProvider);
   return service.getTaskStatistics();
 });
@@ -48,7 +48,7 @@ final taskStatisticsProvider = FutureProvider<Map<String, int>>((ref) async {
 /// Company Task Statistics Provider
 /// Fetches task statistics grouped by company
 final companyTaskStatisticsProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final service = ref.read(managementTaskServiceProvider);
   return service.getCompanyTaskStatistics();
 });
@@ -84,7 +84,7 @@ void refreshAllTasks(WidgetRef ref) {
 /// CEO Strategic Tasks Stream Provider (REALTIME)
 /// Auto-updates when tasks are created/modified/deleted
 final ceoStrategicTasksStreamProvider =
-    StreamProvider<List<ManagementTask>>((ref) {
+    StreamProvider.autoDispose<List<ManagementTask>>((ref) {
   final service = ref.read(managementTaskServiceProvider);
   return service.streamCEOStrategicTasks();
 });
@@ -92,7 +92,7 @@ final ceoStrategicTasksStreamProvider =
 /// Manager Assigned Tasks Stream Provider (REALTIME)
 /// Auto-updates when tasks assigned to current manager change
 final managerAssignedTasksStreamProvider =
-    StreamProvider<List<ManagementTask>>((ref) {
+    StreamProvider.autoDispose<List<ManagementTask>>((ref) {
   final service = ref.read(managementTaskServiceProvider);
   return service.streamTasksAssignedToMe();
 });
@@ -100,7 +100,7 @@ final managerAssignedTasksStreamProvider =
 /// Manager Created Tasks Stream Provider (REALTIME)
 /// Auto-updates when tasks created by current manager change
 final managerCreatedTasksStreamProvider =
-    StreamProvider<List<ManagementTask>>((ref) {
+    StreamProvider.autoDispose<List<ManagementTask>>((ref) {
   final service = ref.read(managementTaskServiceProvider);
   return service.streamTasksCreatedByMe();
 });

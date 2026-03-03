@@ -11,11 +11,14 @@ import '../services/employee_document_service.dart';
 import '../services/business_document_service.dart';
 import '../services/employee_service.dart';
 import '../services/task_service.dart';
+import '../utils/app_logger.dart';
 import 'cache_provider.dart';
 import 'document_provider.dart';
+import 'auth_provider.dart';
 
 // PHASE 3A - Multi-role dashboard providers
 import 'ceo_dashboard_provider.dart';
+import 'ceo_business_provider.dart';
 import 'manager_provider.dart';
 import 'staff_provider.dart';
 
@@ -34,7 +37,8 @@ final cachedCompaniesProvider =
 
   // Fetch from service - using getMyCompanies for data isolation
   final service = ref.watch(companyServiceProvider);
-  final companies = await service.getMyCompanies();
+  final userId = ref.read(authProvider).user?.id;
+  final companies = await service.getMyCompanies(userId: userId);
 
   // Cache result
   memoryCache.set('companies', companies, config.defaultTTL);
@@ -250,7 +254,7 @@ final cachedCompanyEmployeesProvider =
 /// Cached Company Tasks Provider (Tasks Tab)
 final cachedCompanyTasksProvider =
     FutureProvider.autoDispose.family<List, String>((ref, companyId) async {
-  print('🔵 [CachedProvider] cachedCompanyTasksProvider called for company: $companyId');
+  AppLogger.state('cachedCompanyTasksProvider called for company: $companyId');
   
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
@@ -259,17 +263,17 @@ final cachedCompanyTasksProvider =
   // Try memory cache
   final cached = memoryCache.get<List<dynamic>>(cacheKey);
   if (cached != null) {
-    print('💾 [CachedProvider] Returning ${cached.length} tasks from cache');
+    AppLogger.state('Returning ${cached.length} tasks from cache');
     return cached;
   }
 
-  print('🌐 [CachedProvider] Cache miss, fetching from service...');
+  AppLogger.state('Cache miss, fetching from service...');
   
   // Fetch from service
   final service = ref.watch(taskServiceProvider);
   final tasks = await service.getTasksByCompany(companyId);
   
-  print('✅ [CachedProvider] Service returned ${tasks.length} tasks, caching...');
+  AppLogger.state('Service returned ${tasks.length} tasks, caching...');
   // Cache result (1 min TTL - tasks change frequently)
   memoryCache.set(cacheKey, tasks, config.shortTTL);
 
@@ -373,6 +377,13 @@ extension CacheInvalidation on WidgetRef {
   void invalidateCEODashboard() {
     invalidate(cachedCEODashboardKPIsProvider);
     invalidate(cachedCEODashboardActivitiesProvider);
+    // Also invalidate new real CEO providers
+    invalidate(todayBusinessPulseProvider);
+    invalidate(realCEOKPIsProvider);
+    invalidate(pendingApprovalsProvider);
+    invalidate(customerInsightsProvider);
+    invalidate(companyComparisonProvider);
+    invalidate(dailyRevenueChartProvider);
     read(memoryCacheProvider).invalidatePattern('ceo_dashboard');
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Staff Messages Page
@@ -28,7 +29,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
         onPressed: () {
           // Send quick message
         },
-        backgroundColor: const Color(0xFF10B981),
+        backgroundColor: AppColors.success,
         child: const Icon(Icons.send, color: Colors.white),
       ),
     );
@@ -53,7 +54,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
               const SnackBar(
                 content: Text('🔍 Tìm kiếm tin nhắn'),
                 duration: Duration(seconds: 2),
-                backgroundColor: Color(0xFF8B5CF6),
+                backgroundColor: AppColors.primary,
               ),
             );
           },
@@ -65,7 +66,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
               const SnackBar(
                 content: Text('🔔 Thông báo mới'),
                 duration: Duration(seconds: 2),
-                backgroundColor: Color(0xFF3B82F6),
+                backgroundColor: AppColors.info,
               ),
             );
           },
@@ -104,7 +105,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color:
-                      isSelected ? const Color(0xFF10B981) : Colors.transparent,
+                      isSelected ? AppColors.success : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -182,7 +183,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                   'SOS',
                   'Hỗ trợ khẩn cấp',
                   Icons.emergency,
-                  const Color(0xFFEF4444),
+                  AppColors.error,
                 ),
               ),
               const SizedBox(width: 12),
@@ -191,7 +192,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                   'Quản lý',
                   'Liên hệ trực tiếp',
                   Icons.person,
-                  const Color(0xFF3B82F6),
+                  AppColors.info,
                 ),
               ),
               const SizedBox(width: 12),
@@ -200,7 +201,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                   'Kỹ thuật',
                   'Sự cố thiết bị',
                   Icons.build,
-                  const Color(0xFF8B5CF6),
+                  AppColors.primary,
                 ),
               ),
             ],
@@ -310,10 +311,10 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
             final memberCounts = [6, 4, 3, 15];
             final unreadCounts = [2, 0, 1, 0];
             final colors = [
-              const Color(0xFF10B981),
-              const Color(0xFF3B82F6),
-              const Color(0xFF8B5CF6),
-              const Color(0xFFF59E0B),
+              AppColors.success,
+              AppColors.info,
+              AppColors.primary,
+              AppColors.warning,
             ];
 
             return _buildGroupChatItem(
@@ -362,7 +363,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFEF4444),
+                      color: AppColors.error,
                       shape: BoxShape.circle,
                     ),
                     constraints: const BoxConstraints(
@@ -532,9 +533,9 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
   Widget _buildPersonalChatItem(String name, String lastMessage, String time,
       int unreadCount, String status, bool isLast) {
     Color statusColor = status == 'online'
-        ? const Color(0xFF10B981)
+        ? AppColors.success
         : status == 'away'
-            ? const Color(0xFFF59E0B)
+            ? AppColors.warning
             : Colors.grey;
 
     return Container(
@@ -581,7 +582,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFEF4444),
+                      color: AppColors.error,
                       shape: BoxShape.circle,
                     ),
                     constraints: const BoxConstraints(
@@ -709,11 +710,11 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
               'Trung bình'
             ];
             final colors = [
-              const Color(0xFFEF4444),
-              const Color(0xFF3B82F6),
-              const Color(0xFF10B981),
-              const Color(0xFFEF4444),
-              const Color(0xFF3B82F6),
+              AppColors.error,
+              AppColors.info,
+              AppColors.success,
+              AppColors.error,
+              AppColors.info,
             ];
             final isNew = [true, false, false, true, false];
 
@@ -780,7 +781,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444),
+                          color: AppColors.error,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(

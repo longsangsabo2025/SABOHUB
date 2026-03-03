@@ -6,10 +6,11 @@ class AnalyticsService {
   final _supabase = supabase.client;
 
   /// Helper to get current user's company_id
+  /// This should be passed from the caller, NOT fetched from auth
   Future<String?> _getCompanyId() async {
-    final user = _supabase.auth.currentUser;
-    if (user == null) return null;
-    return user.userMetadata?['company_id'] as String?;
+    // Deprecated: auth.currentUser doesn't work for employee login
+    // Callers should pass companyId directly
+    return null;
   }
 
   /// Get Dashboard KPIs for a specific company
@@ -68,7 +69,33 @@ class AnalyticsService {
         monthlyRevenue = 0.0;
       }
 
-      final revenueGrowth = 12.5; // Mock growth rate for now
+      // Calculate real revenue growth: compare this month vs last month
+      double revenueGrowth = 0.0;
+      try {
+        final now = DateTime.now();
+        final prevMonthStart = DateTime(now.year, now.month - 1, 1);
+        final prevMonthEnd = DateTime(now.year, now.month, 0);
+
+        final prevRevenueResponse = await _supabase
+            .from('daily_revenue')
+            .select('total_revenue')
+            .eq('company_id', cid)
+            .gte('date', prevMonthStart.toIso8601String().split('T')[0])
+            .lte('date', prevMonthEnd.toIso8601String().split('T')[0]);
+
+        final prevRevenue = (prevRevenueResponse as List).fold<double>(
+          0,
+          (sum, item) =>
+              sum + ((item['total_revenue'] as num?)?.toDouble() ?? 0),
+        );
+
+        if (prevRevenue > 0) {
+          revenueGrowth =
+              ((monthlyRevenue - prevRevenue) / prevRevenue * 100);
+        }
+      } catch (_) {
+        revenueGrowth = 0.0;
+      }
 
       return {
         'totalStores': totalStores,
@@ -84,56 +111,88 @@ class AnalyticsService {
   }
 
   /// Get Revenue by Period
-  /// Returns revenue data for analytics charts
+  /// Returns revenue data for analytics charts from daily_revenue table
   Future<List<Map<String, dynamic>>> getRevenueByPeriod({
     required String period, // 'week', 'month', 'quarter', 'year'
+    String? companyId,
   }) async {
     try {
-      // Mock data for now - will implement real calculation from orders/bookings table
+      final cid = companyId ?? await _getCompanyId();
       final now = DateTime.now();
       final List<Map<String, dynamic>> data = [];
 
+      DateTime startDate;
       switch (period) {
         case 'week':
-          for (int i = 6; i >= 0; i--) {
-            final date = now.subtract(Duration(days: i));
-            data.add({
-              'date': date.toIso8601String().split('T')[0],
-              'revenue': (50000000 + (i * 10000000)).toDouble(), // Mock
-              'label': _getWeekdayName(date.weekday),
-            });
-          }
+          startDate = now.subtract(const Duration(days: 6));
           break;
         case 'month':
-          for (int i = 29; i >= 0; i--) {
-            final date = now.subtract(Duration(days: i));
-            data.add({
-              'date': date.toIso8601String().split('T')[0],
-              'revenue': (20000000 + (i * 5000000)).toDouble(),
-              'label': '${date.day}/${date.month}',
-            });
-          }
+          startDate = now.subtract(const Duration(days: 29));
           break;
         case 'quarter':
-          for (int i = 11; i >= 0; i--) {
-            final date = DateTime(now.year, now.month - i, 1);
-            data.add({
-              'date': date.toIso8601String().split('T')[0],
-              'revenue': (600000000 + (i * 50000000)).toDouble(),
-              'label': 'T${date.month}',
-            });
-          }
+          startDate = DateTime(now.year, now.month - 2, 1);
           break;
         case 'year':
-          for (int i = 11; i >= 0; i--) {
-            final date = DateTime(now.year, now.month - i, 1);
-            data.add({
-              'date': date.toIso8601String().split('T')[0],
-              'revenue': (800000000 + (i * 100000000)).toDouble(),
-              'label': 'T${date.month}',
-            });
-          }
+          startDate = DateTime(now.year, now.month - 11, 1);
           break;
+        default:
+          startDate = now.subtract(const Duration(days: 6));
+      }
+
+      var query = _supabase
+          .from('daily_revenue')
+          .select('date, total_revenue')
+          .gte('date', startDate.toIso8601String().split('T')[0])
+          .lte('date', now.toIso8601String().split('T')[0]);
+
+      if (cid != null) {
+        query = query.eq('company_id', cid);
+      }
+
+      final orderedQuery = query.order('date', ascending: true);
+
+      final response = await orderedQuery;
+      final revenueMap = <String, double>{};
+      for (final item in response as List) {
+        final date = item['date'] as String;
+        final revenue = (item['total_revenue'] as num?)?.toDouble() ?? 0;
+        revenueMap[date] = (revenueMap[date] ?? 0) + revenue;
+      }
+
+      // Build daily/monthly data points
+      if (period == 'week' || period == 'month') {
+        final days = period == 'week' ? 7 : 30;
+        for (int i = days - 1; i >= 0; i--) {
+          final date = now.subtract(Duration(days: i));
+          final dateStr = date.toIso8601String().split('T')[0];
+          data.add({
+            'date': dateStr,
+            'revenue': revenueMap[dateStr] ?? 0.0,
+            'label': period == 'week'
+                ? _getWeekdayName(date.weekday)
+                : '${date.day}/${date.month}',
+          });
+        }
+      } else {
+        // Quarter/Year: aggregate by month
+        final months = period == 'quarter' ? 3 : 12;
+        for (int i = months - 1; i >= 0; i--) {
+          final monthDate = DateTime(now.year, now.month - i, 1);
+          double monthRevenue = 0;
+          revenueMap.forEach((dateStr, rev) {
+            final d = DateTime.tryParse(dateStr);
+            if (d != null &&
+                d.year == monthDate.year &&
+                d.month == monthDate.month) {
+              monthRevenue += rev;
+            }
+          });
+          data.add({
+            'date': monthDate.toIso8601String().split('T')[0],
+            'revenue': monthRevenue,
+            'label': 'T${monthDate.month}',
+          });
+        }
       }
 
       return data;
@@ -193,7 +252,29 @@ class AnalyticsService {
           revenue = 0.0;
         }
 
-        final growth = (10 + (employeeCount * 0.5)).toDouble(); // Mock growth
+        // Calculate real growth: compare this month vs last month
+        double growth = 0.0;
+        try {
+          final nowGrowth = DateTime.now();
+          final prevMonthStart = DateTime(nowGrowth.year, nowGrowth.month - 1, 1);
+          final prevMonthEnd = DateTime(nowGrowth.year, nowGrowth.month, 0);
+          final prevRevResponse = await _supabase
+              .from('daily_revenue')
+              .select('total_revenue')
+              .eq('branch_id', storeId)
+              .gte('date', prevMonthStart.toIso8601String().split('T')[0])
+              .lte('date', prevMonthEnd.toIso8601String().split('T')[0]);
+          final prevRev = (prevRevResponse as List).fold<double>(
+            0,
+            (sum, item) =>
+                sum + ((item['total_revenue'] as num?)?.toDouble() ?? 0),
+          );
+          if (prevRev > 0) {
+            growth = ((revenue - prevRev) / prevRev * 100);
+          }
+        } catch (_) {
+          growth = 0.0;
+        }
 
         performance.add({
           'storeId': storeId,
@@ -251,19 +332,67 @@ class AnalyticsService {
   }
 
   /// Get Customer Analytics
-  /// Returns customer-related metrics
-  Future<Map<String, dynamic>> getCustomerAnalytics() async {
+  /// Returns customer-related metrics from customers table
+  Future<Map<String, dynamic>> getCustomerAnalytics({String? companyId}) async {
     try {
-      // Mock data - will implement real calculation from bookings table
+      final cid = companyId ?? await _getCompanyId();
+
+      // Total customers
+      var totalQuery = _supabase.from('customers').select('id');
+      if (cid != null) {
+        totalQuery = totalQuery.eq('company_id', cid);
+      }
+      final totalResponse = await totalQuery;
+      final totalCustomers = (totalResponse as List).length;
+
+      // New customers this month
+      final now = DateTime.now();
+      final firstOfMonth = DateTime(now.year, now.month, 1);
+      var newQuery = _supabase
+          .from('customers')
+          .select('id')
+          .gte('created_at', firstOfMonth.toIso8601String());
+      if (cid != null) {
+        newQuery = newQuery.eq('company_id', cid);
+      }
+      final newResponse = await newQuery;
+      final newCustomers = (newResponse as List).length;
+
+      // Previous month customer count for growth calc
+      final prevMonthStart = DateTime(now.year, now.month - 1, 1);
+      final prevMonthEnd = DateTime(now.year, now.month, 0);
+      var prevQuery = _supabase
+          .from('customers')
+          .select('id')
+          .gte('created_at', prevMonthStart.toIso8601String())
+          .lte('created_at', prevMonthEnd.toIso8601String());
+      if (cid != null) {
+        prevQuery = prevQuery.eq('company_id', cid);
+      }
+      final prevResponse = await prevQuery;
+      final prevNewCustomers = (prevResponse as List).length;
+
+      final customerGrowth = prevNewCustomers > 0
+          ? ((newCustomers - prevNewCustomers) / prevNewCustomers * 100)
+          : 0.0;
+
       return {
-        'totalCustomers': 1250,
-        'newCustomers': 85,
-        'returningRate': 68.5,
-        'averageBookingValue': 350000.0,
-        'customerGrowth': 15.2,
+        'totalCustomers': totalCustomers,
+        'newCustomers': newCustomers,
+        'returningRate': totalCustomers > 0
+            ? ((totalCustomers - newCustomers) / totalCustomers * 100)
+            : 0.0,
+        'averageBookingValue': 0.0, // Will calculate from orders if needed
+        'customerGrowth': customerGrowth,
       };
     } catch (e) {
-      throw Exception('Failed to fetch customer analytics: $e');
+      return {
+        'totalCustomers': 0,
+        'newCustomers': 0,
+        'returningRate': 0.0,
+        'averageBookingValue': 0.0,
+        'customerGrowth': 0.0,
+      };
     }
   }
 
@@ -297,16 +426,12 @@ class AnalyticsService {
             .eq('company_id', companyId);
         final tableCount = (tablesResponse as List).length;
 
-        // Get employee count from both users and employees tables
-        final usersResponse = await _supabase
-            .from('users')
-            .select('id')
-            .eq('company_id', companyId);
+        // Get employee count from employees table
         final employeesResponse = await _supabase
             .from('employees')
             .select('id')
             .eq('company_id', companyId);
-        final employeeCount = (usersResponse as List).length + (employeesResponse as List).length;
+        final employeeCount = (employeesResponse as List).length;
 
         // Calculate revenue from daily_revenue table
         double revenue = 0.0;
@@ -331,7 +456,29 @@ class AnalyticsService {
           revenue = 0.0;
         }
 
-        final growth = (10 + (storeCount * 2.5)).toDouble(); // Mock growth
+        // Calculate real growth
+        double growth = 0.0;
+        try {
+          final nowGrowth = DateTime.now();
+          final prevMonthStart = DateTime(nowGrowth.year, nowGrowth.month - 1, 1);
+          final prevMonthEnd = DateTime(nowGrowth.year, nowGrowth.month, 0);
+          final prevRevResponse = await _supabase
+              .from('daily_revenue')
+              .select('total_revenue')
+              .eq('company_id', companyId)
+              .gte('date', prevMonthStart.toIso8601String().split('T')[0])
+              .lte('date', prevMonthEnd.toIso8601String().split('T')[0]);
+          final prevRev = (prevRevResponse as List).fold<double>(
+            0,
+            (sum, item) =>
+                sum + ((item['total_revenue'] as num?)?.toDouble() ?? 0),
+          );
+          if (prevRev > 0) {
+            growth = ((revenue - prevRev) / prevRev * 100);
+          }
+        } catch (_) {
+          growth = 0.0;
+        }
 
         performance.add({
           'companyId': companyId,

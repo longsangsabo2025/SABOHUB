@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -8,6 +9,9 @@ import '../../utils/dummy_providers.dart';
 import 'ceo_profile_page.dart';
 import 'ceo_task_management_page.dart';
 import 'smart_task_creation_page.dart';
+import 'ceo_employees_page.dart';
+import 'ceo_analytics_page.dart';
+import 'task_detail_page.dart';
 
 /// CEO Tasks Page
 /// CEO can create strategic tasks, assign to managers, and monitor company-wide progress
@@ -22,6 +26,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _dateFormat = DateFormat('dd/MM/yyyy');
+  TaskCategory? _filterCategory;
 
   @override
   void initState() {
@@ -233,9 +238,9 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
       color: Colors.white,
       child: TabBar(
         controller: _tabController,
-        labelColor: const Color(0xFF3B82F6),
+        labelColor: AppColors.info,
         unselectedLabelColor: Colors.grey,
-        indicatorColor: const Color(0xFF3B82F6),
+        indicatorColor: AppColors.info,
         indicatorWeight: 3,
         isScrollable: true, // ✅ Enable scrolling for 4 tabs
         tabs: const [
@@ -355,13 +360,9 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                                 subtitle: 'Thêm, sửa, xóa Manager và nhân viên',
                                 color: Colors.green,
                                 onTap: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content:
-                                          Text('Tính năng đang phát triển...'),
-                                      duration: Duration(seconds: 1),
-                                    ),
-                                  );
+                                  Navigator.push(context, MaterialPageRoute(
+                                    builder: (_) => const CEOEmployeesPage(),
+                                  ));
                                 },
                               ),
                             ],
@@ -381,12 +382,9 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                             subtitle: 'Xem doanh thu theo công ty và chi nhánh',
                             color: Colors.indigo,
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Tính năng đang phát triển...'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => const CEOAnalyticsPage(),
+                              ));
                             },
                           ),
                           _ActionItem(
@@ -395,12 +393,9 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                             subtitle: 'Dashboard phân tích KPI và hiệu suất',
                             color: Colors.pink,
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Tính năng đang phát triển...'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => const CEOAnalyticsPage(),
+                              ));
                             },
                           ),
                           _ActionItem(
@@ -409,12 +404,9 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                             subtitle: 'Quản lý cấu hình và phân quyền',
                             color: Colors.blueGrey,
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Tính năng đang phát triển...'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => const CEOProfilePage(),
+                              ));
                             },
                           ),
                         ],
@@ -491,12 +483,9 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                           subtitle: 'Thêm, sửa, xóa Manager và nhân viên',
                           color: Colors.green,
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Tính năng đang phát triển...'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => const CEOEmployeesPage(),
+                            ));
                           },
                         ),
                       ],
@@ -511,12 +500,9 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                           subtitle: 'Xem doanh thu theo công ty và chi nhánh',
                           color: Colors.indigo,
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Tính năng đang phát triển...'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => const CEOAnalyticsPage(),
+                            ));
                           },
                         ),
                         _ActionItem(
@@ -525,12 +511,9 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                           subtitle: 'Dashboard phân tích KPI và hiệu suất',
                           color: Colors.pink,
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Tính năng đang phát triển...'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => const CEOAnalyticsPage(),
+                            ));
                           },
                         ),
                         _ActionItem(
@@ -539,12 +522,9 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                           subtitle: 'Quản lý cấu hình và phân quyền',
                           color: Colors.blueGrey,
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Tính năng đang phát triển...'),
-                                duration: Duration(seconds: 1),
-                              ),
-                            );
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (_) => const CEOProfilePage(),
+                            ));
                           },
                         ),
                       ],
@@ -640,6 +620,36 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
     );
   }
 
+  Widget _buildCategoryFilter() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          FilterChip(
+            label: const Text('Tất cả'),
+            selected: _filterCategory == null,
+            onSelected: (_) => setState(() => _filterCategory = null),
+            selectedColor: AppColors.info.withValues(alpha: 0.2),
+            checkmarkColor: AppColors.info,
+          ),
+          const SizedBox(width: 8),
+          ...TaskCategory.values.map((cat) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(cat.displayName),
+                  selected: _filterCategory == cat,
+                  onSelected: (_) => setState(() =>
+                      _filterCategory = _filterCategory == cat ? null : cat),
+                  selectedColor: AppColors.info.withValues(alpha: 0.2),
+                  checkmarkColor: AppColors.info,
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStrategicTasksTab() {
     final strategicTasksAsync = ref.watch(cachedCeoStrategicTasksProvider);
 
@@ -673,45 +683,80 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
         ),
       ),
       data: (cachedTasks) {
-        final tasks = cachedTasks;
-        if (tasks.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.assignment_outlined,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Chưa có nhiệm vụ',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Chuyển sang tab "Hành động nhanh" để tạo nhiệm vụ mới',
-                    style: TextStyle(color: Colors.grey.shade500),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
+        final allTasks = cachedTasks;
+        final tasks = _filterCategory == null
+            ? allTasks
+            : allTasks
+                .where((t) => t.category == _filterCategory)
+                .toList();
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
+        return Column(
           children: [
-            ...tasks.map((task) => _buildStrategicTaskCard(task)),
+            _buildCategoryFilter(),
+            if (tasks.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.assignment_outlined,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _filterCategory != null
+                              ? 'Không có nhiệm vụ ${_filterCategory!.label}'
+                              : 'Chưa có nhiệm vụ',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: Colors.grey.shade600,
+                                  ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Chuyển sang tab "Hành động nhanh" để tạo nhiệm vụ mới',
+                          style: TextStyle(color: Colors.grey.shade500),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    ...tasks.map((task) => _buildStrategicTaskCard(task)),
+                  ],
+                ),
+              ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildCategoryBadge(TaskCategory category) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.purple.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        category.displayName,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Colors.purple.shade700,
+        ),
+      ),
     );
   }
 
@@ -746,6 +791,8 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                       ),
                     ),
                   ),
+                  _buildCategoryBadge(task.category),
+                  const SizedBox(width: 6),
                   _buildPriorityBadge(priority),
                 ],
               ),
@@ -781,6 +828,28 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                   ),
                 ],
               ),
+              if (task.hasChecklist) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.checklist, size: 14, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${task.checklistDone}/${task.checklistTotal} bước',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    if (task.isRecurring) ...[
+                      const SizedBox(width: 12),
+                      Icon(Icons.repeat, size: 14, color: Colors.orange.shade600),
+                      const SizedBox(width: 4),
+                      Text(
+                        task.recurrence,
+                        style: TextStyle(fontSize: 12, color: Colors.orange.shade600),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -1060,70 +1129,132 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
   }
 
   Widget _buildCompanyOverviewTab() {
-    final companyStatsAsync = ref.watch(cachedCompanyTaskStatisticsProvider);
+    final tasksAsync = ref.watch(cachedCeoStrategicTasksProvider);
 
-    return companyStatsAsync.when(
-      loading: () => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: CircularProgressIndicator(),
-        ),
-      ),
+    return tasksAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(
-                'Lỗi tải thống kê công ty',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
+        child: Text('Lỗi: $error', style: const TextStyle(color: Colors.red)),
       ),
-      data: (cachedCompanies) {
-        final companies = cachedCompanies;
-        if (companies.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(48),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.business_outlined,
-                      size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Chưa có dữ liệu công ty',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
+      data: (allTasks) {
+        // Build category statistics from actual task data
+        final catStats = <TaskCategory, Map<String, int>>{};
+        for (final cat in TaskCategory.values) {
+          catStats[cat] = {
+            'total': 0,
+            'completed': 0,
+            'in_progress': 0,
+            'pending': 0,
+          };
+        }
+        for (final task in allTasks) {
+          final s = catStats[task.category]!;
+          s['total'] = s['total']! + 1;
+          if (task.status == TaskStatus.completed) {
+            s['completed'] = s['completed']! + 1;
+          } else if (task.status == TaskStatus.inProgress) {
+            s['in_progress'] = s['in_progress']! + 1;
+          } else {
+            s['pending'] = s['pending']! + 1;
+          }
         }
 
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // TODO: Implement proper company list when data is available
-            Center(
-              child: Text('Không có dữ liệu công ty',
-                  style: TextStyle(color: Colors.grey.shade600)),
+            Text(
+              'Phân bổ nhiệm vụ theo mảng',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade800,
+              ),
             ),
+            const SizedBox(height: 4),
+            Text(
+              'Tổng: ${allTasks.length} nhiệm vụ',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 16),
+            ...TaskCategory.values.map((cat) {
+              final s = catStats[cat]!;
+              if (s['total'] == 0 && cat != TaskCategory.general) {
+                return const SizedBox.shrink();
+              }
+              final total = s['total']!;
+              final completed = s['completed']!;
+              final rate =
+                  total > 0 ? (completed / total * 100).round() : 0;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            cat.displayName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '$rate%',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: rate >= 80
+                                  ? Colors.green
+                                  : rate >= 40
+                                      ? Colors.orange
+                                      : Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: total > 0 ? completed / total : 0,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            rate >= 80 ? Colors.green : Colors.orange,
+                          ),
+                          minHeight: 8,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _buildMiniStat(
+                              'Tổng', '$total', Colors.grey.shade700),
+                          const SizedBox(width: 16),
+                          _buildMiniStat(
+                              'Xong', '$completed', Colors.green),
+                          const SizedBox(width: 16),
+                          _buildMiniStat('Đang làm',
+                              '${s['in_progress']}', Colors.blue),
+                          const SizedBox(width: 16),
+                          _buildMiniStat(
+                              'Chờ', '${s['pending']}', Colors.orange),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ],
         );
       },
@@ -1331,144 +1462,12 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
   }
 
   void _showTaskDetails(ManagementTask task) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.95,
-        minChildSize: 0.5,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: ListView(
-            controller: scrollController,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      task.title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                task.description ?? 'Không có mô tả',
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 24),
-              _buildDetailRow('Độ ưu tiên', task.priority.label),
-              _buildDetailRow('Trạng thái', _getStatusLabel(task.status)),
-              _buildDetailRow(
-                  'Người thực hiện', task.assignedToName ?? 'Chưa giao'),
-              if (task.assignedToRole != null)
-                _buildDetailRow('Vai trò', task.assignedToRole!),
-              _buildDetailRow('Công ty', task.companyName ?? 'Chưa xác định'),
-              if (task.branchName != null)
-                _buildDetailRow('Chi nhánh', task.branchName!),
-              _buildDetailRow(
-                  'Hạn hoàn thành',
-                  task.dueDate != null
-                      ? _dateFormat.format(task.dueDate!)
-                      : 'Chưa có hạn'),
-              _buildDetailRow('Tiến độ', '${task.progress}%'),
-              if (task.completedAt != null)
-                _buildDetailRow(
-                    'Hoàn thành lúc', _dateFormat.format(task.completedAt!)),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        // TODO: Edit task
-                      },
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Chỉnh sửa'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        // TODO: Send reminder
-                      },
-                      icon: const Icon(Icons.notifications),
-                      label: const Text('Nhắc nhở'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3B82F6),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TaskDetailPage(task: task),
       ),
-    );
-  }
-
-  String _getStatusLabel(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.pending:
-        return 'Chờ xử lý';
-      case TaskStatus.inProgress:
-        return 'Đang thực hiện';
-      case TaskStatus.completed:
-        return 'Hoàn thành';
-      case TaskStatus.overdue:
-        return 'Quá hạn';
-      case TaskStatus.cancelled:
-        return 'Đã hủy';
-    }
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    ).then((_) => refreshAllManagementTasks(ref));
   }
 
   void _showCreateTaskDialog() {

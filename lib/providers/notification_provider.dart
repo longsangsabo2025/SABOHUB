@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/realtime_notification_service.dart';
+import '../utils/app_logger.dart';
 import 'auth_provider.dart';
 
 /// Provider for RealtimeNotificationService singleton
@@ -9,26 +9,26 @@ final realtimeNotificationServiceProvider = Provider<RealtimeNotificationService
 });
 
 /// Provider for notifications list
-final notificationsProvider = StreamProvider<List<AppNotification>>((ref) {
+final notificationsProvider = StreamProvider.autoDispose<List<AppNotification>>((ref) {
   final service = ref.watch(realtimeNotificationServiceProvider);
   final authState = ref.watch(authProvider);
   
-  debugPrint('🔔 [PROVIDER] notificationsProvider rebuild - isAuth: ${authState.isAuthenticated}, user: ${authState.user?.id}');
+  AppLogger.state('notificationsProvider rebuild - isAuth: ${authState.isAuthenticated}, user: ${authState.user?.id}');
   
   // Initialize service when user is authenticated
   if (authState.isAuthenticated && authState.user != null) {
-    debugPrint('🔔 [PROVIDER] Calling service.initialize with userId: ${authState.user!.id}');
+    AppLogger.state('Calling service.initialize with userId: ${authState.user!.id}');
     service.initialize(authState.user!.id);
   } else {
-    debugPrint('🔔 [PROVIDER] Not authenticated or user is null, skipping initialize');
+    AppLogger.state('Not authenticated or user is null, skipping initialize');
   }
   
-  debugPrint('🔔 [PROVIDER] Returning notificationsStream');
+  AppLogger.state('Returning notificationsStream');
   return service.notificationsStream;
 });
 
 /// Provider for unread notification count
-final unreadNotificationCountProvider = StreamProvider<int>((ref) {
+final unreadNotificationCountProvider = StreamProvider.autoDispose<int>((ref) {
   final service = ref.watch(realtimeNotificationServiceProvider);
   final authState = ref.watch(authProvider);
   
@@ -41,7 +41,7 @@ final unreadNotificationCountProvider = StreamProvider<int>((ref) {
 });
 
 /// Provider for new notification events (for showing toast/popup)
-final newNotificationProvider = StreamProvider<AppNotification>((ref) {
+final newNotificationProvider = StreamProvider.autoDispose<AppNotification>((ref) {
   final service = ref.watch(realtimeNotificationServiceProvider);
   return service.newNotificationStream;
 });

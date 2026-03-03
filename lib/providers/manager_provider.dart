@@ -11,7 +11,7 @@ final managerKPIServiceProvider = Provider<ManagerKPIService>((ref) {
 /// Manager Dashboard KPIs Provider
 /// Automatically gets employeeId and companyId from authProvider
 final managerDashboardKPIsProvider =
-    FutureProvider.family<Map<String, dynamic>, String?>((ref, branchId) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String?>((ref, branchId) async {
   final service = ref.read(managerKPIServiceProvider);
   final currentUser = ref.read(authProvider).user;
   
@@ -29,7 +29,7 @@ final managerDashboardKPIsProvider =
 /// Manager Team Members Provider
 /// Automatically gets employeeId and companyId from authProvider
 final managerTeamMembersProvider =
-    FutureProvider.family<List<Map<String, dynamic>>, String?>(
+    FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String?>(
         (ref, branchId) async {
   final service = ref.read(managerKPIServiceProvider);
   final currentUser = ref.read(authProvider).user;
@@ -47,7 +47,7 @@ final managerTeamMembersProvider =
 
 /// Manager Recent Activities Provider
 /// Automatically gets employeeId and companyId from authProvider
-final managerRecentActivitiesProvider = FutureProvider.family<
+final managerRecentActivitiesProvider = FutureProvider.autoDispose.family<
     List<Map<String, dynamic>>,
     ({String? branchId, int limit})>((ref, params) async {
   final service = ref.read(managerKPIServiceProvider);

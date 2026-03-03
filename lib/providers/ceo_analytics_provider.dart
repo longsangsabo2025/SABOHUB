@@ -8,7 +8,7 @@ import '../core/services/supabase_service.dart';
 /// Revenue Analytics Provider by Period
 /// Fetches total revenue and breakdown by company for selected period
 final ceoRevenueAnalyticsProvider =
-    FutureProvider.family<Map<String, dynamic>, String>((ref, period) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, period) async {
   final supabaseClient = supabase.client;
 
   try {
@@ -140,7 +140,7 @@ final ceoRevenueAnalyticsProvider =
 /// Customer Analytics Provider
 /// Fetches customer-related metrics across all companies
 final ceoCustomerAnalyticsProvider =
-    FutureProvider.family<Map<String, dynamic>, String>((ref, period) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, period) async {
   final supabaseClient = supabase.client;
 
   try {
@@ -210,7 +210,7 @@ final ceoCustomerAnalyticsProvider =
 /// Performance Analytics Provider
 /// Fetches performance metrics for all companies
 final ceoPerformanceAnalyticsProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final supabaseClient = supabase.client;
 
   try {

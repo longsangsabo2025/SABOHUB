@@ -26,7 +26,7 @@ class PermissionsManagementTab extends ConsumerStatefulWidget {
 class _PermissionsManagementTabState
     extends ConsumerState<PermissionsManagementTab> {
   String? _selectedManagerId;
-  Map<String, bool> _editedPermissions = {};
+  final Map<String, bool> _editedPermissions = {};
   bool _isSaving = false;
 
   @override
@@ -618,10 +618,10 @@ class _PermissionsManagementTabState
     try {
       print('🔧 [AUTO-CREATE] Starting auto-create permissions...');
       
-      final _supabase = supabase.client;
+      final supabaseClient = supabase.client;
       
       // Get all managers in this company from employees table
-      final employeesResponse = await _supabase
+      final employeesResponse = await supabaseClient
           .from('employees')
           .select('id, full_name')
           .eq('company_id', widget.companyId)
@@ -650,7 +650,7 @@ class _PermissionsManagementTabState
         print('👤 [AUTO-CREATE] Processing ${manager['full_name']}...');
         
         // Check if permission already exists
-        final existing = await _supabase
+        final existing = await supabaseClient
             .from('manager_permissions')
             .select('id')
             .eq('manager_id', manager['id'])

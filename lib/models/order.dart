@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../core/theme/app_colors.dart';
 
 class OrderItem {
   final String menuItemId;
@@ -35,11 +36,11 @@ class OrderItem {
 }
 
 enum OrderStatus {
-  pending('Chờ xử lý', Color(0xFFF59E0B)),
-  preparing('Đang chuẩn bị', Color(0xFF3B82F6)),
-  ready('Sẵn sàng', Color(0xFF10B981)),
+  pending('Chờ xử lý', AppColors.warning),
+  preparing('Đang chuẩn bị', AppColors.info),
+  ready('Sẵn sàng', AppColors.success),
   completed('Hoàn thành', Color(0xFF6B7280)),
-  cancelled('Đã hủy', Color(0xFFEF4444));
+  cancelled('Đã hủy', AppColors.error);
 
   final String label;
   final Color color;

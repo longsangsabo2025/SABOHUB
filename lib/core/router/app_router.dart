@@ -20,28 +20,32 @@ import '../../layouts/manager_main_layout.dart';
 import '../../layouts/shift_leader_main_layout.dart';
 import '../../layouts/driver_main_layout.dart';
 import '../../layouts/warehouse_main_layout.dart';
-import '../../layouts/distribution_warehouse_layout.dart';
-import '../../pages/driver/distribution_driver_layout_refactored.dart';
-import '../../layouts/distribution_finance_layout.dart';
-import '../../layouts/distribution_customer_service_layout.dart';
+import '../../business_types/distribution/layouts/distribution_warehouse_layout.dart';
+import '../../business_types/distribution/pages/driver/distribution_driver_layout_refactored.dart';
+import '../../business_types/distribution/layouts/distribution_finance_layout.dart';
+import '../../business_types/distribution/layouts/distribution_customer_service_layout.dart';
 import '../../pages/staff_main_layout.dart';
 import '../../pages/ceo/ceo_main_layout.dart';
 import '../../pages/manager/manager_reports_page.dart';
 // Odori B2B Module Pages
-import '../../pages/customers/odori_customers_page.dart';
-import '../../pages/products/odori_products_page.dart';
-import '../../pages/orders/odori_orders_page.dart';
-import '../../pages/deliveries/odori_deliveries_page.dart';
-import '../../pages/receivables/odori_receivables_page.dart';
+import '../../business_types/distribution/pages/customers/odori_customers_page.dart';
+import '../../business_types/distribution/pages/products/odori_products_page.dart';
+import '../../business_types/distribution/pages/orders/odori_orders_page.dart';
+import '../../business_types/distribution/pages/deliveries/odori_deliveries_page.dart';
+import '../../business_types/distribution/pages/receivables/odori_receivables_page.dart';
 // Warehouse & Driver Pages - Now using layouts
 import '../../pages/delivery/route_planning_page.dart';
 // Manufacturing Module Pages
-import '../../pages/manufacturing/suppliers_page.dart';
-import '../../pages/manufacturing/materials_page.dart';
-import '../../pages/manufacturing/bom_page.dart';
-import '../../pages/manufacturing/purchase_orders_page.dart';
-import '../../pages/manufacturing/production_orders_page.dart';
-import '../../pages/manufacturing/payables_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/suppliers_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/materials_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/bom_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/purchase_orders_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/production_orders_page.dart';
+import '../../business_types/manufacturing/pages/manufacturing/payables_page.dart';
+// Entertainment Module Pages
+import '../../business_types/entertainment/pages/tables/table_list_page.dart';
+import '../../business_types/entertainment/pages/sessions/session_list_page.dart';
+import '../../business_types/entertainment/pages/menu/menu_list_page.dart';
 // Map & GPS Module Pages - TEMPORARILY DISABLED for web compatibility
 // import '../../pages/map/map_overview_page.dart';
 // import '../../pages/map/delivery_tracking_page.dart';
@@ -124,6 +128,11 @@ class AppRoutes {
   static const String manufacturingProductionOrders = '/manufacturing/production-orders';
   static const String manufacturingPayables = '/manufacturing/payables';
 
+  // Entertainment Module routes
+  static const String entertainmentTables = '/entertainment/tables';
+  static const String entertainmentSessions = '/entertainment/sessions';
+  static const String entertainmentMenu = '/entertainment/menu';
+
   // Map & GPS Module routes
   static const String mapOverview = '/map/overview';
   static const String mapDeliveryTracking = '/map/delivery-tracking';
@@ -164,18 +173,36 @@ final currentUserRoleProvider = Provider<nav.UserRole>((Ref ref) {
 
 /// Route guard that checks user permissions
 class RouteGuard {
+  static const _sharedRoutes = [
+    '/employees/list',
+    '/employees/create',
+    '/employees/invite',
+    '/company/settings',
+    '/manager-reports',
+    '/entertainment/tables',
+    '/entertainment/sessions',
+    '/entertainment/menu',
+  ];
+
   static String? checkAccess(nav.UserRole userRole, String route) {
+    // CEO has full access to all routes
+    if (userRole == nav.UserRole.ceo) return null;
+
     // Get allowed routes for the current user role
     final allowedItems = nav.NavigationConfig.getItemsForRole(userRole);
     final allowedRoutes = allowedItems.map((item) => item.route).toList();
 
-    // Add routes that are always accessible
+    // Routes accessible by all authenticated users
     allowedRoutes.add(AppRoutes.home);
     allowedRoutes.add(AppRoutes.profile);
 
+    // Manager gets shared operational routes
+    if (userRole == nav.UserRole.manager) {
+      allowedRoutes.addAll(_sharedRoutes);
+    }
+
     // Check if route is allowed
     if (!allowedRoutes.contains(route)) {
-      // Redirect to appropriate dashboard based on role
       switch (userRole) {
         case nav.UserRole.superAdmin:
           return AppRoutes.superAdminDashboard;
@@ -186,7 +213,7 @@ class RouteGuard {
         case nav.UserRole.manager:
           return AppRoutes.managerDashboard;
         case nav.UserRole.ceo:
-          return AppRoutes.ceoAnalytics;
+          return null;
         case nav.UserRole.driver:
           return AppRoutes.driverDashboard;
         case nav.UserRole.warehouse:
@@ -198,37 +225,45 @@ class RouteGuard {
   }
 }
 
+/// Bridge between Riverpod auth state and GoRouter's refreshListenable.
+/// When auth state changes, this notifies GoRouter to re-evaluate redirects
+/// WITHOUT recreating the entire GoRouter (preserving widget state like CEO login toggle).
+class _RouterAuthNotifier extends ChangeNotifier {
+  _RouterAuthNotifier(Ref ref) {
+    ref.listen(authProvider, (_, __) => notifyListeners());
+    ref.listen(currentUserRoleProvider, (_, __) => notifyListeners());
+  }
+}
+
 final appRouterProvider = Provider<GoRouter>((Ref ref) {
-  final userRole = ref.watch(currentUserRoleProvider);
-  final authState = ref.watch(authProvider);
+  final routerNotifier = _RouterAuthNotifier(ref);
 
   return GoRouter(
     initialLocation: AppRoutes.login,
+    refreshListenable: routerNotifier,
     redirect: (BuildContext context, GoRouterState state) {
+      // ✅ FIX: Use ref.read() instead of ref.watch() so GoRouter is created ONCE.
+      // Auth changes trigger redirect re-evaluation via refreshListenable above.
+      final authState = ref.read(authProvider);
+      final userRole = ref.read(currentUserRoleProvider);
       final isLoggedIn = authState.isAuthenticated;
       final isLoading = authState.isLoading;
       final isAuthRoute = state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.signup ||
           state.matchedLocation == AppRoutes.forgotPassword;
 
-      // 🔍 DEBUG LOG - Remove after fixing
-      print('🚀 [ROUTER] ==================');
-      print('🚀 [ROUTER] matchedLocation: ${state.matchedLocation}');
-      print('🚀 [ROUTER] isLoggedIn: $isLoggedIn');
-      print('🚀 [ROUTER] isLoading: $isLoading');
-      print('🚀 [ROUTER] userRole: $userRole');
-      print('🚀 [ROUTER] user: ${authState.user?.name} (${authState.user?.role})');
-      print('🚀 [ROUTER] isAuthRoute: $isAuthRoute');
+      // Router navigation logging (debug only)
+      assert(() {
+        debugPrint('[ROUTER] ${state.matchedLocation} | auth=$isLoggedIn | role=$userRole');
+        return true;
+      }());
 
-      // ✅ FIX: Wait for session restore to complete before redirecting
-      // This prevents the race condition where user sees login page briefly
+      // Wait for session restore to complete before redirecting
       if (isLoading) {
-        print('🚀 [ROUTER] --> WAITING (isLoading)');
         return null; // Stay on current route while loading
       }
 
       // Email verification is accessible for both logged in and logged out users
-      // Check if path starts with email verification (to handle query parameters)
       final isEmailVerification =
           state.matchedLocation.startsWith(AppRoutes.emailVerification) ||
               state.uri.path == AppRoutes.emailVerification;
@@ -241,24 +276,20 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
           !isAuthRoute &&
           !isEmailVerification &&
           !isOnboarding) {
-        print('🚀 [ROUTER] --> REDIRECT TO LOGIN (not logged in)');
         return AppRoutes.login;
       }
 
       // If logged in and on auth pages (but not email verification), redirect to home
       if (isLoggedIn && isAuthRoute && !isEmailVerification) {
-        print('🚀 [ROUTER] --> REDIRECT TO HOME (logged in on auth page)');
         return AppRoutes.home;
       }
 
       // Check role-based access for authenticated users (skip email verification and onboarding)
       if (isLoggedIn && !isEmailVerification && !isOnboarding) {
         final redirectRoute = RouteGuard.checkAccess(userRole, state.matchedLocation);
-        print('🚀 [ROUTER] --> RouteGuard.checkAccess returned: $redirectRoute');
         return redirectRoute;
       }
 
-      print('🚀 [ROUTER] --> NO REDIRECT (null)');
       return null;
     },
     routes: [
@@ -462,6 +493,20 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.driverDashboard,
         builder: (BuildContext context, GoRouterState state) => const DriverMainLayout(),
+      ),
+
+      // Entertainment Module routes
+      GoRoute(
+        path: AppRoutes.entertainmentTables,
+        builder: (BuildContext context, GoRouterState state) => const TableListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.entertainmentSessions,
+        builder: (BuildContext context, GoRouterState state) => const SessionListPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.entertainmentMenu,
+        builder: (BuildContext context, GoRouterState state) => const MenuListPage(),
       ),
 
       // Manufacturing Module routes

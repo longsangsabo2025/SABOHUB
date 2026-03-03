@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import '../core/services/supabase_service.dart';
 import '../models/task_template.dart';
 
@@ -189,16 +188,13 @@ class TaskTemplateService {
         description: description,
         category: category,
         priority: priority,
-        recurrencePattern: RecurrencePattern.fromString(recurrencePattern),
-        scheduledTime: TimeOfDay(hour: hour, minute: 0),
-        assignedRole:
-            priority == 'high' ? AssignedRole.staff : AssignedRole.any,
+        recurrencePattern: recurrencePattern,
+        scheduledTime: '${hour.toString().padLeft(2, '0')}:00',
+        assignedRole: priority == 'high' ? 'STAFF' : null,
         isActive: true,
         createdBy: createdBy,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-        aiSuggestionId: suggestion['id'] as String?,
-        aiConfidence: 0.85,
       );
 
       return await createTemplate(template);

@@ -21,6 +21,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+  TaskCategory? _filterCategory;
 
   @override
   void initState() {
@@ -158,42 +159,49 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
           );
         },
         data: (cachedTasks) {
-          print('✅ [ManagerTasksPage] FROM CEO tab - Received ${cachedTasks.length} tasks');
-          print('📦 [ManagerTasksPage] FROM CEO tab - Tasks data: ${cachedTasks.map((t) => {'id': t.id, 'title': t.title, 'status': t.status}).toList()}');
-          
-          final ceoTasks = cachedTasks;
+          final allTasks = cachedTasks;
+          final ceoTasks = _filterCategory == null
+              ? allTasks
+              : allTasks.where((t) => t.category == _filterCategory).toList();
 
-          if (ceoTasks.isEmpty) {
-            print('⚠️ [ManagerTasksPage] FROM CEO tab - No tasks to display (empty)');
-
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.task_alt, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Chưa có nhiệm vụ từ CEO',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return Column(
             children: [
-              _buildSectionHeader(
-                'Công việc được giao từ CEO',
-                '${ceoTasks.length} công việc',
+              _buildCategoryFilterBar(),
+              Expanded(
+                child: ceoTasks.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.task_alt,
+                                size: 64, color: Colors.grey.shade400),
+                            const SizedBox(height: 16),
+                            Text(
+                              _filterCategory != null
+                                  ? 'Không có nhiệm vụ ${_filterCategory!.label}'
+                                  : 'Chưa có nhiệm vụ từ CEO',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          _buildSectionHeader(
+                            'Công việc được giao từ CEO',
+                            '${ceoTasks.length} công việc',
+                          ),
+                          const SizedBox(height: 12),
+                          ...ceoTasks.map((task) =>
+                              _buildManagementTaskCard(task,
+                                  showAssignedBy: true)),
+                        ],
+                      ),
               ),
-              const SizedBox(height: 12),
-              ...ceoTasks.map((task) =>
-                  _buildManagementTaskCard(task, showAssignedBy: true)),
             ],
           );
         },
@@ -336,6 +344,36 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCategoryFilterBar() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          FilterChip(
+            label: const Text('Tất cả'),
+            selected: _filterCategory == null,
+            onSelected: (_) => setState(() => _filterCategory = null),
+            selectedColor: Colors.green.withValues(alpha: 0.2),
+            checkmarkColor: Colors.green.shade700,
+          ),
+          const SizedBox(width: 8),
+          ...TaskCategory.values.map((cat) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(cat.displayName),
+                  selected: _filterCategory == cat,
+                  onSelected: (_) => setState(() =>
+                      _filterCategory = _filterCategory == cat ? null : cat),
+                  selectedColor: Colors.green.withValues(alpha: 0.2),
+                  checkmarkColor: Colors.green.shade700,
+                ),
+              )),
+        ],
       ),
     );
   }
@@ -511,6 +549,22 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
                   _buildPriorityBadge(priority),
                   const SizedBox(width: 8),
                   _buildStatusBadge(status),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      task.category.displayName,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.purple.shade700,
+                      ),
+                    ),
+                  ),
                   const Spacer(),
                   IconButton(
                     onPressed: () {
@@ -961,7 +1015,7 @@ class _ManagerTasksPageState extends ConsumerState<ManagerTasksPage>
                   print('✅ Task created successfully');
                 } catch (e) {
                   print('❌ Failed to create task: $e');
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('❌ Lỗi tạo công việc: $e'),

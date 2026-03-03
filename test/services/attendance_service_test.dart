@@ -4,11 +4,11 @@ void main() {
   group('Attendance Service Validation Logic', () {
     test('should prevent duplicate check-in - validation logic', () {
       // Test scenario: User already has check-in today
-      final Map<String, dynamic>? existingCheckIn = {'id': 'existing-id', 'check_in': DateTime.now().toIso8601String()};
+      final Map<String, dynamic> existingCheckIn = {'id': 'existing-id', 'check_in': DateTime.now().toIso8601String()};
       
       // Logic: If existingCheckIn is not null, should throw exception
       expect(existingCheckIn, isNotNull);
-      expect(existingCheckIn!['check_in'], isNotNull);
+      expect(existingCheckIn['check_in'], isNotNull);
       
       // This validates the condition in attendance_service.dart line 39-41
       expect(

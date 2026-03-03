@@ -7,7 +7,7 @@ import 'dart:convert';
 import '../../providers/auth_provider.dart';
 import '../../providers/company_list_provider.dart';
 import '../../services/employee_auth_service.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_colors.dart';
 import '../../utils/app_logger.dart';
 
 /// Login Page với thiết kế mới:
@@ -38,8 +38,8 @@ class _DualLoginPageState extends ConsumerState<DualLoginPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppTheme.primaryPurple,
-              AppTheme.secondaryCyan,
+              AppColors.primary,
+              AppColors.secondary,
             ],
           ),
         ),
@@ -71,7 +71,7 @@ class _DualLoginPageState extends ConsumerState<DualLoginPage> {
                           child: Icon(
                             Icons.local_shipping,
                             size: 40,
-                            color: AppTheme.primaryPurple,
+                            color: AppColors.primary,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -142,6 +142,7 @@ class _DualLoginPageState extends ConsumerState<DualLoginPage> {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
+                      key: const Key('ceo_toggle_button'),
                       onTap: _toggleLoginMode,
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
@@ -254,7 +255,6 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
       final newAccount = {
         'company': _companyController.text.trim(),
         'username': _usernameController.text.trim(),
-        'password': _passwordController.text,
       };
       
       // Remove existing account with same username@company to avoid duplicates
@@ -296,7 +296,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
     setState(() {
       _companyController.text = account['company'] ?? '';
       _usernameController.text = account['username'] ?? '';
-      _passwordController.text = account['password'] ?? '';
+      _passwordController.text = '';
       _rememberMe = true;
     });
   }
@@ -332,10 +332,10 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
       
       if (_rememberMe) {
         await prefs.setBool(_rememberKey, true);
+        // Only save company + username (NOT password) for security
         await prefs.setString(_savedCredentialsKey, jsonEncode({
           'company': _companyController.text.trim(),
           'username': _usernameController.text.trim(),
-          'password': _passwordController.text,
         }));
         // Also save to multi-account list
         await _saveAccountToList();
@@ -514,11 +514,11 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
               children: [
                 CircleAvatar(
                   radius: 14,
-                  backgroundColor: AppTheme.primaryPurple.withValues(alpha: 0.1),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   child: Text(
                     username.isNotEmpty ? username[0].toUpperCase() : '?',
                     style: TextStyle(
-                      color: AppTheme.primaryPurple,
+                      color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -603,12 +603,12 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryPurple.withValues(alpha: 0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.people,
-                    color: AppTheme.primaryPurple,
+                    color: AppColors.primary,
                     size: 24,
                   ),
                 ),
@@ -672,13 +672,14 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                     });
                     
                     return TextFormField(
+                      key: const Key('employee_company_field'),
                       controller: controller,
                       focusNode: focusNode,
                       decoration: InputDecoration(
                         labelText: 'Tên công ty',
                         hintText: 'Nhập tên công ty của bạn',
                         prefixIcon: Icon(Icons.business_outlined,
-                            color: AppTheme.primaryPurple),
+                            color: AppColors.primary),
                         filled: true,
                         fillColor: Colors.grey.shade50,
                         border: OutlineInputBorder(
@@ -692,7 +693,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide:
-                              BorderSide(color: AppTheme.primaryPurple, width: 2),
+                              BorderSide(color: AppColors.primary, width: 2),
                         ),
                       ),
                       validator: (value) {
@@ -724,7 +725,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                               final option = options.elementAt(index);
                               return ListTile(
                                 leading: Icon(Icons.business,
-                                    color: AppTheme.primaryPurple, size: 20),
+                                    color: AppColors.primary, size: 20),
                                 title: Text(option),
                                 onTap: () => onSelected(option),
                               );
@@ -742,6 +743,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
 
             // Username field
             _buildTextField(
+              fieldKey: const Key('employee_username_field'),
               controller: _usernameController,
               label: 'Tên đăng nhập',
               hint: 'Ví dụ: kho, driver1, asm.nam',
@@ -758,12 +760,13 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
 
             // Password field
             TextFormField(
+              key: const Key('employee_password_field'),
               controller: _passwordController,
               obscureText: _obscurePassword,
               decoration: InputDecoration(
                 labelText: 'Mật khẩu',
                 prefixIcon:
-                    Icon(Icons.lock_outline, color: AppTheme.primaryPurple),
+                    Icon(Icons.lock_outline, color: AppColors.primary),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword
@@ -788,7 +791,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
-                      BorderSide(color: AppTheme.primaryPurple, width: 2),
+                      BorderSide(color: AppColors.primary, width: 2),
                 ),
               ),
               validator: (value) {
@@ -812,7 +815,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                     onChanged: (value) {
                       setState(() => _rememberMe = value ?? false);
                     },
-                    activeColor: AppTheme.primaryPurple,
+                    activeColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -861,9 +864,10 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
+                key: const Key('employee_login_button'),
                 onPressed: _isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryPurple,
+                  backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -940,14 +944,16 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
     required IconData icon,
     bool enabled = true,
     String? Function(String?)? validator,
+    Key? fieldKey,
   }) {
     return TextFormField(
+      key: fieldKey,
       controller: controller,
       enabled: enabled,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: AppTheme.primaryPurple),
+        prefixIcon: Icon(icon, color: AppColors.primary),
         filled: true,
         fillColor: Colors.grey.shade50,
         border: OutlineInputBorder(
@@ -960,7 +966,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.primaryPurple, width: 2),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
         ),
       ),
       validator: validator,
@@ -1039,6 +1045,7 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
             Row(
               children: [
                 InkWell(
+                  key: const Key('employee_back_button'),
                   onTap: widget.onBack,
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
@@ -1108,6 +1115,7 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
 
             // Email field
             TextFormField(
+              key: const Key('ceo_email_field'),
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
@@ -1146,6 +1154,7 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
 
             // Password field
             TextFormField(
+              key: const Key('ceo_password_field'),
               controller: _passwordController,
               obscureText: _obscurePassword,
               decoration: InputDecoration(
@@ -1194,6 +1203,7 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
+                key: const Key('ceo_login_button'),
                 onPressed: _isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber.shade700,

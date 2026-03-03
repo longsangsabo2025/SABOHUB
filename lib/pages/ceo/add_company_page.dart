@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../services/company_service.dart';
+import '../../providers/auth_provider.dart';
 
 /// Add Company Page
 /// Form để thêm công ty mới vào hệ thống
@@ -93,8 +94,10 @@ class _AddCompanyPageState extends ConsumerState<AddCompanyPage> {
           businessType = 'other';
       }
 
+      final userId = ref.read(authProvider).user?.id ?? '';
       await companyService.createCompany(
         name: _nameController.text,
+        userId: userId,
         address: _addressController.text,
         phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
         email: _emailController.text.isNotEmpty ? _emailController.text : null,

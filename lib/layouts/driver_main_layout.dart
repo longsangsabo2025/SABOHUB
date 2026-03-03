@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../pages/driver/driver_route_page.dart';
-import '../pages/driver/driver_history_page.dart';
+import '../business_types/distribution/pages/driver/driver_route_page.dart';
+import '../business_types/distribution/pages/driver/driver_history_page.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/realtime_notification_widgets.dart';
 

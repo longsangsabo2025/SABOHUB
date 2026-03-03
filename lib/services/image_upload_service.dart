@@ -1,8 +1,8 @@
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import '../utils/app_logger.dart';
 
 /// Service thống nhất cho việc upload và quản lý hình ảnh trong ứng dụng
 /// 
@@ -26,6 +26,8 @@ class ImageUploadService {
   static const String bucketCustomers = 'customer-images';
   static const String bucketCompanies = 'company-images';
   static const String bucketGeneral = 'uploads';
+  static const String bucketPaymentProofs = 'payment-proofs';
+  static const String bucketInvoiceImages = 'invoice-images';
 
   /// Chọn ảnh từ gallery
   Future<XFile?> pickFromGallery({
@@ -41,7 +43,7 @@ class ImageUploadService {
         imageQuality: quality,
       );
     } catch (e) {
-      debugPrint('Error picking image from gallery: $e');
+      AppLogger.error('[ImageUploadService] Error picking image from gallery', e);
       return null;
     }
   }
@@ -60,7 +62,7 @@ class ImageUploadService {
         imageQuality: quality,
       );
     } catch (e) {
-      debugPrint('Error picking image from camera: $e');
+      AppLogger.error('[ImageUploadService] Error picking image from camera', e);
       return null;
     }
   }
@@ -134,6 +136,34 @@ class ImageUploadService {
     );
   }
 
+  /// Upload ảnh chứng minh thanh toán (chuyển khoản)
+  Future<String?> uploadPaymentProof({
+    required XFile imageFile,
+    required String companyId,
+    String? paymentId,
+  }) async {
+    return _uploadImage(
+      imageFile: imageFile,
+      bucket: bucketPaymentProofs,
+      folder: companyId,
+      filePrefix: paymentId ?? 'payment',
+    );
+  }
+
+  /// Upload ảnh hóa đơn đơn hàng
+  Future<String?> uploadInvoiceImage({
+    required XFile imageFile,
+    required String companyId,
+    String? orderId,
+  }) async {
+    return _uploadImage(
+      imageFile: imageFile,
+      bucket: bucketInvoiceImages,
+      folder: companyId,
+      filePrefix: orderId ?? 'invoice',
+    );
+  }
+
   /// Core upload method - Hỗ trợ cả web và mobile
   Future<String?> _uploadImage({
     required XFile imageFile,
@@ -168,7 +198,7 @@ class ImageUploadService {
       final publicUrl = _supabase.storage.from(bucket).getPublicUrl(storagePath);
       return publicUrl;
     } catch (e) {
-      debugPrint('Error uploading image: $e');
+      AppLogger.error('[ImageUploadService] Error uploading image', e);
       rethrow;
     }
   }
@@ -191,7 +221,7 @@ class ImageUploadService {
       await _supabase.storage.from(bucket).remove([filePath]);
       return true;
     } catch (e) {
-      debugPrint('Error deleting image: $e');
+      AppLogger.error('[ImageUploadService] Error deleting image', e);
       return false;
     }
   }
@@ -226,14 +256,6 @@ class ImageUploadService {
     }
   }
 
-  /// Debug print for non-release builds only
-  void debugPrint(String message) {
-    // Only print in debug mode, not in production
-    if (!kReleaseMode) {
-      // ignore: avoid_print
-      print('[ImageUploadService] $message');
-    }
-  }
 }
 
 /// Extension để dễ sử dụng ImagePicker

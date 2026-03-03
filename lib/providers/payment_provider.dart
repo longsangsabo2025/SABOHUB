@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/payment.dart';
 import '../services/payment_service.dart';
 import 'auth_provider.dart';
-import 'session_provider.dart';
+import '../business_types/entertainment/providers/session_provider.dart';
 
 // Payment service provider
 final paymentServiceProvider = Provider<PaymentService>((ref) {
@@ -10,7 +10,7 @@ final paymentServiceProvider = Provider<PaymentService>((ref) {
 });
 
 // All payments provider
-final allPaymentsProvider = FutureProvider<List<Payment>>((ref) async {
+final allPaymentsProvider = FutureProvider.autoDispose<List<Payment>>((ref) async {
   final paymentService = ref.read(paymentServiceProvider);
   final auth = ref.watch(authProvider);
   
@@ -22,7 +22,7 @@ final allPaymentsProvider = FutureProvider<List<Payment>>((ref) async {
 });
 
 // Payments by status provider (family)
-final paymentsByStatusProvider = FutureProvider.family<List<Payment>, PaymentStatus>((ref, status) async {
+final paymentsByStatusProvider = FutureProvider.autoDispose.family<List<Payment>, PaymentStatus>((ref, status) async {
   final paymentService = ref.read(paymentServiceProvider);
   final auth = ref.watch(authProvider);
   
@@ -34,7 +34,7 @@ final paymentsByStatusProvider = FutureProvider.family<List<Payment>, PaymentSta
 });
 
 // Payments by session provider (family)
-final paymentsBySessionProvider = FutureProvider.family<List<Payment>, String>((ref, sessionId) async {
+final paymentsBySessionProvider = FutureProvider.autoDispose.family<List<Payment>, String>((ref, sessionId) async {
   final paymentService = ref.read(paymentServiceProvider);
   final auth = ref.watch(authProvider);
   
@@ -46,7 +46,7 @@ final paymentsBySessionProvider = FutureProvider.family<List<Payment>, String>((
 });
 
 // Payment stats provider
-final paymentStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final paymentStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final paymentService = ref.read(paymentServiceProvider);
   final auth = ref.watch(authProvider);
   
@@ -68,7 +68,7 @@ final paymentStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 });
 
 // Individual payment provider (family)
-final paymentProvider = FutureProvider.family<Payment?, String>((ref, paymentId) async {
+final paymentProvider = FutureProvider.autoDispose.family<Payment?, String>((ref, paymentId) async {
   final paymentService = ref.read(paymentServiceProvider);
   final auth = ref.watch(authProvider);
   

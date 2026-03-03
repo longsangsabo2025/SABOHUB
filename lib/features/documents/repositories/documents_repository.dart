@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/document.dart';
+import '../../../utils/app_logger.dart';
 
 /// Repository for managing documents in Supabase
 class DocumentsRepository {
@@ -14,7 +14,7 @@ class DocumentsRepository {
   /// Get all documents for a company
   Future<List<Document>> getDocumentsByCompany(String companyId) async {
     try {
-      debugPrint('📄 Fetching documents for company: $companyId');
+      AppLogger.api('Fetching documents for company: $companyId');
 
       final response = await _supabase
           .from(_tableName)
@@ -27,10 +27,10 @@ class DocumentsRepository {
           .map((json) => Document.fromJson(json as Map<String, dynamic>))
           .toList();
 
-      debugPrint('✅ Found ${documents.length} documents');
+      AppLogger.api('Found ${documents.length} documents');
       return documents;
     } catch (e) {
-      debugPrint('❌ Error fetching documents: $e');
+      AppLogger.error('Error fetching documents', e);
       rethrow;
     }
   }
@@ -38,7 +38,7 @@ class DocumentsRepository {
   /// Get all documents uploaded by a user
   Future<List<Document>> getDocumentsByUser(String userId) async {
     try {
-      debugPrint('📄 Fetching documents uploaded by user: $userId');
+      AppLogger.api('Fetching documents by user: $userId');
 
       final response = await _supabase
           .from(_tableName)
@@ -51,10 +51,10 @@ class DocumentsRepository {
           .map((json) => Document.fromJson(json as Map<String, dynamic>))
           .toList();
 
-      debugPrint('✅ Found ${documents.length} documents');
+      AppLogger.api('Found ${documents.length} documents');
       return documents;
     } catch (e) {
-      debugPrint('❌ Error fetching documents: $e');
+      AppLogger.error('Error fetching documents', e);
       rethrow;
     }
   }
@@ -65,7 +65,7 @@ class DocumentsRepository {
     required String documentType,
   }) async {
     try {
-      debugPrint('📄 Fetching $documentType documents for company: $companyId');
+      AppLogger.api('Fetching $documentType documents for company: $companyId');
 
       final response = await _supabase
           .from(_tableName)
@@ -79,10 +79,10 @@ class DocumentsRepository {
           .map((json) => Document.fromJson(json as Map<String, dynamic>))
           .toList();
 
-      debugPrint('✅ Found ${documents.length} $documentType documents');
+      AppLogger.api('Found ${documents.length} $documentType documents');
       return documents;
     } catch (e) {
-      debugPrint('❌ Error fetching documents by type: $e');
+      AppLogger.error('Error fetching documents by type', e);
       rethrow;
     }
   }
@@ -93,7 +93,7 @@ class DocumentsRepository {
     required String searchQuery,
   }) async {
     try {
-      debugPrint('🔍 Searching documents with query: $searchQuery');
+      AppLogger.api('Searching documents with query: $searchQuery');
 
       final response = await _supabase
           .from(_tableName)
@@ -107,11 +107,10 @@ class DocumentsRepository {
           .map((json) => Document.fromJson(json as Map<String, dynamic>))
           .toList();
 
-      debugPrint(
-          '✅ Found ${documents.length} documents matching "$searchQuery"');
+      AppLogger.api('Found ${documents.length} documents matching "$searchQuery"');
       return documents;
     } catch (e) {
-      debugPrint('❌ Error searching documents: $e');
+      AppLogger.error('Error searching documents', e);
       rethrow;
     }
   }
@@ -119,7 +118,7 @@ class DocumentsRepository {
   /// Get a single document by ID
   Future<Document?> getDocumentById(String documentId) async {
     try {
-      debugPrint('📄 Fetching document: $documentId');
+      AppLogger.api('Fetching document: $documentId');
 
       final response = await _supabase
           .from(_tableName)
@@ -129,10 +128,10 @@ class DocumentsRepository {
           .single();
 
       final document = Document.fromJson(response);
-      debugPrint('✅ Document found: ${document.fileName}');
+      AppLogger.api('Document found: ${document.fileName}');
       return document;
     } catch (e) {
-      debugPrint('❌ Error fetching document: $e');
+      AppLogger.error('Error fetching document', e);
       return null;
     }
   }
@@ -140,7 +139,7 @@ class DocumentsRepository {
   /// Get document by Google Drive file ID
   Future<Document?> getDocumentByDriveFileId(String driveFileId) async {
     try {
-      debugPrint('📄 Fetching document by Drive ID: $driveFileId');
+      AppLogger.api('Fetching document by Drive ID: $driveFileId');
 
       final response = await _supabase
           .from(_tableName)
@@ -152,10 +151,10 @@ class DocumentsRepository {
       if (response == null) return null;
 
       final document = Document.fromJson(response);
-      debugPrint('✅ Document found: ${document.fileName}');
+      AppLogger.api('Document found: ${document.fileName}');
       return document;
     } catch (e) {
-      debugPrint('❌ Error fetching document by Drive ID: $e');
+      AppLogger.error('Error fetching document by Drive ID', e);
       return null;
     }
   }
@@ -177,7 +176,7 @@ class DocumentsRepository {
     String? description,
   }) async {
     try {
-      debugPrint('📝 Creating document: $fileName');
+      AppLogger.api('Creating document: $fileName');
 
       final data = {
         'google_drive_file_id': googleDriveFileId,
@@ -199,10 +198,10 @@ class DocumentsRepository {
           await _supabase.from(_tableName).insert(data).select().single();
 
       final document = Document.fromJson(response);
-      debugPrint('✅ Document created: ${document.id}');
+      AppLogger.api('Document created: ${document.id}');
       return document;
     } catch (e) {
-      debugPrint('❌ Error creating document: $e');
+      AppLogger.error('Error creating document', e);
       rethrow;
     }
   }
@@ -217,7 +216,7 @@ class DocumentsRepository {
     String? description,
   }) async {
     try {
-      debugPrint('📝 Updating document: $documentId');
+      AppLogger.api('Updating document: $documentId');
 
       final data = <String, dynamic>{};
       if (fileName != null) data['file_name'] = fileName;
@@ -234,10 +233,10 @@ class DocumentsRepository {
           .single();
 
       final document = Document.fromJson(response);
-      debugPrint('✅ Document updated: ${document.fileName}');
+      AppLogger.api('Document updated: ${document.fileName}');
       return document;
     } catch (e) {
-      debugPrint('❌ Error updating document: $e');
+      AppLogger.error('Error updating document', e);
       rethrow;
     }
   }
@@ -245,17 +244,17 @@ class DocumentsRepository {
   /// Soft delete a document
   Future<bool> deleteDocument(String documentId) async {
     try {
-      debugPrint('🗑️ Soft deleting document: $documentId');
+      AppLogger.api('Soft deleting document: $documentId');
 
       await _supabase.from(_tableName).update({
         'is_deleted': true,
         'deleted_at': DateTime.now().toIso8601String(),
       }).eq('id', documentId);
 
-      debugPrint('✅ Document soft deleted');
+      AppLogger.api('Document soft deleted');
       return true;
     } catch (e) {
-      debugPrint('❌ Error deleting document: $e');
+      AppLogger.error('Error deleting document', e);
       return false;
     }
   }
@@ -263,14 +262,14 @@ class DocumentsRepository {
   /// Hard delete a document (permanent)
   Future<bool> hardDeleteDocument(String documentId) async {
     try {
-      debugPrint('🗑️ Hard deleting document: $documentId');
+      AppLogger.api('Hard deleting document: $documentId');
 
       await _supabase.from(_tableName).delete().eq('id', documentId);
 
-      debugPrint('✅ Document permanently deleted');
+      AppLogger.api('Document permanently deleted');
       return true;
     } catch (e) {
-      debugPrint('❌ Error hard deleting document: $e');
+      AppLogger.error('Error hard deleting document', e);
       return false;
     }
   }
@@ -286,7 +285,7 @@ class DocumentsRepository {
 
       return (response as List).length;
     } catch (e) {
-      debugPrint('❌ Error getting documents count: $e');
+      AppLogger.error('Error getting documents count', e);
       return 0;
     }
   }
@@ -301,7 +300,7 @@ class DocumentsRepository {
       );
       return totalBytes;
     } catch (e) {
-      debugPrint('❌ Error calculating storage: $e');
+      AppLogger.error('Error calculating storage', e);
       return 0;
     }
   }

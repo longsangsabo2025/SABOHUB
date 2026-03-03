@@ -1,4 +1,4 @@
-/// Customer Tier Widgets - Badge và UI components cho phân loại khách hàng
+// Customer Tier Widgets - Badge và UI components cho phân loại khách hàng
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/customer_tier.dart';

@@ -1,10 +1,10 @@
-/// 🔴 LONGSANG ERROR REPORTER FOR FLUTTER
-/// Auto-reports errors to longsang-admin for auto-fix
-/// 
-/// USAGE:
-/// 1. Add to pubspec.yaml: http: ^1.1.0
-/// 2. In main.dart, wrap runApp with:
-///    LongSangErrorReporter.init(() => runApp(MyApp()));
+// 🔴 LONGSANG ERROR REPORTER FOR FLUTTER
+// Auto-reports errors to longsang-admin for auto-fix
+// 
+// USAGE:
+// 1. Add to pubspec.yaml: http: ^1.1.0
+// 2. In main.dart, wrap runApp with:
+//    LongSangErrorReporter.init(() => runApp(MyApp()));
 
 import 'dart:async';
 import 'dart:convert';

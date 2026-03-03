@@ -33,7 +33,7 @@ final fileUploadServiceProvider = Provider<FileUploadService>((ref) {
 
 /// Get or create AI assistant for a company
 final aiAssistantProvider =
-    FutureProvider.family<AIAssistant, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<AIAssistant, String>((ref, companyId) async {
   final aiService = ref.watch(aiServiceProvider);
   return aiService.getOrCreateAssistant(companyId);
 });
@@ -72,14 +72,14 @@ final aiAssistantNotifierProvider =
 
 /// Stream messages for an assistant
 final aiMessagesStreamProvider =
-    StreamProvider.family<List<AIMessage>, String>((ref, assistantId) {
+    StreamProvider.autoDispose.family<List<AIMessage>, String>((ref, assistantId) {
   final aiService = ref.watch(aiServiceProvider);
   return aiService.streamMessages(assistantId);
 });
 
 /// Get messages (one-time)
 final aiMessagesProvider =
-    FutureProvider.family<List<AIMessage>, String>((ref, assistantId) async {
+    FutureProvider.autoDispose.family<List<AIMessage>, String>((ref, assistantId) async {
   final aiService = ref.watch(aiServiceProvider);
   return aiService.getMessages(assistantId);
 });
@@ -128,7 +128,7 @@ final sendMessageNotifierProvider =
 
 /// Get uploaded files for an assistant
 final uploadedFilesProvider =
-    FutureProvider.family<List<AIUploadedFile>, String>(
+    FutureProvider.autoDispose.family<List<AIUploadedFile>, String>(
         (ref, assistantId) async {
   final aiService = ref.watch(aiServiceProvider);
   return aiService.getUploadedFiles(assistantId);
@@ -236,14 +236,14 @@ final fileUploadNotifierProvider =
 
 /// Get recommendations for a company
 final recommendationsProvider =
-    FutureProvider.family<List<AIRecommendation>, String>(
+    FutureProvider.autoDispose.family<List<AIRecommendation>, String>(
         (ref, companyId) async {
   final aiService = ref.watch(aiServiceProvider);
   return aiService.getRecommendations(companyId);
 });
 
 /// Get recommendations by status
-final recommendationsByStatusProvider = FutureProvider.family<
+final recommendationsByStatusProvider = FutureProvider.autoDispose.family<
     List<AIRecommendation>, ({String companyId, String status})>(
   (ref, params) async {
     final aiService = ref.watch(aiServiceProvider);
@@ -253,7 +253,7 @@ final recommendationsByStatusProvider = FutureProvider.family<
 );
 
 /// Get recommendations by category
-final recommendationsByCategoryProvider = FutureProvider.family<
+final recommendationsByCategoryProvider = FutureProvider.autoDispose.family<
     List<AIRecommendation>, ({String companyId, String category})>(
   (ref, params) async {
     final aiService = ref.watch(aiServiceProvider);
@@ -306,14 +306,14 @@ final recommendationNotifierProvider =
 
 /// Get total AI cost for a company
 final aiTotalCostProvider =
-    FutureProvider.family<double, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<double, String>((ref, companyId) async {
   final aiService = ref.watch(aiServiceProvider);
   return aiService.getTotalCost(companyId);
 });
 
 /// Get usage analytics for a company
 final usageAnalyticsProvider =
-    FutureProvider.family<List<AIUsageAnalytics>, String>(
+    FutureProvider.autoDispose.family<List<AIUsageAnalytics>, String>(
         (ref, companyId) async {
   final aiService = ref.watch(aiServiceProvider);
   return aiService.getUsageAnalytics(companyId);
@@ -321,14 +321,14 @@ final usageAnalyticsProvider =
 
 /// Get current month usage
 final currentMonthUsageProvider =
-    FutureProvider.family<AIUsageAnalytics?, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<AIUsageAnalytics?, String>((ref, companyId) async {
   final aiService = ref.watch(aiServiceProvider);
   return aiService.getCurrentMonthUsage(companyId);
 });
 
 /// Get usage statistics
 final usageStatsProvider =
-    FutureProvider.family<Map<String, dynamic>, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, companyId) async {
   final aiService = ref.watch(aiServiceProvider);
   return aiService.getUsageStats(companyId);
 });

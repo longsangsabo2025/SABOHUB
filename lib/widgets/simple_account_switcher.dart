@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/auth_provider.dart';
@@ -14,7 +16,7 @@ class SimpleAccountSwitcher extends ConsumerWidget {
     'password': 'demo',
     'name': 'CEO',
     'icon': Icons.business_center,
-    'color': Color(0xFF3B82F6), // Blue
+    'color': AppColors.info, // Blue
   };
 
   static const managerAccount = {
@@ -22,13 +24,13 @@ class SimpleAccountSwitcher extends ConsumerWidget {
     'password': 'demo',
     'name': 'Manager',
     'icon': Icons.manage_accounts,
-    'color': Color(0xFF10B981), // Green
+    'color': AppColors.success, // Green
   };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Chỉ hiển thị trong debug mode
-    if (const bool.fromEnvironment('dart.vm.product')) {
+    if (!kDebugMode) {
       return const SizedBox.shrink();
     }
 

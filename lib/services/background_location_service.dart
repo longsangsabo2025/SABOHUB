@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/app_logger.dart';
 
 /// Background Location Service v2.0
 /// Sử dụng Geolocator 14.x với foreground service cho Android
@@ -78,7 +79,7 @@ class BackgroundLocationService {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        debugPrint('❌ Location services disabled');
+        AppLogger.warn('❌ Location services disabled');
         return false;
       }
 
@@ -86,20 +87,20 @@ class BackgroundLocationService {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          debugPrint('❌ Location permission denied');
+          AppLogger.warn('❌ Location permission denied');
           return false;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        debugPrint('❌ Location permission permanently denied');
+        AppLogger.warn('❌ Location permission permanently denied');
         return false;
       }
 
-      debugPrint('✅ BackgroundLocationService initialized');
+      AppLogger.info('✅ BackgroundLocationService initialized');
       return true;
     } catch (e) {
-      debugPrint('❌ BackgroundLocationService init error: $e');
+      AppLogger.error('❌ BackgroundLocationService init error', e);
       return false;
     }
   }
@@ -132,17 +133,17 @@ class BackgroundLocationService {
       ).listen(
         _onPositionUpdate,
         onError: (error) {
-          debugPrint('❌ Tracking error: $error');
+          AppLogger.error('❌ Tracking error', error);
         },
       );
 
       _isTracking = true;
       _trackingStateController.add(_isTracking);
       
-      debugPrint('🛰️ Background tracking started for delivery: $deliveryId');
+      AppLogger.info('🛰️ Background tracking started for delivery: $deliveryId');
       return true;
     } catch (e) {
-      debugPrint('❌ Start tracking error: $e');
+      AppLogger.error('❌ Start tracking error', e);
       return false;
     }
   }
@@ -157,9 +158,9 @@ class BackgroundLocationService {
       _currentDeliveryId = null;
       _trackingStateController.add(_isTracking);
       
-      debugPrint('⏹️ Background tracking stopped');
+      AppLogger.info('⏹️ Background tracking stopped');
     } catch (e) {
-      debugPrint('❌ Stop tracking error: $e');
+      AppLogger.error('❌ Stop tracking error', e);
     }
   }
 
@@ -171,7 +172,7 @@ class BackgroundLocationService {
       _isTracking = false;
       _trackingStateController.add(_isTracking);
     } catch (e) {
-      debugPrint('❌ Pause tracking error: $e');
+      AppLogger.error('❌ Pause tracking error', e);
     }
   }
 
@@ -188,7 +189,7 @@ class BackgroundLocationService {
         locationSettings: _getLocationSettings(distanceFilter: 0),
       );
     } catch (e) {
-      debugPrint('❌ Get current position error: $e');
+      AppLogger.error('❌ Get current position error', e);
       return null;
     }
   }
@@ -207,7 +208,7 @@ class BackgroundLocationService {
       radius: radius,
       customerId: customerId,
     );
-    debugPrint('📍 Geofence added for customer: $customerId');
+    AppLogger.info('📍 Geofence added for customer: $customerId');
     
     // Check immediately if we have a position
     if (_lastPosition != null) {
@@ -218,19 +219,19 @@ class BackgroundLocationService {
   /// Xóa geofence
   Future<void> removeCustomerGeofence(String customerId) async {
     _geofences.remove('customer_$customerId');
-    debugPrint('📍 Geofence removed for customer: $customerId');
+    AppLogger.info('📍 Geofence removed for customer: $customerId');
   }
 
   /// Xóa tất cả geofences
   Future<void> removeAllGeofences() async {
     _geofences.clear();
-    debugPrint('📍 All geofences removed');
+    AppLogger.info('📍 All geofences removed');
   }
 
   // === Private Methods ===
 
   void _onPositionUpdate(Position position) {
-    debugPrint('📍 Location: ${position.latitude}, ${position.longitude}');
+    AppLogger.info('📍 Location: ${position.latitude}, ${position.longitude}');
     _lastPosition = position;
     _locationController.add(position);
     _uploadLocation(position);
@@ -263,9 +264,9 @@ class BackgroundLocationService {
         _geofenceEventController.add(event);
         
         if (action == GeofenceAction.enter) {
-          debugPrint('🎯 Arrived at customer: ${geofence.customerId}');
+          AppLogger.state('🎯 Arrived at customer: ${geofence.customerId}');
         } else {
-          debugPrint('👋 Left customer: ${geofence.customerId}');
+          AppLogger.state('👋 Left customer: ${geofence.customerId}');
         }
       }
     }
@@ -286,7 +287,7 @@ class BackgroundLocationService {
         'timestamp': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      debugPrint('❌ Upload location error: $e');
+      AppLogger.error('❌ Upload location error', e);
     }
   }
 

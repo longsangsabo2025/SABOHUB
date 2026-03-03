@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'app_logger.dart';
 
 /// Performance Monitoring Utility for SABOHUB
 /// Tracks key metrics like navigation time, load time, memory usage
@@ -17,7 +18,7 @@ class PerformanceMonitor {
   void startMeasuring(String operationName) {
     _startTimes[operationName] = DateTime.now();
     if (kDebugMode) {
-      debugPrint('🚀 Performance: Started measuring $operationName');
+      AppLogger.info('Performance: Started measuring $operationName');
     }
   }
 
@@ -28,7 +29,7 @@ class PerformanceMonitor {
 
     if (startTime == null) {
       if (kDebugMode) {
-        debugPrint('⚠️ Performance: No start time found for $operationName');
+        AppLogger.warn('Performance: No start time found for $operationName');
       }
       return null;
     }
@@ -45,8 +46,8 @@ class PerformanceMonitor {
     ));
 
     if (kDebugMode) {
-      debugPrint(
-          '✅ Performance: $operationName took ${duration.inMilliseconds}ms');
+      AppLogger.info(
+          'Performance: $operationName took ${duration.inMilliseconds}ms');
     }
 
     // Alert if operation takes too long
@@ -96,8 +97,8 @@ class PerformanceMonitor {
       if (operationName.toLowerCase().contains(entry.key)) {
         if (duration.inMilliseconds > entry.value) {
           if (kDebugMode) {
-            debugPrint(
-                '🐌 Performance Warning: $operationName took ${duration.inMilliseconds}ms (threshold: ${entry.value}ms)');
+            AppLogger.warn(
+                'Performance Warning: $operationName took ${duration.inMilliseconds}ms (threshold: ${entry.value}ms)');
           }
           // In production, you might want to send this to analytics
         }
@@ -177,7 +178,7 @@ class PerformanceMonitor {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting memory info: $e');
+        AppLogger.error('Error getting memory info', e);
       }
       return null;
     }

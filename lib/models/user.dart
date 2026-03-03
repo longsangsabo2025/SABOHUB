@@ -273,66 +273,11 @@ class User extends Equatable {
   }
 }
 
-/// Demo users for testing - Khớp với database thực tế
+/// Demo users for debug testing only
+/// Disabled in release builds — see auth_provider.dart kDebugMode guard
 class DemoUsers {
-  static const List<User> users = [
-    // CEO accounts
-    User(
-      id: '1',
-      name: 'Nguyễn Văn CEO 1',
-      email: 'ceo1@sabohub.com',
-      role: UserRole.ceo,
-      phone: '0901234567',
-    ),
-    User(
-      id: '2',
-      name: 'Trần Thị CEO 2',
-      email: 'ceo2@sabohub.com',
-      role: UserRole.ceo,
-      phone: '0901234568',
-    ),
-    // Manager account
-    User(
-      id: '3',
-      name: 'Trần Thị Quản Lý 1',
-      email: 'manager1@sabohub.com',
-      role: UserRole.manager,
-      phone: '0902234567',
-    ),
-    // Shift Leader account (demo)
-    User(
-      id: '4',
-      name: 'Lê Văn Trưởng Ca',
-      email: 'shift@sabohub.com',
-      role: UserRole.shiftLeader,
-      phone: '0903234567',
-    ),
-    // Staff account
-    User(
-      id: '5',
-      name: 'Phạm Thị Nhân Viên 1',
-      email: 'staff1@sabohub.com',
-      role: UserRole.staff,
-      phone: '0904234567',
-      branchId: 'branch-1', // Add branchId for staff
-    ),
-  ];
+  static const List<User> users = [];
 
-  /// Find demo user by email
-  static User? findByEmail(String email) {
-    try {
-      return users.firstWhere((user) => user.email == email);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// Find demo user by role
-  static User? findByRole(UserRole role) {
-    try {
-      return users.firstWhere((user) => user.role == role);
-    } catch (e) {
-      return null;
-    }
-  }
+  static User? findByEmail(String email) => null;
+  static User? findByRole(UserRole role) => null;
 }

@@ -1,5 +1,5 @@
-/// Customer Tier Classification - Phân loại khách hàng theo doanh số
-/// Dựa trên view v_sales_by_customer từ database
+// Customer Tier Classification - Phân loại khách hàng theo doanh số
+// Dựa trên view v_sales_by_customer từ database
 import 'package:flutter/material.dart';
 
 /// Tier phân loại khách hàng theo doanh số
@@ -107,6 +107,25 @@ extension CustomerTierExtension on CustomerTier {
       return CustomerTier.silver;
     }
     return CustomerTier.bronze;
+  }
+  
+  /// Parse tier từ string (từ database)
+  static CustomerTier fromString(String? value) {
+    if (value == null) return CustomerTier.bronze;
+    switch (value.toLowerCase()) {
+      case 'diamond':
+        return CustomerTier.diamond;
+      case 'gold':
+        return CustomerTier.gold;
+      case 'silver':
+        return CustomerTier.silver;
+      case 'bronze':
+        return CustomerTier.bronze;
+      case 'none':
+        return CustomerTier.none;
+      default:
+        return CustomerTier.bronze;
+    }
   }
 }
 

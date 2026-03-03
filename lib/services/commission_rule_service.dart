@@ -8,6 +8,7 @@ class CommissionRuleService {
   /// Tạo quy tắc hoa hồng mới (CEO)
   Future<CommissionRule> createRule({
     required String companyId,
+    required String currentUserId,
     required String ruleName,
     String? description,
     required String appliesTo, // all, role, individual
@@ -20,8 +21,6 @@ class CommissionRuleService {
     DateTime? effectiveFrom,
     DateTime? effectiveTo,
   }) async {
-    final currentUserId = _supabase.auth.currentUser?.id;
-    if (currentUserId == null) throw Exception('User not authenticated');
 
     final data = {
       'company_id': companyId,
@@ -130,20 +129,12 @@ class CommissionRuleService {
     final date = billDate ?? DateTime.now();
     final dateStr = date.toIso8601String().split('T')[0];
 
-    // Get employee info - check users table first, then employees
-    var employeeData = await _supabase
-        .from('users')
+    // Get employee info from employees table
+    final employeeData = await _supabase
+        .from('employees')
         .select('role')
         .eq('id', employeeId)
         .maybeSingle();
-    
-    if (employeeData == null) {
-      employeeData = await _supabase
-          .from('employees')
-          .select('role')
-          .eq('id', employeeId)
-          .maybeSingle();
-    }
 
     final employeeRole = employeeData?['role'] as String? ?? 'staff';
 

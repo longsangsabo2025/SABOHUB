@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../core/theme/app_colors.dart';
 
 /// Enum định nghĩa các loại thông báo
 enum NotificationType {
@@ -106,8 +107,8 @@ class NotificationBanner extends StatelessWidget {
           title: '✅ Thành công',
           icon: Icons.check_circle_outline,
           backgroundColor: const Color(0xFFF0F9FF),
-          borderColor: const Color(0xFF10B981),
-          iconColor: const Color(0xFF10B981),
+          borderColor: AppColors.success,
+          iconColor: AppColors.success,
           textColor: const Color(0xFF064E3B),
         );
       case NotificationType.error:
@@ -115,8 +116,8 @@ class NotificationBanner extends StatelessWidget {
           title: '❌ Lỗi',
           icon: Icons.error_outline,
           backgroundColor: const Color(0xFFFEF2F2),
-          borderColor: const Color(0xFFEF4444),
-          iconColor: const Color(0xFFEF4444),
+          borderColor: AppColors.error,
+          iconColor: AppColors.error,
           textColor: const Color(0xFF7F1D1D),
         );
       case NotificationType.warning:
@@ -124,8 +125,8 @@ class NotificationBanner extends StatelessWidget {
           title: '⚠️ Cảnh báo',
           icon: Icons.warning_outlined,
           backgroundColor: const Color(0xFFFFFBEB),
-          borderColor: const Color(0xFFF59E0B),
-          iconColor: const Color(0xFFF59E0B),
+          borderColor: AppColors.warning,
+          iconColor: AppColors.warning,
           textColor: const Color(0xFF78350F),
         );
       case NotificationType.info:
@@ -133,8 +134,8 @@ class NotificationBanner extends StatelessWidget {
           title: 'ℹ️ Thông tin',
           icon: Icons.info_outline,
           backgroundColor: const Color(0xFFEFF6FF),
-          borderColor: const Color(0xFF3B82F6),
-          iconColor: const Color(0xFF3B82F6),
+          borderColor: AppColors.info,
+          iconColor: AppColors.info,
           textColor: const Color(0xFF1E3A8A),
         );
       case NotificationType.loading:
@@ -297,7 +298,7 @@ class NotificationFloatingButton extends StatelessWidget {
           title: 'Thành công',
           icon: Icons.check_circle,
           backgroundColor: const Color(0xFFD1FAE5),
-          borderColor: const Color(0xFF10B981),
+          borderColor: AppColors.success,
           iconColor: const Color(0xFF059669),
           textColor: const Color(0xFF065F46),
         );
@@ -306,7 +307,7 @@ class NotificationFloatingButton extends StatelessWidget {
           title: 'Lỗi',
           icon: Icons.error,
           backgroundColor: const Color(0xFFFECDD3),
-          borderColor: const Color(0xFFEF4444),
+          borderColor: AppColors.error,
           iconColor: const Color(0xFFDC2626),
           textColor: const Color(0xFF991B1B),
         );
@@ -315,7 +316,7 @@ class NotificationFloatingButton extends StatelessWidget {
           title: 'Cảnh báo',
           icon: Icons.warning,
           backgroundColor: const Color(0xFFFEF3C7),
-          borderColor: const Color(0xFFF59E0B),
+          borderColor: AppColors.warning,
           iconColor: const Color(0xFFD97706),
           textColor: const Color(0xFF92400E),
         );
@@ -324,7 +325,7 @@ class NotificationFloatingButton extends StatelessWidget {
           title: 'Thông tin',
           icon: Icons.info,
           backgroundColor: const Color(0xFFDBEAFE),
-          borderColor: const Color(0xFF3B82F6),
+          borderColor: AppColors.info,
           iconColor: const Color(0xFF2563EB),
           textColor: const Color(0xFF1D4ED8),
         );

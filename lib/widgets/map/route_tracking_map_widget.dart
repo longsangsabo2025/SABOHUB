@@ -46,7 +46,7 @@ class _RouteTrackingMapWidgetState extends State<RouteTrackingMapWidget> {
   
   LatLng? _currentLocation;
   StreamSubscription? _positionSubscription;
-  List<LatLng> _traveledPath = [];
+  final List<LatLng> _traveledPath = [];
 
   @override
   void initState() {

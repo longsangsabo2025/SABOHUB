@@ -21,6 +21,7 @@ class _CEOTaskManagementPageState
   String _searchQuery = '';
   String _filterStatus = 'all';
   String _filterPriority = 'all';
+  String _filterCategory = 'all';
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +182,33 @@ class _CEOTaskManagementPageState
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      const Text('Mảng: ',
+                          style: TextStyle(fontWeight: FontWeight.w500)),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Tất cả', 'all', _filterCategory,
+                          (value) {
+                        setState(() => _filterCategory = value);
+                      }),
+                      ...TaskCategory.values.map((cat) =>
+                          _buildFilterChip(
+                              cat.displayName, cat.value, _filterCategory,
+                              (value) {
+                            setState(() => _filterCategory = value);
+                          })),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -208,20 +236,20 @@ class _CEOTaskManagementPageState
 
   List<ManagementTask> _applyFilters(List<ManagementTask> tasks) {
     return tasks.where((task) {
-      // Search filter
       final matchesSearch = _searchQuery.isEmpty ||
           task.title.toLowerCase().contains(_searchQuery) ||
           (task.description?.toLowerCase().contains(_searchQuery) ?? false);
 
-      // Status filter
       final matchesStatus = _filterStatus == 'all' ||
           task.status.value.toLowerCase() == _filterStatus;
 
-      // Priority filter
       final matchesPriority = _filterPriority == 'all' ||
           task.priority.value.toLowerCase() == _filterPriority;
 
-      return matchesSearch && matchesStatus && matchesPriority;
+      final matchesCategory = _filterCategory == 'all' ||
+          task.category.value == _filterCategory;
+
+      return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
     }).toList();
   }
 
@@ -284,6 +312,22 @@ class _CEOTaskManagementPageState
                   _buildPriorityBadge(task.priority),
                   const SizedBox(width: 8),
                   _buildStatusBadge(task.status),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      task.category.displayName,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.purple.shade700,
+                      ),
+                    ),
+                  ),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.edit, size: 20),

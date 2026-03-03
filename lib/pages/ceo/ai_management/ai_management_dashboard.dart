@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'ai_assistants_page.dart';
@@ -43,7 +44,7 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
           children: [
             Icon(
               Icons.psychology,
-              color: Color(0xFF3B82F6),
+              color: AppColors.info,
               size: 24,
             ),
             SizedBox(width: 8),
@@ -62,16 +63,16 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
             onPressed: _openQuickChat,
             icon: const Icon(
               Icons.chat_bubble_outline,
-              color: Color(0xFF3B82F6),
+              color: AppColors.info,
             ),
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          labelColor: const Color(0xFF3B82F6),
+          labelColor: AppColors.info,
           unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF3B82F6),
+          indicatorColor: AppColors.info,
           labelStyle: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -101,7 +102,7 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openQuickChat,
-        backgroundColor: const Color(0xFF3B82F6),
+        backgroundColor: AppColors.info,
         child: const Icon(Icons.chat, color: Colors.white),
       ),
     );
@@ -130,7 +131,7 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
                   icon: Icons.psychology,
                   label: 'Models',
                   value: '4',
-                  color: const Color(0xFF3B82F6),
+                  color: AppColors.info,
                 ),
               ),
               const SizedBox(width: 12),
@@ -139,7 +140,7 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
                   icon: Icons.smart_toy,
                   label: 'Assistants',
                   value: '3',
-                  color: const Color(0xFF10B981),
+                  color: AppColors.success,
                 ),
               ),
             ],
@@ -179,7 +180,7 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
                 child: _buildQuickAction(
                   'Tạo Assistant',
                   Icons.add_circle,
-                  const Color(0xFF3B82F6),
+                  AppColors.info,
                   () => _tabController.animateTo(3),
                 ),
               ),
@@ -188,7 +189,7 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
                 child: _buildQuickAction(
                   'Cấu hình Model',
                   Icons.settings,
-                  const Color(0xFF10B981),
+                  AppColors.success,
                   () => _tabController.animateTo(1),
                 ),
               ),

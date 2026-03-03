@@ -52,13 +52,27 @@ class _ManagerReportsPageState extends ConsumerState<ManagerReportsPage> {
                 _selectedEmployeeId = employeeId;
               });
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: null,
-                child: Text('Tất cả nhân viên'),
-              ),
-              // TODO: Add employee list from branch
-            ],
+            itemBuilder: (context) {
+              final branchId = ref.read(authProvider).user?.branchId ?? '';
+              final reportsAsync = ref.read(branchWorkReportsProvider(branchId));
+              final employeeItems = reportsAsync.whenData((reports) {
+                final employeeMap = <String, String>{};
+                for (final r in reports) {
+                  employeeMap[r.userId] = r.userName;
+                }
+                return employeeMap.entries.map((e) => PopupMenuItem<String?>(
+                  value: e.key,
+                  child: Text(e.value),
+                )).toList();
+              });
+              return [
+                const PopupMenuItem<String?>(
+                  value: null,
+                  child: Text('Tất cả nhân viên'),
+                ),
+                ...employeeItems.value ?? [],
+              ];
+            },
           ),
         ],
       ),

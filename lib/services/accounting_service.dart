@@ -23,11 +23,11 @@ class AccountingService {
       // Get revenue from completed sales_orders (payment_status = 'paid')
       var salesQuery = _supabase
           .from('sales_orders')
-          .select('total, payment_status, status')
+          .select('total, paid_amount, payment_status, status')
           .eq('company_id', companyId)
           .gte('order_date', startDateStr)
           .lte('order_date', endDateStr)
-          .inFilter('status', ['completed', 'approved']);
+          .inFilter('status', ['completed', 'confirmed']);
 
       if (branchId != null) {
         salesQuery = salesQuery.eq('branch_id', branchId);
@@ -41,13 +41,14 @@ class AccountingService {
 
       for (var record in salesData) {
         final total = (record['total'] as num?)?.toDouble() ?? 0.0;
+        final paidAmount = (record['paid_amount'] as num?)?.toDouble() ?? 0.0;
         final paymentStatus = record['payment_status'] as String?;
         
         if (paymentStatus == 'paid') {
           totalRevenue += total;
           paidOrderCount++;
         } else {
-          totalReceivable += total;
+          totalReceivable += (total - paidAmount);
           unpaidOrderCount++;
         }
       }
@@ -124,9 +125,9 @@ class AccountingService {
       if (type == null || type == TransactionType.revenue) {
         var salesQuery = _supabase
             .from('sales_orders')
-            .select('id, order_number, order_date, total, payment_method, payment_status, status, notes, created_at')
+            .select('id, order_number, order_date, total, payment_method, payment_status, status, notes, created_at, customers(name), sales_order_items(products(name))')
             .eq('company_id', companyId)
-            .inFilter('status', ['completed', 'approved']);
+            .inFilter('status', ['completed', 'confirmed']);
 
         if (branchId != null) {
           salesQuery = salesQuery.eq('branch_id', branchId);
@@ -141,6 +142,20 @@ class AccountingService {
         final salesData = await salesQuery.order('order_date', ascending: false);
         
         for (var record in salesData) {
+          final customer = record['customers'] as Map<String, dynamic>?;
+          final items = record['sales_order_items'] as List? ?? [];
+          final itemNames = items
+              .map((item) {
+                final product = item['products'] as Map<String, dynamic>?;
+                return product?['name']?.toString().trim();
+              })
+              .where((name) => name != null && name.isNotEmpty)
+              .cast<String>()
+              .toList();
+          final itemsSummary = itemNames.isEmpty
+              ? null
+              : '${itemNames.take(3).join(', ')}${itemNames.length > 3 ? '...' : ''}';
+
           transactions.add(AccountingTransaction(
             id: record['id'] as String,
             companyId: companyId,
@@ -153,6 +168,9 @@ class AccountingService {
             category: 'sales',
             referenceId: record['order_number'] as String?,
             notes: record['notes'] as String?,
+            status: (record['payment_status'] as String?) ?? (record['status'] as String?),
+            counterpartyName: customer?['name']?.toString(),
+            itemsSummary: itemsSummary,
             createdAt: DateTime.parse(record['created_at'].toString()),
           ));
         }
@@ -187,6 +205,7 @@ class AccountingService {
             category: 'purchase',
             referenceId: record['transaction_code'] as String?,
             notes: record['notes'] as String?,
+            status: record['status'] as String?,
             createdAt: DateTime.parse(record['created_at'].toString()),
           ));
         }
@@ -229,7 +248,7 @@ class AccountingService {
           .from('sales_orders')
           .select('order_date, total, payment_status')
           .eq('company_id', companyId)
-          .inFilter('status', ['completed', 'approved']);
+          .inFilter('status', ['completed', 'confirmed']);
 
       if (branchId != null) {
         query = query.eq('branch_id', branchId);
@@ -289,7 +308,7 @@ class AccountingService {
           .select('id, order_number, order_date, customer_id, total, paid_amount, payment_status, status, created_at')
           .eq('company_id', companyId)
           .eq('payment_status', 'unpaid')
-          .inFilter('status', ['completed', 'approved', 'pending']);
+          .inFilter('status', ['completed', 'confirmed', 'pending_approval']);
 
       if (branchId != null) {
         query = query.eq('branch_id', branchId);
@@ -489,7 +508,7 @@ class AccountingService {
           .select('order_date, total')
           .eq('company_id', companyId)
           .eq('payment_status', 'paid')
-          .inFilter('status', ['completed', 'approved'])
+          .inFilter('status', ['completed', 'confirmed'])
           .gte('order_date', startDateStr)
           .lte('order_date', endDateStr);
 

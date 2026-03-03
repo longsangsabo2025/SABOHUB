@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -130,13 +131,13 @@ class StaffDashboardHeader extends ConsumerWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF10B981),
+            AppColors.success,
             Color(0xFF059669),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF10B981).withValues(alpha: 0.3),
+            color: AppColors.success.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -161,7 +162,7 @@ class StaffDashboardHeader extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Ca chiều • 14:00 - 22:00',
+                      'Chưa có lịch ca',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white.withValues(alpha: 0.9),
@@ -191,16 +192,16 @@ class StaffDashboardHeader extends ConsumerWidget {
             children: [
               Expanded(
                 child:
-                    _buildStatItem('Bàn phục vụ', '3', Icons.table_restaurant),
+                    _buildStatItem('Bàn phục vụ', '—', Icons.table_restaurant),
               ),
               Expanded(
-                child: _buildStatItem('Nhiệm vụ', '8', Icons.task_alt),
+                child: _buildStatItem('Nhiệm vụ', '—', Icons.task_alt),
               ),
               Expanded(
-                child: _buildStatItem('Tin nhắn', '2', Icons.message),
+                child: _buildStatItem('Tin nhắn', '—', Icons.message),
               ),
               Expanded(
-                child: _buildStatItem('Giờ làm', '6.5h', Icons.schedule),
+                child: _buildStatItem('Giờ làm', '—', Icons.schedule),
               ),
             ],
           ),
@@ -287,26 +288,42 @@ class StaffQuickActions extends ConsumerWidget {
               _buildActionButton(
                 'Check In',
                 Icons.login,
-                const Color(0xFF10B981),
-                () {},
+                AppColors.success,
+                () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Đã check-in ca làm việc'), duration: Duration(seconds: 2)),
+                  );
+                },
               ),
               _buildActionButton(
                 'Tạo đơn',
                 Icons.add_shopping_cart,
-                const Color(0xFF3B82F6),
-                () {},
+                AppColors.info,
+                () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Tạo đơn hàng mới — chọn bàn hoặc khách hàng'), duration: Duration(seconds: 2)),
+                  );
+                },
               ),
               _buildActionButton(
                 'Gọi bếp',
                 Icons.kitchen,
-                const Color(0xFFF59E0B),
-                () {},
+                AppColors.warning,
+                () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Gọi bếp — chọn món từ menu đơn hàng'), duration: Duration(seconds: 2)),
+                  );
+                },
               ),
               _buildActionButton(
                 'SOS',
                 Icons.emergency,
-                const Color(0xFFEF4444),
-                () {},
+                AppColors.error,
+                () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Liên hệ quản lý ca trực ngay'), duration: Duration(seconds: 2)),
+                  );
+                },
               ),
             ],
           ),
@@ -390,14 +407,14 @@ class StaffPerformanceWidget extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                  color: AppColors.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
-                  'Xuất sắc',
+                  'Chưa có dữ liệu',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF10B981),
+                    color: AppColors.success,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -411,15 +428,15 @@ class StaffPerformanceWidget extends ConsumerWidget {
             children: [
               Expanded(
                 child: _buildMetricItem(
-                    'Bàn phục vụ', '12', '15', const Color(0xFF10B981)),
+                    'Bàn phục vụ', '0', '0', AppColors.success),
               ),
               Expanded(
                 child: _buildMetricItem(
-                    'Đánh giá', '4.8', '5.0', const Color(0xFF3B82F6)),
+                    'Đánh giá', '0', '0', AppColors.info),
               ),
               Expanded(
                 child: _buildMetricItem(
-                    'Tip nhận', '250K', '300K', const Color(0xFFF59E0B)),
+                    'Tip nhận', '0', '0', AppColors.warning),
               ),
             ],
           ),

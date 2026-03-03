@@ -190,9 +190,13 @@ class EmployeeUser {
 
 /// Employee Role enumeration
 enum EmployeeRole {
+  superAdmin('SUPER_ADMIN'),
+  ceo('CEO'),
   manager('MANAGER'),
   shiftLeader('SHIFT_LEADER'),
-  staff('STAFF');
+  staff('STAFF'),
+  driver('DRIVER'),
+  warehouse('WAREHOUSE');
 
   const EmployeeRole(this.value);
   final String value;
@@ -206,12 +210,20 @@ enum EmployeeRole {
 
   String get displayName {
     switch (this) {
+      case EmployeeRole.superAdmin:
+        return 'Super Admin';
+      case EmployeeRole.ceo:
+        return 'CEO';
       case EmployeeRole.manager:
         return 'Quản lý';
       case EmployeeRole.shiftLeader:
         return 'Trưởng ca';
       case EmployeeRole.staff:
         return 'Nhân viên';
+      case EmployeeRole.driver:
+        return 'Tài xế';
+      case EmployeeRole.warehouse:
+        return 'Kho';
     }
   }
 }

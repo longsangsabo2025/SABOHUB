@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/user.dart';
+import '../../models/company.dart';
+import '../../models/business_type.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/employee_service.dart';
 import '../employees/employee_list_page.dart';
+import 'company/create_employee_dialog.dart';
 
 /// CEO Employees Management Page
-/// Quản lý nhân viên toàn công ty từ góc nhìn CEO
+/// Real stats from DB + functional add/search/filter
 class CEOEmployeesPage extends ConsumerStatefulWidget {
   const CEOEmployeesPage({super.key});
 
@@ -12,144 +18,74 @@ class CEOEmployeesPage extends ConsumerStatefulWidget {
   ConsumerState<CEOEmployeesPage> createState() => _CEOEmployeesPageState();
 }
 
-class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
+  List<User> _employees = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _loadEmployees();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  Future<void> _loadEmployees() async {
+    try {
+      final user = ref.read(authProvider).user;
+      final companyId = user?.companyId;
+      if (companyId == null) return;
+
+      final service = ref.read(employeeServiceProvider);
+      final employees = await service.getCompanyEmployees(companyId);
+
+      if (mounted) {
+        setState(() {
+          _employees = employees;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _openCreateEmployee() {
+    final user = ref.read(authProvider).user;
+    if (user == null || user.companyId == null) return;
+
+    showDialog(
+      context: context,
+      builder: (_) => CreateEmployeeDialog(
+        company: Company(
+          id: user.companyId!,
+          name: user.companyName ?? 'SABO',
+          type: user.businessType ?? BusinessType.billiards,
+          address: '',
+          tableCount: 0,
+          monthlyRevenue: 0,
+          employeeCount: _employees.length,
+        ),
+      ),
+    ).then((created) {
+      if (created == true) _loadEmployees();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final managers = _employees.where((e) =>
+        e.role == UserRole.manager).length;
+    final shiftLeaders = _employees.where((e) =>
+        e.role == UserRole.shiftLeader).length;
+    final staff = _employees.where((e) =>
+        e.role == UserRole.staff ||
+        e.role == UserRole.driver ||
+        e.role == UserRole.warehouse).length;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              floating: true,
-              pinned: true,
-              snap: false,
-              elevation: 0,
-              backgroundColor: Colors.white,
-              title: const Text(
-                'Quản lý nhân viên',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              actions: [
-                // Search button
-                IconButton(
-                  icon: const Icon(Icons.search, color: Colors.black87),
-                  onPressed: () {
-                    // TODO: Implement search
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('🔍 Tìm kiếm nhân viên'),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                ),
-                // Filter button
-                IconButton(
-                  icon: const Icon(Icons.filter_list, color: Colors.black87),
-                  onPressed: () {
-                    // TODO: Implement filter
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('📊 Lọc nhân viên'),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                ),
-                // Add employee button
-                IconButton(
-                  icon: const Icon(Icons.person_add, color: Colors.blue),
-                  onPressed: () {
-                    // TODO: Navigate to create employee
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('➕ Thêm nhân viên mới'),
-                        duration: Duration(seconds: 1),
-                        backgroundColor: Colors.blue,
-                      ),
-                    );
-                  },
-                ),
-              ],
-              bottom: TabBar(
-                controller: _tabController,
-                labelColor: Colors.blue[700],
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Colors.blue[700],
-                indicatorWeight: 3,
-                tabs: const [
-                  Tab(
-                    icon: Icon(Icons.people),
-                    text: 'Tất cả',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.check_circle),
-                    text: 'Hoạt động',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.block),
-                    text: 'Tạm khóa',
-                  ),
-                ],
-              ),
-            ),
-          ];
-        },
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            // Tab 1: All employees
-            _buildEmployeeContent('all'),
-            // Tab 2: Active employees
-            _buildEmployeeContent('active'),
-            // Tab 3: Inactive employees
-            _buildEmployeeContent('inactive'),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Navigate to create employee dialog
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('➕ Tạo tài khoản nhân viên mới'),
-              backgroundColor: Colors.blue,
-            ),
-          );
-        },
-        icon: const Icon(Icons.person_add),
-        label: const Text('Thêm nhân viên'),
-        backgroundColor: Colors.blue[700],
-      ),
-    );
-  }
-
-  Widget _buildEmployeeContent(String filter) {
-    return Container(
-      color: Colors.grey[50],
-      child: Column(
+      body: Column(
         children: [
-          // Stats Card
+          // Real stats card
           Container(
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(20),
@@ -164,50 +100,45 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage>
                 ),
               ],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem(
-                  Icons.people,
-                  '156',
-                  'Tổng NV',
-                  Colors.blue,
-                ),
-                _buildStatItem(
-                  Icons.supervised_user_circle,
-                  '12',
-                  'Quản lý',
-                  Colors.green,
-                ),
-                _buildStatItem(
-                  Icons.groups,
-                  '24',
-                  'Trưởng ca',
-                  Colors.orange,
-                ),
-                _buildStatItem(
-                  Icons.person,
-                  '120',
-                  'Nhân viên',
-                  Colors.purple,
-                ),
-              ],
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatItem(
+                        Icons.people, '${_employees.length}',
+                        'Tổng NV', Colors.blue,
+                      ),
+                      _buildStatItem(
+                        Icons.supervised_user_circle, '$managers',
+                        'Quản lý', Colors.green,
+                      ),
+                      _buildStatItem(
+                        Icons.groups, '$shiftLeaders',
+                        'Trưởng ca', Colors.orange,
+                      ),
+                      _buildStatItem(
+                        Icons.person, '$staff',
+                        'Nhân viên', Colors.purple,
+                      ),
+                    ],
+                  ),
           ),
-          // Employee List
-          Expanded(
-            child: const EmployeeListPage(),
-          ),
+          // Employee List (has its own search, filter, stats)
+          const Expanded(child: EmployeeListPage()),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openCreateEmployee,
+        icon: const Icon(Icons.person_add),
+        label: const Text('Thêm nhân viên'),
+        backgroundColor: Colors.blue[700],
       ),
     );
   }
 
   Widget _buildStatItem(
-    IconData icon,
-    String count,
-    String label,
-    Color color,
+    IconData icon, String count, String label, Color color,
   ) {
     return Column(
       children: [
@@ -223,17 +154,12 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage>
         Text(
           count,
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
+            fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey[800],
           ),
         ),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
       ],
     );

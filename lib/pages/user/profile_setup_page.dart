@@ -106,9 +106,9 @@ class _ProfileSetupPageState extends ConsumerState<ProfileSetupPage> {
         );
       }
 
-      // Update user profile
-      await supabase.from('users').update({
-        'name': _nameController.text,
+      // Update employee profile
+      await supabase.from('employees').update({
+        'full_name': _nameController.text,
         'phone': _phoneController.text,
         'personal_email': _personalEmailController.text,
         'profile_completed': true,

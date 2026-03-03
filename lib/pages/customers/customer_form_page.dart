@@ -4,8 +4,9 @@ import 'package:uuid/uuid.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dvhcvn/dvhcvn.dart' as dvhcvn;
 
-import '../../providers/odori_providers.dart';
+import '../../business_types/distribution/providers/odori_providers.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/geocoding_service.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -35,7 +36,8 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
   List<dvhcvn.Level3> _wards = [];
   
   // State
-  String _customerType = 'direct'; // direct, distributor, agent
+  String _customerType = 'retail'; // retail, wholesale, distributor, horeca, other
+  String _customerChannel = 'GT Sỉ'; // Horeca, GT Sỉ, GT Lẻ
   bool _isLoading = false;
 
   @override
@@ -140,12 +142,31 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
                 border: OutlineInputBorder(),
               ),
               items: const [
-                DropdownMenuItem(value: 'direct', child: Text('Khách lẻ (Direct)')),
-                DropdownMenuItem(value: 'distributor', child: Text('Nhà Phân Phối (NPP)')),
-                DropdownMenuItem(value: 'agent', child: Text('Đại lý')),
+                DropdownMenuItem(value: 'retail', child: Text('🛒 Khách lẻ')),
+                DropdownMenuItem(value: 'wholesale', child: Text('🛍️ Khách sỉ')),
+                DropdownMenuItem(value: 'distributor', child: Text('🏢 Nhà phân phối (NPP)')),
+                DropdownMenuItem(value: 'horeca', child: Text('🍽️ Horeca')),
+                DropdownMenuItem(value: 'other', child: Text('📋 Khác')),
               ],
               onChanged: (value) {
                 if (value != null) setState(() => _customerType = value);
+              },
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _customerChannel,
+              decoration: const InputDecoration(
+                labelText: 'Kênh bán hàng',
+                prefixIcon: Icon(Icons.store),
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'Horeca', child: Text('Horeca')),
+                DropdownMenuItem(value: 'GT Sỉ', child: Text('GT Sỉ')),
+                DropdownMenuItem(value: 'GT Lẻ', child: Text('GT Lẻ')),
+              ],
+              onChanged: (value) {
+                if (value != null) setState(() => _customerChannel = value);
               },
             ),
           ],
@@ -267,8 +288,18 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
                 labelText: 'Số điện thoại',
                 prefixIcon: Icon(Icons.phone),
                 border: OutlineInputBorder(),
+                hintText: '0xxx xxx xxx',
               ),
               keyboardType: TextInputType.phone,
+              validator: (value) {
+                if (value != null && value.trim().isNotEmpty) {
+                  final phone = value.trim();
+                  if (!RegExp(r'^0\d{9,10}$').hasMatch(phone)) {
+                    return 'SĐT phải 10-11 số, bắt đầu bằng 0';
+                  }
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -277,8 +308,18 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
                 labelText: 'Email',
                 prefixIcon: Icon(Icons.email),
                 border: OutlineInputBorder(),
+                hintText: 'example@email.com',
               ),
               keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                if (value != null && value.trim().isNotEmpty) {
+                  final email = value.trim();
+                  if (!RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(email)) {
+                    return 'Email không hợp lệ';
+                  }
+                }
+                return null;
+              },
             ),
           ],
         ),
@@ -325,8 +366,29 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
 
       final customerId = const Uuid().v4();
       
-      // Auto generate code: KH + Timestamp (simple logic)
-      final customerCode = 'KH${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+      // Generate customer code: KH-XXXX (sequential)
+      String customerCode;
+      try {
+        final data = await supabase
+            .from('customers')
+            .select('code')
+            .eq('company_id', companyId)
+            .ilike('code', 'KH-%')
+            .order('code', ascending: false)
+            .limit(1);
+
+        int nextNumber = 1;
+        if (data.isNotEmpty) {
+          final lastCode = data[0]['code'] as String?;
+          if (lastCode != null && lastCode.startsWith('KH-')) {
+            final numPart = lastCode.substring(3);
+            nextNumber = (int.tryParse(numPart) ?? 0) + 1;
+          }
+        }
+        customerCode = 'KH-${nextNumber.toString().padLeft(4, '0')}';
+      } catch (_) {
+        customerCode = 'KH-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+      }
       
       // Build full address from structured fields
       final addressParts = <String>[];
@@ -347,6 +409,23 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
       }
       final fullAddress = addressParts.join(', ');
 
+      // Auto-geocode address if available
+      double? latitude;
+      double? longitude;
+      if (_selectedDistrict != null) {
+        final coords = await GeocodingService.geocodeFromFields(
+          streetNumber: _streetNumberController.text.trim(),
+          street: _streetController.text.trim(),
+          ward: _selectedWard?.name,
+          district: _selectedDistrict?.name,
+          city: _selectedCity?.name,
+        );
+        if (coords != null) {
+          latitude = coords.lat;
+          longitude = coords.lng;
+        }
+      }
+
       await supabase.from('customers').insert({
         'id': customerId,
         'company_id': companyId,
@@ -360,9 +439,12 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
         'district': _selectedDistrict?.name.replaceAll('Quận ', '').replaceAll('Huyện ', '').replaceAll('Thành phố ', '').replaceAll('Thị xã ', ''),
         'city': _selectedCity?.name.replaceAll('Thành phố ', '').replaceAll('Tỉnh ', ''),
         'address': fullAddress.isNotEmpty ? fullAddress : null,
+        'lat': latitude,
+        'lng': longitude,
         'email': _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
         'tax_code': _taxIdController.text.trim().isNotEmpty ? _taxIdController.text.trim() : null,
         'type': _customerType,
+        'channel': _customerChannel,
         'status': 'active',
         'created_at': DateTime.now().toIso8601String(),
       });

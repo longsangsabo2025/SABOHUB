@@ -69,34 +69,15 @@ class _WarehouseMainLayoutState extends ConsumerState<WarehouseMainLayout> {
           ],
         ),
         actions: [
-          // Pending orders badge
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.pending_actions_outlined),
-                onPressed: () {
-                  // Go to picking page with pending filter
-                  setState(() {
-                    _currentIndex = 0;
-                  });
-                },
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.orange,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Text(
-                    '5',
-                    style: TextStyle(color: Colors.white, fontSize: 10),
-                  ),
-                ),
-              ),
-            ],
+          // Pending orders shortcut (no badge — count not available in generic layout)
+          IconButton(
+            icon: const Icon(Icons.pending_actions_outlined),
+            onPressed: () {
+              // Go to picking page with pending filter
+              setState(() {
+                _currentIndex = 0;
+              });
+            },
           ),
           const RealtimeNotificationBell(),
           IconButton(

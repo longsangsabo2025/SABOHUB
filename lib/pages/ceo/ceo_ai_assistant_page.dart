@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -684,7 +685,7 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF3B82F6),
+        backgroundColor: AppColors.info,
         title: const Text(
           '🤖 AI Trợ Lý CEO',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -727,6 +728,25 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
       ),
       body: Column(
         children: [
+          // Coming Soon Banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            color: Colors.amber.shade100,
+            child: const Row(
+              children: [
+                Icon(Icons.construction, color: Colors.orange, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Tính năng AI đang phát triển. Dữ liệu hiển thị là mô phỏng.',
+                    style: TextStyle(fontSize: 13, color: Colors.brown),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           // AI Mode Selector
           if (_showModeSelector) _buildModeSelector(),
 
@@ -806,7 +826,7 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
                   decoration: BoxDecoration(
                     color:
                         _inputController.text.trim().isNotEmpty && !_isLoading
-                            ? const Color(0xFF3B82F6)
+                            ? AppColors.info
                             : const Color(0xFFD1D5DB),
                     borderRadius: BorderRadius.circular(22),
                   ),
@@ -869,11 +889,11 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF3B82F6).withValues(alpha: 0.1)
+                      ? AppColors.info.withValues(alpha: 0.1)
                       : null,
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFF3B82F6)
+                        ? AppColors.info
                         : const Color(0xFFE5E7EB),
                   ),
                   borderRadius: BorderRadius.circular(8),
@@ -891,7 +911,7 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color:
-                                  isSelected ? const Color(0xFF3B82F6) : null,
+                                  isSelected ? AppColors.info : null,
                             ),
                           ),
                           Text(
@@ -905,7 +925,7 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
                       ),
                     ),
                     if (isSelected)
-                      const Icon(Icons.check_circle, color: Color(0xFF3B82F6)),
+                      const Icon(Icons.check_circle, color: AppColors.info),
                   ],
                 ),
               ),
@@ -934,8 +954,8 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
               height: 36,
               decoration: BoxDecoration(
                 color: isFunction
-                    ? const Color(0xFF10B981)
-                    : const Color(0xFF3B82F6),
+                    ? AppColors.success
+                    : AppColors.info,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Icon(
@@ -954,9 +974,9 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isUser
-                    ? const Color(0xFF3B82F6)
+                    ? AppColors.info
                     : isFunction
-                        ? const Color(0xFF10B981)
+                        ? AppColors.success
                         : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: !isUser && !isFunction
@@ -996,7 +1016,7 @@ class _CEOAIAssistantPageState extends ConsumerState<CEOAIAssistantPage> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: const Color(0xFF3B82F6),
+                color: AppColors.info,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: const Icon(

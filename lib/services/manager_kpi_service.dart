@@ -1,4 +1,5 @@
 import '../core/services/supabase_service.dart';
+import '../utils/app_logger.dart';
 
 /// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
 /// **MANAGER KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
@@ -66,10 +67,40 @@ class ManagerKPIService {
       final completedOrders =
           tasksData.where((t) => t['status'] == 'completed').length;
 
-      // Calculate revenue (mock for now - will be real when orders table exists)
-      final todayRevenue = totalOrders * 350000; // Average order: 350k VND
-      final yesterdayRevenue =
-          (totalOrders * 0.88) * 350000; // Mock -12% from yesterday
+      // Calculate real revenue from daily_revenue table
+      double todayRevenue = 0.0;
+      double yesterdayRevenue = 0.0;
+      try {
+        final todayStr = today.toIso8601String().split('T')[0];
+        final yesterdayStr =
+            today.subtract(const Duration(days: 1)).toIso8601String().split('T')[0];
+
+        final todayRevResponse = await _supabase
+            .from('daily_revenue')
+            .select('total_revenue')
+            .eq('company_id', companyId)
+            .eq('date', todayStr);
+        todayRevenue = (todayRevResponse as List).fold<double>(
+          0,
+          (sum, item) =>
+              sum + ((item['total_revenue'] as num?)?.toDouble() ?? 0),
+        );
+
+        final yesterdayRevResponse = await _supabase
+            .from('daily_revenue')
+            .select('total_revenue')
+            .eq('company_id', companyId)
+            .eq('date', yesterdayStr);
+        yesterdayRevenue = (yesterdayRevResponse as List).fold<double>(
+          0,
+          (sum, item) =>
+              sum + ((item['total_revenue'] as num?)?.toDouble() ?? 0),
+        );
+      } catch (_) {
+        todayRevenue = 0.0;
+        yesterdayRevenue = 0.0;
+      }
+
       final revenueChange = yesterdayRevenue > 0
           ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100)
           : 0.0;
@@ -78,19 +109,46 @@ class ManagerKPIService {
       final performance =
           completedOrders > 0 ? (completedOrders / totalOrders * 100) : 0.0;
 
+      // Calculate real change values from yesterday's counts
+      int yesterdayOrders = 0;
+      int yesterdayCustomers = 0;
+      try {
+        final yesterday = today.subtract(const Duration(days: 1));
+        final yStart = DateTime(yesterday.year, yesterday.month, yesterday.day);
+        final yEnd = yStart.add(const Duration(days: 1));
+
+        final yTasksResponse = await _supabase
+            .from('tasks')
+            .select('id')
+            .eq('company_id', companyId)
+            .gte('created_at', yStart.toIso8601String())
+            .lt('created_at', yEnd.toIso8601String());
+        yesterdayOrders = (yTasksResponse as List).length;
+        yesterdayCustomers = yesterdayOrders; // Approximate with tasks
+      } catch (e) {
+        AppLogger.error('Failed to load yesterday comparison data', e);
+      }
+
+      final orderChange = yesterdayOrders > 0
+          ? ((totalOrders - yesterdayOrders) / yesterdayOrders * 100)
+          : 0.0;
+      final customerChange = yesterdayCustomers > 0
+          ? ((totalOrders - yesterdayCustomers) / yesterdayCustomers * 100)
+          : 0.0;
+
       return {
         'totalStaff': totalStaff,
         'activeStaff': activeStaff,
         'totalTables': totalTables,
         'activeTables': activeTables,
-        'todayRevenue': todayRevenue.toDouble(),
+        'todayRevenue': todayRevenue,
         'revenueChange': revenueChange,
         'totalCustomers': totalOrders,
-        'customerChange': 8.0, // Mock
+        'customerChange': customerChange,
         'totalOrders': totalOrders,
-        'orderChange': 15.0, // Mock
+        'orderChange': orderChange,
         'performance': performance,
-        'performanceChange': 3.0, // Mock
+        'performanceChange': 0.0,
       };
     } catch (e) {
       // Return default values on error

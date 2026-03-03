@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -74,6 +75,14 @@ class _CEOMainLayoutState extends ConsumerState<CEOMainLayout> {
           actions: [
             const RealtimeNotificationBell(),
             IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'Cài đặt',
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const CEOSettingsPage()));
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.person_outline),
               onPressed: () {
                 // TODO: Show profile
@@ -108,7 +117,7 @@ class _CEOMainLayoutState extends ConsumerState<CEOMainLayout> {
       currentIndex: _currentIndex,
       onTap: _onTabSelected,
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFF3B82F6),
+      selectedItemColor: AppColors.info,
       unselectedItemColor: Colors.grey,
       selectedFontSize: 12,
       unselectedFontSize: 12,

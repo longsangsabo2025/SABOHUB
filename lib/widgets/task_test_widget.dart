@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/app_logger.dart';
 
 class TaskTestWidget extends StatefulWidget {
   const TaskTestWidget({super.key});
@@ -19,10 +20,10 @@ class TaskTestWidgetState extends State<TaskTestWidget> {
     });
 
     try {
-      print('🧪 FLUTTER TEST: Starting task creation test');
+      AppLogger.info('FLUTTER TEST: Starting task creation test');
       
       final supabase = Supabase.instance.client;
-      print('🧪 FLUTTER TEST: Supabase client ready');
+      AppLogger.info('FLUTTER TEST: Supabase client ready');
       
       // Prepare test data
       final taskData = {
@@ -34,17 +35,17 @@ class TaskTestWidgetState extends State<TaskTestWidget> {
         'progress': 0,
       };
       
-      print('🧪 FLUTTER TEST: Task data prepared: $taskData');
+      AppLogger.info('FLUTTER TEST: Task data prepared', taskData);
       
       // Attempt insert
-      print('🧪 FLUTTER TEST: Calling supabase.from("tasks").insert()...');
+      AppLogger.api('FLUTTER TEST: Calling supabase.from("tasks").insert()...');
       final response = await supabase
           .from('tasks')
           .insert(taskData)
           .select();
           
-      print('🧪 FLUTTER TEST: Insert completed');
-      print('🧪 FLUTTER TEST: Response: $response');
+      AppLogger.api('FLUTTER TEST: Insert completed');
+      AppLogger.api('FLUTTER TEST: Response', response);
       
       setState(() {
         _result = '✅ SUCCESS!\n\nCreated task: ${response[0]['title']}\nID: ${response[0]['id']}';
@@ -52,9 +53,8 @@ class TaskTestWidgetState extends State<TaskTestWidget> {
       });
       
     } catch (e, stackTrace) {
-      print('🧪 FLUTTER TEST: ERROR occurred');
-      print('🧪 FLUTTER TEST: Error: $e');
-      print('🧪 FLUTTER TEST: Stack trace: $stackTrace');
+      AppLogger.error('FLUTTER TEST: ERROR occurred');
+      AppLogger.error('FLUTTER TEST: Error', e, stackTrace);
       
       setState(() {
         _result = '❌ ERROR: $e';

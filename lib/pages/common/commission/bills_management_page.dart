@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../models/bill.dart';
-import '../../../services/bill_service.dart';
+import '../../../business_types/entertainment/models/bill.dart';
+import '../../../business_types/entertainment/services/bill_service.dart';
 import '../../../services/commission_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../manager/commission/manager_upload_bill_page.dart';
@@ -32,7 +32,7 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
       await _commissionService.calculateBillCommissions(billId: bill.id);
 
       // Approve all commissions
-      await _commissionService.approveBillCommissions(bill.id);
+      await _commissionService.approveBillCommissions(bill.id, userId: userId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -82,11 +82,14 @@ class _BillsManagementPageState extends ConsumerState<BillsManagementPage> {
 
   Future<void> _markAsPaid(Bill bill) async {
     try {
+      final userId = ref.read(authProvider).user?.id;
+      if (userId == null) return;
+
       // Mark bill as paid
       await _billService.markAsPaid(bill.id);
 
       // Mark all commissions as paid
-      await _commissionService.markBillCommissionsAsPaid(bill.id);
+      await _commissionService.markBillCommissionsAsPaid(bill.id, userId: userId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

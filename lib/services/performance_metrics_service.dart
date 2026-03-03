@@ -1,5 +1,6 @@
 import '../core/services/supabase_service.dart';
 import '../models/performance_metrics.dart';
+import '../utils/app_logger.dart';
 
 /// Performance Metrics Service
 /// Automatically calculates and stores daily performance metrics
@@ -242,7 +243,7 @@ class PerformanceMetricsService {
           results.add(metrics);
         } catch (e) {
           // Continue with other employees if one fails
-          print('Failed to calculate metrics for ${employee['id']}: $e');
+          AppLogger.error('Failed to calculate metrics for ${employee['id']}', e);
         }
       }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -32,7 +33,7 @@ class _StaffReportsPageState extends ConsumerState<StaffReportsPage> {
         return Scaffold(
           appBar: AppBar(
             title: const Text('📊 Báo Cáo Công Việc'),
-            backgroundColor: const Color(0xFF10B981),
+            backgroundColor: AppColors.success,
           ),
           body: reportsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -173,7 +174,7 @@ class _ReportCard extends StatelessWidget {
 
     // Status color
     final statusColor = report.status == ReportStatus.submitted
-        ? const Color(0xFF10B981)
+        ? AppColors.success
         : Colors.orange;
 
     final statusText = report.status == ReportStatus.submitted
@@ -257,14 +258,14 @@ class _ReportCard extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withOpacity(0.1),
+                      color: AppColors.success.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       '${report.totalHours.toStringAsFixed(1)}h',
                       style: const TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF10B981),
+                        color: AppColors.success,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -392,7 +393,7 @@ class _ReportDetailsSheet extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF10B981),
+                      color: AppColors.success,
                     ),
                   ),
                   
@@ -415,7 +416,7 @@ class _ReportDetailsSheet extends StatelessWidget {
                           const Icon(
                             Icons.check_circle,
                             size: 20,
-                            color: Color(0xFF10B981),
+                            color: AppColors.success,
                           ),
                           const SizedBox(width: 8),
                           Expanded(

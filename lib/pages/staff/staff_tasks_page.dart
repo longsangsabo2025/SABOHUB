@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/task.dart';
@@ -32,7 +33,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
         onPressed: () {
           // Quick task completion
         },
-        backgroundColor: const Color(0xFF10B981),
+        backgroundColor: AppColors.success,
         child: const Icon(Icons.check, color: Colors.white),
       ),
     );
@@ -65,7 +66,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                   children: [
                     ListTile(
                       leading: const Icon(Icons.priority_high,
-                          color: Color(0xFFEF4444)),
+                          color: AppColors.error),
                       title: const Text('Lọc theo độ ưu tiên'),
                       onTap: () {
                         Navigator.pop(context);
@@ -77,7 +78,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                     ),
                     ListTile(
                       leading: const Icon(Icons.access_time,
-                          color: Color(0xFF3B82F6)),
+                          color: AppColors.info),
                       title: const Text('Lọc theo thời hạn'),
                       onTap: () {
                         Navigator.pop(context);
@@ -99,7 +100,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
               const SnackBar(
                 content: Text('❓ Hướng dẫn sử dụng'),
                 duration: Duration(seconds: 2),
-                backgroundColor: Color(0xFF3B82F6),
+                backgroundColor: AppColors.info,
               ),
             );
           },
@@ -138,7 +139,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color:
-                      isSelected ? const Color(0xFF10B981) : Colors.transparent,
+                      isSelected ? AppColors.success : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -266,7 +267,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
               ),
               Expanded(
                 child: _buildSummaryItem('Ưu tiên cao', '$priorityTasks',
-                    'việc quan trọng', const Color(0xFFEF4444)),
+                    'việc quan trọng', AppColors.error),
               ),
             ],
           ),
@@ -275,11 +276,11 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
             children: [
               Expanded(
                 child: _buildSummaryItem('Hoàn thành', '$completedTasks',
-                    'đã xong', const Color(0xFF10B981)),
+                    'đã xong', AppColors.success),
               ),
               Expanded(
                 child: _buildSummaryItem('Còn lại', '$remainingTasks',
-                    'cần làm', const Color(0xFF3B82F6)),
+                    'cần làm', AppColors.info),
               ),
             ],
           ),
@@ -345,7 +346,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFFEF4444).withValues(alpha: 0.05),
+              color: AppColors.error.withValues(alpha: 0.05),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -356,12 +357,12 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
                     Icons.priority_high,
-                    color: Color(0xFFEF4444),
+                    color: AppColors.error,
                     size: 18,
                   ),
                 ),
@@ -417,12 +418,12 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+              color: AppColors.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.warning,
-              color: Color(0xFFEF4444),
+              color: AppColors.error,
               size: 20,
             ),
           ),
@@ -454,7 +455,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  color: AppColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -462,7 +463,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFFEF4444),
+                    color: AppColors.error,
                   ),
                 ),
               ),
@@ -473,20 +474,20 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                     SnackBar(
                       content: Text('▶️ Bắt đầu: $task'),
                       duration: const Duration(seconds: 2),
-                      backgroundColor: const Color(0xFF10B981),
+                      backgroundColor: AppColors.success,
                     ),
                   );
                 },
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                    color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(
                     Icons.play_arrow,
                     size: 16,
-                    color: Color(0xFF10B981),
+                    color: AppColors.success,
                   ),
                 ),
               ),
@@ -562,12 +563,12 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+              color: AppColors.info.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.assignment,
-              color: Color(0xFF3B82F6),
+              color: AppColors.info,
               size: 20,
             ),
           ),
@@ -602,20 +603,20 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                     SnackBar(
                       content: Text('✅ Hoàn thành: $task'),
                       duration: const Duration(seconds: 2),
-                      backgroundColor: const Color(0xFF10B981),
+                      backgroundColor: AppColors.success,
                     ),
                   );
                 },
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                    color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(
                     Icons.check,
                     size: 16,
-                    color: Color(0xFF10B981),
+                    color: AppColors.success,
                   ),
                 ),
               ),
@@ -626,20 +627,20 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                     SnackBar(
                       content: Text('ℹ️ Chi tiết: $task'),
                       duration: const Duration(seconds: 2),
-                      backgroundColor: const Color(0xFF8B5CF6),
+                      backgroundColor: AppColors.primary,
                     ),
                   );
                 },
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(
                     Icons.info,
                     size: 16,
-                    color: Color(0xFF8B5CF6),
+                    color: AppColors.primary,
                   ),
                 ),
               ),
@@ -728,12 +729,12 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                  color: AppColors.info.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
                   Icons.hourglass_empty,
-                  color: Color(0xFF3B82F6),
+                  color: AppColors.info,
                   size: 20,
                 ),
               ),
@@ -764,7 +765,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                   value: progress / 100,
                   backgroundColor: Colors.grey.shade200,
                   valueColor:
-                      const AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                      const AlwaysStoppedAnimation<Color>(AppColors.info),
                 ),
               ),
               const SizedBox(width: 12),
@@ -773,7 +774,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF3B82F6),
+                  color: AppColors.info,
                 ),
               ),
             ],
@@ -788,12 +789,12 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                       SnackBar(
                         content: Text('✅ Đã hoàn thành: $task'),
                         duration: const Duration(seconds: 2),
-                        backgroundColor: const Color(0xFF10B981),
+                        backgroundColor: AppColors.success,
                       ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
+                    backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
@@ -814,13 +815,13 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
                       SnackBar(
                         content: Text('⏸️ Tạm dừng: $task'),
                         duration: const Duration(seconds: 2),
-                        backgroundColor: const Color(0xFF8B5CF6),
+                        backgroundColor: AppColors.primary,
                       ),
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF8B5CF6),
-                    side: const BorderSide(color: Color(0xFF8B5CF6)),
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -985,15 +986,15 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
         text = 'Khẩn cấp';
         break;
       case TaskPriority.high:
-        color = const Color(0xFFEF4444);
+        color = AppColors.error;
         text = 'Cao';
         break;
       case TaskPriority.medium:
-        color = const Color(0xFFF59E0B);
+        color = AppColors.warning;
         text = 'Trung bình';
         break;
       case TaskPriority.low:
-        color = const Color(0xFF10B981);
+        color = AppColors.success;
         text = 'Thấp';
         break;
     }
@@ -1022,7 +1023,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
       onPressed: () => _updateTaskStatus(task),
       style: ElevatedButton.styleFrom(
         backgroundColor:
-            isInProgress ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+            isInProgress ? AppColors.success : AppColors.info,
         foregroundColor: Colors.white,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1117,7 +1118,7 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
           content: Text(nextStatus == TaskStatus.inProgress
               ? '✅ Đã bắt đầu nhiệm vụ'
               : '🎉 Hoàn thành nhiệm vụ!'),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
@@ -1146,12 +1147,12 @@ class _StaffTasksPageState extends ConsumerState<StaffTasksPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Icon(
               Icons.check_circle,
-              color: Color(0xFF10B981),
+              color: AppColors.success,
               size: 20,
             ),
           ),

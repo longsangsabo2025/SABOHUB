@@ -12,7 +12,7 @@ final supabaseProvider = Provider<SupabaseClient>((ref) {
 /// Fetches all employees for a specific company from employees table only
 /// (Custom Auth: Managers, Shift Leaders, Staff)
 final companyEmployeesProvider =
-    FutureProvider.family<List<app_user.User>, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<List<app_user.User>, String>((ref, companyId) async {
   final supabase = ref.watch(supabaseProvider);
 
   try {
@@ -38,7 +38,7 @@ final companyEmployeesProvider =
 /// Company Employees Stats Provider
 /// Returns employee count by role for a specific company from employees table only
 final companyEmployeesStatsProvider =
-    FutureProvider.family<Map<String, int>, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<Map<String, int>, String>((ref, companyId) async {
   final supabase = ref.watch(supabaseProvider);
 
   try {
@@ -83,7 +83,7 @@ final companyEmployeesStatsProvider =
 /// Active Company Employees Provider
 /// Fetches only active employees for a specific company from employees table only
 final activeCompanyEmployeesProvider =
-    FutureProvider.family<List<app_user.User>, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<List<app_user.User>, String>((ref, companyId) async {
   final supabase = ref.watch(supabaseProvider);
 
   try {
@@ -107,7 +107,7 @@ final activeCompanyEmployeesProvider =
 
 /// Employees by Role Provider
 /// Fetches employees filtered by company and role from employees table only
-final employeesByRoleProvider = FutureProvider.family<List<app_user.User>,
+final employeesByRoleProvider = FutureProvider.autoDispose.family<List<app_user.User>,
     ({String companyId, app_user.UserRole role})>((ref, params) async {
   final supabase = ref.watch(supabaseProvider);
 

@@ -90,5 +90,4 @@ final simpleTaskStatsProvider =
 
 // Dummy refresh for stores (not yet migrated)
 void refreshStores(WidgetRef ref) {
-  // TODO: Implement proper refresh logic for stores
 }

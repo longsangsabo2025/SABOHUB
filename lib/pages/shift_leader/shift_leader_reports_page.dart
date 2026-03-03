@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../providers/manager_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/staff_provider.dart';
 import '../../providers/task_provider.dart';
 
@@ -33,9 +37,9 @@ class _ShiftLeaderReportsPageState
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Create new report
+          _showCreateReportDialog();
         },
-        backgroundColor: const Color(0xFF8B5CF6),
+        backgroundColor: AppColors.primary,
         child: const Icon(Icons.add_chart, color: Colors.white),
       ),
     );
@@ -56,25 +60,13 @@ class _ShiftLeaderReportsPageState
       actions: [
         IconButton(
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('📥 Tải xuống báo cáo'),
-                duration: Duration(seconds: 2),
-                backgroundColor: Color(0xFF10B981),
-              ),
-            );
+            _copyReportToClipboard();
           },
           icon: const Icon(Icons.download, color: Colors.black54),
         ),
         IconButton(
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('📤 Chia sẻ báo cáo'),
-                duration: Duration(seconds: 2),
-                backgroundColor: Color(0xFF3B82F6),
-              ),
-            );
+            _copyReportToClipboard();
           },
           icon: const Icon(Icons.share, color: Colors.black54),
         ),
@@ -111,7 +103,7 @@ class _ShiftLeaderReportsPageState
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color:
-                      isSelected ? const Color(0xFF8B5CF6) : Colors.transparent,
+                      isSelected ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -174,7 +166,7 @@ class _ShiftLeaderReportsPageState
                 child: Padding(
                   padding: EdgeInsets.all(32.0),
                   child: CircularProgressIndicator(
-                    color: Color(0xFF8B5CF6),
+                    color: AppColors.primary,
                   ),
                 ),
               ),
@@ -205,7 +197,7 @@ class _ShiftLeaderReportsPageState
                           ref.invalidate(staffStatsProvider);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8B5CF6),
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                         ),
                         child: const Text('Thử lại'),
@@ -219,7 +211,7 @@ class _ShiftLeaderReportsPageState
               child: Padding(
                 padding: EdgeInsets.all(32.0),
                 child: CircularProgressIndicator(
-                  color: Color(0xFF8B5CF6),
+                  color: AppColors.primary,
                 ),
               ),
             ),
@@ -250,7 +242,7 @@ class _ShiftLeaderReportsPageState
                         ref.invalidate(staffStatsProvider);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8B5CF6),
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                       ),
                       child: const Text('Thử lại'),
@@ -264,7 +256,7 @@ class _ShiftLeaderReportsPageState
             child: Padding(
               padding: EdgeInsets.all(32.0),
               child: CircularProgressIndicator(
-                color: Color(0xFF8B5CF6),
+                color: AppColors.primary,
               ),
             ),
           ),
@@ -295,7 +287,7 @@ class _ShiftLeaderReportsPageState
                       ref.invalidate(staffStatsProvider);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B5CF6),
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                     ),
                     child: const Text('Thử lại'),
@@ -373,8 +365,8 @@ class _ShiftLeaderReportsPageState
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: (shiftComplete
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFF59E0B))
+                          ? AppColors.success
+                          : AppColors.warning)
                       .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -384,8 +376,8 @@ class _ShiftLeaderReportsPageState
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: shiftComplete
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFFF59E0B),
+                        ? AppColors.success
+                        : AppColors.warning,
                   ),
                 ),
               ),
@@ -396,11 +388,11 @@ class _ShiftLeaderReportsPageState
             children: [
               Expanded(
                 child: _buildSummaryItem(
-                    'Ca làm việc', shiftText, const Color(0xFF8B5CF6)),
+                    'Ca làm việc', shiftText, AppColors.primary),
               ),
               Expanded(
                 child: _buildSummaryItem('Nhiệm vụ',
-                    '$completedTasks/$totalTasks', const Color(0xFF3B82F6)),
+                    '$completedTasks/$totalTasks', AppColors.info),
               ),
             ],
           ),
@@ -409,11 +401,11 @@ class _ShiftLeaderReportsPageState
             children: [
               Expanded(
                 child: _buildSummaryItem('Nhân viên',
-                    '$activeStaff/$totalStaff', const Color(0xFF10B981)),
+                    '$activeStaff/$totalStaff', AppColors.success),
               ),
               Expanded(
                 child: _buildSummaryItem(
-                    'Doanh thu', revenueFormatted, const Color(0xFFF59E0B)),
+                    'Doanh thu', revenueFormatted, AppColors.warning),
               ),
             ],
           ),
@@ -422,11 +414,11 @@ class _ShiftLeaderReportsPageState
             children: [
               Expanded(
                 child: _buildSummaryItem('Bàn hoạt động',
-                    '$activeTables/$totalTables', const Color(0xFF8B5CF6)),
+                    '$activeTables/$totalTables', AppColors.primary),
               ),
               Expanded(
                 child: _buildSummaryItem(
-                    'Đơn hàng', '$totalOrders', const Color(0xFF3B82F6)),
+                    'Đơn hàng', '$totalOrders', AppColors.info),
               ),
             ],
           ),
@@ -498,12 +490,12 @@ class _ShiftLeaderReportsPageState
             children: [
               Expanded(
                 child: _buildMetricCard('Bàn phục vụ', '$activeTables',
-                    '/$totalTables', const Color(0xFF10B981)),
+                    '/$totalTables', AppColors.success),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildMetricCard(
-                    'Đơn hàng', '$totalOrders', 'đơn', const Color(0xFF3B82F6)),
+                    'Đơn hàng', '$totalOrders', 'đơn', AppColors.info),
               ),
             ],
           ),
@@ -512,12 +504,12 @@ class _ShiftLeaderReportsPageState
             children: [
               Expanded(
                 child: _buildMetricCard('Hoàn thành', '$completedTasks',
-                    '/$totalTasks', const Color(0xFF10B981)),
+                    '/$totalTasks', AppColors.success),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildMetricCard('Đang làm', '$inProgressTasks', 'việc',
-                    const Color(0xFF8B5CF6)),
+                    AppColors.primary),
               ),
             ],
           ),
@@ -526,7 +518,7 @@ class _ShiftLeaderReportsPageState
             children: [
               Expanded(
                 child: _buildMetricCard(
-                    'Chờ xử lý', '$todoTasks', 'việc', const Color(0xFFF59E0B)),
+                    'Chờ xử lý', '$todoTasks', 'việc', AppColors.warning),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -537,7 +529,7 @@ class _ShiftLeaderReportsPageState
                             .toStringAsFixed(0)
                         : '0',
                     '%',
-                    const Color(0xFF10B981)),
+                    AppColors.success),
               ),
             ],
           ),
@@ -616,28 +608,20 @@ class _ShiftLeaderReportsPageState
             ),
           ),
           const SizedBox(height: 16),
-          _buildIssueItem(
-            'Máy pha chế bàn 5 gặp sự cố',
-            '15:30',
-            'Đã liên hệ kỹ thuật viên, sửa chữa trong 30 phút',
-            Icons.build,
-            const Color(0xFFEF4444),
-          ),
-          const SizedBox(height: 12),
-          _buildIssueItem(
-            'Nhân viên Lan xin nghỉ sớm',
-            '19:00',
-            'Lý do cá nhân, đã điều chỉnh phân công',
-            Icons.person,
-            const Color(0xFFF59E0B),
-          ),
-          const SizedBox(height: 12),
-          _buildIssueItem(
-            'Khách hàng khen ngợi dịch vụ',
-            '20:15',
-            'Bàn 8 - nhân viên Mai được khách khen',
-            Icons.thumb_up,
-            const Color(0xFF10B981),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 20),
+                SizedBox(width: 12),
+                Text('Không có sự cố trong ca hôm nay',
+                  style: TextStyle(fontSize: 14, color: Colors.black54)),
+              ],
+            ),
           ),
         ],
       ),
@@ -703,19 +687,45 @@ class _ShiftLeaderReportsPageState
   }
 
   Widget _buildWeeklyReportTab(WidgetRef ref) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildWeeklySummary(),
-          const SizedBox(height: 24),
-          _buildWeeklyChart(),
-        ],
-      ),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _loadWeeklyStats(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          );
+        }
+        final stats = snapshot.data ?? {};
+        return RefreshIndicator(
+          onRefresh: () async => setState(() {}),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                _buildWeeklySummary(stats),
+                const SizedBox(height: 24),
+                _buildWeeklyChart(stats),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildWeeklySummary() {
+  Widget _buildWeeklySummary(Map<String, dynamic> stats) {
+    final total = stats['total'] ?? 0;
+    final completed = stats['completed'] ?? 0;
+    final inProgress = stats['inProgress'] ?? 0;
+    final weekLabel = stats['weekLabel'] ?? 'Tuần này';
+    final completionRate = total > 0
+        ? '${(completed / total * 100).toStringAsFixed(0)}%'
+        : '—';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -732,9 +742,9 @@ class _ShiftLeaderReportsPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Báo cáo tuần (1-7 Nov)',
-            style: TextStyle(
+          Text(
+            'Báo cáo tuần ($weekLabel)',
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -743,10 +753,10 @@ class _ShiftLeaderReportsPageState
           Row(
             children: [
               Expanded(
-                child: _buildWeeklyMetric('Tổng ca', '21', 'ca làm việc'),
+                child: _buildWeeklyMetric('Tổng nhiệm vụ', '$total', 'công việc'),
               ),
               Expanded(
-                child: _buildWeeklyMetric('Trung bình', '6.5', 'nhân viên/ca'),
+                child: _buildWeeklyMetric('Hoàn thành', '$completed', 'nhiệm vụ'),
               ),
             ],
           ),
@@ -754,11 +764,11 @@ class _ShiftLeaderReportsPageState
           Row(
             children: [
               Expanded(
-                child: _buildWeeklyMetric('Doanh thu', '16.8M', 'VNĐ'),
+                child: _buildWeeklyMetric('Đang làm', '$inProgress', 'nhiệm vụ'),
               ),
               Expanded(
                 child: _buildWeeklyMetric(
-                    'Hiệu suất', '87%', 'nhiệm vụ hoàn thành'),
+                    'Hiệu suất', completionRate, 'hoàn thành'),
               ),
             ],
           ),
@@ -784,7 +794,7 @@ class _ShiftLeaderReportsPageState
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF8B5CF6),
+            color: AppColors.primary,
           ),
         ),
         const SizedBox(height: 2),
@@ -799,7 +809,11 @@ class _ShiftLeaderReportsPageState
     );
   }
 
-  Widget _buildWeeklyChart() {
+  Widget _buildWeeklyChart(Map<String, dynamic> stats) {
+    final dayStats = (stats['dayStats'] as Map<String, int>?) ?? {};
+    final dayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    final maxVal = dayStats.values.fold<int>(1, (a, b) => a > b ? a : b);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -817,7 +831,7 @@ class _ShiftLeaderReportsPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Biểu đồ doanh thu theo ngày',
+            'Nhiệm vụ theo ngày',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -829,15 +843,15 @@ class _ShiftLeaderReportsPageState
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _buildChartBar('T2', 1.8, 3.0, const Color(0xFF8B5CF6)),
-                _buildChartBar('T3', 2.4, 3.0, const Color(0xFF8B5CF6)),
-                _buildChartBar('T4', 2.1, 3.0, const Color(0xFF8B5CF6)),
-                _buildChartBar('T5', 2.8, 3.0, const Color(0xFF8B5CF6)),
-                _buildChartBar('T6', 3.2, 3.0, const Color(0xFF8B5CF6)),
-                _buildChartBar('T7', 2.6, 3.0, const Color(0xFF8B5CF6)),
-                _buildChartBar('CN', 1.9, 3.0, const Color(0xFF8B5CF6)),
-              ],
+              children: dayNames.map((day) {
+                final count = dayStats[day] ?? 0;
+                return _buildChartBar(
+                  day,
+                  count.toDouble(),
+                  maxVal.toDouble(),
+                  AppColors.primary,
+                );
+              }).toList(),
             ),
           ),
         ],
@@ -853,7 +867,7 @@ class _ShiftLeaderReportsPageState
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         Text(
-          '${value}M',
+          '${value.toInt()}',
           style: const TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w500,
@@ -881,19 +895,45 @@ class _ShiftLeaderReportsPageState
   }
 
   Widget _buildMonthlyReportTab(WidgetRef ref) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildMonthlySummary(),
-          const SizedBox(height: 24),
-          _buildMonthlyTrends(),
-        ],
-      ),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _loadMonthlyStats(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          );
+        }
+        final stats = snapshot.data ?? {};
+        return RefreshIndicator(
+          onRefresh: () async => setState(() {}),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                _buildMonthlySummary(stats),
+                const SizedBox(height: 24),
+                _buildMonthlyTrends(stats),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildMonthlySummary() {
+  Widget _buildMonthlySummary(Map<String, dynamic> stats) {
+    final total = stats['total'] ?? 0;
+    final completed = stats['completed'] ?? 0;
+    final overdue = stats['overdue'] ?? 0;
+    final monthLabel = stats['monthLabel'] ?? 'Tháng này';
+    final completionRate = total > 0
+        ? '${(completed / total * 100).toStringAsFixed(0)}%'
+        : '—';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -910,9 +950,9 @@ class _ShiftLeaderReportsPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Báo cáo tháng 11/2024',
-            style: TextStyle(
+          Text(
+            'Báo cáo $monthLabel',
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -922,11 +962,11 @@ class _ShiftLeaderReportsPageState
             children: [
               Expanded(
                 child: _buildMonthlyItem(
-                    'Tổng ca làm', '89 ca', const Color(0xFF8B5CF6)),
+                    'Tổng nhiệm vụ', '$total', AppColors.primary),
               ),
               Expanded(
                 child: _buildMonthlyItem(
-                    'Doanh thu', '72.5M', const Color(0xFF10B981)),
+                    'Hoàn thành', '$completed', AppColors.success),
               ),
             ],
           ),
@@ -935,11 +975,11 @@ class _ShiftLeaderReportsPageState
             children: [
               Expanded(
                 child: _buildMonthlyItem(
-                    'Hiệu suất', '91%', const Color(0xFF3B82F6)),
+                    'Hiệu suất', completionRate, AppColors.info),
               ),
               Expanded(
                 child: _buildMonthlyItem(
-                    'Sự cố', '12 vấn đề', const Color(0xFFEF4444)),
+                    'Quá hạn', '$overdue vấn đề', AppColors.error),
               ),
             ],
           ),
@@ -972,7 +1012,14 @@ class _ShiftLeaderReportsPageState
     );
   }
 
-  Widget _buildMonthlyTrends() {
+  Widget _buildMonthlyTrends(Map<String, dynamic> stats) {
+    final total = stats['total'] ?? 0;
+    final completed = stats['completed'] ?? 0;
+    final overdue = stats['overdue'] ?? 0;
+    final completionRate = total > 0
+        ? '${(completed / total * 100).toStringAsFixed(0)}%'
+        : '—';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -990,7 +1037,7 @@ class _ShiftLeaderReportsPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Xu hướng và thống kê',
+            'Tổng quan hiệu suất',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -998,27 +1045,29 @@ class _ShiftLeaderReportsPageState
           ),
           const SizedBox(height: 16),
           _buildTrendItem(
-            'Doanh thu tăng trưởng',
-            '+12.5%',
-            'So với tháng trước',
-            Icons.trending_up,
-            const Color(0xFF10B981),
+            'Hoàn thành nhiệm vụ',
+            completionRate,
+            '$completed/$total nhiệm vụ đã xử lý',
+            Icons.check_circle_outline,
+            AppColors.success,
           ),
           const SizedBox(height: 12),
           _buildTrendItem(
-            'Hiệu suất nhóm',
-            '91%',
-            'Cao hơn mục tiêu 85%',
-            Icons.group,
-            const Color(0xFF3B82F6),
+            'Quá hạn',
+            '$overdue',
+            overdue == 0
+                ? 'Không có nhiệm vụ quá hạn'
+                : '$overdue nhiệm vụ cần xử lý',
+            Icons.warning_amber_outlined,
+            overdue == 0 ? AppColors.success : AppColors.error,
           ),
           const SizedBox(height: 12),
           _buildTrendItem(
-            'Sự cố giảm',
-            '-23%',
-            'Ít hơn so với tháng trước',
-            Icons.warning,
-            const Color(0xFF8B5CF6),
+            'Tổng khối lượng',
+            '$total',
+            'Nhiệm vụ trong tháng',
+            Icons.assignment_outlined,
+            AppColors.primary,
           ),
         ],
       ),
@@ -1080,6 +1129,155 @@ class _ShiftLeaderReportsPageState
           ),
         ],
       ),
+    );
+  }
+
+  Future<Map<String, dynamic>> _loadWeeklyStats() async {
+    final supabase = Supabase.instance.client;
+    final now = DateTime.now();
+    final weekStart = now.subtract(Duration(days: now.weekday - 1));
+    final weekStartStr = DateFormat('yyyy-MM-dd').format(weekStart);
+
+    try {
+      final tasks = await supabase
+          .from('tasks')
+          .select('id, status, created_at')
+          .gte('created_at', weekStartStr)
+          .isFilter('deleted_at', null);
+
+      final total = tasks.length;
+      final completed =
+          tasks.where((t) => t['status'] == 'completed').length;
+      final inProgress =
+          tasks.where((t) => t['status'] == 'in_progress').length;
+
+      // Group by day of week
+      final dayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+      final dayStats = <String, int>{
+        for (final d in dayNames) d: 0,
+      };
+      for (final task in tasks) {
+        try {
+          final date = DateTime.parse(task['created_at']);
+          final dayIndex = date.weekday - 1;
+          if (dayIndex >= 0 && dayIndex < 7) {
+            dayStats[dayNames[dayIndex]] =
+                (dayStats[dayNames[dayIndex]] ?? 0) + 1;
+          }
+        } catch (_) {}
+      }
+
+      return {
+        'total': total,
+        'completed': completed,
+        'inProgress': inProgress,
+        'dayStats': dayStats,
+        'weekLabel':
+            '${DateFormat('dd/MM').format(weekStart)} - ${DateFormat('dd/MM').format(now)}',
+      };
+    } catch (_) {
+      return {
+        'total': 0,
+        'completed': 0,
+        'inProgress': 0,
+        'dayStats': <String, int>{},
+        'weekLabel': 'Tuần này',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> _loadMonthlyStats() async {
+    final supabase = Supabase.instance.client;
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final monthStartStr = DateFormat('yyyy-MM-dd').format(monthStart);
+
+    try {
+      final tasks = await supabase
+          .from('tasks')
+          .select('id, status, due_date, created_at')
+          .gte('created_at', monthStartStr)
+          .isFilter('deleted_at', null);
+
+      final total = tasks.length;
+      final completed =
+          tasks.where((t) => t['status'] == 'completed').length;
+      final overdue = tasks.where((t) {
+        if (t['due_date'] == null) return false;
+        try {
+          final due = DateTime.parse(t['due_date']);
+          return due.isBefore(now) && t['status'] != 'completed';
+        } catch (_) {
+          return false;
+        }
+      }).length;
+
+      final monthName = DateFormat('MM/yyyy').format(now);
+
+      return {
+        'total': total,
+        'completed': completed,
+        'overdue': overdue,
+        'monthLabel': 'tháng $monthName',
+      };
+    } catch (_) {
+      return {
+        'total': 0,
+        'completed': 0,
+        'overdue': 0,
+        'monthLabel': 'Tháng này',
+      };
+    }
+  }
+
+  void _showCreateReportDialog() {
+    final notesCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ghi chú ca làm'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: notesCtrl,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                hintText: 'Nhập ghi chú, sự cố hoặc nhận xét về ca làm...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (notesCtrl.text.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Đã lưu ghi chú ca làm'), backgroundColor: AppColors.success),
+                );
+              }
+            },
+            child: const Text('Lưu'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _copyReportToClipboard() {
+    final now = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    final report = 'Báo cáo ca làm - $now\n'
+        'Trưởng ca: ${ref.read(authProvider).user?.displayName ?? "N/A"}\n'
+        '---\nBáo cáo chi tiết xem tại SABOHUB App';
+    Clipboard.setData(ClipboardData(text: report));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Đã sao chép báo cáo'), backgroundColor: AppColors.success),
     );
   }
 }

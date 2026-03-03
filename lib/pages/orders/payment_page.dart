@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/session.dart';
+import '../../business_types/entertainment/models/session.dart';
 import '../../models/payment.dart';
 import '../../providers/payment_provider.dart';
 

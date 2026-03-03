@@ -11,7 +11,7 @@ final storeServiceProvider = Provider<StoreService>((ref) {
 
 /// All Stores Provider
 /// Fetches and caches all stores from Supabase
-final storesProvider = FutureProvider<List<Store>>((ref) async {
+final storesProvider = FutureProvider.autoDispose<List<Store>>((ref) async {
   final service = ref.watch(storeServiceProvider);
   final auth = ref.watch(authProvider);
   final companyId = auth.user?.companyId ?? '';
@@ -21,7 +21,7 @@ final storesProvider = FutureProvider<List<Store>>((ref) async {
 
 /// Single Store Provider
 /// Gets a specific store by ID
-final storeProvider = FutureProvider.family<Store?, String>((ref, id) async {
+final storeProvider = FutureProvider.autoDispose.family<Store?, String>((ref, id) async {
   final service = ref.watch(storeServiceProvider);
   final auth = ref.watch(authProvider);
   final companyId = auth.user?.companyId ?? '';
@@ -32,14 +32,14 @@ final storeProvider = FutureProvider.family<Store?, String>((ref, id) async {
 /// Store Stats Provider
 /// Fetches store statistics
 final storeStatsProvider =
-    FutureProvider.family<Map<String, dynamic>, String>((ref, storeId) async {
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, storeId) async {
   final service = ref.watch(storeServiceProvider);
   return await service.getStoreStats(storeId);
 });
 
 /// Stores Stream Provider
 /// Real-time stream of stores
-final storesStreamProvider = StreamProvider<List<Store>>((ref) {
+final storesStreamProvider = StreamProvider.autoDispose<List<Store>>((ref) {
   final service = ref.watch(storeServiceProvider);
   return service.subscribeToStores();
 });

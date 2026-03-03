@@ -171,7 +171,7 @@ class _GroupedNavigationDrawerState extends State<GroupedNavigationDrawer> {
                 },
               ),
             );
-          }).toList(),
+          }),
         const Divider(height: 1),
       ],
     );

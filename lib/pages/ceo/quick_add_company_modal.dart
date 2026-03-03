@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../services/company_service.dart';
+import '../../providers/auth_provider.dart';
 
-class QuickAddCompanyModal extends StatefulWidget {
+class QuickAddCompanyModal extends ConsumerStatefulWidget {
   const QuickAddCompanyModal({super.key});
 
   @override
-  State<QuickAddCompanyModal> createState() => _QuickAddCompanyModalState();
+  ConsumerState<QuickAddCompanyModal> createState() => _QuickAddCompanyModalState();
 }
 
-class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
+class _QuickAddCompanyModalState extends ConsumerState<QuickAddCompanyModal> {
   String? selectedTemplate;
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
@@ -372,8 +374,10 @@ class _QuickAddCompanyModalState extends State<QuickAddCompanyModal> {
       // ✅ Save to database using CompanyService
       final companyService = CompanyService();
 
+      final userId = ref.read(authProvider).user?.id ?? '';
       final newCompany = await companyService.createCompany(
         name: _nameController.text.trim(),
+        userId: userId,
         address: _addressController.text.trim(),
         businessType: template.id, // 'billiards', 'cafe', 'restaurant', etc.
       );

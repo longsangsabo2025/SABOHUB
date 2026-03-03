@@ -29,13 +29,16 @@ class InvitationService {
     try {
       // Verify CEO is logged in
       User? currentUser;
-      String companyId =
-          '2103c851-4762-45ba-9dad-037f18556693b'; // Demo company ID
+      String? companyId;
 
       if (_ref != null) {
         final authState = _ref.read(authProvider);
         currentUser = authState.user;
-        // Use demo company ID for now
+        companyId = currentUser?.companyId;
+      }
+
+      if (companyId == null || companyId.isEmpty) {
+        throw Exception('Không tìm thấy công ty. Vui lòng đăng nhập lại.');
       }
 
       if (currentUser == null || currentUser.role != UserRole.ceo) {
@@ -128,21 +131,12 @@ class InvitationService {
         throw Exception('Link mời không hợp lệ hoặc đã hết hạn');
       }
 
-      // Check if email already exists in users table
-      var existingUser = await _supabase
-          .from('users')
+      // Check if email already exists in employees table
+      final existingUser = await _supabase
+          .from('employees')
           .select('id')
           .eq('email', email)
           .maybeSingle();
-
-      // Also check employees table
-      if (existingUser == null) {
-        existingUser = await _supabase
-            .from('employees')
-            .select('id')
-            .eq('email', email)
-            .maybeSingle();
-      }
 
       if (existingUser != null) {
         throw Exception('Email này đã được sử dụng');
@@ -165,11 +159,11 @@ class InvitationService {
 
       final userId = authResponse.user!.id;
 
-      // Insert user data
-      await _supabase.from('users').insert({
-        'id': userId,
+      // Insert employee data
+      await _supabase.from('employees').insert({
+        'auth_user_id': userId,
         'email': email,
-        'name': fullName,
+        'full_name': fullName,
         'phone': phone,
         'role': invitation['role'],
         'company_id': invitation['company_id'],

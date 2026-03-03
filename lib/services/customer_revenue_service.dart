@@ -1,7 +1,7 @@
-/// Customer Revenue Service - Lấy dữ liệu doanh số khách hàng từ v_sales_by_customer
-import 'package:flutter/foundation.dart';
+// Customer Revenue Service - Lấy dữ liệu doanh số khách hàng từ v_sales_by_customer
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/customer_tier.dart';
+import '../utils/app_logger.dart';
 
 class CustomerRevenueService {
   static final _supabase = Supabase.instance.client;
@@ -40,10 +40,10 @@ class CustomerRevenueService {
       _revenueCache[companyId] = revenueMap;
       _lastCacheTime = DateTime.now();
 
-      debugPrint('✓ Loaded revenue data for ${revenueMap.length} customers');
+      AppLogger.api('Loaded revenue data for ${revenueMap.length} customers');
       return revenueMap;
     } catch (e) {
-      debugPrint('❌ Error loading customer revenue: $e');
+      AppLogger.error('Error loading customer revenue', e);
       return _revenueCache[companyId] ?? {};
     }
   }
@@ -60,7 +60,7 @@ class CustomerRevenueService {
       if (response == null) return null;
       return CustomerRevenue.fromJson(response);
     } catch (e) {
-      debugPrint('❌ Error loading customer revenue: $e');
+      AppLogger.error('Error loading customer revenue', e);
       return null;
     }
   }
@@ -116,7 +116,7 @@ class CustomerRevenueService {
           .map((json) => CustomerRevenue.fromJson(json))
           .toList();
     } catch (e) {
-      debugPrint('❌ Error loading top customers: $e');
+      AppLogger.error('Error loading top customers', e);
       return [];
     }
   }

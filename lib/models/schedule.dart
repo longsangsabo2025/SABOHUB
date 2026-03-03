@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../core/theme/app_colors.dart';
 
 enum ShiftType {
   morning('Ca sáng', TimeOfDay(hour: 6, minute: 0), TimeOfDay(hour: 14, minute: 0), Color(0xFFFFEB3B)),
@@ -25,8 +26,8 @@ enum ShiftType {
 enum ScheduleStatus {
   scheduled('Đã lên lịch', Color(0xFF2196F3)),
   confirmed('Đã xác nhận', Color(0xFF4CAF50)),
-  absent('Vắng mặt', Color(0xFFEF4444)),
-  late('Muộn giờ', Color(0xFFF59E0B)),
+  absent('Vắng mặt', AppColors.error),
+  late('Muộn giờ', AppColors.warning),
   cancelled('Đã hủy', Color(0xFF6B7280));
 
   final String label;
@@ -35,9 +36,9 @@ enum ScheduleStatus {
 }
 
 enum RequestStatus {
-  pending('Chờ duyệt', Color(0xFFF59E0B)),
-  approved('Đã duyệt', Color(0xFF10B981)),
-  rejected('Từ chối', Color(0xFFEF4444));
+  pending('Chờ duyệt', AppColors.warning),
+  approved('Đã duyệt', AppColors.success),
+  rejected('Từ chối', AppColors.error);
 
   final String label;
   final Color color;
@@ -120,12 +121,21 @@ class Schedule {
   }
 
   factory Schedule.fromJson(Map<String, dynamic> json) {
+    final empData = json['employees'];
+    final empName = json['employee_name'] as String? ??
+        (empData is Map ? empData['full_name'] as String? : null) ??
+        'N/A';
+    final empEmail = json['employee_email'] as String? ??
+        (empData is Map ? empData['email'] as String? : null);
+    final empPhone = json['employee_phone'] as String? ??
+        (empData is Map ? empData['phone'] as String? : null);
+
     return Schedule(
       id: json['id'] as String,
       employeeId: json['employee_id'] as String,
-      employeeName: json['employee_name'] as String,
-      employeeEmail: json['employee_email'] as String?,
-      employeePhone: json['employee_phone'] as String?,
+      employeeName: empName,
+      employeeEmail: empEmail,
+      employeePhone: empPhone,
       companyId: json['company_id'] as String,
       date: DateTime.parse(json['date'] as String),
       shiftType: ShiftType.values.firstWhere(

@@ -1,12 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/supabase_service.dart';
+import '../providers/auth_provider.dart';
 
 /// CEO Dashboard KPI Provider
 /// Fetches real-time KPIs from database for CEO dashboard
 final ceoDashboardKPIProvider =
-    FutureProvider<Map<String, dynamic>>((ref) async {
+    FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final supabaseClient = supabase.client;
-  final userId = supabaseClient.auth.currentUser?.id;
+  final userId = ref.read(authProvider).user?.id;
 
   if (userId == null) {
     return _getEmptyKPIs();
@@ -83,9 +84,9 @@ final ceoDashboardKPIProvider =
 /// Recent Activities Provider
 /// Fetches recent activities from database
 final ceoDashboardActivitiesProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final supabaseClient = supabase.client;
-  final userId = supabaseClient.auth.currentUser?.id;
+  final userId = ref.read(authProvider).user?.id;
 
   if (userId == null) {
     return [];

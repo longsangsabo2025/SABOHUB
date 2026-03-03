@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/app_logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -8,7 +8,7 @@ import '../../../models/company.dart';
 import '../../../models/manager_permissions.dart';
 import '../../../providers/company_provider.dart';
 import '../../../providers/manager_permissions_provider.dart';
-import '../../../core/services/supabase_service.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../services/company_service.dart';
 import '../company_details_page.dart' show companyDetailsProvider;
 import 'package:go_router/go_router.dart';
@@ -28,10 +28,10 @@ class SettingsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Get current user info
-    final currentUser = supabase.client.auth.currentUser;
-    final isUserCEO = currentUser?.userMetadata?['role'] == 'ceo';
-    final currentUserId = currentUser?.id;
+    // Get current user info from authProvider
+    final authUser = ref.read(authProvider).user;
+    final isUserCEO = authUser?.role.toString().toLowerCase().contains('ceo') ?? false;
+    final currentUserId = authUser?.id;
     
     // For managers, check permissions
     final managerPermissionsAsync = isUserCEO || currentUserId == null
@@ -114,22 +114,7 @@ class SettingsTab extends ConsumerWidget {
           // Bank Account Section - Show for CEO or Manager with permission
           if (_canManageBankAccount(isUserCEO, managerPermissionsAsync))
             ...[
-              _buildSettingSection(
-                title: 'Tài khoản ngân hàng (Chuyển khoản)',
-                items: [
-                  _SettingItem(
-                    icon: Icons.account_balance,
-                    title: 'Cấu hình tài khoản nhận tiền',
-                    subtitle: company.bankAccountNumber != null && company.bankAccountNumber!.isNotEmpty
-                        ? '${company.bankName ?? "Ngân hàng"} - ${company.bankAccountNumber}'
-                        : 'Chưa cấu hình (cần thiết cho tính năng QR chuyển khoản)',
-                    onTap: () => _showBankAccountDialog(context, ref, company),
-                    color: company.bankAccountNumber != null && company.bankAccountNumber!.isNotEmpty
-                        ? Colors.green
-                        : Colors.orange,
-                  ),
-                ],
-              ),
+              _buildBankAccountSection(context, ref, company),
               const SizedBox(height: 24),
             ],
           
@@ -403,30 +388,207 @@ class SettingsTab extends ConsumerWidget {
     return false;
   }
 
-  void _showBankAccountDialog(BuildContext context, WidgetRef ref, Company company) {
-    final bankNameController = TextEditingController(text: company.bankName ?? '');
-    final accountNumberController = TextEditingController(text: company.bankAccountNumber ?? '');
-    final accountNameController = TextEditingController(text: company.bankAccountName ?? '');
-    final bankBinController = TextEditingController(text: company.bankBin ?? '');
+  // Common banks with BIN codes
+  static final List<Map<String, String>> _banks = [
+    {'name': 'Vietcombank', 'bin': '970436'},
+    {'name': 'BIDV', 'bin': '970418'},
+    {'name': 'VietinBank', 'bin': '970415'},
+    {'name': 'Techcombank', 'bin': '970407'},
+    {'name': 'MB Bank', 'bin': '970422'},
+    {'name': 'ACB', 'bin': '970416'},
+    {'name': 'Sacombank', 'bin': '970403'},
+    {'name': 'VPBank', 'bin': '970432'},
+    {'name': 'TPBank', 'bin': '970423'},
+    {'name': 'Agribank', 'bin': '970405'},
+    {'name': 'SHB', 'bin': '970443'},
+    {'name': 'HDBank', 'bin': '970437'},
+    {'name': 'OCB', 'bin': '970448'},
+    {'name': 'SeABank', 'bin': '970440'},
+    {'name': 'VIB', 'bin': '970441'},
+  ];
+
+  /// Build bank account section with dual account support
+  Widget _buildBankAccountSection(BuildContext context, WidgetRef ref, Company company) {
+    final hasBank1 = company.bankAccountNumber != null && company.bankAccountNumber!.isNotEmpty;
+    final hasBank2 = company.hasBankAccount2;
     
-    // Common banks with BIN codes
-    final banks = [
-      {'name': 'Vietcombank', 'bin': '970436'},
-      {'name': 'BIDV', 'bin': '970418'},
-      {'name': 'VietinBank', 'bin': '970415'},
-      {'name': 'Techcombank', 'bin': '970407'},
-      {'name': 'MB Bank', 'bin': '970422'},
-      {'name': 'ACB', 'bin': '970416'},
-      {'name': 'Sacombank', 'bin': '970403'},
-      {'name': 'VPBank', 'bin': '970432'},
-      {'name': 'TPBank', 'bin': '970423'},
-      {'name': 'Agribank', 'bin': '970405'},
-      {'name': 'SHB', 'bin': '970443'},
-      {'name': 'HDBank', 'bin': '970437'},
-      {'name': 'OCB', 'bin': '970448'},
-      {'name': 'SeABank', 'bin': '970440'},
-      {'name': 'VIB', 'bin': '970441'},
-    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tài khoản ngân hàng (Chuyển khoản)',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          elevation: 0,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            children: [
+              // Bank Account 1
+              _buildBankAccountTile(
+                context: context,
+                ref: ref,
+                company: company,
+                accountNumber: 1,
+                bankName: company.bankName,
+                accountNo: company.bankAccountNumber,
+                accountName: company.bankAccountName,
+                bankBin: company.bankBin,
+                isActive: company.activeBankAccount == 1,
+                isConfigured: hasBank1,
+              ),
+              if (hasBank2 || hasBank1) Divider(height: 1, color: Colors.grey[200]),
+              // Bank Account 2
+              _buildBankAccountTile(
+                context: context,
+                ref: ref,
+                company: company,
+                accountNumber: 2,
+                bankName: company.bankName2,
+                accountNo: company.bankAccountNumber2,
+                accountName: company.bankAccountName2,
+                bankBin: company.bankBin2,
+                isActive: company.activeBankAccount == 2,
+                isConfigured: hasBank2,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBankAccountTile({
+    required BuildContext context,
+    required WidgetRef ref,
+    required Company company,
+    required int accountNumber,
+    required String? bankName,
+    required String? accountNo,
+    required String? accountName,
+    required String? bankBin,
+    required bool isActive,
+    required bool isConfigured,
+  }) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isActive 
+              ? Colors.green.withValues(alpha: 0.1) 
+              : Colors.grey.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Stack(
+          children: [
+            Icon(
+              Icons.account_balance,
+              color: isActive ? Colors.green[700] : Colors.grey[600],
+              size: 20,
+            ),
+            if (isActive)
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Icon(Icons.check_circle, size: 12, color: Colors.green[700]),
+              ),
+          ],
+        ),
+      ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'TK $accountNumber${isActive ? " (Đang dùng)" : ""}',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: isActive ? Colors.green[700] : null,
+              ),
+            ),
+          ),
+          if (isConfigured && !isActive)
+            SizedBox(
+              height: 28,
+              child: TextButton(
+                onPressed: () => _switchActiveBankAccount(context, ref, company, accountNumber),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: Size.zero,
+                ),
+                child: const Text('Chuyển sang', style: TextStyle(fontSize: 11)),
+              ),
+            ),
+        ],
+      ),
+      subtitle: isConfigured
+          ? Text(
+              '${bankName ?? "Ngân hàng"} - $accountNo\n$accountName',
+              style: const TextStyle(fontSize: 12),
+            )
+          : const Text('Chưa cấu hình', style: TextStyle(fontSize: 12, color: Colors.orange)),
+      trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
+      onTap: () => _showBankAccountDialog(context, ref, company, accountNumber),
+      isThreeLine: isConfigured,
+    );
+  }
+
+  Future<void> _switchActiveBankAccount(BuildContext context, WidgetRef ref, Company company, int newActive) async {
+    try {
+      final service = CompanyService();
+      await service.updateCompany(company.id, {
+        'active_bank_account': newActive,
+      });
+      
+      ref.invalidate(companyDetailsProvider(company.id));
+      ref.invalidate(companiesProvider);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.swap_horiz, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Đã chuyển sang tài khoản nhận tiền khác'),
+              ],
+            ),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    } catch (e) {
+      AppLogger.error('Error switching bank account', e);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _showBankAccountDialog(BuildContext context, WidgetRef ref, Company company, int accountNumber) {
+    final isAccount2 = accountNumber == 2;
+    final bankNameController = TextEditingController(
+      text: isAccount2 ? (company.bankName2 ?? '') : (company.bankName ?? ''),
+    );
+    final accountNumberController = TextEditingController(
+      text: isAccount2 ? (company.bankAccountNumber2 ?? '') : (company.bankAccountNumber ?? ''),
+    );
+    final accountNameController = TextEditingController(
+      text: isAccount2 ? (company.bankAccountName2 ?? '') : (company.bankAccountName ?? ''),
+    );
+    final bankBinController = TextEditingController(
+      text: isAccount2 ? (company.bankBin2 ?? '') : (company.bankBin ?? ''),
+    );
     
     showDialog(
       context: context,
@@ -443,7 +605,7 @@ class SettingsTab extends ConsumerWidget {
                 child: Icon(Icons.account_balance, color: Colors.blue.shade700),
               ),
               const SizedBox(width: 12),
-              const Text('Tài khoản ngân hàng'),
+              Text('Tài khoản $accountNumber'),
             ],
           ),
           content: SingleChildScrollView(
@@ -451,9 +613,9 @@ class SettingsTab extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Cấu hình tài khoản để tạo QR chuyển khoản cho khách hàng',
-                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                Text(
+                  'Cấu hình tài khoản $accountNumber để tạo QR chuyển khoản',
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
                 ),
                 const SizedBox(height: 20),
                 
@@ -464,12 +626,12 @@ class SettingsTab extends ConsumerWidget {
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.business),
                   ),
-                  value: banks.cast<Map<String, String>?>().firstWhere(
+                  value: _banks.cast<Map<String, String>?>().firstWhere(
                     (b) => b?['bin'] == bankBinController.text,
                     orElse: () => null,
                   ),
-                  items: banks.map((bank) => DropdownMenuItem(
-                    value: bank.cast<String, String>(),
+                  items: _banks.map((bank) => DropdownMenuItem(
+                    value: bank,
                     child: Text(bank['name']!),
                   )).toList(),
                   onChanged: (bank) {
@@ -545,37 +707,26 @@ class SettingsTab extends ConsumerWidget {
             ),
             ElevatedButton.icon(
               onPressed: () async {
-                debugPrint('🔵 Save button pressed');
-                debugPrint('🔵 Bank: ${bankNameController.text}, BIN: ${bankBinController.text}');
-                debugPrint('🔵 Account: ${accountNumberController.text}, Name: ${accountNameController.text}');
-                
                 if (bankBinController.text.isEmpty || 
                     accountNumberController.text.isEmpty || 
                     accountNameController.text.isEmpty) {
-                  debugPrint('🔵 Validation failed - empty fields');
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
                   );
                   return;
                 }
                 
-                // Save values before closing dialog
                 final bankName = bankNameController.text;
-                final accountNumber = accountNumberController.text;
-                final accountName = accountNameController.text;
+                final accNumber = accountNumberController.text;
+                final accName = accountNameController.text;
                 final bankBin = bankBinController.text;
                 
-                debugPrint('🔵 Closing dialog and saving...');
                 Navigator.pop(context);
                 
                 await _saveBankAccount(
-                  context, 
-                  ref, 
-                  company,
-                  bankName,
+                  context, ref, company,
+                  bankName, accNumber, accName, bankBin,
                   accountNumber,
-                  accountName,
-                  bankBin,
                 );
               },
               icon: const Icon(Icons.save),
@@ -595,33 +746,43 @@ class SettingsTab extends ConsumerWidget {
     String accountNumber,
     String accountName,
     String bankBin,
+    int bankSlot,
   ) async {
-    debugPrint('🏦 _saveBankAccount called');
-    debugPrint('🏦 Company ID: ${company.id}');
-    debugPrint('🏦 Bank: $bankName, Account: $accountNumber, Name: $accountName, BIN: $bankBin');
+    AppLogger.api('_saveBankAccount called for slot $bankSlot');
+    AppLogger.api('Company ID: ${company.id}');
+    AppLogger.api('Bank: $bankName, Account: $accountNumber, Name: $accountName, BIN: $bankBin');
     
     try {
       final service = CompanyService();
-      debugPrint('🏦 Calling updateCompany...');
-      final result = await service.updateCompany(company.id, {
-        'bank_name': bankName,
-        'bank_account_number': accountNumber,
-        'bank_account_name': accountName,
-        'bank_bin': bankBin,
-      });
-      debugPrint('🏦 Update result: bank_name=${result.bankName}, account=${result.bankAccountNumber}');
+      final Map<String, dynamic> updateData;
+      
+      if (bankSlot == 2) {
+        updateData = {
+          'bank_name_2': bankName,
+          'bank_account_number_2': accountNumber,
+          'bank_account_name_2': accountName,
+          'bank_bin_2': bankBin,
+        };
+      } else {
+        updateData = {
+          'bank_name': bankName,
+          'bank_account_number': accountNumber,
+          'bank_account_name': accountName,
+          'bank_bin': bankBin,
+        };
+      }
+      
+      await service.updateCompany(company.id, updateData);
       
       // Refresh company data
-      debugPrint('🏦 Invalidating providers...');
       ref.invalidate(companyDetailsProvider(company.id));
       ref.invalidate(companiesProvider);
-      debugPrint('🏦 Providers invalidated');
       
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
-              children: [
+              children: const [
                 Icon(Icons.check_circle, color: Colors.white),
                 SizedBox(width: 8),
                 Text('Đã lưu tài khoản ngân hàng'),
@@ -632,7 +793,7 @@ class SettingsTab extends ConsumerWidget {
         );
       }
     } catch (e) {
-      debugPrint('🏦 ERROR: $e');
+      AppLogger.error('Error saving bank account', e);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
@@ -719,19 +880,19 @@ class SettingsTab extends ConsumerWidget {
 
   Future<void> _deleteCompany(
       BuildContext context, WidgetRef ref, Company company) async {
-    print('🗑️  [DELETE] Starting delete for company: ${company.id}');
+    AppLogger.api('Starting delete for company: ${company.id}');
     
     try {
       final service = CompanyService();
-      print('🗑️  [DELETE] Calling service.deleteCompany()...');
+      AppLogger.api('Calling service.deleteCompany()...');
       await service.deleteCompany(company.id);
-      print('🗑️  [DELETE] Delete successful!');
+      AppLogger.api('Delete company successful!');
 
       // Invalidate companies cache
       ref.invalidate(companiesProvider);
       
       if (context.mounted) {
-        print('🗑️  [DELETE] Navigating back...');
+        AppLogger.nav('Navigating back after company delete');
         Navigator.of(context).pop(); // Return to companies list
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -741,7 +902,7 @@ class SettingsTab extends ConsumerWidget {
         );
       }
     } catch (e) {
-      print('🗑️  [DELETE] ERROR: $e');
+      AppLogger.error('Error deleting company', e);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

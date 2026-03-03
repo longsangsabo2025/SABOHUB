@@ -42,6 +42,9 @@ class AccountingTransaction {
   final String? category;
   final String? referenceId;
   final String? notes;
+  final String? status;
+  final String? counterpartyName;
+  final String? itemsSummary;
   final String? createdBy;
   final DateTime? createdAt;
 
@@ -57,6 +60,9 @@ class AccountingTransaction {
     this.category,
     this.referenceId,
     this.notes,
+    this.status,
+    this.counterpartyName,
+    this.itemsSummary,
     this.createdBy,
     this.createdAt,
   });
@@ -80,6 +86,9 @@ class AccountingTransaction {
       category: json['category'] as String?,
       referenceId: json['reference_id'] as String?,
       notes: json['notes'] as String?,
+      status: json['status'] as String?,
+      counterpartyName: json['counterparty_name'] as String?,
+      itemsSummary: json['items_summary'] as String?,
       createdBy: json['created_by'] as String?,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
     );

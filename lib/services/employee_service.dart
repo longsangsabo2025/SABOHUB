@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
 import '../models/user.dart' as app_models;
 import '../providers/auth_provider.dart';
+import '../utils/app_logger.dart';
 
 // Provider for EmployeeService
 final employeeServiceProvider = Provider<EmployeeService>((ref) {
@@ -20,16 +21,7 @@ class EmployeeService {
   /// Check if email already exists
   Future<bool> emailExists(String email) async {
     try {
-      // Check users table first
-      var result = await _supabase
-          .from('users')
-          .select('id')
-          .eq('email', email)
-          .maybeSingle();
-      if (result != null) return true;
-
-      // Also check employees table
-      result = await _supabase
+      final result = await _supabase
           .from('employees')
           .select('id')
           .eq('email', email)
@@ -43,16 +35,7 @@ class EmployeeService {
   /// Get existing user by email
   Future<Map<String, dynamic>?> getUserByEmail(String email) async {
     try {
-      // Check users table first
-      var result = await _supabase
-          .from('users')
-          .select('id, email, name, role, is_active')
-          .eq('email', email)
-          .maybeSingle();
-      if (result != null) return result;
-
-      // Fallback to employees table
-      result = await _supabase
+      final result = await _supabase
           .from('employees')
           .select('id, email, full_name, role, is_active')
           .eq('email', email)
@@ -128,16 +111,13 @@ class EmployeeService {
         currentUser = authState.user;
       }
 
-      // Fallback to Supabase auth if no demo user
+      // Fallback: if authState has no user, reject
       if (currentUser == null) {
-        final supabaseUser = _supabase.auth.currentUser;
-        if (supabaseUser == null) {
-          throw Exception('Please login as CEO first');
-        }
+        throw Exception('Please login as CEO first');
       }
 
       // Verify user is CEO
-      if (currentUser != null && currentUser.role != app_models.UserRole.ceo) {
+      if (currentUser.role != app_models.UserRole.ceo) {
         throw Exception('Only CEO can create employee accounts');
       }
 
@@ -205,7 +185,7 @@ class EmployeeService {
       };
     } catch (e) {
       // Fallback: If RPC doesn't exist, create directly with warning
-      print('⚠️ RPC function not found, creating employee without password hash');
+      AppLogger.warn('RPC function not found, creating employee without password hash');
       
       // Generate unique email if needed
       String email = customEmail ??

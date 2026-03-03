@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/attendance.dart';
+import 'location_service.dart';
 
 /// Provider for AttendanceService
 final attendanceServiceProvider = Provider<AttendanceService>((ref) {
@@ -13,8 +14,38 @@ final attendanceServiceProvider = Provider<AttendanceService>((ref) {
 class AttendanceService {
   final SupabaseClient _supabase;
 
+  /// Default work schedule (used when no shift system is configured)
+  /// Giờ bắt đầu ca: 8:00 AM — check-in sau giờ này = trễ
+  static const int _defaultStartHour = 8;
+  static const int _defaultStartMinute = 0;
+
+  /// Giờ kết thúc ca: 5:30 PM — check-out trước giờ này = về sớm
+  static const int _defaultEndHour = 17;
+  static const int _defaultEndMinute = 30;
+
+  /// Grace period: cho phép trễ tối đa 15 phút trước khi đánh dấu is_late
+  static const int _graceMinutes = 15;
+
   AttendanceService({SupabaseClient? supabase})
       : _supabase = supabase ?? Supabase.instance.client;
+
+  /// Determine if a check-in time is late (after start + grace period)
+  bool _isLateCheckIn(DateTime checkInTime) {
+    final shiftStart = DateTime(
+      checkInTime.year, checkInTime.month, checkInTime.day,
+      _defaultStartHour, _defaultStartMinute,
+    );
+    return checkInTime.isAfter(shiftStart.add(const Duration(minutes: _graceMinutes)));
+  }
+
+  /// Determine if a check-out time is an early leave (before end time)
+  bool _isEarlyCheckOut(DateTime checkOutTime) {
+    final shiftEnd = DateTime(
+      checkOutTime.year, checkOutTime.month, checkOutTime.day,
+      _defaultEndHour, _defaultEndMinute,
+    );
+    return checkOutTime.isBefore(shiftEnd);
+  }
 
   /// Check in for a user with GPS location
   ///
@@ -69,7 +100,7 @@ class AttendanceService {
         'check_in_photo_url': photoUrl,
         'employee_name': employeeName,
         'employee_role': employeeRole,
-        'is_late': false, // TODO: Calculate based on shift
+        'is_late': _isLateCheckIn(now),
       }).select('''
         *,
         branches(id, name, address)
@@ -81,6 +112,74 @@ class AttendanceService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Check in with automatic GPS location validation
+  /// Convenience wrapper used by staff check-in page
+  Future<AttendanceRecord> checkInWithLocation({
+    required String userId,
+    String? branchId,
+    String? companyId,
+  }) async {
+    final locationService = LocationService();
+
+    // Validate location if branch/company provided
+    String? location;
+    double? latitude;
+    double? longitude;
+
+    try {
+      final locationResult = await locationService.validateCheckInLocation(
+        companyId: companyId,
+        branchId: branchId,
+      );
+
+      if (!locationResult.isValid) {
+        throw LocationServiceException(
+            'Vị trí check-in không hợp lệ. ${locationResult.statusMessage}');
+      }
+
+      latitude = locationResult.currentLocation.latitude;
+      longitude = locationResult.currentLocation.longitude;
+      location = locationService.formatLocationForStorage(locationResult.currentLocation);
+    } catch (e) {
+      if (e is LocationServiceException) rethrow;
+      // If location fails, still allow check-in without GPS
+    }
+
+    return checkIn(
+      userId: userId,
+      branchId: branchId ?? '',
+      companyId: companyId ?? '',
+      location: location,
+      latitude: latitude,
+      longitude: longitude,
+    );
+  }
+
+  /// Check out by user ID (finds today's record automatically)
+  /// Convenience wrapper used by staff check-in page
+  Future<AttendanceRecord> checkOutByUserId({
+    required String userId,
+    String? branchId,
+  }) async {
+    // Find today's attendance record
+    final today = await getTodayAttendance(userId);
+    if (today == null) {
+      throw Exception('Chưa điểm danh vào ca hôm nay');
+    }
+    if (today.checkOutTime != null) {
+      throw Exception('Đã điểm danh ra rồi! Không thể check-out 2 lần.');
+    }
+
+    return checkOut(attendanceId: today.id);
+  }
+
+  /// Get attendance history for a user (last N days)
+  Future<List<AttendanceRecord>> getAttendanceHistory(String userId,
+      {int days = 7}) async {
+    final startDate = DateTime.now().subtract(Duration(days: days));
+    return getUserAttendance(userId: userId, startDate: startDate);
   }
 
   /// Check out for a user with GPS location
@@ -124,7 +223,7 @@ class AttendanceService {
             'check_out_latitude': latitude,
             'check_out_longitude': longitude,
             'total_hours': totalHours,
-            'is_early_leave': false, // TODO: Calculate based on shift
+            'is_early_leave': _isEarlyCheckOut(now),
           })
           .eq('id', attendanceId)
           .select('''
@@ -289,16 +388,8 @@ class AttendanceService {
 
   /// Helper to convert JSON to AttendanceRecord model
   AttendanceRecord _fromJson(Map<String, dynamic> json) {
-    // Extract nested data
-    // final branch = json['branches'] as Map<String, dynamic>?; // Available if needed
-    final user = json['users'] as Map<String, dynamic>?;
-    final userMeta = user?['raw_user_meta_data'] as Map<String, dynamic>?;
-
-    // Get employee name - try multiple sources
-    String employeeName = json['employee_name'] as String? ?? 
-                          userMeta?['name'] as String? ?? 
-                          user?['email'] as String? ?? 
-                          'Unknown';
+    // Get employee name from cached fields
+    String employeeName = json['employee_name'] as String? ?? 'Unknown';
 
     return AttendanceRecord(
       id: json['id'] as String,

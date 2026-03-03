@@ -73,7 +73,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
     );
   }
 
-  Widget _buildAttendanceStatus(Attendance? attendance) {
+  Widget _buildAttendanceStatus(AttendanceRecord? attendance) {
     if (attendance == null) {
       return Column(
         children: [
@@ -261,7 +261,11 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
     
     try {
       final service = ref.read(attendanceServiceProvider);
-      await service.checkIn(userId: userId);
+      await service.checkInWithLocation(
+        userId: userId,
+        branchId: currentUser.branchId,
+        companyId: currentUser.companyId,
+      );
       
       // Refresh data
       ref.invalidate(userTodayAttendanceProvider(userId));
@@ -291,7 +295,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
       final attendance = await ref.read(userTodayAttendanceProvider(userId).future);
       
       if (attendance != null) {
-        await service.checkOut(userId: userId);
+        await service.checkOutByUserId(userId: userId);
         
         // Refresh data
         ref.invalidate(userTodayAttendanceProvider(userId));

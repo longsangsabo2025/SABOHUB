@@ -63,7 +63,7 @@ class _PaymentListPageState extends ConsumerState<PaymentListPage>
               // Stats cards
               paymentStats.when(
                 data: (stats) => _buildStatsCards(stats),
-                loading: () => const SizedBox(height: 60),
+                loading: () => const SizedBox(height: 60, child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70))),
                 error: (error, stack) => const SizedBox(height: 60),
               ),
               // Tab bar

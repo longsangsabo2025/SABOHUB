@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/user.dart';
+import '../../models/attendance.dart';
 import '../../providers/attendance_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/daily_work_report_service.dart';
@@ -113,7 +115,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
               const SnackBar(
                 content: Text('📅 Lịch sử điểm danh'),
                 duration: Duration(seconds: 2),
-                backgroundColor: Color(0xFF8B5CF6),
+                backgroundColor: AppColors.primary,
               ),
             );
           },
@@ -125,7 +127,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
               const SnackBar(
                 content: Text('📆 Xem lịch làm việc'),
                 duration: Duration(seconds: 2),
-                backgroundColor: Color(0xFF3B82F6),
+                backgroundColor: AppColors.info,
               ),
             );
           },
@@ -142,7 +144,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
     );
   }
 
-  Widget _buildCheckinCard(User user, Attendance? attendance) {
+  Widget _buildCheckinCard(User user, AttendanceRecord? attendance) {
     final isCheckedIn =
         attendance?.checkOutTime == null && attendance?.checkInTime != null;
     final currentShift = _getCurrentShift();
@@ -154,14 +156,14 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isCheckedIn
-              ? [const Color(0xFF10B981), const Color(0xFF059669)]
+              ? [AppColors.success, const Color(0xFF059669)]
               : [const Color(0xFF6B7280), const Color(0xFF4B5563)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: (isCheckedIn
-                    ? const Color(0xFF10B981)
+                    ? AppColors.success
                     : const Color(0xFF6B7280))
                 .withValues(alpha: 0.3),
             blurRadius: 15,
@@ -274,8 +276,8 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: isCheckedIn
-                          ? const Color(0xFFEF4444)
-                          : const Color(0xFF10B981),
+                          ? AppColors.error
+                          : AppColors.success,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -305,6 +307,9 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
   }
 
   Widget _buildTodaySchedule() {
+    final shift = _getCurrentShift();
+    final now = DateTime.now();
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -322,101 +327,40 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Lịch làm việc hôm nay',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            'Ca làm việc hôm nay',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(
-                child: _buildScheduleItem(
-                    'Thời gian', '14:00 - 22:00', Icons.schedule),
-              ),
-              Expanded(
-                child: _buildScheduleItem(
-                    'Khu vực', 'Khu A & Bar', Icons.location_on),
-              ),
+              Icon(Icons.schedule, color: AppColors.success, size: 20),
+              const SizedBox(width: 8),
+              Text(shift,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(
-                child:
-                    _buildScheduleItem('Nhiệm vụ', '12 việc', Icons.assignment),
-              ),
-              Expanded(
-                child: _buildScheduleItem('Ca làm', 'Chiều', Icons.wb_sunny),
+              Icon(Icons.calendar_today, color: Colors.grey.shade600, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                '${now.day}/${now.month}/${now.year}',
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue.shade600),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Hôm nay có ca tăng cường. Nhớ kiểm tra nhiệm vụ bổ sung.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue.shade700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildScheduleItem(String title, String value, IconData icon) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF10B981).withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF10B981),
-            size: 20,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildAttendanceHistory() {
+    final user = ref.watch(currentUserProvider);
+    if (user == null) return const SizedBox.shrink();
+
+    final historyAsync = ref.watch(userAttendanceHistoryProvider(user.id));
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -436,81 +380,74 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
             padding: EdgeInsets.all(20),
             child: Text(
               'Lịch sử điểm danh (7 ngày qua)',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
-          ...List.generate(7, (index) {
-            final dates = [
-              'Hôm nay',
-              'Hôm qua',
-              '29/10',
-              '28/10',
-              '27/10',
-              '26/10',
-              '25/10'
-            ];
-            final checkIns = [
-              '14:00',
-              '08:00',
-              '14:05',
-              '08:00',
-              '13:58',
-              'Nghỉ',
-              '08:02'
-            ];
-            final checkOuts = [
-              '--:--',
-              '16:15',
-              '22:10',
-              '16:20',
-              '22:05',
-              'Nghỉ',
-              '16:18'
-            ];
-            final shifts = [
-              'Ca chiều',
-              'Ca sáng',
-              'Ca chiều',
-              'Ca sáng',
-              'Ca chiều',
-              'Nghỉ phép',
-              'Ca sáng'
-            ];
-            final statuses = [
-              'Đang làm',
-              'Hoàn thành',
-              'Hoàn thành',
-              'Hoàn thành',
-              'Hoàn thành',
-              'Nghỉ phép',
-              'Hoàn thành'
-            ];
-            final colors = [
-              const Color(0xFF10B981),
-              const Color(0xFF10B981),
-              const Color(0xFF10B981),
-              const Color(0xFF10B981),
-              const Color(0xFF10B981),
-              Colors.grey,
-              const Color(0xFF10B981)
-            ];
+          historyAsync.when(
+            data: (records) {
+              if (records.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(Icons.history, size: 40, color: Colors.grey.shade400),
+                        const SizedBox(height: 8),
+                        Text('Chưa có lịch sử điểm danh',
+                            style: TextStyle(color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return Column(
+                children: List.generate(records.length, (index) {
+                  final record = records[index];
+                  final date = record.date;
+                  final isToday = date.day == DateTime.now().day &&
+                      date.month == DateTime.now().month;
+                  final dateStr = isToday
+                      ? 'Hôm nay'
+                      : '${date.day}/${date.month}';
+                  final checkIn = record.checkInTime != null
+                      ? '${record.checkInTime!.hour.toString().padLeft(2, '0')}:${record.checkInTime!.minute.toString().padLeft(2, '0')}'
+                      : '--:--';
+                  final checkOut = record.checkOutTime != null
+                      ? '${record.checkOutTime!.hour.toString().padLeft(2, '0')}:${record.checkOutTime!.minute.toString().padLeft(2, '0')}'
+                      : '--:--';
+                  final hasCheckOut = record.checkOutTime != null;
+                  final statusText = hasCheckOut ? 'Hoàn thành' : 'Đang làm';
+                  final statusColor = hasCheckOut ? AppColors.success : Colors.orange;
+                  final shift = _getShiftLabel(record.checkInTime);
 
-            return _buildHistoryItem(
-              dates[index],
-              shifts[index],
-              checkIns[index],
-              checkOuts[index],
-              statuses[index],
-              colors[index],
-              index == 6, // isLast
-            );
-          }),
+                  return _buildHistoryItem(
+                    dateStr, shift, checkIn, checkOut,
+                    statusText, statusColor,
+                    index == records.length - 1,
+                  );
+                }),
+              );
+            },
+            loading: () => const Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) => Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text('Lỗi: $e', style: const TextStyle(color: Colors.red)),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  String _getShiftLabel(DateTime? checkIn) {
+    if (checkIn == null) return 'N/A';
+    final hour = checkIn.hour;
+    if (hour >= 6 && hour < 14) return 'Ca sáng';
+    if (hour >= 14 && hour < 22) return 'Ca chiều';
+    return 'Ca đêm';
   }
 
   Widget _buildHistoryItem(String date, String shift, String checkIn,
@@ -618,7 +555,8 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
       // Check in with location validation
       await ref.read(attendanceServiceProvider).checkInWithLocation(
             userId: user.id,
-            branchId: null, // TODO: Add branchId to User model
+            branchId: user.branchId,
+            companyId: user.companyId,
           );
 
       ref.invalidate(userTodayAttendanceProvider);
@@ -626,7 +564,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('✅ Đã điểm danh vào ca thành công!'),
-          backgroundColor: Color(0xFF10B981),
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
@@ -648,9 +586,9 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
 
     try {
       // Step 1: Perform check-out
-      final attendance = await ref.read(attendanceServiceProvider).checkOut(
+      final attendance = await ref.read(attendanceServiceProvider).checkOutByUserId(
             userId: user.id,
-            branchId: null, // TODO: Add branchId to User model
+            branchId: user.branchId,
           );
 
       // Step 2: Auto-generate daily work report
@@ -686,7 +624,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
               const SnackBar(
                 content:
                     Text('✅ Đã điểm danh ra ca và nộp báo cáo thành công!'),
-                backgroundColor: Color(0xFF10B981),
+                backgroundColor: AppColors.success,
                 duration: Duration(seconds: 3),
               ),
             );
@@ -694,7 +632,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('✅ Đã điểm danh ra ca! Báo cáo đã lưu nháp.'),
-                backgroundColor: Color(0xFF3B82F6),
+                backgroundColor: AppColors.info,
                 duration: Duration(seconds: 3),
               ),
             );

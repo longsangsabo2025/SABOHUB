@@ -3,8 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/odori_models.dart';
-import '../services/odori_service.dart';
+import '../business_types/distribution/models/odori_models.dart';
+import '../business_types/distribution/services/odori_service.dart';
 
 /// A widget that provides barcode scanning functionality
 /// Can be used for product lookup in orders, inventory, etc.

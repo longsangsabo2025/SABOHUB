@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../../../../../core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/auth_provider.dart';
@@ -67,7 +68,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
               const SnackBar(
                 content: Text('❓ Trợ giúp đang được phát triển'),
                 duration: Duration(seconds: 2),
-                backgroundColor: Color(0xFF3B82F6),
+                backgroundColor: AppColors.info,
               ),
             );
           },
@@ -124,7 +125,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
             children: [
               CircleAvatar(
                 radius: 30,
-                backgroundColor: const Color(0xFF10B981),
+                backgroundColor: AppColors.success,
                 child: Text(
                   (user.email ?? 'U')[0].toUpperCase(),
                   style: const TextStyle(
@@ -191,7 +192,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('✅ Đã đăng xuất'),
-                          backgroundColor: Color(0xFF10B981),
+                          backgroundColor: AppColors.success,
                         ),
                       );
                     }
@@ -230,7 +231,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF10B981),
+            color: AppColors.success,
           ),
         ),
         const SizedBox(height: 4),
@@ -281,7 +282,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                    color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
@@ -289,7 +290,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF10B981),
+                      color: AppColors.success,
                     ),
                   ),
                 ),
@@ -304,7 +305,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('📅 Quản lý ca đang phát triển'),
-                  backgroundColor: Color(0xFF3B82F6),
+                  backgroundColor: AppColors.info,
                 ),
               );
             },
@@ -317,7 +318,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('👥 Vào tab Staff để quản lý'),
-                  backgroundColor: Color(0xFF10B981),
+                  backgroundColor: AppColors.success,
                 ),
               );
             },
@@ -330,7 +331,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('📊 Vào tab Analytics để xem'),
-                  backgroundColor: Color(0xFF3B82F6),
+                  backgroundColor: AppColors.info,
                 ),
               );
             },
@@ -443,25 +444,41 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
             'Sao lưu dữ liệu',
             'Sao lưu dữ liệu ca làm và nhân viên',
             Icons.backup,
-            () {},
+            () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Supabase tự động backup hàng ngày (Point-in-Time Recovery)'), duration: Duration(seconds: 2)),
+              );
+            },
           ),
           _buildSettingItem(
             'Cài đặt bảo mật',
             'Quản lý mật khẩu và bảo mật',
             Icons.security,
-            () {},
+            () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Đổi mật khẩu qua change_employee_password RPC'), duration: Duration(seconds: 2)),
+              );
+            },
           ),
           _buildSettingItem(
             'Hỗ trợ',
             'Liên hệ hỗ trợ kỹ thuật',
             Icons.help_center,
-            () {},
+            () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Liên hệ admin@sabohub.com để được hỗ trợ'), duration: Duration(seconds: 2)),
+              );
+            },
           ),
           _buildSettingItem(
             'Về ứng dụng',
             'Thông tin phiên bản và điều khoản',
             Icons.info,
-            () {},
+            () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('SABOHUB v1.2.0+16 — Hệ thống quản lý đa ngành'), duration: Duration(seconds: 2)),
+              );
+            },
           ),
           _buildSettingItem(
             'Đăng xuất',
@@ -471,7 +488,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
               _showLogoutDialog();
             },
             isLast: true,
-            textColor: const Color(0xFFEF4444),
+            textColor: AppColors.error,
           ),
         ],
       ),
@@ -502,14 +519,14 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: (textColor ?? const Color(0xFF10B981))
+                color: (textColor ?? AppColors.success)
                     .withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 icon,
                 size: 20,
-                color: textColor ?? const Color(0xFF10B981),
+                color: textColor ?? AppColors.success,
               ),
             ),
             const SizedBox(width: 16),
@@ -568,13 +585,13 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.1),
+              color: AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
               size: 20,
-              color: const Color(0xFF10B981),
+              color: AppColors.success,
             ),
           ),
           const SizedBox(width: 16),
@@ -603,7 +620,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: const Color(0xFF10B981),
+            activeThumbColor: AppColors.success,
           ),
         ],
       ),
@@ -628,7 +645,7 @@ class _ManagerSettingsPageState extends ConsumerState<ManagerSettingsPage> {
             },
             child: const Text(
               'Đăng xuất',
-              style: TextStyle(color: Color(0xFFEF4444)),
+              style: TextStyle(color: AppColors.error),
             ),
           ),
         ],
