@@ -1,16 +1,7 @@
-# ⚠️ ALL SECRETS MUST BE SET IN CODEMAGIC ENVIRONMENT GROUPS, NOT INLINE
 # =============================================================================
 # CODEMAGIC YAML CONFIGURATION - FORCE USE THIS INSTEAD OF WORKFLOW EDITOR
 # =============================================================================
 # This file MUST override any workflow editor configuration!
-# =============================================================================
-# Environment groups required in Codemagic UI:
-#   - app_store: APP_STORE_CONNECT_PRIVATE_KEY, APP_STORE_CONNECT_ISSUER_ID,
-#               APP_STORE_CONNECT_KEY_IDENTIFIER
-#   - supabase: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
-#   - google_credentials: GOOGLE_DRIVE_CLIENT_ID_IOS, GOOGLE_DRIVE_CLIENT_ID_WEB,
-#                         GOOGLE_DRIVE_CLIENT_ID_ANDROID
-#   - google_play: GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
 # =============================================================================
 
 workflows:
@@ -24,9 +15,7 @@ workflows:
     
     environment:
       groups:
-        - app_store       # APP_STORE_CONNECT_PRIVATE_KEY, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER
-        - supabase        # SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
-        - google_credentials # GOOGLE_DRIVE_CLIENT_ID_IOS, GOOGLE_DRIVE_CLIENT_ID_WEB, GOOGLE_DRIVE_CLIENT_ID_ANDROID
+        - app_store # Group contains: APP_STORE_CONNECT_PRIVATE_KEY, BUNDLE_ID, ISSUER_ID, KEY_IDENTIFIER
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -36,6 +25,24 @@ workflows:
       vars:
         BUNDLE_ID: "com.sabohub.app"
         APP_NAME: "SABOHUB"
+        # Apple Developer Portal - Hardcoded for testing
+        APP_STORE_CONNECT_ISSUER_ID: "4405e7f9-8e89-495a-b535-f9e83e96a7ad"
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "JL9L6RNRXB"
+        APP_STORE_CONNECT_PRIVATE_KEY: |
+          -----BEGIN PRIVATE KEY-----
+          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgODcxzeojG2ZCyrp5
+          IUQYz9Hmt1j1SP+ir+/7F4Xyf2+gCgYIKoZIzj0DAQehRANCAATvHGwxR+IIQMjz
+          grkecL92Sc33Hu7CmCHNEWS/G/eUKtYL03bpH4dZ/HdBNGnovyRKI3GvTzHGC461
+          gsx6uVPf
+          -----END PRIVATE KEY-----
+        # Environment variables from .env file
+        SUPABASE_URL: "https://dqddxowyikefqcdiioyh.supabase.co"
+        SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3OTcxMzYsImV4cCI6MjA3NzM3MzEzNn0.okmsG2R248fxOHUEFFl5OBuCtjtCIlO9q9yVSyCV25Y"
+        SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTc5NzEzNiwiZXhwIjoyMDc3MzczMTM2fQ.kPmlYlVd7wi_Luzp3MHjXmR8gUqrqDHy9PSzwFDq3XI"
+        # Google Drive credentials (for documents feature)
+        GOOGLE_DRIVE_CLIENT_ID_IOS: "321771498359-ocllju34h6cd4040ipoeq41j8mmg08p8.apps.googleusercontent.com"
+        GOOGLE_DRIVE_CLIENT_ID_WEB: "321771498359-gcm0og29knjjmaevr7uv0aa27vam765u.apps.googleusercontent.com"
+        GOOGLE_DRIVE_CLIENT_ID_ANDROID: "321771498359-tmnp2ks7n6ipjp10fsrjrefrilr6ts15.apps.googleusercontent.com"
     
     cache:
       cache_paths:
@@ -188,11 +195,16 @@ workflows:
     instance_type: linux_x2
     environment:
       groups:
-        - google_play        # GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        - supabase           # SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
-        - google_credentials # GOOGLE_DRIVE_CLIENT_ID_ANDROID, GOOGLE_DRIVE_CLIENT_ID_WEB
+        - google_play # <-- (Includes GCLOUD_SERVICE_ACCOUNT_CREDENTIALS)
       vars:
         PACKAGE_NAME: "com.sabohub.app"
+        # Environment variables from .env file
+        SUPABASE_URL: "https://dqddxowyikefqcdiioyh.supabase.co"
+        SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3OTcxMzYsImV4cCI6MjA3NzM3MzEzNn0.okmsG2R248fxOHUEFFl5OBuCtjtCIlO9q9yVSyCV25Y"
+        SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTc5NzEzNiwiZXhwIjoyMDc3MzczMTM2fQ.kPmlYlVd7wi_Luzp3MHjXmR8gUqrqDHy9PSzwFDq3XI"
+        # Google Drive credentials
+        GOOGLE_DRIVE_CLIENT_ID_ANDROID: "321771498359-tmnp2ks7n6ipjp10fsrjrefrilr6ts15.apps.googleusercontent.com"
+        GOOGLE_DRIVE_CLIENT_ID_WEB: "321771498359-gcm0og29knjjmaevr7uv0aa27vam765u.apps.googleusercontent.com"
       flutter: stable
       java: 17
     scripts:
