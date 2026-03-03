@@ -6,6 +6,7 @@ import '../../models/branch.dart';
 import '../../models/company.dart';
 import '../../business_types/service/providers/monthly_pnl_provider.dart';
 import '../../business_types/service/models/monthly_pnl.dart';
+import '../../business_types/service/pages/cashflow/daily_cashflow_import_page.dart';
 import '../../services/branch_service.dart';
 import '../../services/company_service.dart';
 import '../../widgets/shimmer_loading.dart';
@@ -471,6 +472,28 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage>
                   const SizedBox(height: 8),
                   Text('Import báo cáo cuối ngày để xem thống kê',
                       style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                  const SizedBox(height: 24),
+                  // Nút Import cho trường hợp chưa có data
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DailyCashflowImportPage(
+                            companyId: company.id,
+                            companyName: company.name,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.upload_file),
+                    label: const Text('Import / Nhập thủ công'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -504,6 +527,32 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage>
                             fontWeight: FontWeight.bold,
                             color: Colors.green.shade700)),
                     const Spacer(),
+                    // Import button - chỉ hiển thị cho non-corporation (công ty con có thể import)
+                    if (!isCorporation)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => DailyCashflowImportPage(
+                                  companyId: company.id,
+                                  companyName: company.name,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.upload_file, size: 16),
+                          label: const Text('Import/Nhập thủ công'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue.shade700,
+                            side: BorderSide(color: Colors.blue.shade300),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            textStyle: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
