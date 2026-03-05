@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'dart:html' as html;
 import 'dart:convert';
+import '../../services/download_helper_stub.dart'
+    if (dart.library.html) '../../services/download_helper_web.dart';
 import 'dart:ui' as ui;
 import 'package:excel/excel.dart' as excel_lib;
 
@@ -191,15 +192,9 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage>
     
     final csvContent = csvLines.join('\n');
     final bytes = utf8.encode('\uFEFF$csvContent'); // BOM for Excel UTF-8
-    final blob = html.Blob([bytes], 'text/csv;charset=utf-8');
-    final url = html.Url.createObjectUrlFromBlob(blob);
     
     final date = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
-    html.AnchorElement(href: url)
-      ..setAttribute('download', 'BaoCaoDoanhThu_${companyName}_$date.csv')
-      ..click();
-    
-    html.Url.revokeObjectUrl(url);
+    downloadFile(bytes, 'BaoCaoDoanhThu_${companyName}_$date.csv', 'text/csv;charset=utf-8');
   }
 
   @override
@@ -2869,12 +2864,7 @@ class _CompanyDetailsPageState extends ConsumerState<CompanyDetailsPage>
       if (bytes == null) return;
       
       // Download file
-      final blob = html.Blob([bytes], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)
-        ..setAttribute('download', 'co_cau_co_phan_$displayYear.xlsx')
-        ..click();
-      html.Url.revokeObjectUrl(url);
+      downloadFile(bytes, 'co_cau_co_phan_$displayYear.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       
       // Show success
       if (mounted) {
