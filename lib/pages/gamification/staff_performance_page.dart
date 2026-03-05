@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../providers/gamification_provider.dart';
 import '../../widgets/gamification/staff_leaderboard.dart';
 import '../../widgets/gamification/staff_performance_card.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class StaffPerformancePage extends ConsumerWidget {
   const StaffPerformancePage({super.key});
@@ -14,10 +15,10 @@ class StaffPerformancePage extends ConsumerWidget {
     final staffProfiles = ref.watch(staffProfilesProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Team Performance'),
-        backgroundColor: Colors.white,
+        title: Text('Team Performance'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         actions: [
@@ -52,7 +53,7 @@ class StaffPerformancePage extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _buildSummaryHeader(ref),
+            _buildSummaryHeader(context, ref),
             const SizedBox(height: 16),
             const StaffLeaderboard(),
             const SizedBox(height: 20),
@@ -100,7 +101,7 @@ class StaffPerformancePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryHeader(WidgetRef ref) {
+  Widget _buildSummaryHeader(BuildContext context, WidgetRef ref) {
     final staffProfiles = ref.watch(staffProfilesProvider);
 
     return staffProfiles.when(
@@ -121,10 +122,10 @@ class StaffPerformancePage extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              _summaryItem('👥', '${profiles.length}', 'Nhân viên'),
-              _summaryItem('⭐', avgRating.toStringAsFixed(0), 'Điểm TB'),
-              _summaryItem('📈', avgLevel.toStringAsFixed(1), 'Level TB'),
-              _summaryItem('⚡', _formatXp(totalXp), 'Tổng XP'),
+              _summaryItem(context, '👥', '${profiles.length}', 'Nhân viên'),
+              _summaryItem(context, '⭐', avgRating.toStringAsFixed(0), 'Điểm TB'),
+              _summaryItem(context, '📈', avgLevel.toStringAsFixed(1), 'Level TB'),
+              _summaryItem(context, '⚡', _formatXp(totalXp), 'Tổng XP'),
             ],
           ),
         );
@@ -134,23 +135,23 @@ class StaffPerformancePage extends ConsumerWidget {
     );
   }
 
-  Widget _summaryItem(String emoji, String value, String label) {
+  Widget _summaryItem(BuildContext context, String emoji, String value, String label) {
     return Expanded(
       child: Column(
         children: [
           Text(emoji, style: const TextStyle(fontSize: 20)),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
             ),
           ),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: Colors.white70),
+            style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.surface70),
           ),
         ],
       ),

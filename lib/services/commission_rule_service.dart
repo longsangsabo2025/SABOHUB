@@ -58,7 +58,8 @@ class CommissionRuleService {
 
     final response = await query
         .order('priority', ascending: false)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .limit(200);
     return (response as List)
         .map((json) => CommissionRule.fromJson(json))
         .toList();
@@ -114,9 +115,10 @@ class CommissionRuleService {
     return CommissionRule.fromJson(response);
   }
 
-  /// Delete rule (hard delete)
+  /// Delete rule (soft delete)
   Future<void> deleteRule(String ruleId) async {
-    await _supabase.from('commission_rules').delete().eq('id', ruleId);
+    // Soft delete - sets is_active=false
+    await _supabase.from('commission_rules').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', ruleId);
   }
 
   /// Lấy quy tắc áp dụng cho nhân viên cụ thể

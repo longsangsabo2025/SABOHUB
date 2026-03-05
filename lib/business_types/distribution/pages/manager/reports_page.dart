@@ -9,6 +9,7 @@ import 'package:fl_chart/fl_chart.dart';
 
 import '../../../../providers/auth_provider.dart';
 import '../../../../utils/quick_date_range_picker.dart';
+import '../../../../utils/app_logger.dart';
 
 // ==================== REPORTS PAGE ====================
 class ReportsPage extends ConsumerStatefulWidget {
@@ -52,8 +53,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
         // Date filter row — only for Doanh thu & Đơn hàng tabs
         if (_showDateFilter)
         Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          color: Theme.of(context).colorScheme.surface,
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: GestureDetector(
             onTap: () async {
               final picked = await showQuickDateRangePicker(context, current: _dateFilter);
@@ -98,7 +99,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
         ),
         // Tab Bar
         Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: Row(
             children: [
               Expanded(
@@ -182,8 +183,8 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
   Future<void> _loadRevenueData() async {
     setState(() => _isLoading = true);
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId == null) return;
 
       final supabase = Supabase.instance.client;
@@ -313,7 +314,7 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      debugPrint('Error loading revenue: $e');
+      AppLogger.error('Error loading revenue: $e');
     }
   }
 
@@ -385,9 +386,9 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
             const SizedBox(height: 12),
             Container(
               height: 200,
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),
@@ -412,9 +413,9 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
   Widget _buildRevenueCard(
       String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -469,7 +470,7 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               return BarTooltipItem(
                 currencyFormat.format(rod.toY),
-                const TextStyle(color: Colors.white, fontSize: 12),
+                TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 12),
               );
             },
           ),
@@ -548,9 +549,9 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
     if (topCustomers.isEmpty) {
       return [
         Container(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Center(
@@ -565,9 +566,9 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
       final customer = entry.value as Map<String, dynamic>;
       return Container(
         margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: Colors.grey.shade200),
         ),
@@ -590,7 +591,7 @@ class _RevenueReportTabState extends ConsumerState<_RevenueReportTab> {
                 child: Text(
                   '${index + 1}',
                   style: TextStyle(
-                    color: index < 3 ? Colors.white : Colors.grey.shade700,
+                    color: index < 3 ? Theme.of(context).colorScheme.surface : Colors.grey.shade700,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -652,8 +653,8 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
   Future<void> _loadReceivablesData() async {
     setState(() => _isLoading = true);
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId == null) return;
 
       final supabase = Supabase.instance.client;
@@ -724,7 +725,7 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      debugPrint('Error loading receivables: $e');
+      AppLogger.error('Error loading receivables: $e');
     }
   }
 
@@ -797,9 +798,9 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
 
             if (_customerDebts.isEmpty)
               Container(
-                padding: const EdgeInsets.all(32),
+                padding: EdgeInsets.all(32),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Center(
@@ -821,9 +822,9 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
@@ -889,9 +890,9 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
   Widget _buildSummaryCard(
       String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -955,8 +956,8 @@ class _InventoryReportTabState extends ConsumerState<_InventoryReportTab> {
   Future<void> _loadInventoryData() async {
     setState(() => _isLoading = true);
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId == null) return;
 
       final supabase = Supabase.instance.client;
@@ -1018,7 +1019,7 @@ class _InventoryReportTabState extends ConsumerState<_InventoryReportTab> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      debugPrint('Error loading inventory: $e');
+      AppLogger.error('Error loading inventory: $e');
     }
   }
 
@@ -1169,9 +1170,9 @@ class _InventoryReportTabState extends ConsumerState<_InventoryReportTab> {
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
@@ -1220,9 +1221,9 @@ class _InventoryReportTabState extends ConsumerState<_InventoryReportTab> {
   Widget _buildSummaryCard(
       String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -1295,8 +1296,8 @@ class _OrdersReportTabState extends ConsumerState<_OrdersReportTab> {
   Future<void> _loadOrdersData() async {
     setState(() => _isLoading = true);
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId == null) return;
 
       final supabase = Supabase.instance.client;
@@ -1360,7 +1361,7 @@ class _OrdersReportTabState extends ConsumerState<_OrdersReportTab> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      debugPrint('Error loading orders: $e');
+      AppLogger.error('Error loading orders: $e');
     }
   }
 
@@ -1431,9 +1432,9 @@ class _OrdersReportTabState extends ConsumerState<_OrdersReportTab> {
             ),
             const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),
@@ -1460,9 +1461,9 @@ class _OrdersReportTabState extends ConsumerState<_OrdersReportTab> {
 
             if (_recentOrders.isEmpty)
               Container(
-                padding: const EdgeInsets.all(32),
+                padding: EdgeInsets.all(32),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Center(child: Text('Chưa có đơn hàng')),
@@ -1472,9 +1473,9 @@ class _OrdersReportTabState extends ConsumerState<_OrdersReportTab> {
                 final status = order['status'] as String? ?? 'draft';
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
@@ -1545,9 +1546,9 @@ class _OrdersReportTabState extends ConsumerState<_OrdersReportTab> {
   Widget _buildSummaryCard(
       String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),

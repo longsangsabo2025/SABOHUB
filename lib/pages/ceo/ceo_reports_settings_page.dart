@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../utils/app_logger.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// CEO Reports Page — Real aggregated data from Supabase
 class CEOReportsPage extends ConsumerStatefulWidget {
@@ -33,7 +35,7 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
 
   Future<void> _loadReportData() async {
     try {
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null) return;
 
       final supabase = Supabase.instance.client;
@@ -199,69 +201,77 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
 
       if (mounted) setState(() => _isLoading = false);
     } catch (e) {
-      debugPrint('❌ CEO Reports load error: $e');
+      AppLogger.error('CEO Reports load error: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Báo cáo',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+    return Column(
+      children: [
+        // Compact action row replaces nested AppBar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 8, 0),
+          child: Row(
+            children: [
+              Text(
+                'Báo cáo tổng hợp',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                onPressed: () {
+                  setState(() => _isLoading = true);
+                  _loadReportData();
+                },
+                icon: Icon(Icons.refresh_rounded,
+                    color: Colors.grey.shade600, size: 20),
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(),
+                tooltip: 'Tải lại',
+              ),
+            ],
+          ),
         ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              setState(() => _isLoading = true);
-              _loadReportData();
-            },
-            icon: const Icon(Icons.refresh, color: Colors.black54),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildReportTypeSelector(),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildReportContent(),
-          ),
-        ],
-      ),
+        _buildReportTypeSelector(context),
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildReportContent(),
+        ),
+      ],
     );
   }
 
-  Widget _buildReportTypeSelector() {
+  Widget _buildReportTypeSelector(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Row(
         children: [
-          _buildTypeChip('financial', 'Tài chính', Icons.attach_money),
+          _buildTypeChip(context, 'financial', 'Tài chính', Icons.attach_money),
           const SizedBox(width: 8),
-          _buildTypeChip('operations', 'Vận hành', Icons.business),
+          _buildTypeChip(context, 'operations', 'Vận hành', Icons.business),
           const SizedBox(width: 8),
-          _buildTypeChip('hr', 'Nhân sự', Icons.people),
+          _buildTypeChip(context, 'hr', 'Nhân sự', Icons.people),
         ],
       ),
     );
   }
 
-  Widget _buildTypeChip(String type, String label, IconData icon) {
+  Widget _buildTypeChip(BuildContext context, String type, String label, IconData icon) {
     final isSelected = _selectedReportType == type;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _selectedReportType = type),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.warning : Colors.white,
+            color: isSelected ? AppColors.warning : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected ? AppColors.warning : Colors.grey.shade300,
@@ -269,14 +279,14 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
           ),
           child: Column(
             children: [
-              Icon(icon, color: isSelected ? Colors.white : Colors.grey.shade600, size: 20),
-              const SizedBox(height: 4),
+              Icon(icon, color: isSelected ? Theme.of(context).colorScheme.surface : Colors.grey.shade600, size: 20),
+              SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
+                  color: isSelected ? Theme.of(context).colorScheme.surface : Colors.grey.shade600,
                 ),
               ),
             ],
@@ -289,18 +299,18 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
   Widget _buildReportContent() {
     switch (_selectedReportType) {
       case 'financial':
-        return _buildFinancialReport();
+        return _buildFinancialReport(context);
       case 'operations':
-        return _buildOperationsReport();
+        return _buildOperationsReport(context);
       case 'hr':
-        return _buildHRReport();
+        return _buildHRReport(context);
       default:
-        return _buildFinancialReport();
+        return _buildFinancialReport(context);
     }
   }
 
   // ──────────────── FINANCIAL REPORT ────────────────
-  Widget _buildFinancialReport() {
+  Widget _buildFinancialReport(BuildContext context) {
     final thisRevenue = (_financialData['thisRevenue'] as num?)?.toDouble() ?? 0;
     final lastRevenue = (_financialData['lastRevenue'] as num?)?.toDouble() ?? 0;
     final growth = (_financialData['revenueGrowth'] as num?)?.toDouble() ?? 0;
@@ -315,7 +325,7 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader('Doanh thu tháng ${DateFormat('MM/yyyy').format(DateTime.now())}'),
+          _buildSectionHeader(context, 'Doanh thu tháng ${DateFormat('MM/yyyy').format(DateTime.now())}'),
           _buildStatRow([
             _buildStatCard('Doanh thu', _currencyFmt.format(thisRevenue), AppColors.success,
                 subtitle: growth >= 0
@@ -325,14 +335,14 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
             _buildStatCard('Tháng trước', _currencyFmt.format(lastRevenue), Colors.grey),
           ]),
           const SizedBox(height: 16),
-          _buildSectionHeader('Đơn hàng'),
+          _buildSectionHeader(context, 'Đơn hàng'),
           _buildStatRow([
             _buildStatCard('Tổng đơn', '$totalOrders', AppColors.info),
             _buildStatCard('Đã thanh toán', '$paidOrders', AppColors.success),
             _buildStatCard('Chưa TT', '$unpaidOrders', AppColors.warning),
           ]),
           const SizedBox(height: 16),
-          _buildSectionHeader('Công nợ & Thu tiền'),
+          _buildSectionHeader(context, 'Công nợ & Thu tiền'),
           _buildStatRow([
             _buildStatCard('Tổng nợ KH', _currencyFmt.format(totalDebt), AppColors.error),
             _buildStatCard('Đã thu tháng này', _currencyFmt.format(totalPayments), AppColors.success),
@@ -344,7 +354,7 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
   }
 
   // ──────────────── OPERATIONS REPORT ────────────────
-  Widget _buildOperationsReport() {
+  Widget _buildOperationsReport(BuildContext context) {
     final totalCustomers = _operationsData['totalCustomers'] ?? 0;
     final totalBranches = _operationsData['totalBranches'] ?? 0;
     final totalDeliveries = _operationsData['totalDeliveries'] ?? 0;
@@ -358,21 +368,21 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader('Tổng quan vận hành'),
+          _buildSectionHeader(context, 'Tổng quan vận hành'),
           _buildStatRow([
             _buildStatCard('Khách hàng', '$totalCustomers', AppColors.info),
             _buildStatCard('Chi nhánh', '$totalBranches', AppColors.primary),
             _buildStatCard('Đơn hàng', '$totalOrders', AppColors.warning),
           ]),
           const SizedBox(height: 16),
-          _buildSectionHeader('Giao hàng tháng này'),
+          _buildSectionHeader(context, 'Giao hàng tháng này'),
           _buildStatRow([
             _buildStatCard('Tổng giao', '$totalDeliveries', AppColors.info),
             _buildStatCard('Hoàn thành', '$completedDel', AppColors.success),
             _buildStatCard('Đang xử lý', '$pendingDel', AppColors.warning),
           ]),
           const SizedBox(height: 12),
-          _buildProgressBar('Tỷ lệ giao thành công', deliveryRate, AppColors.success),
+          _buildProgressBar(context, 'Tỷ lệ giao thành công', deliveryRate, AppColors.success),
           const SizedBox(height: 24),
         ],
       ),
@@ -380,24 +390,24 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
   }
 
   // ──────────────── HR REPORT ────────────────
-  Widget _buildHRReport() {
+  Widget _buildHRReport(BuildContext context) {
     final totalEmployees = _hrData['totalEmployees'] ?? 0;
     final roleCount = _hrData['roleCount'] as Map<String, int>? ?? {};
     final totalCompanies = _hrData['totalCompanies'] ?? 0;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader('Tổng quan nhân sự'),
+          _buildSectionHeader(context, 'Tổng quan nhân sự'),
           _buildStatRow([
             _buildStatCard('Tổng NV', '$totalEmployees', AppColors.primary),
             _buildStatCard('Công ty', '$totalCompanies', AppColors.info),
           ]),
           const SizedBox(height: 16),
-          _buildSectionHeader('Phân bổ theo vai trò'),
-          ...roleCount.entries.map((e) => _buildRoleRow(e.key, e.value, totalEmployees)),
+          _buildSectionHeader(context, 'Phân bổ theo vai trò'),
+          ...roleCount.entries.map((e) => _buildRoleRow(context, e.key, e.value, totalEmployees)),
           const SizedBox(height: 24),
         ],
       ),
@@ -406,11 +416,11 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
 
   // ──────────────── SHARED WIDGETS ────────────────
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: 12),
       child: Text(title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface87)),
     );
   }
 
@@ -425,11 +435,11 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
   Widget _buildStatCard(String label, String value, Color color,
       {String? subtitle, Color? subtitleColor}) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,13 +462,13 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
     );
   }
 
-  Widget _buildProgressBar(String label, double percent, Color color) {
+  Widget _buildProgressBar(BuildContext context, String label, double percent, Color color) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8, offset: Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,7 +496,7 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
     );
   }
 
-  Widget _buildRoleRow(String role, int count, int total) {
+  Widget _buildRoleRow(BuildContext context, String role, int count, int total) {
     final pct = total > 0 ? (count / total * 100) : 0.0;
     final roleLabels = {
       'ceo': 'CEO',
@@ -498,11 +508,11 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
       'superAdmin': 'Super Admin',
     };
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -543,13 +553,13 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
 /// CEO Settings Page
 /// System-wide configuration and preferences
 class CEOSettingsPage extends ConsumerWidget {
-  const CEOSettingsPage({super.key});
+  CEOSettingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: _buildAppBar(),
+      appBar: _buildAppBar(context),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -570,16 +580,16 @@ class CEOSettingsPage extends ConsumerWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       elevation: 0,
-      backgroundColor: Colors.white,
-      title: const Text(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      title: Text(
         'Cài đặt',
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: Theme.of(context).colorScheme.onSurface87,
         ),
       ),
     );
@@ -587,8 +597,7 @@ class CEOSettingsPage extends ConsumerWidget {
 
   Widget _buildUserProfile(BuildContext context, WidgetRef ref) {
     // ✅ Get real user data from authProvider
-    final authState = ref.watch(authProvider);
-    final user = authState.user;
+    final user = ref.watch(currentUserProvider);
 
     final displayName = user?.name ?? 'CEO';
     final displayEmail = user?.email ?? 'ceo@sabohub.com';
@@ -600,13 +609,13 @@ class CEOSettingsPage extends ConsumerWidget {
         : 'CEO';
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -626,10 +635,10 @@ class CEOSettingsPage extends ConsumerWidget {
             child: Center(
               child: Text(
                 initials,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                 ),
               ),
             ),
@@ -641,10 +650,10 @@ class CEOSettingsPage extends ConsumerWidget {
               children: [
                 Text(
                   displayName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface87,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -684,28 +693,32 @@ class CEOSettingsPage extends ConsumerWidget {
   }
 
   Widget _buildSystemSettings(BuildContext context) {
-    return _buildSettingsSection(
+    return _buildSettingsSection(context, 
       'Cài đặt hệ thống',
       [
         _buildSettingItem(
+          context,
           'Ngôn ngữ',
           'Tiếng Việt',
           Icons.language,
           () => _snack(context, 'Ngôn ngữ mặc định: Tiếng Việt'),
         ),
         _buildSettingItem(
+          context,
           'Múi giờ',
           'GMT+7 (Hồ Chí Minh)',
           Icons.access_time,
           () => _snack(context, 'Múi giờ: UTC+7 (Ho Chi Minh)'),
         ),
         _buildSettingItem(
+          context,
           'Định dạng tiền tệ',
           'VND (₫)',
           Icons.attach_money,
           () => _snack(context, 'Định dạng: VND (₫)'),
         ),
         _buildSettingItem(
+          context,
           'Thông báo',
           'Bật',
           Icons.notifications,
@@ -717,28 +730,32 @@ class CEOSettingsPage extends ConsumerWidget {
   }
 
   Widget _buildCompanySettings(BuildContext context) {
-    return _buildSettingsSection(
+    return _buildSettingsSection(context, 
       'Quản lý công ty',
       [
         _buildSettingItem(
+          context,
           'Thêm công ty mới',
           '',
           Icons.add_business,
           () => _snack(context, 'Thêm công ty: Chuyển sang tab Quản lý công ty'),
         ),
         _buildSettingItem(
+          context,
           'Cấu hình chung',
           'Áp dụng cho tất cả công ty',
           Icons.settings,
           () => _snack(context, 'Cấu hình chung qua Company Settings mỗi công ty'),
         ),
         _buildSettingItem(
+          context,
           'Quyền truy cập',
           'Phân quyền nhân viên',
           Icons.security,
           () => _snack(context, 'Phân quyền qua role (CEO/Manager/Staff/...) khi thêm nhân viên'),
         ),
         _buildSettingItem(
+          context,
           'Backup dữ liệu',
           'Tự động hàng ngày',
           Icons.backup,
@@ -750,16 +767,18 @@ class CEOSettingsPage extends ConsumerWidget {
   }
 
   Widget _buildSecuritySettings(BuildContext context) {
-    return _buildSettingsSection(
+    return _buildSettingsSection(context, 
       'Bảo mật',
       [
         _buildSettingItem(
+          context,
           'Đổi mật khẩu',
           '',
           Icons.lock,
           () => _snack(context, 'Đổi mật khẩu qua change_employee_password RPC'),
         ),
         _buildSettingItem(
+          context,
           'Xác thực 2 bước',
           'Bật',
           Icons.verified_user,
@@ -767,12 +786,14 @@ class CEOSettingsPage extends ConsumerWidget {
           hasSwitch: true,
         ),
         _buildSettingItem(
+          context,
           'Phiên đăng nhập',
           'Quản lý thiết bị',
           Icons.devices,
           () => _snack(context, 'Session timeout: 30 phút không hoạt động → auto logout'),
         ),
         _buildSettingItem(
+          context,
           'Lịch sử hoạt động',
           '',
           Icons.history,
@@ -783,28 +804,32 @@ class CEOSettingsPage extends ConsumerWidget {
   }
 
   Widget _buildSupportSection(BuildContext context, WidgetRef ref) {
-    return _buildSettingsSection(
+    return _buildSettingsSection(context, 
       'Hỗ trợ',
       [
         _buildSettingItem(
+          context,
           'Trung tâm trợ giúp',
           '',
           Icons.help,
           () => _snack(context, 'Liên hệ admin@sabohub.com để được hỗ trợ'),
         ),
         _buildSettingItem(
+          context,
           'Liên hệ hỗ trợ',
           '',
           Icons.contact_support,
           () => _snack(context, 'Email: admin@sabohub.com | Telegram: đã tích hợp'),
         ),
         _buildSettingItem(
+          context,
           'Về ứng dụng',
           'SABOHUB v1.2.0+16',
           Icons.info,
           () => _snack(context, 'SABOHUB v1.2.0+16 — Hệ thống quản lý đa ngành'),
         ),
         _buildSettingItem(
+          context,
           'Đăng xuất',
           '',
           Icons.logout,
@@ -849,26 +874,26 @@ class CEOSettingsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingsSection(String title, List<Widget> items) {
+  Widget _buildSettingsSection(BuildContext context, String title, List<Widget> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -881,6 +906,7 @@ class CEOSettingsPage extends ConsumerWidget {
   }
 
   Widget _buildSettingItem(
+    BuildContext context,
     String title,
     String subtitle,
     IconData icon,
@@ -891,7 +917,7 @@ class CEOSettingsPage extends ConsumerWidget {
     return ListTile(
       onTap: hasSwitch ? null : onTap,
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isDestructive
               ? Colors.red.withValues(alpha: 0.1)
@@ -909,7 +935,7 @@ class CEOSettingsPage extends ConsumerWidget {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: isDestructive ? Colors.red : Colors.black87,
+          color: isDestructive ? Colors.red : Theme.of(context).colorScheme.onSurface87,
         ),
       ),
       subtitle: subtitle.isNotEmpty

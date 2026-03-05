@@ -116,15 +116,15 @@ void main() {
     });
 
     group('values', () {
-      test('has exactly 7 roles', () {
-        expect(SaboRole.values.length, 7);
+      test('has exactly 8 roles', () {
+        expect(SaboRole.values.length, 8);
       });
 
       test('contains all expected roles', () {
         final names = SaboRole.values.map((r) => r.name).toList();
         expect(names, containsAll([
           'superAdmin', 'ceo', 'manager', 'shiftLeader',
-          'staff', 'driver', 'warehouse'
+          'staff', 'driver', 'warehouse', 'shareholder'
         ]));
       });
     });

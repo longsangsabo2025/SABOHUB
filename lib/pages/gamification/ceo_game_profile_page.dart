@@ -13,6 +13,7 @@ import '../../widgets/gamification/skill_tree_widget.dart';
 import '../../widgets/gamification/streak_counter.dart';
 import '../../widgets/gamification/business_health_bar.dart';
 import '../../widgets/gamification/prestige_card.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class CeoGameProfilePage extends ConsumerWidget {
   const CeoGameProfilePage({super.key});
@@ -36,28 +37,28 @@ class CeoGameProfilePage extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Color(0xFFF8F9FA),
       body: CustomScrollView(
         slivers: [
-          _buildAppBar(profile),
-          SliverToBoxAdapter(child: _buildProfileHeader(profile)),
-          const SliverToBoxAdapter(child: Padding(
+          _buildAppBar(context, profile),
+          SliverToBoxAdapter(child: _buildProfileHeader(context, profile)),
+          SliverToBoxAdapter(child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: XpMultiplierBadge(),
           )),
-          SliverToBoxAdapter(child: _buildStatsGrid(profile)),
+          SliverToBoxAdapter(child: _buildStatsGrid(context, profile)),
           SliverToBoxAdapter(child: _buildQuickActions(context, profile)),
           SliverToBoxAdapter(child: _buildSocialActions(context)),
-          const SliverToBoxAdapter(child: PrestigeCard()),
+          SliverToBoxAdapter(child: PrestigeCard()),
           const SliverToBoxAdapter(child: SkillTreeWidget()),
-          SliverToBoxAdapter(child: _buildXpHistory(ref)),
+          SliverToBoxAdapter(child: _buildXpHistory(context, ref)),
           const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
         ],
       ),
     );
   }
 
-  Widget _buildAppBar(CeoProfile profile) {
+  Widget _buildAppBar(BuildContext context, CeoProfile profile) {
     return SliverAppBar(
       expandedHeight: 200,
       pinned: true,
@@ -77,11 +78,11 @@ class CeoGameProfilePage extends ConsumerWidget {
               children: [
                 const SizedBox(height: 40),
                 LevelBadge(level: profile.level, size: 72, showTitle: true),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Tổng XP: ${profile.totalXp}',
-                  style: const TextStyle(
-                    color: Colors.white70,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.surface70,
                     fontSize: 14,
                   ),
                 ),
@@ -93,16 +94,16 @@ class CeoGameProfilePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileHeader(CeoProfile profile) {
+  Widget _buildProfileHeader(BuildContext context, CeoProfile profile) {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -124,29 +125,29 @@ class CeoGameProfilePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsGrid(CeoProfile profile) {
+  Widget _buildStatsGrid(BuildContext context, CeoProfile profile) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          _statTile('⚡', 'Total XP', '${profile.totalXp}', AppColors.warning),
+          _statTile(context, '⚡', 'Total XP', '${profile.totalXp}', AppColors.warning),
           const SizedBox(width: 8),
-          _statTile('⭐', 'Uy Tín', '${profile.reputationPoints}', AppColors.info),
+          _statTile(context, '⭐', 'Uy Tín', '${profile.reputationPoints}', AppColors.info),
           const SizedBox(width: 8),
-          _statTile('🎯', 'Skill Points', '${profile.skillPoints}', AppColors.success),
+          _statTile(context, '🎯', 'Skill Points', '${profile.skillPoints}', AppColors.success),
           const SizedBox(width: 8),
-          _statTile('🔥', 'Streak', '${profile.streakDays}d', const Color(0xFFFF6D00)),
+          _statTile(context, '🔥', 'Streak', '${profile.streakDays}d', Color(0xFFFF6D00)),
         ],
       ),
     );
   }
 
-  Widget _statTile(String emoji, String label, String value, Color color) {
+  Widget _statTile(BuildContext context, String emoji, String label, String value, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade200),
         ),
@@ -174,23 +175,23 @@ class CeoGameProfilePage extends ConsumerWidget {
 
   Widget _buildQuickActions(BuildContext context, CeoProfile profile) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Row(
         children: [
           Expanded(
-            child: _actionButton(
+            child: _actionButton(context, 
               '⭐ Uy Tín Store',
               '${profile.reputationPoints} pts',
-              const Color(0xFF6A1B9A),
+              Color(0xFF6A1B9A),
               () => context.push(AppRoutes.uytinStore),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: _actionButton(
+            child: _actionButton(context, 
               '👥 Team',
               'Xem staff',
-              const Color(0xFF1565C0),
+              Color(0xFF1565C0),
               () => context.push(AppRoutes.staffPerformance),
             ),
           ),
@@ -199,9 +200,9 @@ class CeoGameProfilePage extends ConsumerWidget {
     );
   }
 
-  Widget _actionButton(String title, String subtitle, Color color, VoidCallback onTap) {
+  Widget _actionButton(BuildContext context, String title, String subtitle, Color color, VoidCallback onTap) {
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -229,28 +230,28 @@ class CeoGameProfilePage extends ConsumerWidget {
       child: Row(
         children: [
           Expanded(
-            child: _actionButton(
+            child: _actionButton(context, 
               '🏆 Leaderboard',
               'Xếp hạng CEO',
-              const Color(0xFFE65100),
+              Color(0xFFE65100),
               () => context.push(AppRoutes.leaderboard),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: _actionButton(
+            child: _actionButton(context, 
               '🎖️ Season Pass',
               'Mùa giải',
-              const Color(0xFF00838F),
+              Color(0xFF00838F),
               () => context.push(AppRoutes.seasonPass),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: _actionButton(
+            child: _actionButton(context, 
               '⚔️ Guild War',
               'Xếp hạng công ty',
-              const Color(0xFF880E4F),
+              Color(0xFF880E4F),
               () => context.push(AppRoutes.companyRanking),
             ),
           ),
@@ -259,14 +260,14 @@ class CeoGameProfilePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildXpHistory(WidgetRef ref) {
+  Widget _buildXpHistory(BuildContext context, WidgetRef ref) {
     final history = ref.watch(xpHistoryProvider);
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -390,20 +391,20 @@ class CeoGameProfilePage extends ConsumerWidget {
   }
 
   Color _tierColor(int level) {
-    if (level >= 76) return const Color(0xFFE65100);
-    if (level >= 51) return const Color(0xFF6A1B9A);
-    if (level >= 31) return const Color(0xFF00838F);
-    if (level >= 16) return const Color(0xFF2E7D32);
-    if (level >= 6) return const Color(0xFF1565C0);
-    return const Color(0xFF37474F);
+    if (level >= 76) return Color(0xFFE65100);
+    if (level >= 51) return Color(0xFF6A1B9A);
+    if (level >= 31) return Color(0xFF00838F);
+    if (level >= 16) return Color(0xFF2E7D32);
+    if (level >= 6) return Color(0xFF1565C0);
+    return Color(0xFF37474F);
   }
 
   List<Color> _tierGradient(int level) {
-    if (level >= 76) return [const Color(0xFFFF8F00), const Color(0xFFE65100)];
-    if (level >= 51) return [const Color(0xFFAB47BC), const Color(0xFF6A1B9A)];
-    if (level >= 31) return [const Color(0xFF26C6DA), const Color(0xFF00838F)];
-    if (level >= 16) return [const Color(0xFF66BB6A), const Color(0xFF2E7D32)];
-    if (level >= 6) return [const Color(0xFF42A5F5), const Color(0xFF1565C0)];
-    return [const Color(0xFF78909C), const Color(0xFF37474F)];
+    if (level >= 76) return [Color(0xFFFF8F00), Color(0xFFE65100)];
+    if (level >= 51) return [Color(0xFFAB47BC), Color(0xFF6A1B9A)];
+    if (level >= 31) return [Color(0xFF26C6DA), Color(0xFF00838F)];
+    if (level >= 16) return [Color(0xFF66BB6A), Color(0xFF2E7D32)];
+    if (level >= 6) return [Color(0xFF42A5F5), Color(0xFF1565C0)];
+    return [Color(0xFF78909C), Color(0xFF37474F)];
   }
 }

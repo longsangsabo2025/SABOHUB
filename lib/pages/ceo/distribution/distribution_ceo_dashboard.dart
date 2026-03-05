@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/ceo_business_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Distribution CEO Dashboard — Morning view
 /// Today's pulse + Monthly KPIs + Pending approvals + Receivables aging
@@ -30,33 +31,33 @@ class DistributionCEODashboard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // === TODAY'S PULSE ===
-            _buildSectionTitle('📊 Hôm nay', Icons.today),
+            _buildSectionTitle(context, '📊 Hôm nay', Icons.today),
             const SizedBox(height: 12),
             pulseAsync.when(
-              data: (pulse) => _buildTodayPulse(pulse, fmt),
-              loading: () => _buildLoadingCard(),
+              data: (pulse) => _buildTodayPulse(context, pulse, fmt),
+              loading: () => _buildLoadingCard(context),
               error: (e, _) => _buildErrorCard('Lỗi tải dữ liệu hôm nay'),
             ),
 
             const SizedBox(height: 24),
 
             // === MONTHLY KPIs ===
-            _buildSectionTitle('📈 Chỉ số tháng này', Icons.insights),
+            _buildSectionTitle(context, '📈 Chỉ số tháng này', Icons.insights),
             const SizedBox(height: 12),
             kpisAsync.when(
-              data: (kpis) => _buildMonthlyKPIs(kpis, fmt),
-              loading: () => _buildLoadingCard(),
+              data: (kpis) => _buildMonthlyKPIs(context, kpis, fmt),
+              loading: () => _buildLoadingCard(context),
               error: (e, _) => _buildErrorCard('Lỗi tải KPI'),
             ),
 
             const SizedBox(height: 24),
 
             // === APPROVAL CENTER ===
-            _buildSectionTitle('⏳ Chờ duyệt', Icons.pending_actions),
+            _buildSectionTitle(context, '⏳ Chờ duyệt', Icons.pending_actions),
             const SizedBox(height: 12),
             approvalsAsync.when(
-              data: (approvals) => _buildApprovalCenter(approvals),
-              loading: () => _buildLoadingCard(),
+              data: (approvals) => _buildApprovalCenter(context, approvals),
+              loading: () => _buildLoadingCard(context),
               error: (e, _) => _buildErrorCard('Lỗi tải phê duyệt'),
             ),
 
@@ -67,22 +68,22 @@ class DistributionCEODashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
+  Widget _buildSectionTitle(BuildContext context, String title, IconData icon) {
     return Row(
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTodayPulse(TodayPulse pulse, NumberFormat fmt) {
+  Widget _buildTodayPulse(BuildContext context, TodayPulse pulse, NumberFormat fmt) {
     return Column(
       children: [
         // Revenue highlight
@@ -91,28 +92,28 @@ class DistributionCEODashboard extends ConsumerWidget {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF059669), Color(0xFF10B981)],
+              colors: [AppColors.successDark, AppColors.success],
             ),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Doanh thu hôm nay',
-                  style: TextStyle(color: Colors.white70, fontSize: 13)),
+              Text('Doanh thu hôm nay',
+                  style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 13)),
               const SizedBox(height: 4),
               Text(
                 fmt.format(pulse.todayRevenue),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.surface,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 '${pulse.ordersCreated} đơn • ${pulse.completedOrders} hoàn thành • ${pulse.pendingOrders} chờ',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 12),
               ),
             ],
           ),
@@ -122,7 +123,7 @@ class DistributionCEODashboard extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard(
+              child: _buildStatCard(context,
                 'Giao hàng',
                 '${pulse.deliveredCount}/${pulse.deliveredCount + pulse.deliveringCount}',
                 Icons.local_shipping,
@@ -131,7 +132,7 @@ class DistributionCEODashboard extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildStatCard(
+              child: _buildStatCard(context,
                 'Thu tiền',
                 fmt.format(pulse.paymentsCollected),
                 Icons.payments,
@@ -140,7 +141,7 @@ class DistributionCEODashboard extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildStatCard(
+              child: _buildStatCard(context,
                 'KH mới',
                 '${pulse.newCustomers}',
                 Icons.person_add,
@@ -153,7 +154,7 @@ class DistributionCEODashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildMonthlyKPIs(CEOKPIs kpis, NumberFormat fmt) {
+  Widget _buildMonthlyKPIs(BuildContext context, CEOKPIs kpis, NumberFormat fmt) {
     final growthColor = kpis.revenueGrowth >= 0 ? AppColors.success : AppColors.error;
     final growthIcon =
         kpis.revenueGrowth >= 0 ? Icons.trending_up : Icons.trending_down;
@@ -162,13 +163,13 @@ class DistributionCEODashboard extends ConsumerWidget {
       children: [
         // Revenue + Growth
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 blurRadius: 10,
               ),
             ],
@@ -219,12 +220,12 @@ class DistributionCEODashboard extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-                child: _buildKPITile(
+                child: _buildKPITile(context,
                     'Lợi nhuận gộp', fmt.format(kpis.grossProfit),
                     subtitle: '${kpis.grossMargin.toStringAsFixed(1)}% margin')),
             const SizedBox(width: 8),
             Expanded(
-                child: _buildKPITile(
+                child: _buildKPITile(context,
                     'Công nợ', fmt.format(kpis.totalOutstanding),
                     isAlert: kpis.totalOutstanding > 0)),
           ],
@@ -233,15 +234,15 @@ class DistributionCEODashboard extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-                child: _buildKPITile(
+                child: _buildKPITile(context,
                     'Nhân viên', '${kpis.totalEmployees}')),
             const SizedBox(width: 8),
             Expanded(
-                child: _buildKPITile(
+                child: _buildKPITile(context,
                     'Khách hàng', '${kpis.totalCustomers}')),
             const SizedBox(width: 8),
             Expanded(
-                child: _buildKPITile(
+                child: _buildKPITile(context,
                     'Đơn hoàn thành', '${kpis.completedOrdersThisMonth}')),
           ],
         ),
@@ -249,7 +250,7 @@ class DistributionCEODashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildApprovalCenter(PendingApprovals approvals) {
+  Widget _buildApprovalCenter(BuildContext context, PendingApprovals approvals) {
     if (approvals.totalPending == 0) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -270,14 +271,14 @@ class DistributionCEODashboard extends ConsumerWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
           ),
         ],
@@ -322,16 +323,16 @@ class DistributionCEODashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatCard(
+  Widget _buildStatCard(BuildContext context,
       String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 8,
           ),
         ],
@@ -353,18 +354,18 @@ class DistributionCEODashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildKPITile(String label, String value,
+  Widget _buildKPITile(BuildContext context, String label, String value,
       {String? subtitle, bool isAlert = false}) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isAlert
             ? AppColors.warning.withValues(alpha: 0.05)
-            : Colors.white,
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 6),
         ],
       ),
       child: Column(
@@ -386,11 +387,11 @@ class DistributionCEODashboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildLoadingCard() {
+  Widget _buildLoadingCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(40),
+      padding: EdgeInsets.all(40),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: const Center(child: CircularProgressIndicator()),

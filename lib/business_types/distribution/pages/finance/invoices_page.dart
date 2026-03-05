@@ -51,8 +51,8 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 
@@ -185,8 +185,8 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
 
   /// Preview invoice in-app (mobile-friendly)
   void _previewInvoice(Map<String, dynamic> order) {
-    final authState = ref.read(authProvider);
-    final companyName = authState.user?.companyName ?? 'CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI ODORI';
+    final user = ref.read(currentUserProvider);
+    final companyName = user?.companyName ?? 'CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI ODORI';
 
     InvoicePreviewSheet.show(
       context,
@@ -231,8 +231,8 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
     final orderDate = DateTime.tryParse(order['created_at'] ?? '');
 
     // Get company info from auth
-    final authState = ref.read(authProvider);
-    final companyName = authState.user?.companyName ?? 'CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI ODORI';
+    final user = ref.read(currentUserProvider);
+    final companyName = user?.companyName ?? 'CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI ODORI';
 
     // Calculate totals
     double subtotal = 0;
@@ -533,8 +533,8 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
-              color: Colors.white,
+              padding: EdgeInsets.all(20),
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 children: [
                   Row(
@@ -645,7 +645,7 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
 
                   // Tab bar
                   Container(
@@ -655,7 +655,7 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
                     ),
                     child: TabBar(
                       controller: _tabController,
-                      labelColor: Colors.white,
+                      labelColor: Theme.of(context).colorScheme.surface,
                       unselectedLabelColor: Colors.grey.shade600,
                       labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                       indicator: BoxDecoration(
@@ -740,14 +740,14 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
                 : null,
             child: Container(
               margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.purple.shade50 : Colors.white,
+                color: isSelected ? Colors.purple.shade50 : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: isSelected ? Border.all(color: Colors.purple.shade300, width: 2) : null,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.03),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -839,12 +839,12 @@ class _InvoicesPageState extends ConsumerState<InvoicesPage>
                                     color: Colors.purple.shade600,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.print, size: 14, color: Colors.white),
+                                      Icon(Icons.print, size: 14, color: Theme.of(context).colorScheme.surface),
                                       SizedBox(width: 4),
-                                      Text('In', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                                      Text('In', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 12, fontWeight: FontWeight.w600)),
                                     ],
                                   ),
                                 ),

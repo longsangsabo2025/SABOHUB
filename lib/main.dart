@@ -5,6 +5,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'services/push_notification_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/config/sentry_config.dart';
@@ -13,6 +16,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/network_provider.dart';
+import 'providers/theme_provider.dart';
 import 'utils/error_tracker.dart' as tracker;
 import 'utils/longsang_error_reporter.dart'; // 🔴 LONGSANG AUTO-FIX
 import 'widgets/error_boundary.dart';
@@ -43,6 +47,15 @@ void main() {
   // Initialize Performance & Error Tracking
   await tracker.ErrorTracker().initialize();
   
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await PushNotificationService().initialize();
+  } catch (e) {
+    print('Firebase not fully configured.');
+  }
+
   // Initialize Supabase with persistent session
   await Supabase.initialize(
     url: SupabaseConfig.supabaseUrl,
@@ -98,10 +111,10 @@ class _SaboHubAppState extends ConsumerState<SaboHubApp> {
     ]);
     
     // Set system UI overlay style
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
+      systemNavigationBarColor: Theme.of(context).colorScheme.surface,
       systemNavigationBarIconBrightness: Brightness.dark,
     ));
   }
@@ -109,6 +122,7 @@ class _SaboHubAppState extends ConsumerState<SaboHubApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
+    final themeModeAsync = ref.watch(themeProvider);
 
     // Wrap entire app with KeyboardDismisser for auto-hide keyboard on tap outside
     return KeyboardDismisser(
@@ -117,7 +131,9 @@ class _SaboHubAppState extends ConsumerState<SaboHubApp> {
           child: MaterialApp.router(
             title: 'SABOHUB Flutter',
             debugShowCheckedModeBanner: false,
+            themeMode: themeModeAsync.value ?? ThemeMode.light,
             theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
             routerConfig: router,
             // Scroll behavior for better UX
             scrollBehavior: const MaterialScrollBehavior().copyWith(
@@ -126,12 +142,15 @@ class _SaboHubAppState extends ConsumerState<SaboHubApp> {
             ),
             builder: (context, child) {
               // Apply global UI improvements
+              // Fix iOS oversized display: lock textScaler to 1.0
+              // This prevents iOS accessibility/dynamic type from enlarging the UI
+              final mediaData = MediaQuery.of(context);
+              final constrainedTextScaler = TextScaler.linear(
+                mediaData.textScaler.scale(1.0).clamp(0.85, 1.0),
+              );
               return MediaQuery(
-                // Prevent text scaling from breaking UI
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(
-                    MediaQuery.of(context).textScaler.scale(1.0).clamp(0.8, 1.2),
-                  ),
+                data: mediaData.copyWith(
+                  textScaler: constrainedTextScaler,
                 ),
                 child: child ?? const SizedBox.shrink(),
               );

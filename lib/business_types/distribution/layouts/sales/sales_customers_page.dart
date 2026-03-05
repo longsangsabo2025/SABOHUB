@@ -52,8 +52,8 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
 
   Future<void> _loadCustomers() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 
@@ -132,16 +132,16 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddCustomerDialog,
         backgroundColor: Colors.indigo,
-        icon: const Icon(Icons.person_add, color: Colors.white),
-        label: const Text('Thêm KH', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        icon: Icon(Icons.person_add, color: Theme.of(context).colorScheme.surface),
+        label: Text('Thêm KH', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: Column(
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              color: Colors.white,
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 children: [
                   Row(
@@ -277,10 +277,10 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
                               ElevatedButton.icon(
                                 onPressed: _showAddCustomerDialog,
                                 icon: const Icon(Icons.person_add),
-                                label: const Text('Thêm khách hàng mới'),
+                                label: Text('Thêm khách hàng mới'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.indigo,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: Theme.of(context).colorScheme.surface,
                                 ),
                               ),
                             ],
@@ -388,11 +388,11 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
                         right: -2,
                         bottom: -2,
                         child: Container(
-                          padding: const EdgeInsets.all(2),
+                          padding: EdgeInsets.all(2),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 2)],
+                            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1), blurRadius: 2)],
                           ),
                           child: Text(tierEmoji, style: const TextStyle(fontSize: 12)),
                         ),
@@ -878,7 +878,7 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
               Navigator.pop(context);
               try {
                 final supabase = Supabase.instance.client;
-                await supabase.from('customers').delete().eq('id', customer['id']);
+                await supabase.from('customers').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', customer['id']);
                 if (mounted) {
                   scaffoldMessenger.showSnackBar(
                     SnackBar(
@@ -915,8 +915,8 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
         minChildSize: 0.5,
         maxChildSize: 0.95,
         builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: CustomerVisitsSheet(
@@ -946,8 +946,8 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
         minChildSize: 0.5,
         maxChildSize: 0.95,
         builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: SalesOrderHistorySheet(

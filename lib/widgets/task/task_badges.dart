@@ -12,7 +12,7 @@ Color priorityColor(TaskPriority p) => switch (p) {
   TaskPriority.critical => AppColors.error,
   TaskPriority.high     => AppColors.warning,
   TaskPriority.medium   => AppColors.info,
-  TaskPriority.low      => const Color(0xFF6B7280),
+  TaskPriority.low      => AppColors.neutral500,
 };
 
 /// Priority icons
@@ -25,11 +25,11 @@ IconData priorityIcon(TaskPriority p) => switch (p) {
 
 /// Status colors mapping
 Color statusColor(TaskStatus s) => switch (s) {
-  TaskStatus.pending    => const Color(0xFF6B7280),
+  TaskStatus.pending    => AppColors.neutral500,
   TaskStatus.inProgress => AppColors.info,
   TaskStatus.completed  => AppColors.success,
   TaskStatus.overdue    => AppColors.error,
-  TaskStatus.cancelled  => const Color(0xFF9CA3AF),
+  TaskStatus.cancelled  => AppColors.neutral400,
 };
 
 /// Status icons
@@ -127,14 +127,14 @@ class TaskProgressBar extends StatelessWidget {
     final color = pct >= 1.0 ? AppColors.success 
         : pct >= 0.5 ? AppColors.info 
         : pct > 0 ? AppColors.warning 
-        : const Color(0xFFE5E7EB);
+        : Color(0xFFE5E7EB);
     
     return ClipRRect(
       borderRadius: BorderRadius.circular(height / 2),
       child: LinearProgressIndicator(
         value: pct,
         minHeight: height,
-        backgroundColor: const Color(0xFFE5E7EB),
+        backgroundColor: Color(0xFFE5E7EB),
         valueColor: AlwaysStoppedAnimation(color),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../services/account_storage_service.dart';
+import '../core/theme/app_spacing.dart';
 
 /// Multi-Account Manager
 /// Lưu và chuyển đổi giữa nhiều tài khoản đã đăng nhập
@@ -97,10 +98,10 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
               backgroundColor: _getRoleColor(account.role),
               child: Text(
                 account.name[0].toUpperCase(),
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Theme.of(context).colorScheme.surface),
               ),
             ),
-            const SizedBox(width: 12),
+            AppSpacing.hGapMD,
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,14 +261,14 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
                 backgroundColor: _getRoleColor(currentUser.role.name),
                 child: Text(
                   (currentUser.name ?? 'U')[0].toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.surface,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
+              AppSpacing.hGapXS,
             ],
             Icon(Icons.arrow_drop_down, size: 20, color: Colors.blue.shade700),
           ],
@@ -293,20 +294,20 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
                       color: Colors.grey,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  AppSpacing.gapXXS,
                   Row(
                     children: [
                       CircleAvatar(
                         backgroundColor: _getRoleColor(currentUser.role.name),
                         child: Text(
                           (currentUser.name ?? 'U')[0].toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.surface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      AppSpacing.hGapMD,
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,7 +343,7 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
               child: const Row(
                 children: [
                   Icon(Icons.save, size: 20, color: Colors.blue),
-                  SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   Text('💾 Lưu tài khoản này'),
                 ],
               ),
@@ -383,13 +384,13 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
                       backgroundColor: _getRoleColor(account.role),
                       child: Text(
                         account.name[0].toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.surface,
                           fontSize: 14,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    AppSpacing.hGapMD,
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,7 +436,7 @@ class _MultiAccountSwitcherState extends ConsumerState<MultiAccountSwitcher> {
             child: Row(
               children: [
                 Icon(Icons.person_add, size: 20, color: Colors.green),
-                SizedBox(width: 12),
+                AppSpacing.hGapMD,
                 Text('➕ Thêm tài khoản khác'),
               ],
             ),

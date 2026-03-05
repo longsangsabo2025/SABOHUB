@@ -1,4 +1,4 @@
-/// SABO Corporation — Content Calendar & Content Item Models
+// SABO Corporation — Content Calendar & Content Item Models
 
 enum ContentType {
   video('video', 'Video'),
@@ -180,7 +180,7 @@ class ContentCalendar {
   bool get isOverdue {
     if (deadline == null) return false;
     if (status == ContentStatus.published ||
-        status == ContentStatus.cancelled) return false;
+        status == ContentStatus.cancelled) { return false; }
     return DateTime.now().isAfter(deadline!);
   }
 

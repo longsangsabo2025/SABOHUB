@@ -40,7 +40,7 @@ class _CreateEmployeePageState extends ConsumerState<CreateEmployeePage> {
     setState(() => _isLoading = true);
 
     try {
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null || user.companyId == null) {
         throw Exception('Bạn phải đăng nhập và có company để tạo nhân viên');
       }
@@ -102,7 +102,7 @@ class _CreateEmployeePageState extends ConsumerState<CreateEmployeePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tạo nhân viên mới'),
+        title: Text('Tạo nhân viên mới'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SingleChildScrollView(
@@ -192,23 +192,23 @@ class _CreateEmployeePageState extends ConsumerState<CreateEmployeePage> {
                   }
                 },
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
 
               // Submit Button
               ElevatedButton(
                 onPressed: _isLoading ? null : _createEmployee,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                 ),
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                       )
                     : const Text(

@@ -106,7 +106,8 @@ class AIService {
   /// Delete AI assistant
   Future<void> deleteAssistant(String assistantId) async {
     try {
-      await _supabase.from('ai_assistants').delete().eq('id', assistantId);
+      // Soft delete - sets is_active=false
+      await _supabase.from('ai_assistants').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', assistantId);
     } catch (e) {
       throw Exception('Failed to delete assistant: $e');
     }
@@ -236,7 +237,8 @@ class AIService {
   /// Delete a message
   Future<void> deleteMessage(String messageId) async {
     try {
-      await _supabase.from('ai_messages').delete().eq('id', messageId);
+      // Soft delete - sets is_active=false
+      await _supabase.from('ai_messages').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', messageId);
     } catch (e) {
       throw Exception('Failed to delete message: $e');
     }
@@ -245,9 +247,10 @@ class AIService {
   /// Clear all messages for an assistant
   Future<void> clearMessages(String assistantId) async {
     try {
+      // Soft delete - sets is_active=false
       await _supabase
           .from('ai_messages')
-          .delete()
+          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
           .eq('assistant_id', assistantId);
     } catch (e) {
       throw Exception('Failed to clear messages: $e');
@@ -325,8 +328,9 @@ class AIService {
         }
       }
 
-      // Delete from database
-      await _supabase.from('ai_uploaded_files').delete().eq('id', fileId);
+      // Delete from database (soft delete)
+      // Soft delete - sets is_active=false
+      await _supabase.from('ai_uploaded_files').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', fileId);
     } catch (e) {
       throw Exception('Failed to delete uploaded file: $e');
     }
@@ -403,13 +407,14 @@ class AIService {
     }
   }
 
-  /// Delete recommendation
+  /// Delete recommendation (soft delete)
   Future<void> deleteRecommendation(String recommendationId) async {
     try {
-      await _supabase
-          .from('ai_recommendations')
-          .delete()
-          .eq('id', recommendationId);
+      // Soft delete - sets is_active=false
+      await _supabase.from('ai_recommendations').update({
+        'is_active': false,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', recommendationId);
     } catch (e) {
       throw Exception('Failed to delete recommendation: $e');
     }

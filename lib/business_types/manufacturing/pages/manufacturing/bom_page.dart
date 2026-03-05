@@ -19,7 +19,7 @@ class _BOMPageState extends ConsumerState<BOMPage> {
   @override
   void initState() {
     super.initState();
-    _service = ManufacturingService(companyId: ref.read(authProvider).user?.companyId);
+    _service = ManufacturingService(companyId: ref.read(currentUserProvider)?.companyId);
     _loadBOMs();
   }
 

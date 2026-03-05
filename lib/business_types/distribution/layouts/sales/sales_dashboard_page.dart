@@ -10,7 +10,6 @@ import '../../../../utils/quick_date_range_picker.dart';
 import '../../../../widgets/bug_report_dialog.dart';
 import '../../../../widgets/realtime_notification_widgets.dart';
 import '../../widgets/sales_features_widgets.dart';
-import '../../../../pages/staff/staff_profile_page.dart';
 
 /// Sales Dashboard Page - Modern 2026 UI
 class SalesDashboardPage extends ConsumerStatefulWidget {
@@ -34,9 +33,9 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
   Future<void> _loadDashboardData() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
 
       if (companyId == null) {
         setState(() => _isLoading = false);
@@ -115,8 +114,7 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final user = authState.user;
+    final user = ref.watch(currentUserProvider);
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
 
     return Scaffold(
@@ -152,54 +150,50 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                                     width: 50,
                                     height: 50,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
+                                      color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Center(
                                       child: Text(
                                         (user?.name ?? 'S')[0].toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.surface,
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Xin chào, ${user?.name ?? 'Sales'}! 🎯',
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          style: TextStyle(
+                                            color: Theme.of(context).colorScheme.surface,
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        const SizedBox(height: 2),
+                                        SizedBox(height: 2),
                                         Text(
                                           user?.companyName ?? 'Công ty',
                                           style: TextStyle(
-                                            color: Colors.white.withOpacity(0.8),
+                                            color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
                                             fontSize: 13,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const RealtimeNotificationBell(iconColor: Colors.white),
+                                  RealtimeNotificationBell(iconColor: Theme.of(context).colorScheme.surface),
                                   PopupMenuButton<String>(
-                                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                                    icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.surface),
                                     onSelected: (value) async {
                                       if (value == 'profile') {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (context) => const Scaffold(body: StaffProfilePage()),
-                                          ),
-                                        );
+                                        context.push('/profile');
                                       } else if (value == 'bug_report') {
                                         BugReportDialog.show(context);
                                       } else if (value == 'logout') {
@@ -248,9 +242,9 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
                               // Today revenue card
                               Container(
-                                padding: const EdgeInsets.all(20),
+                                padding: EdgeInsets.all(20),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
+                                  color: Theme.of(context).colorScheme.surface.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Column(
@@ -269,22 +263,22 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                                         }
                                       },
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
+                                          color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                                           borderRadius: BorderRadius.circular(10),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Icon(Icons.calendar_today, size: 14, color: Colors.white),
-                                            const SizedBox(width: 6),
+                                            Icon(Icons.calendar_today, size: 14, color: Theme.of(context).colorScheme.surface),
+                                            SizedBox(width: 6),
                                             Text(
                                               _dateFilter != null ? getDateRangeLabel(_dateFilter!) : 'Hôm nay',
-                                              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                                              style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 12, fontWeight: FontWeight.w500),
                                             ),
-                                            const SizedBox(width: 4),
-                                            const Icon(Icons.arrow_drop_down, size: 18, color: Colors.white),
+                                            SizedBox(width: 4),
+                                            Icon(Icons.arrow_drop_down, size: 18, color: Theme.of(context).colorScheme.surface),
                                           ],
                                         ),
                                       ),
@@ -298,13 +292,13 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                                             children: [
                                               Text(
                                                 _dateFilter != null ? 'Doanh thu ${getDateRangeLabel(_dateFilter!).toLowerCase()}' : 'Doanh thu hôm nay',
-                                                style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                                                style: TextStyle(color: Theme.of(context).colorScheme.surface.withOpacity(0.9), fontSize: 13),
                                               ),
                                               const SizedBox(height: 6),
                                               Text(
                                                 currencyFormat.format(_stats['todayRevenue'] ?? 0),
-                                                style: const TextStyle(
-                                                  color: Colors.white,
+                                                style: TextStyle(
+                                                  color: Theme.of(context).colorScheme.surface,
                                                   fontSize: 26,
                                                   fontWeight: FontWeight.bold,
                                                 ),
@@ -313,9 +307,9 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                                           ),
                                         ),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                           decoration: BoxDecoration(
-                                            color: Colors.white,
+                                            color: Theme.of(context).colorScheme.surface,
                                             borderRadius: BorderRadius.circular(20),
                                           ),
                                           child: Row(
@@ -422,12 +416,12 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                           child: Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(12),
+                                padding: EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: const Icon(Icons.trending_up, color: Colors.white, size: 28),
+                                child: Icon(Icons.trending_up, color: Theme.of(context).colorScheme.surface, size: 28),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
@@ -436,13 +430,13 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                                   children: [
                                     Text(
                                       'Doanh số tháng',
-                                      style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                                      style: TextStyle(color: Theme.of(context).colorScheme.surface.withOpacity(0.9), fontSize: 13),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       currencyFormat.format(_stats['monthRevenue'] ?? 0),
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.surface,
                                         fontSize: 22,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -503,9 +497,9 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Container(
-                            padding: const EdgeInsets.all(32),
+                            padding: EdgeInsets.all(32),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Column(
@@ -555,13 +549,13 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -640,13 +634,13 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

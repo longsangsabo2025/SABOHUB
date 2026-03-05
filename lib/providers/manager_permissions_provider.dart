@@ -15,26 +15,26 @@ final managerPermissionsServiceProvider =
 /// Fetches permissions for the current logged-in manager
 final managerPermissionsProvider =
     FutureProvider.autoDispose<ManagerPermissions?>((ref) async {
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   final service = ref.watch(managerPermissionsServiceProvider);
 
   // Only fetch if user is logged in and is a Manager
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return null;
   }
 
   // Get manager ID from auth state
-  final managerId = authState.user!.id;
+  final managerId = user.id;
 
   try {
     final permissions = await service.getManagerPermissions(managerId);
 
     // If no permissions found, create default
-    if (permissions == null && authState.user!.companyId != null) {
+    if (permissions == null && user.companyId != null) {
       AppLogger.info('Creating default permissions for manager: $managerId');
       return await service.createDefaultPermissions(
         managerId: managerId,
-        companyId: authState.user!.companyId!,
+        companyId: user.companyId!,
       );
     }
 

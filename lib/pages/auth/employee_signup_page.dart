@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
 import '../../services/invitation_service.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Trang đăng ký nhân viên qua link mời
 class EmployeeSignupPage extends ConsumerStatefulWidget {
@@ -77,7 +78,7 @@ class _EmployeeSignupPageState extends ConsumerState<EmployeeSignupPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoadingInvitation) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
         ),
@@ -92,13 +93,13 @@ class _EmployeeSignupPageState extends ConsumerState<EmployeeSignupPage> {
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text(
           'Đăng ký tài khoản',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
       ),
@@ -126,7 +127,7 @@ class _EmployeeSignupPageState extends ConsumerState<EmployeeSignupPage> {
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title: const Text('Link không hợp lệ'),
       ),
       body: Center(
@@ -196,36 +197,36 @@ class _EmployeeSignupPageState extends ConsumerState<EmployeeSignupPage> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.business,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   size: 28,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Lời mời làm việc',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       companyName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white70,
+                        color: Theme.of(context).colorScheme.surface70,
                       ),
                     ),
                   ],
@@ -233,54 +234,54 @@ class _EmployeeSignupPageState extends ConsumerState<EmployeeSignupPage> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           // Position
           Row(
             children: [
-              const Icon(Icons.work, color: Colors.white70, size: 20),
-              const SizedBox(width: 8),
+              Icon(Icons.work, color: Theme.of(context).colorScheme.surface70, size: 20),
+              SizedBox(width: 8),
               Text(
                 'Vị trí: $position',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           // Expires
           Row(
             children: [
-              const Icon(Icons.schedule, color: Colors.white70, size: 20),
-              const SizedBox(width: 8),
+              Icon(Icons.schedule, color: Theme.of(context).colorScheme.surface70, size: 20),
+              SizedBox(width: 8),
               Text(
                 'Còn $daysLeft ngày để đăng ký',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Colors.white70,
+                  color: Theme.of(context).colorScheme.surface70,
                 ),
               ),
             ],
           ),
 
           if (message.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -293,13 +294,13 @@ class _EmployeeSignupPageState extends ConsumerState<EmployeeSignupPage> {
 
   Widget _buildSignupForm() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -308,12 +309,12 @@ class _EmployeeSignupPageState extends ConsumerState<EmployeeSignupPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '📝 Thông tin cá nhân',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface87,
             ),
           ),
           const SizedBox(height: 16),
@@ -366,14 +367,14 @@ class _EmployeeSignupPageState extends ConsumerState<EmployeeSignupPage> {
               return null;
             },
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
-          const Text(
+          Text(
             '🔐 Mật khẩu',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface87,
             ),
           ),
           const SizedBox(height: 16),
@@ -433,19 +434,19 @@ class _EmployeeSignupPageState extends ConsumerState<EmployeeSignupPage> {
         onPressed: _isLoading ? null : _handleSignup,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.blue.shade600,
-          foregroundColor: Colors.white,
+          foregroundColor: Theme.of(context).colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 2,
         ),
         child: _isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                 ),
               )
             : const Text(

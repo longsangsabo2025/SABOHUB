@@ -5,6 +5,7 @@ import '../../models/session.dart';
 import '../../providers/session_provider.dart';
 import 'session_form_page.dart';
 import '../../../../pages/orders/payment_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class SessionListPage extends ConsumerStatefulWidget {
   const SessionListPage({super.key});
@@ -45,11 +46,11 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Phiên chơi'),
+        title: Text('Phiên chơi'),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.blue.shade600,
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.surface,
         actions: [
           IconButton(
             onPressed: () => _refreshData(),
@@ -65,14 +66,14 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
               sessionStats.when(
                 data: (stats) => _buildStatsCards(stats),
                 loading: () => const SizedBox(height: 40),
-                error: (error, stack) => const SizedBox(height: 40),
+                error: (error, stack) => SizedBox(height: 40),
               ),
               // Tab bar
               TabBar(
                 controller: _tabController,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white70,
-                indicatorColor: Colors.white,
+                labelColor: Theme.of(context).colorScheme.surface,
+                unselectedLabelColor: Theme.of(context).colorScheme.surface70,
+                indicatorColor: Theme.of(context).colorScheme.surface,
                 tabs: const [
                   Tab(text: 'Tất cả'),
                   Tab(text: 'Đang chơi'),
@@ -96,7 +97,7 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showStartSessionDialog(),
         backgroundColor: Colors.blue.shade600,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Theme.of(context).colorScheme.surface),
       ),
     );
   }
@@ -142,9 +143,9 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
   Widget _buildStatCard(String title, String value, Color color, IconData icon) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -153,14 +154,14 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 16, color: Colors.white),
+                Icon(icon, size: 16, color: Theme.of(context).colorScheme.surface),
                 const SizedBox(width: 4),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                 ),
               ],
@@ -168,9 +169,9 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
             const SizedBox(height: 2),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
-                color: Colors.white70,
+                color: Theme.of(context).colorScheme.surface70,
               ),
             ),
           ],
@@ -277,10 +278,10 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
                     ),
                     child: Text(
                       session.status.label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                       ),
                     ),
                   ),
@@ -344,10 +345,10 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
                         child: ElevatedButton.icon(
                           onPressed: () => _pauseSession(session.id),
                           icon: const Icon(Icons.pause, size: 16),
-                          label: const Text('Tạm dừng'),
+                          label: Text('Tạm dừng'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                       ),
@@ -358,10 +359,10 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
                         child: ElevatedButton.icon(
                           onPressed: () => _resumeSession(session.id),
                           icon: const Icon(Icons.play_arrow, size: 16),
-                          label: const Text('Tiếp tục'),
+                          label: Text('Tiếp tục'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                       ),
@@ -371,10 +372,10 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
                       child: ElevatedButton.icon(
                         onPressed: () => _navigateToPayment(session),
                         icon: const Icon(Icons.payment, size: 16),
-                        label: const Text('Thanh toán'),
+                        label: Text('Thanh toán'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(context).colorScheme.surface,
                         ),
                       ),
                     ),
@@ -438,8 +439,8 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
   Widget _buildSessionDetailsSheet(TableSession session) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -477,10 +478,10 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
                 ),
                 child: Text(
                   session.status.label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                 ),
               ),
@@ -520,10 +521,10 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
                         _pauseSession(session.id);
                       },
                       icon: const Icon(Icons.pause),
-                      label: const Text('Tạm dừng'),
+                      label: Text('Tạm dừng'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                       ),
                     ),
                   ),
@@ -537,10 +538,10 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
                         _navigateToPayment(session);
                       },
                       icon: const Icon(Icons.payment),
-                      label: const Text('Thanh toán'),
+                      label: Text('Thanh toán'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                       ),
                     ),
                   ),
@@ -553,10 +554,10 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
                       _endSession(session.id);
                     },
                     icon: const Icon(Icons.stop),
-                    label: const Text('Kết thúc'),
+                    label: Text('Kết thúc'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                 ),
@@ -665,12 +666,12 @@ class _SessionListPageState extends ConsumerState<SessionListPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Kết thúc', style: TextStyle(color: Colors.white)),
+            child: Text('Kết thúc', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),

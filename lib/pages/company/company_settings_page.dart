@@ -6,6 +6,7 @@ import '../../core/router/app_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cached_data_providers.dart';
 import '../ceo/company/settings_tab.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Company Settings Page
 /// Cài đặt công ty với các tính năng quản lý nhân viên
@@ -14,7 +15,7 @@ class CompanySettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authUser = ref.read(authProvider).user;
+    final authUser = ref.read(currentUserProvider);
     final companyId = authUser?.companyId;
     final companyAsync = companyId != null 
         ? ref.watch(cachedCompanyProvider(companyId)) 
@@ -24,17 +25,17 @@ class CompanySettingsPage extends ConsumerWidget {
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface87),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
+        title: Text(
           'Cài đặt công ty',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
       ),
@@ -53,11 +54,11 @@ class CompanySettingsPage extends ConsumerWidget {
                 error: (_, __) => const SizedBox.shrink(),
               ),
             const SizedBox(height: 32),
-            _buildSectionTitle('Quản lý nhân viên'),
+            _buildSectionTitle(context, 'Quản lý nhân viên'),
             const SizedBox(height: 16),
             _buildEmployeeManagementCard(context),
             const SizedBox(height: 32),
-            _buildSectionTitle('Cài đặt chung'),
+            _buildSectionTitle(context, 'Cài đặt chung'),
             const SizedBox(height: 16),
             _buildGeneralSettingsCard(context),
           ],
@@ -66,13 +67,13 @@ class CompanySettingsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: Colors.black87,
+        color: Theme.of(context).colorScheme.onSurface87,
       ),
     );
   }
@@ -164,7 +165,7 @@ class CompanySettingsPage extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       leading: Container(
         width: 48,
         height: 48,
@@ -180,10 +181,10 @@ class CompanySettingsPage extends ConsumerWidget {
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: Colors.black87,
+          color: Theme.of(context).colorScheme.onSurface87,
         ),
       ),
       subtitle: Text(

@@ -47,9 +47,9 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
 
       if (companyId == null || userId == null) {
         setState(() => _isLoading = false);
@@ -270,14 +270,14 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
             child: GestureDetector(
               onTap: _pickDate,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   isToday ? 'Hôm nay' : DateFormat('EEEE, dd/MM/yyyy', 'vi').format(_selectedDate),
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.w500),
                 ),
               ),
             ),
@@ -399,14 +399,14 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
                   if (!isFirst)
                     Expanded(child: Container(width: 2, color: Colors.grey.shade300))
                   else
-                    const Expanded(child: SizedBox()),
+                    Expanded(child: SizedBox()),
                   Container(
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
                       color: item.color,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
                       boxShadow: [
                         BoxShadow(color: item.color.withOpacity(0.3), blurRadius: 4, spreadRadius: 1),
                       ],
@@ -423,13 +423,13 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
             Expanded(
               child: Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

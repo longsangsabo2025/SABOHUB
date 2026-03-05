@@ -187,7 +187,7 @@ workflows:
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
-        submit_to_app_store: false # Set to true when ready for App Store submission
+        submit_to_app_store: true # Ready for App Store submission
 
   android-workflow:
     name: Android Workflow

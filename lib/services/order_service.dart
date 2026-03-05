@@ -1,3 +1,4 @@
+import '../core/interfaces/i_order_service.dart';
 import '../core/services/base_service.dart';
 import '../models/order.dart';
 
@@ -9,9 +10,11 @@ import '../models/order.dart';
 
 /// Order Service (Entertainment)
 /// Handles all order-related database operations
-class OrderService extends BaseService {
+class OrderService extends BaseService implements IOrderService {
 
   /// Get all orders
+  @override
+
   Future<List<Order>> getAllOrders({String? companyId, String? tableId}) async {
     return safeCall(
       operation: 'getAllOrders',
@@ -25,13 +28,15 @@ class OrderService extends BaseService {
           query = query.eq('table_id', tableId);
         }
 
-        final response = await query.order('created_at', ascending: false);
+        final response = await query.order('created_at', ascending: false).limit(100);
         return (response as List).map((json) => _orderFromJson(json)).toList();
       },
     );
   }
 
   /// Get orders by status
+  @override
+
   Future<List<Order>> getOrdersByStatus(OrderStatus status,
       {String? companyId}) async {
     return safeCall(
@@ -44,7 +49,7 @@ class OrderService extends BaseService {
         }
 
         query = query.eq('status', status.name);
-        final response = await query.order('created_at', ascending: false);
+        final response = await query.order('created_at', ascending: false).limit(100);
 
         return (response as List).map((json) => _orderFromJson(json)).toList();
       },
@@ -53,6 +58,8 @@ class OrderService extends BaseService {
 
   /// Create new order
   /// [employeeId] - ID của employee từ authProvider (KHÔNG phải từ auth.currentUser)
+  @override
+
   Future<Order> createOrder({
     required String companyId,
     String? tableId,
@@ -102,6 +109,8 @@ class OrderService extends BaseService {
   }
 
   /// Update order status
+  @override
+
   Future<Order> updateOrderStatus(String orderId, OrderStatus status) async {
     return safeCall(
       operation: 'updateOrderStatus',
@@ -119,20 +128,24 @@ class OrderService extends BaseService {
   }
 
   /// Delete order
+  @override
+
   Future<void> deleteOrder(String orderId) async {
     return safeCall(
       operation: 'deleteOrder',
       action: () async {
-        // Delete order items first
-        await client.from('order_items').delete().eq('order_id', orderId);
+        // Soft delete order items first
+        await client.from('order_items').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('order_id', orderId);
         
-        // Then delete order
-        await client.from('orders').delete().eq('id', orderId);
+        // Then soft delete order
+        await client.from('orders').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', orderId);
       },
     );
   }
 
   /// Get order details with items
+  @override
+
   Future<Order?> getOrderDetails(String orderId) async {
     return safeCall(
       operation: 'getOrderDetails',

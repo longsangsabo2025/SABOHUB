@@ -51,7 +51,9 @@ class _ReceivablePaymentPageState extends ConsumerState<ReceivablePaymentPage> {
       if (res != null && mounted) {
         setState(() => _preselectedCustomerName = res['name'] as String?);
       }
-    } catch (_) {}
+    } catch (e, stackTrace) {
+      debugPrint('[CRITICAL] ReceivablePaymentPage._loadPreselectedCustomerName error: $e\n$stackTrace');
+    }
   }
 
   @override
@@ -99,9 +101,9 @@ class _ReceivablePaymentPageState extends ConsumerState<ReceivablePaymentPage> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
       if (companyId == null) throw Exception('User context not found');
 
       final amount = double.tryParse(_amountController.text) ?? 0;

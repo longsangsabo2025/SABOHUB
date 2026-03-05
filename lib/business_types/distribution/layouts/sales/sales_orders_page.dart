@@ -42,8 +42,8 @@ class _SalesOrdersPageState extends ConsumerState<SalesOrdersPage> with SingleTi
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              color: Colors.white,
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -177,9 +177,9 @@ class _SalesOrderListState extends ConsumerState<SalesOrderList> {
     setState(() => _isLoading = true);
     
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
 
       if (companyId == null) return;
 
@@ -324,11 +324,11 @@ class _SalesOrderListState extends ConsumerState<SalesOrderList> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04), blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

@@ -13,11 +13,11 @@ final menuServiceProvider = Provider<MenuService>((ref) {
 /// Fetches menu items for current company
 final menuItemsProvider = FutureProvider.autoDispose<List<MenuItem>>((ref) async {
   final service = ref.watch(menuServiceProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (authState.user?.companyId == null) return [];
+  if (user?.companyId == null) return [];
   
-  return await service.getAllMenuItems(companyId: authState.user!.companyId!);
+  return await service.getAllMenuItems(companyId: user!.companyId!);
 });
 
 /// Menu Items by Category Provider
@@ -25,13 +25,13 @@ final menuItemsProvider = FutureProvider.autoDispose<List<MenuItem>>((ref) async
 final menuItemsByCategoryProvider = 
     FutureProvider.autoDispose.family<List<MenuItem>, MenuCategory>((ref, category) async {
   final service = ref.watch(menuServiceProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (authState.user?.companyId == null) return [];
+  if (user?.companyId == null) return [];
   
   return await service.getMenuItemsByCategory(
     category, 
-    companyId: authState.user!.companyId!,
+    companyId: user!.companyId!,
   );
 });
 
@@ -46,15 +46,15 @@ final menuItemProvider = FutureProvider.autoDispose.family<MenuItem?, String>((r
 /// Real-time menu items stream (simulated with periodic refresh)
 final menuItemsStreamProvider = StreamProvider.autoDispose<List<MenuItem>>((ref) {
   final service = ref.watch(menuServiceProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (authState.user?.companyId == null) {
+  if (user?.companyId == null) {
     return Stream.value([]);
   }
   
   // Periodic refresh for real-time updates
   return Stream.periodic(const Duration(seconds: 30), (_) async {
-    return await service.getAllMenuItems(companyId: authState.user!.companyId!);
+    return await service.getAllMenuItems(companyId: user!.companyId!);
   }).asyncMap((future) => future);
 });
 
@@ -78,9 +78,9 @@ class MenuActions {
     String? imageUrl,
   }) async {
     final service = ref.read(menuServiceProvider);
-    final authState = ref.read(authProvider);
+    final user = ref.read(currentUserProvider);
     
-    if (authState.user?.companyId == null) {
+    if (user?.companyId == null) {
       throw Exception('Company ID not found');
     }
     
@@ -90,7 +90,7 @@ class MenuActions {
       price: price,
       description: description,
       imageUrl: imageUrl,
-      companyId: authState.user!.companyId!,
+      companyId: user!.companyId!,
     );
     
     // Refresh menu items

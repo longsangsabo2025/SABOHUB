@@ -73,14 +73,14 @@ class _OdoriReceivablesPageState extends ConsumerState<OdoriReceivablesPage>
                     error: (_, __) => const SizedBox.shrink(),
                     data: (items) => items.isNotEmpty
                         ? Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.red,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
                               '${items.length}',
-                              style: const TextStyle(color: Colors.white, fontSize: 10),
+                              style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 10),
                             ),
                           )
                         : const SizedBox.shrink(),
@@ -140,7 +140,7 @@ class _OdoriReceivablesPageState extends ConsumerState<OdoriReceivablesPage>
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showRecordPaymentSheet(),
+        onPressed: () => _showRecordPaymentSheet(context),
         icon: const Icon(Icons.payments),
         label: const Text('Ghi thu'),
       ),
@@ -196,7 +196,7 @@ class _OdoriReceivablesPageState extends ConsumerState<OdoriReceivablesPage>
     );
   }
 
-  void _showRecordPaymentSheet() {
+  void _showRecordPaymentSheet(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ReceivablePaymentPage()),
@@ -437,7 +437,7 @@ class _ReceivableCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             Text(
               'Ghi thu tiền',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(

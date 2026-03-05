@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// DELIVERY DETAIL SHEET - Chi tiết đơn hàng bottom sheet
 class DeliveryDetailSheet extends StatelessWidget {
@@ -53,8 +54,8 @@ class DeliveryDetailSheet extends StatelessWidget {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -149,8 +150,8 @@ class DeliveryDetailSheet extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: () => onCall(customerPhone),
                   icon: const Icon(Icons.phone, size: 18),
-                  label: const Text('Gọi'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  label: Text('Gọi'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Theme.of(context).colorScheme.surface, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                 ),
             ],
           ),
@@ -293,11 +294,11 @@ class DeliveryDetailSheet extends StatelessWidget {
               ),
             ],
           ),
-          const Divider(height: 24),
+          Divider(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(!isPaid ? '💰 CẦN THU:' : 'Tổng tiền:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: !isPaid ? Colors.orange.shade800 : Colors.black87)),
+              Text(!isPaid ? '💰 CẦN THU:' : 'Tổng tiền:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: !isPaid ? Colors.orange.shade800 : Theme.of(context).colorScheme.onSurface87)),
               Text(currencyFormat.format(total), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: !isPaid ? Colors.orange.shade800 : Colors.green.shade700)),
             ],
           ),
@@ -320,8 +321,8 @@ class DeliveryDetailSheet extends StatelessWidget {
 
   Widget _buildActionButtons(BuildContext context, bool isPending, bool isDelivering, bool needsPaymentCollection, String? customerAddress) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05), blurRadius: 10, offset: Offset(0, -5))]),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -336,7 +337,7 @@ class DeliveryDetailSheet extends StatelessWidget {
                     style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                   ),
                 ),
-              if (customerAddress != null) const SizedBox(width: 12),
+              if (customerAddress != null) SizedBox(width: 12),
               Expanded(
                 flex: 2,
                 child: ElevatedButton.icon(
@@ -346,7 +347,7 @@ class DeliveryDetailSheet extends StatelessWidget {
                   },
                   icon: Icon(isPending ? Icons.play_arrow : Icons.check_circle),
                   label: Text(isPending ? 'Nhận đơn giao' : 'Đã giao'),
-                  style: ElevatedButton.styleFrom(backgroundColor: isPending ? Colors.orange : Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                  style: ElevatedButton.styleFrom(backgroundColor: isPending ? Colors.orange : Colors.green, foregroundColor: Theme.of(context).colorScheme.surface, padding: EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                 ),
               ),
             ],
@@ -360,8 +361,8 @@ class DeliveryDetailSheet extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () { Navigator.pop(context); onCollectPayment(); },
                       icon: const Icon(Icons.payments),
-                      label: const Text('Xác nhận thanh toán'),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                      label: Text('Xác nhận thanh toán'),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Theme.of(context).colorScheme.surface, padding: EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                     ),
                   ),
                 if (needsPaymentCollection) const SizedBox(width: 12),
@@ -434,8 +435,8 @@ class DeliveryDetailSheet extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
                     child: Image.network(qrUrl, width: 250, height: 250,
                       loadingBuilder: (_, child, progress) => progress == null ? child : const SizedBox(width: 250, height: 250, child: Center(child: CircularProgressIndicator())),
                       errorBuilder: (_, __, ___) => Container(width: 250, height: 250, color: Colors.grey.shade100, child: const Center(child: Text('Không thể tải QR'))),

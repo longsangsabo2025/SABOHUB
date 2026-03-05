@@ -47,8 +47,8 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
       children: [
         // Header
         Container(
-          padding: const EdgeInsets.all(24),
-          color: Colors.white,
+          padding: EdgeInsets.all(24),
+          color: Theme.of(context).colorScheme.surface,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -457,7 +457,7 @@ class _EmployeeDocumentsTabState extends ConsumerState<EmployeeDocumentsTab>
   Future<void> _verifyDocument(String documentId) async {
     try {
       final service = ref.read(employeeDocumentServiceProvider);
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       await service.verifyDocument(documentId, userId: user?.id ?? '');
       ref.invalidateEmployeeDocuments(widget.companyId);
       if (mounted) {

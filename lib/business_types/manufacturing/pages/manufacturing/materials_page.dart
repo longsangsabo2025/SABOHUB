@@ -19,7 +19,7 @@ class _MaterialsPageState extends ConsumerState<MaterialsPage> {
   @override
   void initState() {
     super.initState();
-    _service = ManufacturingService(companyId: ref.read(authProvider).user?.companyId);
+    _service = ManufacturingService(companyId: ref.read(currentUserProvider)?.companyId);
     _loadMaterials();
   }
 

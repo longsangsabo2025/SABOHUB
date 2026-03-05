@@ -239,10 +239,14 @@ class EmployeeDocumentService {
     }
   }
 
-  /// Xóa tài liệu
+  /// Xóa tài liệu (soft delete)
   Future<void> deleteDocument(String documentId) async {
     try {
-      await _supabase.from('employee_documents').delete().eq('id', documentId);
+      // Soft delete - sets is_active=false
+      await _supabase.from('employee_documents').update({
+        'is_active': false,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', documentId);
     } catch (e) {
       throw Exception('Failed to delete document: $e');
     }

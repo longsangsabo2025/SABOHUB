@@ -47,13 +47,13 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
     final approvalCount = approvalsAsync.whenOrNull(data: (a) => a.length) ?? 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Công việc',
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
@@ -82,17 +82,17 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
                   if (approvalCount > 0) ...[
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                       decoration: BoxDecoration(
                         color: AppColors.error,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         '$approvalCount',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                         ),
                       ),
                     ),
@@ -119,7 +119,7 @@ class _CEOTasksPageState extends ConsumerState<CEOTasksPage>
               },
               loadMediaChannels: () async {
                 try {
-                  final companyId = ref.read(authProvider).user?.companyId;
+                  final companyId = ref.read(currentUserProvider)?.companyId;
                   if (companyId == null) return [];
                   final data = await Supabase.instance.client
                       .from('media_channels')
@@ -165,9 +165,9 @@ class _ApprovalsTab extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline_rounded, size: 40, color: Color(0xFFEF4444)),
+            const Icon(Icons.error_outline_rounded, size: 40, color: AppColors.error),
             const SizedBox(height: 12),
-            Text('Lỗi: $e', style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+            Text('Lỗi: $e', style: const TextStyle(fontSize: 13, color: AppColors.neutral500)),
           ],
         ),
       ),
@@ -181,7 +181,7 @@ class _ApprovalsTab extends ConsumerWidget {
                 const SizedBox(height: 12),
                 const Text(
                   'Không có yêu cầu chờ phê duyệt',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+                  style: TextStyle(fontSize: 14, color: AppColors.neutral500),
                 ),
               ],
             ),
@@ -218,7 +218,7 @@ class _ApprovalsTab extends ConsumerWidget {
         ),
         content: Text(
           '"${item.title}"',
-          style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+          style: const TextStyle(fontSize: 13, color: AppColors.neutral500),
         ),
         actions: [
           TextButton(
@@ -284,7 +284,7 @@ class _ApprovalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(10),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -307,7 +307,7 @@ class _ApprovalCard extends StatelessWidget {
                 const Spacer(),
                 Text(
                   _timeAgo(approval.submittedAt),
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                  style: const TextStyle(fontSize: 11, color: AppColors.neutral400),
                 ),
               ],
             ),
@@ -320,7 +320,7 @@ class _ApprovalCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 approval.description!,
-                style: const TextStyle(fontSize: 12.5, color: Color(0xFF6B7280)),
+                style: const TextStyle(fontSize: 12.5, color: AppColors.neutral500),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -328,19 +328,19 @@ class _ApprovalCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.person_outline_rounded, size: 14, color: Color(0xFF9CA3AF)),
+                const Icon(Icons.person_outline_rounded, size: 14, color: AppColors.neutral400),
                 const SizedBox(width: 4),
                 Text(
                   approval.submittedByName ?? approval.submittedBy,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  style: const TextStyle(fontSize: 12, color: AppColors.neutral500),
                 ),
                 if (approval.companyName != null) ...[
                   const SizedBox(width: 10),
-                  const Icon(Icons.business_rounded, size: 14, color: Color(0xFF9CA3AF)),
+                  const Icon(Icons.business_rounded, size: 14, color: AppColors.neutral400),
                   const SizedBox(width: 4),
                   Text(
                     approval.companyName!,
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                    style: const TextStyle(fontSize: 12, color: AppColors.neutral500),
                   ),
                 ],
               ],
@@ -384,8 +384,8 @@ class _ApprovalCard extends StatelessWidget {
   Color get _typeColor => switch (approval.type) {
     ApprovalType.report   => AppColors.info,
     ApprovalType.budget   => AppColors.primary,
-    ApprovalType.proposal => const Color(0xFF0D9488),
-    ApprovalType.other    => const Color(0xFF6B7280),
+    ApprovalType.proposal => Color(0xFF0D9488),
+    ApprovalType.other    => AppColors.neutral500,
   };
 
   String _timeAgo(DateTime dt) {

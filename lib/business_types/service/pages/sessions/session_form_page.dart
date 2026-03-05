@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/session_provider.dart';
-import '../../providers/table_provider.dart';
-import '../../models/table.dart';
 
 class SessionFormPage extends ConsumerStatefulWidget {
   const SessionFormPage({super.key});
@@ -16,7 +14,6 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
   final _customerNameController = TextEditingController();
   final _notesController = TextEditingController();
   
-  String? _selectedTableId;
   double _hourlyRate = 50000; // Default rate
   bool _isLoading = false;
 
@@ -29,14 +26,12 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    final availableTables = ref.watch(tablesByStatusProvider(TableStatus.available));
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bắt đầu phiên chơi'),
+        title: Text('Bắt đầu phiên chơi'),
         centerTitle: true,
         backgroundColor: Colors.blue.shade600,
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.surface,
         leading: IconButton(
           onPressed: _isLoading ? null : () => Navigator.pop(context),
           icon: _isLoading
@@ -51,18 +46,18 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
           TextButton(
             onPressed: _isLoading ? null : _startSession,
             child: _isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                     ),
                   )
-                : const Text(
+                : Text(
                     'Bắt đầu',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -76,34 +71,6 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Table selection
-              Text(
-                'Chọn bàn',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              availableTables.when(
-                data: (tables) => _buildTableSelection(tables),
-                loading: () => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                error: (error, stack) => Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
-                  ),
-                  child: Text(
-                    'Lỗi: $error',
-                    style: TextStyle(color: Colors.red.shade700),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
               // Hourly rate
               Text(
                 'Giá giờ',
@@ -135,7 +102,7 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
                   _hourlyRate = (double.tryParse(value!) ?? 0) * 1000;
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Customer name
               Text(
@@ -153,7 +120,7 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
                   prefixIcon: Icon(Icons.person),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Notes
               Text(
@@ -178,18 +145,18 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _isLoading || _selectedTableId == null ? null : _startSession,
+                  onPressed: _isLoading ? null : _startSession,
                   icon: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
                         )
-                      : const Icon(Icons.play_arrow),
+                      : Icon(Icons.play_arrow),
                   label: Text(_isLoading ? 'Đang bắt đầu...' : 'Bắt đầu phiên chơi'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     textStyle: const TextStyle(
                       fontSize: 16,
@@ -205,105 +172,8 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
     );
   }
 
-  Widget _buildTableSelection(List<BilliardsTable> tables) {
-    if (tables.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.orange.shade50,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.orange.shade200),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.warning, color: Colors.orange.shade700),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Không có bàn nào đang trống. Vui lòng kiểm tra lại trang quản lý bàn.',
-                style: TextStyle(color: Colors.orange.shade700),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: tables.map<Widget>((table) {
-        final isSelected = _selectedTableId == table.id;
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: InkWell(
-            onTap: () {
-              setState(() {
-                _selectedTableId = table.id;
-                _hourlyRate = table.hourlyRate;
-              });
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: isSelected ? Colors.blue : Colors.grey.shade300,
-                  width: isSelected ? 2 : 1,
-                ),
-                borderRadius: BorderRadius.circular(8),
-                color: isSelected ? Colors.blue.shade50 : null,
-              ),
-              child: Row(
-                children: [
-                  Radio<String>(
-                    value: table.id,
-                    groupValue: _selectedTableId,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedTableId = value;
-                        _hourlyRate = table.hourlyRate;
-                      });
-                    },
-                    activeColor: Colors.blue,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          table.name,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.blue.shade700 : null,
-                          ),
-                        ),
-                        Text(
-                          '${table.typeLabel} - ${(table.hourlyRate / 1000).toInt()}K/giờ',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isSelected)
-                    Icon(
-                      Icons.check_circle,
-                      color: Colors.blue.shade600,
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
   Future<void> _startSession() async {
-    if (!_formKey.currentState!.validate() || _selectedTableId == null) {
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
@@ -316,7 +186,6 @@ class _SessionFormPageState extends ConsumerState<SessionFormPage> {
     try {
       final sessionActions = ref.read(sessionActionsProvider);
       await sessionActions.startSession(
-        tableId: _selectedTableId!,
         hourlyRate: _hourlyRate,
         customerName: _customerNameController.text.trim().isEmpty 
             ? null 

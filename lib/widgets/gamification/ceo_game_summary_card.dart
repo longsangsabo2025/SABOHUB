@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../providers/gamification_provider.dart';
+import '../../providers/token_provider.dart';
 import 'level_badge.dart';
 import 'xp_progress_bar.dart';
 import 'streak_counter.dart';
@@ -10,7 +11,7 @@ import 'streak_counter.dart';
 class CeoGameSummaryCard extends ConsumerWidget {
   final VoidCallback? onTap;
 
-  const CeoGameSummaryCard({super.key, this.onTap});
+  CeoGameSummaryCard({super.key, this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,10 +22,10 @@ class CeoGameSummaryCard extends ConsumerWidget {
       return _buildSkeleton();
     }
 
-    if (profile == null) return const SizedBox.shrink();
+    if (profile == null) return SizedBox.shrink();
 
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -37,7 +38,7 @@ class CeoGameSummaryCard extends ConsumerWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.white,
+                Theme.of(context).colorScheme.surface,
                 _tierColor(profile.level).withValues(alpha: 0.05),
               ],
             ),
@@ -88,7 +89,7 @@ class CeoGameSummaryCard extends ConsumerWidget {
                   const SizedBox(width: 8),
                   _statChip('⭐', '${profile.reputationPoints} Uy Tín', AppColors.info),
                   const SizedBox(width: 8),
-                  _statChip('🎯', '${profile.skillPoints} SP', AppColors.success),
+                  _tokenChip(ref),
                 ],
               ),
             ],
@@ -125,6 +126,34 @@ class CeoGameSummaryCard extends ConsumerWidget {
     );
   }
 
+  Widget _tokenChip(WidgetRef ref) {
+    final balance = ref.watch(currentBalanceProvider);
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: Color(0xFFFF8F00).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('🪙', style: TextStyle(fontSize: 13)),
+            const SizedBox(width: 4),
+            Text(
+              '${balance.toInt()} SABO',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFFF8F00),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSkeleton() {
     return Container(
       height: 120,
@@ -139,11 +168,11 @@ class CeoGameSummaryCard extends ConsumerWidget {
   }
 
   Color _tierColor(int level) {
-    if (level >= 76) return const Color(0xFFFF8F00);
-    if (level >= 51) return const Color(0xFF7B1FA2);
-    if (level >= 31) return const Color(0xFF0097A7);
-    if (level >= 16) return const Color(0xFF2E7D32);
-    if (level >= 6) return const Color(0xFF1565C0);
-    return const Color(0xFF455A64);
+    if (level >= 76) return Color(0xFFFF8F00);
+    if (level >= 51) return Color(0xFF7B1FA2);
+    if (level >= 31) return Color(0xFF0097A7);
+    if (level >= 16) return Color(0xFF2E7D32);
+    if (level >= 6) return Color(0xFF1565C0);
+    return Color(0xFF455A64);
   }
 }

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../services/ai_chat_service.dart';
+import '../../../core/agents/agent_chat_service.dart';
+import '../../../core/agents/agent_types.dart';
 import '../../../services/ceo_report_generator.dart';
+import '../../../services/gemini_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../utils/app_logger.dart';
 
 class AIAssistantsPage extends ConsumerStatefulWidget {
-  const AIAssistantsPage({super.key});
+  AIAssistantsPage({super.key});
 
   @override
   ConsumerState<AIAssistantsPage> createState() => _AIAssistantsPageState();
@@ -17,11 +19,12 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
   final _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
+  final _agentService = AgentChatService();
 
   @override
   void initState() {
     super.initState();
-    final aiMode = AIChatService().isAIEnabled;
+    final aiMode = GeminiService.isEnabled;
     _addBotMessage(
       '👋 Xin chào! Tôi là trợ lý AI của SABOHUB.\n'
       '${aiMode ? "🤖 **Gemini AI đã kết nối** — Tôi có thể phân tích dữ liệu và trả lời tự do!" : "📊 Chế độ: Truy vấn dữ liệu (thêm GEMINI_API_KEY để nâng cấp AI)"}\n\n'
@@ -77,13 +80,18 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
     try {
       final user = ref.read(currentUserProvider);
       final companyId = user?.companyId ?? '';
-      final response = await AIChatService().processQuery(text, companyId);
-      if (response == '__PDF_EXPORT__') {
+
+      // Use multi-agent pipeline
+      final result = await _agentService.processQuery(text, companyId);
+
+      if (result.response == '__PDF_EXPORT__') {
         _addBotMessage('📄 Đang tạo báo cáo PDF...');
         await CeoReportGenerator().generateAndPrint(companyId);
         _addBotMessage('✅ Đã tạo báo cáo PDF!');
       } else {
-        _addBotMessage(response);
+        // Build response with agent trace info
+        final traceInfo = _buildTraceInfo(result);
+        _addBotMessage('${result.response}$traceInfo');
       }
     } catch (e) {
       AppLogger.error('AI Chat error', e);
@@ -108,7 +116,7 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
             const Icon(Icons.smart_toy, size: 24),
             const SizedBox(width: 8),
             const Text('AI Assistant'),
-            if (AIChatService().isAIEnabled) ...[
+            if (GeminiService.isEnabled) ...[
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -124,7 +132,7 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
             ],
           ],
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0.5,
         actions: [
           IconButton(
@@ -161,7 +169,7 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
             height: 50,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12),
               children: [
                 _buildQuickChip('📊 Doanh thu hôm nay'),
                 _buildQuickChip('📦 Đơn hàng mới'),
@@ -169,8 +177,9 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
                 _buildQuickChip('👥 Top khách hàng'),
                 _buildQuickChip('📈 Báo cáo tổng quan'),
                 _buildQuickChip('📄 Xuất PDF'),
-                if (AIChatService().isAIEnabled)
+                if (GeminiService.isEnabled)
                   _buildQuickChip('💡 Gợi ý tăng doanh thu'),
+                _buildQuickChip('🧪 Agent Evaluation'),
               ],
             ),
           ),
@@ -178,10 +187,10 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
           // Input bar
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
@@ -215,7 +224,7 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
                     child: IconButton(
                       icon: Icon(
                         _isLoading ? Icons.hourglass_top : Icons.send,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         size: 20,
                       ),
                       onPressed: _isLoading ? null : _sendMessage,
@@ -234,12 +243,12 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ActionChip(
-        label: Text(label, style: const TextStyle(fontSize: 12)),
+        label: Text(label, style: TextStyle(fontSize: 12)),
         onPressed: () {
           _controller.text = label;
           _sendMessage();
         },
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         side: BorderSide(color: Colors.grey.shade300),
       ),
     );
@@ -265,18 +274,18 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
           ],
           Flexible(
             child: Container(
-              padding: const EdgeInsets.all(14),
+              padding: EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isUser ? theme.primaryColor : Colors.white,
+                color: isUser ? theme.primaryColor : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
+                  topRight: Radius.circular(16),
                   bottomLeft: Radius.circular(isUser ? 16 : 4),
                   bottomRight: Radius.circular(isUser ? 4 : 16),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),
@@ -285,7 +294,7 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
               child: SelectableText(
                 message.text,
                 style: TextStyle(
-                  color: isUser ? Colors.white : Colors.black87,
+                  color: isUser ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.87),
                   fontSize: 14,
                   height: 1.4,
                 ),
@@ -319,9 +328,9 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
           ),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Row(
@@ -341,6 +350,20 @@ class _AIAssistantsPageState extends ConsumerState<AIAssistantsPage> {
         ],
       ),
     );
+  }
+
+  /// Build trace info footer from AgentResult
+  String _buildTraceInfo(AgentResult result) {
+    final durationMs = result.totalDuration.inMilliseconds;
+    final confidence = (result.confidence * 100).toStringAsFixed(0);
+    final steps = result.completedSteps;
+    final agent = result.primaryAgent.name;
+
+    return '\n\n---\n'
+        '🔬 _Agent: **$agent** | '
+        'Steps: **$steps** | '
+        'Confidence: **$confidence%** | '
+        '${durationMs}ms_';
   }
 }
 

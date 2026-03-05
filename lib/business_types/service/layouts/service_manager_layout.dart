@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
@@ -9,26 +10,30 @@ import '../../../providers/auth_provider.dart';
 import '../../../widgets/realtime_notification_widgets.dart';
 import '../../../widgets/bug_report_dialog.dart';
 
-import '../../../pages/ceo/ceo_profile_page.dart';
 import '../../../pages/ceo/ceo_notifications_page.dart';
-import '../../../pages/ceo/ceo_reports_settings_page.dart' show CEOSettingsPage;
 import '../../../pages/ceo/shared/ceo_more_page.dart';
 import '../../../pages/ceo/ceo_employees_page.dart';
 import '../../../pages/ceo/company_details_page.dart' hide companyStatsProvider;
 import '../../../pages/manager/manager_tasks_page.dart';
+import '../../../pages/manager/manager_attendance_page.dart';
+import '../widgets/weekly_insight_widget.dart';
 
-import '../providers/table_provider.dart';
+import '../../../core/router/app_router.dart';
+
 import '../providers/session_provider.dart';
 import '../providers/media_channel_provider.dart';
+import '../widgets/notification_bell_widget.dart';
 import '../providers/content_provider.dart';
 import '../providers/media_project_provider.dart';
 import '../models/media_channel.dart';
 import '../models/content.dart';
-import '../models/media_project.dart';
 
-import '../pages/tables/table_list_page.dart';
 import '../pages/sessions/session_list_page.dart';
 import '../pages/menu/menu_list_page.dart';
+import '../pages/reports/manager_approval_page.dart';
+import '../pages/cashflow/daily_cashflow_import_page.dart';
+import '../pages/manager/staff_performance_page.dart';
+import '../pages/reservations/reservation_list_page.dart';
 
 import '../../../models/company.dart';
 import '../../../models/project.dart';
@@ -36,8 +41,9 @@ import '../../../providers/company_provider.dart';
 import '../../../providers/company_alerts_provider.dart';
 import '../../../providers/project_provider.dart';
 import '../providers/monthly_pnl_provider.dart';
-import '../models/monthly_pnl.dart';
-import '../pages/cashflow/daily_cashflow_import_page.dart';
+import '../../../pages/schedules/schedule_list_page.dart';
+import '../pages/schedule/shift_schedule_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// ═══════════════════════════════════════════════════════
 /// SABO Service Manager Command Center — Musk Style
@@ -67,41 +73,58 @@ class _ServiceManagerLayoutState extends ConsumerState<ServiceManagerLayout> {
       ),
       _ManagerProjectsTab(),
       _ManagerTeamTab(),
+      _ManagerAttendanceTab(),
       _ManagerMediaTab(),
+      StaffPerformancePage(),
     ];
 
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF1E293B),
-        surfaceTintColor: const Color(0xFF1E293B),
+        backgroundColor: AppColors.textPrimary,
+        surfaceTintColor: AppColors.textPrimary,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               companyName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
               ),
             ),
             Text(
               '🎯 Quản lý — $userName',
-              style: const TextStyle(fontSize: 11, color: Colors.white54),
+              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.surface54),
             ),
           ],
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.surface),
         actions: [
+          const NotificationBellWidget(),
           const RealtimeNotificationBell(),
+          IconButton(
+            tooltip: 'Nhập báo cáo cuối ngày',
+            icon: Icon(Icons.upload_file_outlined, color: Color(0xFFFBBF24)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DailyCashflowImportPage(
+                    companyId: user?.companyId ?? '',
+                    companyName: user?.companyName ?? 'SABO',
+                  ),
+                ),
+              );
+            },
+          ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white70),
+            icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.surface70),
             onSelected: (value) {
               switch (value) {
                 case 'profile':
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const CEOProfilePage()));
+                  context.push(AppRoutes.profile);
                   break;
                 case 'notifications':
                   Navigator.push(context,
@@ -109,8 +132,7 @@ class _ServiceManagerLayoutState extends ConsumerState<ServiceManagerLayout> {
                           builder: (_) => const CEONotificationsPage()));
                   break;
                 case 'settings':
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const CEOSettingsPage()));
+                  context.push(AppRoutes.ceoSettings);
                   break;
                 case 'bug_report':
                   BugReportDialog.show(context);
@@ -173,7 +195,7 @@ class _ServiceManagerLayoutState extends ConsumerState<ServiceManagerLayout> {
         },
         height: 65,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         indicatorColor: AppColors.primary.withValues(alpha: 0.1),
         destinations: const [
           NavigationDestination(
@@ -192,14 +214,25 @@ class _ServiceManagerLayoutState extends ConsumerState<ServiceManagerLayout> {
             label: 'Nhiệm vụ',
           ),
           NavigationDestination(
+            icon: Icon(Icons.schedule_outlined),
+            selectedIcon: Icon(Icons.schedule, color: Colors.teal),
+            label: 'Chấm công',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.play_circle_outline),
             selectedIcon: Icon(Icons.play_circle, color: Colors.red),
             label: 'Media',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people, color: AppColors.info),
+            label: 'Nhân viên',
           ),
         ],
       ),
     );
   }
+
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -291,7 +324,6 @@ class _ManagerOverviewTabState extends ConsumerState<_ManagerOverviewTab> {
 
   @override
   Widget build(BuildContext context) {
-    final tableStats = ref.watch(tableStatsProvider);
     final sessionStats = ref.watch(sessionStatsProvider);
     final user = ref.watch(currentUserProvider);
     final companyId = user?.companyId ?? '';
@@ -299,7 +331,6 @@ class _ManagerOverviewTabState extends ConsumerState<_ManagerOverviewTab> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(tableStatsProvider);
         ref.invalidate(sessionStatsProvider);
         ref.invalidate(mediaChannelStatsProvider);
         _loadOverview();
@@ -339,18 +370,6 @@ class _ManagerOverviewTabState extends ConsumerState<_ManagerOverviewTab> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      _miniCard(
-                        'Bàn đang chơi',
-                        tableStats.when(
-                          data: (s) =>
-                              '${s['occupied'] ?? 0}/${s['total'] ?? 0}',
-                          loading: () => '...',
-                          error: (_, __) => '—',
-                        ),
-                        Icons.table_bar,
-                        Colors.blue,
-                      ),
-                      const SizedBox(width: 10),
                       _miniCard(
                         'Phiên hoạt động',
                         sessionStats.when(
@@ -449,45 +468,8 @@ class _ManagerOverviewTabState extends ConsumerState<_ManagerOverviewTab> {
                   ),
                   const SizedBox(height: 16),
 
-                  // ── Table Status Breakdown ──
-                  tableStats.when(
-                    data: (s) {
-                      final available = s['available'] ?? 0;
-                      final occupied = s['occupied'] ?? 0;
-                      final reserved = s['reserved'] ?? 0;
-                      final maintenance = s['maintenance'] ?? 0;
-                      return Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Colors.grey.shade200)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Trạng thái bàn',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14)),
-                              const SizedBox(height: 10),
-                              _statusRow(
-                                  'Trống', available, AppColors.success),
-                              _statusRow(
-                                  'Đang chơi', occupied, Colors.red),
-                              _statusRow(
-                                  'Đã đặt', reserved, AppColors.warning),
-                              _statusRow(
-                                  'Bảo trì', maintenance, Colors.grey),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
+                  // Weekly insight
+                  const WeeklyInsightWidget(),
                   const SizedBox(height: 16),
 
                   // ── Quick Actions ──
@@ -497,17 +479,34 @@ class _ManagerOverviewTabState extends ConsumerState<_ManagerOverviewTab> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _quickAction(
+                      _quickAction(context, 
                           '🎱 Vận hành', () => widget.onSwitchTab(1)),
-                      _quickAction(
+                      _quickAction(context, 
                           '📋 Công việc', () => widget.onSwitchTab(2)),
-                      _quickAction(
-                          '📺 Media', () => widget.onSwitchTab(3)),
-                      _quickAction('👤 Hồ sơ', () {
+                      _quickAction(context, 
+                          '⏱️ Chấm công', () => widget.onSwitchTab(3)),
+                      _quickAction(context, 
+                          '📺 Media', () => widget.onSwitchTab(4)),
+                      _quickAction(context, '🗓️ Đặt bàn', () {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const CEOProfilePage()));
+                                builder: (_) => const ReservationListPage()));
+                      }),
+                      _quickAction(context, '✅ Duyệt báo cáo', () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const ManagerApprovalPage()));
+                      }),
+                      _quickAction(context, '📅 Chia ca', () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const ShiftSchedulePage()));
+                      }),
+                      _quickAction(context, '�👤 Hồ sơ', () {
+                        context.push(AppRoutes.profile);
                       }),
                     ],
                   ),
@@ -521,10 +520,10 @@ class _ManagerOverviewTabState extends ConsumerState<_ManagerOverviewTab> {
   Widget _sectionHeader(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.bold,
-        color: Color(0xFF1E293B),
+        color: AppColors.textPrimary,
       ),
     );
   }
@@ -533,14 +532,14 @@ class _ManagerOverviewTabState extends ConsumerState<_ManagerOverviewTab> {
       String label, String value, IconData icon, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -578,36 +577,12 @@ class _ManagerOverviewTabState extends ConsumerState<_ManagerOverviewTab> {
     );
   }
 
-  Widget _statusRow(String label, int count, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration:
-                BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Text(label, style: const TextStyle(fontSize: 13)),
-          const Spacer(),
-          Text('$count',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: color)),
-        ],
-      ),
-    );
-  }
-
-  Widget _quickAction(String label, VoidCallback onTap) {
+  Widget _quickAction(BuildContext context, String label, VoidCallback onTap) {
     return ActionChip(
       label: Text(label,
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
       onPressed: onTap,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       side: BorderSide(color: Colors.grey.shade300),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
     );
@@ -737,11 +712,11 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
                 const SizedBox(height: 16),
                 _buildCompanyCard(context, company),
                 const SizedBox(height: 20),
-                _buildQuickStats(company.id),
+                _buildQuickStats(context, company.id),
                 const SizedBox(height: 20),
-                _buildProjectsSection(company.id),
+                _buildProjectsSection(context, company.id),
                 const SizedBox(height: 20),
-                _buildFinancialDashboard(company.id),
+                _buildFinancialDashboard(context, company.id),
               ],
             ),
           );
@@ -752,8 +727,8 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
           children: [
             // Stats bar
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: Theme.of(context).colorScheme.surface,
               child: Row(
                 children: [
                   Icon(Icons.business, size: 18, color: Colors.deepPurple),
@@ -805,7 +780,7 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
     );
   }
 
-  Widget _buildQuickStats(String companyId) {
+  Widget _buildQuickStats(BuildContext context, String companyId) {
     return Consumer(builder: (context, ref, _) {
       final statsAsync = ref.watch(companyStatsProvider(companyId));
       return statsAsync.when(
@@ -815,9 +790,9 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
         ),
         error: (_, __) => const SizedBox.shrink(),
         data: (stats) => Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -870,7 +845,7 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
   }
 
   /// Projects section showing projects and sub-projects
-  Widget _buildProjectsSection(String companyId) {
+  Widget _buildProjectsSection(BuildContext context, String companyId) {
     return Consumer(builder: (context, ref, _) {
       final projectsAsync = ref.watch(companyProjectsProvider(companyId));
       
@@ -880,9 +855,9 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
         error: (e, _) => Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text('Lỗi: $e', style: TextStyle(color: Colors.red.shade400)),
@@ -890,9 +865,9 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
         data: (projects) {
           if (projects.isEmpty) {
             return Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),
@@ -912,7 +887,7 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
 
           return Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -966,7 +941,7 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
 
   Widget _buildProjectTile(Project project) {
     return InkWell(
-      onTap: () => _showProjectDetail(project),
+      onTap: () => _showProjectDetail(context, project),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
@@ -1068,7 +1043,7 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
     );
   }
 
-  void _showProjectDetail(Project project) {
+  void _showProjectDetail(BuildContext context, Project project) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1280,6 +1255,7 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
   }
 
   // ── Company Detail Bottom Sheet (legacy, kept for reference) ──
+  // ignore: unused_element
   void _showCompanyDetailBottomSheet(BuildContext context, Company c) {
     final typeColor = c.type.color;
     final isActive = c.status == 'active';
@@ -1294,8 +1270,8 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
         initialChildSize: 0.65,
         maxChildSize: 0.95,
         builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -1464,7 +1440,7 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
                     ),
                     // ── Financial Dashboard ──
                     const SizedBox(height: 20),
-                    _buildFinancialDashboard(c.id),
+                    _buildFinancialDashboard(context, c.id),
                   ],
                 ),
               ),
@@ -1498,7 +1474,7 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
   }
 
   // ── Financial Dashboard Widget ──
-  Widget _buildFinancialDashboard(String companyId) {
+  Widget _buildFinancialDashboard(BuildContext context, String companyId) {
     return Consumer(builder: (context, ref, _) {
     final summaryAsync = ref.watch(financialSummaryProvider(companyId));
 
@@ -1530,7 +1506,6 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
           );
         }
 
-        final records = summary['records'] as List<MonthlyPnl>;
         final latestRevenue = summary['latestNetRevenue'] as double;
         final latestProfit = summary['latestNetProfit'] as double;
         final latestMargin = summary['latestNetMargin'] as double;
@@ -1608,10 +1583,10 @@ class _ManagerProjectsTabState extends ConsumerState<_ManagerProjectsTab> {
                           ),
                           child: Text(
                             '${growthPct > 0 ? '+' : ''}${growthPct.toStringAsFixed(1)}%',
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white),
+                                color: Theme.of(context).colorScheme.surface),
                           ),
                         ),
                     ],
@@ -1757,7 +1732,7 @@ class _OperationsCommandTabState extends State<_OperationsCommandTab>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -1771,7 +1746,7 @@ class _OperationsCommandTabState extends State<_OperationsCommandTab>
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: TabBar(
             controller: _tabController,
             labelColor: AppColors.primary,
@@ -1780,9 +1755,6 @@ class _OperationsCommandTabState extends State<_OperationsCommandTab>
             labelStyle:
                 const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             tabs: const [
-              Tab(
-                  icon: Icon(Icons.table_bar_rounded, size: 18),
-                  text: 'Bàn'),
               Tab(
                   icon: Icon(Icons.timer_rounded, size: 18),
                   text: 'Phiên'),
@@ -1796,7 +1768,6 @@ class _OperationsCommandTabState extends State<_OperationsCommandTab>
           child: TabBarView(
             controller: _tabController,
             children: const [
-              TableListPage(),
               SessionListPage(),
               MenuListPage(),
             ],
@@ -1837,7 +1808,7 @@ class _ManagerTeamTabState extends State<_ManagerTeamTab>
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: TabBar(
             controller: _tabController,
             labelColor: AppColors.primary,
@@ -1868,7 +1839,74 @@ class _ManagerTeamTabState extends State<_ManagerTeamTab>
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TAB 4: MEDIA — Channels / Projects / Content
+// TAB 4: CHẤM CÔNG — Attendance & Work Schedule
+// Sub-tabs: Chấm công | Lịch làm việc
+// ═══════════════════════════════════════════════════════════════════
+class _ManagerAttendanceTab extends StatefulWidget {
+  @override
+  State<_ManagerAttendanceTab> createState() => _ManagerAttendanceTabState();
+}
+
+class _ManagerAttendanceTabState extends State<_ManagerAttendanceTab>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          color: Theme.of(context).colorScheme.surface,
+          child: TabBar(
+            controller: _tabController,
+            labelColor: Colors.teal,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Colors.teal,
+            tabs: const [
+              Tab(
+                icon: Icon(Icons.access_time_rounded, size: 18),
+                text: 'Chấm công',
+              ),
+              Tab(
+                icon: Icon(Icons.calendar_month_rounded, size: 18),
+                text: 'Lịch làm việc',
+              ),
+              Tab(
+                icon: Icon(Icons.event_note_rounded, size: 18),
+                text: 'Chia ca',
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: const [
+              ManagerAttendancePage(),
+              ScheduleListPage(),
+              ShiftSchedulePage(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB 5: MEDIA — Channels / Projects / Content
 // Sub-tabs: Kênh | Dự án | Nội dung
 // ═══════════════════════════════════════════════════════════════════
 class _ManagerMediaTab extends StatefulWidget {
@@ -1897,7 +1935,7 @@ class _ManagerMediaTabState extends State<_ManagerMediaTab>
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: TabBar(
             controller: _tabController,
             labelColor: AppColors.primary,
@@ -2239,9 +2277,9 @@ class _ManagerContentSubTab extends ConsumerWidget {
             children: [
               // Pipeline summary
               Container(
-                padding: const EdgeInsets.symmetric(
+                padding: EdgeInsets.symmetric(
                     horizontal: 12, vertical: 8),
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -2413,8 +2451,8 @@ class _ProjectDetailSheet extends ConsumerWidget {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(

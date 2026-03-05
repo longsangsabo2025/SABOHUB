@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/project.dart';
 
 /// Get all projects for a company
-final companyProjectsProvider = FutureProvider.family<List<Project>, String>((ref, companyId) async {
+final companyProjectsProvider = FutureProvider.autoDispose.family<List<Project>, String>((ref, companyId) async {
   final sb = Supabase.instance.client;
   
   final response = await sb
@@ -21,7 +21,7 @@ final companyProjectsProvider = FutureProvider.family<List<Project>, String>((re
 });
 
 /// Get project with sub-projects
-final projectWithSubProjectsProvider = FutureProvider.family<Project, String>((ref, projectId) async {
+final projectWithSubProjectsProvider = FutureProvider.autoDispose.family<Project, String>((ref, projectId) async {
   final sb = Supabase.instance.client;
   
   // Get project
@@ -111,9 +111,10 @@ class ProjectService {
     await _sb.from('projects').update(updates).eq('id', projectId);
   }
 
-  /// Delete project (cascades to sub-projects)
+  /// Delete project (soft delete)
   Future<void> deleteProject(String projectId) async {
-    await _sb.from('projects').delete().eq('id', projectId);
+    // Soft delete - sets is_active=false
+    await _sb.from('projects').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', projectId);
   }
 
   /// Create sub-project
@@ -169,7 +170,8 @@ class ProjectService {
 
   /// Delete sub-project
   Future<void> deleteSubProject(String subProjectId) async {
-    await _sb.from('sub_projects').delete().eq('id', subProjectId);
+    // Soft delete - sets is_active=false
+    await _sb.from('sub_projects').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', subProjectId);
   }
 
   /// Update project progress based on sub-projects

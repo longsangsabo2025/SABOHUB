@@ -1,7 +1,7 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../models/gamification/employee_game_profile.dart';
 import '../../providers/gamification_provider.dart';
 
@@ -44,7 +44,7 @@ class StaffLeaderboard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 8),
-            ...displayEntries.map((e) => _buildEntryTile(e)),
+            ...displayEntries.map((e) => _buildEntryTile(context, e)),
           ],
         );
       },
@@ -53,15 +53,15 @@ class StaffLeaderboard extends ConsumerWidget {
     );
   }
 
-  Widget _buildEntryTile(StaffLeaderboardEntry entry) {
+  Widget _buildEntryTile(BuildContext context, StaffLeaderboardEntry entry) {
     final isTop3 = entry.rank <= 3;
     final tierColor = _tierColor(entry.level);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: EdgeInsets.only(bottom: 6),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isTop3 ? tierColor.withValues(alpha: 0.3) : Colors.grey.shade200,
@@ -192,13 +192,13 @@ class StaffLeaderboard extends ConsumerWidget {
   }
 
   Color _tierColor(int level) {
-    if (level >= 50) return const Color(0xFFC62828);
-    if (level >= 40) return const Color(0xFF00BCD4);
-    if (level >= 30) return const Color(0xFF9C27B0);
-    if (level >= 20) return const Color(0xFFFFD700);
-    if (level >= 15) return const Color(0xFFC0C0C0);
-    if (level >= 10) return const Color(0xFFCD7F32);
-    if (level >= 5) return const Color(0xFF607D8B);
-    return const Color(0xFF9E9E9E);
+    if (level >= 50) return Color(0xFFC62828);
+    if (level >= 40) return Color(0xFF00BCD4);
+    if (level >= 30) return Color(0xFF9C27B0);
+    if (level >= 20) return Color(0xFFFFD700);
+    if (level >= 15) return Color(0xFFC0C0C0);
+    if (level >= 10) return AppColors.tierBronze;
+    if (level >= 5) return Color(0xFF607D8B);
+    return AppColors.grey500;
   }
 }

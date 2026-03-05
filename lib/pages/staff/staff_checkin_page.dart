@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,10 +7,14 @@ import '../../models/user.dart';
 import '../../models/attendance.dart';
 import '../../providers/attendance_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/token_provider.dart';
 import '../../services/daily_work_report_service.dart';
+import '../../business_types/service/services/mood_service.dart';
+import '../../widgets/common/mood_checkin_dialog.dart';
 import '../../widgets/location_status_widget.dart';
 import '../../widgets/work_report_preview_dialog.dart';
 import 'staff_reports_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Staff Check-in Page
 /// Attendance and scheduling for staff members
@@ -28,7 +32,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     if (user == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
@@ -86,19 +90,19 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       elevation: 0,
-      backgroundColor: Colors.white,
-      title: const Text(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      title: Text(
         'Điểm danh',
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: Theme.of(context).colorScheme.onSurface87,
         ),
       ),
       actions: [
         // View Reports button
         IconButton(
-          icon: const Icon(Icons.assignment, color: Colors.black87),
+          icon: Icon(Icons.assignment, color: Theme.of(context).colorScheme.onSurface87),
           onPressed: () {
             Navigator.push(
               context,
@@ -119,7 +123,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
               ),
             );
           },
-          icon: const Icon(Icons.history, color: Colors.black54),
+          icon: Icon(Icons.history, color: Theme.of(context).colorScheme.onSurface54),
         ),
         IconButton(
           onPressed: () {
@@ -131,13 +135,13 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
               ),
             );
           },
-          icon: const Icon(Icons.calendar_today, color: Colors.black54),
+          icon: Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.onSurface54),
         ),
         IconButton(
           onPressed: () {
             context.push('/profile');
           },
-          icon: const Icon(Icons.person_outline, color: Colors.black54),
+          icon: Icon(Icons.person_outline, color: Theme.of(context).colorScheme.onSurface54),
           tooltip: 'Hồ sơ cá nhân',
         ),
       ],
@@ -156,15 +160,15 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isCheckedIn
-              ? [AppColors.success, const Color(0xFF059669)]
-              : [const Color(0xFF6B7280), const Color(0xFF4B5563)],
+              ? [AppColors.success, AppColors.successDark]
+              : [AppColors.neutral500, AppColors.neutral600],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: (isCheckedIn
                     ? AppColors.success
-                    : const Color(0xFF6B7280))
+                    : AppColors.neutral500)
                 .withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
@@ -177,32 +181,32 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
             children: [
               CircleAvatar(
                 radius: 30,
-                backgroundColor: Colors.white.withValues(alpha: 0.2),
-                child: const Icon(
+                backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
+                child: Icon(
                   Icons.person,
                   size: 30,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       user.name ?? user.email?.split('@').first ?? 'Unknown',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       currentShift,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -210,29 +214,29 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
               ),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: isCheckedIn
-                      ? Colors.white.withValues(alpha: 0.2)
+                      ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.2)
                       : Colors.orange.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   isCheckedIn ? 'ĐÃ VÀO CA' : 'CHƯA VÀO CA',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -241,24 +245,24 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                   isCheckedIn ? 'Thời gian làm việc' : 'Sẵn sàng vào ca?',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   isCheckedIn
                       ? _formatWorkingTime(attendance?.checkInTime)
                       : DateTime.now().toString().substring(11, 16),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                 ),
                 const SizedBox(height: 16),
                 // Location validation status
                 LocationStatusWidget(
-                  companyId: user.companyId,
+                  companyId: user.companyId ?? '',
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -274,7 +278,7 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
                             }
                           },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.surface,
                       foregroundColor: isCheckedIn
                           ? AppColors.error
                           : AppColors.success,
@@ -311,13 +315,13 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
     final now = DateTime.now();
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -357,17 +361,17 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
 
   Widget _buildAttendanceHistory() {
     final user = ref.watch(currentUserProvider);
-    if (user == null) return const SizedBox.shrink();
+    if (user == null) return SizedBox.shrink();
 
     final historyAsync = ref.watch(userAttendanceHistoryProvider(user.id));
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -561,12 +565,47 @@ class _StaffCheckinPageState extends ConsumerState<StaffCheckinPage> {
 
       ref.invalidate(userTodayAttendanceProvider);
 
+      // 🪙 SABO Token: Thưởng token khi điểm danh
+      try {
+        await ref.read(tokenWalletProvider.notifier).earnTokens(
+          5,
+          sourceType: 'attendance',
+          description: 'Điểm danh vào ca',
+        );
+      } catch (_) {
+        // Token reward is non-critical
+      }
+
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('✅ Đã điểm danh vào ca thành công!'),
           backgroundColor: AppColors.success,
         ),
       );
+
+      // Hiện dialog cảm xúc sau khi điểm danh thành công
+      if (!mounted) return;
+      final mood = await MoodCheckinDialog.show(context);
+      if (mood != null) {
+        // Save mood to DB (silent fail — non-blocking)
+        try {
+          await MoodService().logMood(
+            employeeId: user.id,
+            companyId: user.companyId ?? '',
+            mood: mood,
+          );
+        } catch (_) {}
+
+        if (mounted) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('${mood.emoji} Cảm ơn bạn! Chúc ca làm việc tốt lành.'),
+              backgroundColor: mood.color,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
     } catch (e) {
       scaffoldMessenger.showSnackBar(
         SnackBar(

@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../providers/auth_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 final _performanceDataProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final supabase = Supabase.instance.client;
-  final user = ref.read(authProvider).user;
+  final user = ref.read(currentUserProvider);
   final companyId = user?.companyId;
 
   if (companyId == null) return [];
@@ -102,9 +103,9 @@ class _PerformanceScorecardPageState
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Hiệu suất nhân viên'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        title: Text('Hiệu suất nhân viên'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface87,
         elevation: 0,
       ),
       body: dataAsync.when(
@@ -163,13 +164,13 @@ class _PerformanceScorecardPageState
             : Colors.brown.shade300;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.3)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
       ),
       child: Row(
         children: [
@@ -214,12 +215,12 @@ class _PerformanceScorecardPageState
             : Colors.red;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(10),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4)],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.03), blurRadius: 4)],
       ),
       child: Row(
         children: [

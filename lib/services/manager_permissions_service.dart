@@ -136,11 +136,11 @@ class ManagerPermissionsService {
 
       AppLogger.data('👥 [PERMISSIONS] Manager IDs: $managerIds');
 
-      // Fetch all employee names in one query using 'in' filter
+      // Fetch all employee names in one query using parameterized 'in' filter
       final employees = await _supabase
           .from('employees')
           .select('id, full_name')
-          .filter('id', 'in', '(${managerIds.join(',')})');
+          .inFilter('id', managerIds);
 
       AppLogger.data('📝 [PERMISSIONS] Found ${(employees as List).length} employees');
       AppLogger.data('📝 [PERMISSIONS] Employee data: $employees');

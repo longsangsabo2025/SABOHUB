@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
+import '../core/repositories/impl/employee_repository.dart';
 import '../models/user.dart' as app_models;
 import '../providers/auth_provider.dart';
 import '../utils/app_logger.dart';
@@ -14,6 +17,7 @@ final employeeServiceProvider = Provider<EmployeeService>((ref) {
 /// Handles employee account creation and management
 class EmployeeService {
   final _supabase = Supabase.instance.client;
+  final EmployeeRepository _repo = EmployeeRepository();
   final Ref? _ref;
 
   EmployeeService({Ref? ref}) : _ref = ref;
@@ -82,6 +86,12 @@ class EmployeeService {
       case app_models.UserRole.warehouse:
         rolePrefix = 'warehouse';
         break;
+      case app_models.UserRole.finance:
+        rolePrefix = 'finance';
+        break;
+      case app_models.UserRole.shareholder:
+        rolePrefix = 'shareholder';
+        break;
     }
 
     // Generate email
@@ -107,8 +117,8 @@ class EmployeeService {
 
       if (_ref != null) {
         // Check demo authentication first
-        final authState = _ref.read(authProvider);
-        currentUser = authState.user;
+        final user = _ref.read(currentUserProvider);
+        currentUser = user;
       }
 
       // Fallback: if authState has no user, reject
@@ -204,16 +214,20 @@ class EmployeeService {
       }
 
       final tempPassword = _generateTempPassword();
+
+      // Hash password before fallback insert
+      final hashResult = await _supabase.rpc('hash_password', params: {'p_password': tempPassword});
+      final passwordHash = hashResult as String;
       
-      // Insert directly into employees table (password will need to be hashed)
-      final response = await _supabase.from('employees').insert({
+      // Insert directly into employees table via repository with hashed password
+      final response = await _repo.createEmployee({
         'email': email,
         'full_name': fullName ?? _generateDefaultName(role),
         'role': role.toUpperString(),
         'company_id': companyId,
         'is_active': true,
-        // Note: password_hash should be set via a trigger or RPC in production
-      }).select().single();
+        'password_hash': passwordHash,
+      });
 
       final newUser = app_models.User(
         id: response['id'],
@@ -249,18 +263,11 @@ class EmployeeService {
     }
   }
 
-  /// Generate temporary password (8 chars, alphanumeric)
+  /// Generate temporary password (12 chars, cryptographically secure)
   String _generateTempPassword() {
-    const chars =
-        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final random = DateTime.now().millisecondsSinceEpoch;
-    var password = '';
-
-    for (var i = 0; i < 8; i++) {
-      password += chars[(random + i) % chars.length];
-    }
-
-    return 'Sabo$password!';
+    final random = Random.secure();
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#\$%';
+    return List.generate(12, (_) => chars[random.nextInt(chars.length)]).join();
   }
 
   /// Generate default name based on role
@@ -280,6 +287,10 @@ class EmployeeService {
         return 'Tài xế';
       case app_models.UserRole.warehouse:
         return 'Nhân viên kho';
+      case app_models.UserRole.shareholder:
+        return 'Cổ đông';
+      case app_models.UserRole.finance:
+        return 'Kế toán';
     }
   }
 
@@ -287,15 +298,10 @@ class EmployeeService {
   /// Returns all active employees from all companies
   Future<List<app_models.User>> getAllEmployees() async {
     try {
-      final response = await _supabase
-          .from('employees')
-          .select(
-              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
-          .eq('is_active', true)
-          .order('created_at', ascending: false);
+      final response = await _repo.getEmployees(isActive: true);
 
-      return (response as List)
-          .map((json) => app_models.User.fromJson(json as Map<String, dynamic>))
+      return response
+          .map((json) => app_models.User.fromJson(json))
           .toList();
     } catch (e) {
       throw Exception('Failed to get all employees: $e');
@@ -306,20 +312,14 @@ class EmployeeService {
   /// Note: CEOs are in users table, employees are in employees table
   Future<List<app_models.User>> getCompanyEmployees(String companyId) async {
     try {
-      // Fetch from employees table only (Manager, Shift Leader, Staff)
-      final employeesResponse = await _supabase
-          .from('employees')
-          .select(
-              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
-          .eq('company_id', companyId)
-          .eq('is_active', true)
-          .order('created_at', ascending: false);
+      final response = await _repo.getEmployees(
+        companyId: companyId,
+        isActive: true,
+      );
 
-      final employeesData = (employeesResponse as List)
-          .map((json) => app_models.User.fromJson(json as Map<String, dynamic>))
+      return response
+          .map((json) => app_models.User.fromJson(json))
           .toList();
-
-      return employeesData;
     } catch (e) {
       throw Exception('Failed to get employees: $e');
     }
@@ -335,9 +335,7 @@ class EmployeeService {
     String? branchId,
   }) async {
     try {
-      final updates = <String, dynamic>{
-        'updated_at': DateTime.now().toIso8601String(),
-      };
+      final updates = <String, dynamic>{};
 
       if (name != null) updates['full_name'] = name;
       if (email != null) updates['email'] = email;
@@ -345,7 +343,7 @@ class EmployeeService {
       if (role != null) updates['role'] = role.toUpperString();
       if (branchId != null) updates['branch_id'] = branchId;
 
-      await _supabase.from('employees').update(updates).eq('id', employeeId);
+      await _repo.updateEmployee(employeeId, updates);
     } catch (e) {
       throw Exception('Failed to update employee: $e');
     }
@@ -354,29 +352,17 @@ class EmployeeService {
   /// Deactivate/Activate employee account
   Future<void> toggleEmployeeStatus(String userId, bool isActive) async {
     try {
-      await _supabase.from('employees').update({
-        'is_active': isActive,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', userId);
+      await _repo.toggleEmployeeStatus(userId, isActive);
     } catch (e) {
       throw Exception('Failed to update employee status: $e');
     }
   }
 
-  /// Delete employee account
+  /// Delete employee account (soft delete)
+  /// Sets is_deleted=true via repository to preserve data integrity
   Future<void> deleteEmployee(String userId) async {
     try {
-      // Step 1: Handle foreign key references
-      // Set uploaded_by to null in business_documents where this user is referenced
-      await _supabase
-          .from('business_documents')
-          .update({'uploaded_by': null})
-          .eq('uploaded_by', userId);
-
-      // Step 2: Delete from employees table
-      await _supabase.from('employees').delete().eq('id', userId);
-
-      // Note: Employees are NOT in auth.users, only in employees table
+      await _repo.deleteEmployee(userId);
     } catch (e) {
       throw Exception('Failed to delete employee: $e');
     }
@@ -385,21 +371,22 @@ class EmployeeService {
   /// Resend account credentials
   Future<Map<String, String>> resendCredentials(String userId) async {
     try {
-      // Get employee info from employees table
-      final response = await _supabase
-          .from('employees')
-          .select(
-              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
-          .eq('id', userId)
-          .single();
+      // Get employee info via repository
+      final response = await _repo.getEmployeeById(userId);
+      if (response == null) {
+        throw Exception('Employee not found');
+      }
 
       final user = app_models.User.fromJson(response);
 
       // Generate new temporary password
       final newPassword = _generateTempPassword();
 
-      // TODO: Update password hash in employees table via RPC
-      // For now, return the new password to be set manually
+      // Save new password via RPC (server-side hashing)
+      await _supabase.rpc('change_employee_password', params: {
+        'p_employee_id': userId,
+        'p_new_password': newPassword,
+      });
 
       return {'email': user.email ?? user.id, 'tempPassword': newPassword};
     } catch (e) {

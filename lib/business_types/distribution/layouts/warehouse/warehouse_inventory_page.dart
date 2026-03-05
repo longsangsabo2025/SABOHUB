@@ -24,8 +24,8 @@ class _InventoryPageState extends ConsumerState<WarehouseInventoryPage> {
   }
 
   Future<void> _loadAssignedWarehouse() async {
-    final authState = ref.read(authProvider);
-    final userId = authState.user?.id;
+    final user = ref.read(currentUserProvider);
+    final userId = user?.id;
     
     if (userId == null) {
       setState(() => _isLoading = false);

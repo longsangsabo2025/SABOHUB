@@ -1,3 +1,4 @@
+import '../core/interfaces/i_company_service.dart';
 import '../core/services/base_service.dart';
 import '../models/company.dart';
 import 'branch_service.dart';
@@ -5,11 +6,13 @@ import 'branch_service.dart';
 /// Company Service
 /// Handles all company-related database operations
 /// Note: Uses 'companies' table in database (renamed from 'stores')
-class CompanyService extends BaseService {
+class CompanyService extends BaseService implements ICompanyService {
   final _branchService = BranchService();
 
   /// Get all companies (excludes soft-deleted)
   /// Get all companies (admin only - for platform management)
+  @override
+
   Future<List<Company>> getAllCompanies() async {
     return safeCall(
       operation: 'getAllCompanies',
@@ -29,6 +32,8 @@ class CompanyService extends BaseService {
   /// Get companies owned by current user (CEO)
   /// This is the PRIMARY method for CEO dashboard - only shows their companies
   /// Checks both employee_id AND auth_user_id since companies table may reference either
+  @override
+
   Future<List<Company>> getMyCompanies({String? userId}) async {
     return safeCall(
       operation: 'getMyCompanies',
@@ -69,6 +74,7 @@ class CompanyService extends BaseService {
   }
 
   /// Get all companies including soft-deleted ones (for admin/restore purposes)
+
   Future<List<Company>> getAllCompaniesIncludingDeleted() async {
     return safeCall(
       operation: 'getAllCompaniesIncludingDeleted',
@@ -85,6 +91,8 @@ class CompanyService extends BaseService {
   }
 
   /// Get company by ID
+  @override
+
   Future<Company?> getCompanyById(String id) async {
     return safeCall(
       operation: 'getCompanyById',
@@ -103,6 +111,8 @@ class CompanyService extends BaseService {
   }
 
   /// Create new company
+  @override
+
   Future<Company> createCompany({
     required String name,
     required String userId,
@@ -151,6 +161,8 @@ class CompanyService extends BaseService {
   }
 
   /// Update company
+  @override
+
   Future<Company> updateCompany(String id, Map<String, dynamic> updates) async {
     return safeCall(
       operation: 'updateCompany',
@@ -169,6 +181,8 @@ class CompanyService extends BaseService {
 
   /// Delete company (soft delete)
   /// Sets deleted_at timestamp instead of actually deleting the record
+  @override
+
   Future<void> deleteCompany(String id) async {
     return safeCall(
       operation: 'deleteCompany',
@@ -192,6 +206,8 @@ class CompanyService extends BaseService {
   }
 
   /// Restore a soft-deleted company
+  @override
+
   Future<void> restoreCompany(String id) async {
     return safeCall(
       operation: 'restoreCompany',
@@ -204,6 +220,8 @@ class CompanyService extends BaseService {
   }
 
   /// Get company statistics
+  @override
+
   Future<Map<String, dynamic>> getCompanyStats(String companyId) async {
     return safeCall(
       operation: 'getCompanyStats',
@@ -248,6 +266,8 @@ class CompanyService extends BaseService {
   }
 
   /// Subscribe to company changes
+  @override
+
   Stream<List<Company>> subscribeToCompanies() {
     return client
         .from('companies')

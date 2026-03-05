@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// AI Chat Interface - Popup chat window
@@ -110,9 +110,9 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
 
         // Header with Assistant Selector
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
           ),
@@ -242,9 +242,9 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
 
         // Input area
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             border: Border(top: BorderSide(color: Colors.grey.shade200)),
             borderRadius:
                 const BorderRadius.vertical(bottom: Radius.circular(16)),
@@ -279,13 +279,13 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
                   enabled: !_isLoading,
                   decoration: InputDecoration(
                     hintText: 'Nhập tin nhắn cho ${currentAssistant.name}...',
-                    hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                    hintStyle: const TextStyle(color: AppColors.neutral400),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(20),
                       borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF9FAFB),
+                    fillColor: Color(0xFFF9FAFB),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -295,14 +295,14 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
                   onSubmitted: (_) => _handleSend(),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
                   color: _inputController.text.trim().isNotEmpty && !_isLoading
                       ? AppColors.info
-                      : const Color(0xFFD1D5DB),
+                      : Color(0xFFD1D5DB),
                   borderRadius: BorderRadius.circular(22),
                 ),
                 child: IconButton(
@@ -310,7 +310,7 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
                       _inputController.text.trim().isNotEmpty && !_isLoading
                           ? _handleSend
                           : null,
-                  icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                  icon: Icon(Icons.send, color: Theme.of(context).colorScheme.surface, size: 20),
                 ),
               ),
             ],
@@ -353,15 +353,15 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.75,
               ),
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isUser ? AppColors.info : Colors.white,
+                color: isUser ? AppColors.info : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 border:
-                    !isUser ? Border.all(color: const Color(0xFFE5E7EB)) : null,
+                    !isUser ? Border.all(color: Color(0xFFE5E7EB)) : null,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -379,24 +379,24 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
                         color: Colors.blue.shade700,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                   ],
                   Text(
                     message.content,
                     style: TextStyle(
                       fontSize: 15,
-                      color: isUser ? Colors.white : const Color(0xFF1F2937),
+                      color: isUser ? Theme.of(context).colorScheme.surface : Color(0xFF1F2937),
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
                     style: TextStyle(
                       fontSize: 11,
                       color: isUser
-                          ? Colors.white.withValues(alpha: 0.7)
-                          : const Color(0xFF9CA3AF),
+                          ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.7)
+                          : AppColors.neutral400,
                     ),
                   ),
                 ],
@@ -412,9 +412,9 @@ class _AIChatInterfaceState extends ConsumerState<AIChatInterface> {
                 color: AppColors.info,
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.person,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 size: 20,
               ),
             ),

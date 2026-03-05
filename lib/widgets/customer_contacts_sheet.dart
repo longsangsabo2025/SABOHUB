@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/theme/app_text_styles.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/customer_contact.dart';
@@ -8,6 +9,8 @@ import '../../models/customer_address.dart';
 import '../business_types/distribution/models/odori_customer.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/customer_avatar.dart';
+import '../core/theme/app_spacing.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -84,7 +87,7 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
   }
 
   Future<void> _createDefaultFromCustomer() async {
-    final companyId = ref.read(authProvider).user?.companyId;
+    final companyId = ref.read(currentUserProvider)?.companyId;
     if (companyId == null) return;
 
     try {
@@ -124,7 +127,7 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
       context: context,
       builder: (context) => ContactFormDialog(
         customerId: widget.customer.id,
-        companyId: ref.read(authProvider).user?.companyId ?? '',
+        companyId: ref.read(currentUserProvider)?.companyId ?? '',
         addresses: _addresses,
         contact: contact,
         onSaved: () {
@@ -178,13 +181,13 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.surface,
             ),
             child: const Text('Xóa'),
           ),
@@ -243,7 +246,7 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.8,
       ),
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,18 +262,18 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
                 ),
                 child: Icon(Icons.contacts, color: Colors.purple.shade600, size: 24),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMD,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Danh sách cơ sở / chi nhánh',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: AppTextStyles.title,
                     ),
                     Text(
                       widget.customer.name,
-                      style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                      style: AppTextStyles.body.copyWith(color: Colors.grey.shade600),
                     ),
                   ],
                 ),
@@ -281,7 +284,7 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
 
           // Content
           Flexible(
@@ -293,9 +296,9 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
-                            const SizedBox(height: 8),
+                            AppSpacing.gapSM,
                             Text('Lỗi: $_error'),
-                            const SizedBox(height: 16),
+                            AppSpacing.gapLG,
                             ElevatedButton(
                               onPressed: _loadData,
                               child: const Text('Thử lại'),
@@ -308,18 +311,18 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
                         : _buildContactList(),
           ),
 
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
 
           // Add new contact button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () => _showAddEditContactDialog(),
-              icon: const Icon(Icons.add_business),
-              label: const Text('Thêm cơ sở mới'),
+              icon: Icon(Icons.add_business),
+              label: Text('Thêm cơ sở mới'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -338,29 +341,25 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: AppSpacing.paddingXXL,
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.person_off, size: 48, color: Colors.grey.shade400),
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           Text(
             'Chưa có cơ sở nào',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
-            ),
+            style: AppTextStyles.subtitle.copyWith(color: Colors.grey.shade600),
           ),
-          const SizedBox(height: 8),
+          AppSpacing.gapSM,
           Text(
             'Thêm cơ sở để quản lý liên hệ tại mỗi địa điểm',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: AppTextStyles.body.copyWith(color: Colors.grey.shade500),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           if (widget.customer.phone != null && widget.customer.phone!.isNotEmpty)
             OutlinedButton.icon(
               onPressed: _createDefaultFromCustomer,
@@ -376,7 +375,7 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
     return ListView.separated(
       shrinkWrap: true,
       itemCount: _contacts.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => AppSpacing.gapMD,
       itemBuilder: (context, index) {
         final contact = _contacts[index];
         return _buildContactCard(contact);
@@ -398,7 +397,7 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
         onTap: () => _showAddEditContactDialog(contact: contact),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: AppSpacing.paddingMD,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -409,7 +408,7 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
                     seed: contact.name,
                     radius: 22,
                   ),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,22 +421,22 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
-                                  color: contact.isPrimary ? Colors.purple.shade700 : Colors.black87,
+                                  color: contact.isPrimary ? Colors.purple.shade700 : Theme.of(context).colorScheme.onSurface87,
                                 ),
                               ),
                             ),
                             if (contact.isPrimary)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Colors.purple.shade600,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Chính',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.surface,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -445,21 +444,21 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
                           ],
                         ),
                         if (contact.position != null) ...[
-                          const SizedBox(height: 2),
+                          AppSpacing.gapXXXS,
                           Text(
                             contact.position!,
-                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                            style: AppTextStyles.bodySmall.copyWith(color: Colors.grey.shade600),
                           ),
                         ],
                         if (contact.addressName != null) ...[
-                          const SizedBox(height: 2),
+                          AppSpacing.gapXXXS,
                           Row(
                             children: [
                               Icon(Icons.location_on, size: 12, color: Colors.teal.shade400),
-                              const SizedBox(width: 4),
+                              AppSpacing.hGapXXS,
                               Text(
                                 contact.addressName!,
-                                style: TextStyle(fontSize: 12, color: Colors.teal.shade600),
+                                style: AppTextStyles.caption.copyWith(color: Colors.teal.shade600),
                               ),
                             ],
                           ),
@@ -496,7 +495,7 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
                         child: Row(
                           children: [
                             Icon(Icons.edit, size: 18),
-                            SizedBox(width: 8),
+                            AppSpacing.hGapSM,
                             Text('Sửa'),
                           ],
                         ),
@@ -507,7 +506,7 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
                           child: Row(
                             children: [
                               Icon(Icons.star, size: 18),
-                              SizedBox(width: 8),
+                              AppSpacing.hGapSM,
                               Text('Đặt cơ sở chính'),
                             ],
                           ),
@@ -517,7 +516,7 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
                         child: Row(
                           children: [
                             Icon(Icons.delete, size: 18, color: Colors.red),
-                            SizedBox(width: 8),
+                            AppSpacing.hGapSM,
                             Text('Xóa', style: TextStyle(color: Colors.red)),
                           ],
                         ),
@@ -533,20 +532,20 @@ class _CustomerContactsSheetState extends ConsumerState<CustomerContactsSheet> {
                   children: [
                     if (contact.phone != null) ...[
                       Icon(Icons.phone_outlined, size: 16, color: Colors.grey.shade500),
-                      const SizedBox(width: 4),
+                      AppSpacing.hGapXXS,
                       Text(
                         contact.phone!,
                         style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
                       ),
-                      const SizedBox(width: 16),
+                      AppSpacing.hGapLG,
                     ],
                     if (contact.email != null) ...[
                       Icon(Icons.email_outlined, size: 16, color: Colors.grey.shade500),
-                      const SizedBox(width: 4),
+                      AppSpacing.hGapXXS,
                       Expanded(
                         child: Text(
                           contact.email!,
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                          style: AppTextStyles.bodySmall.copyWith(color: Colors.grey.shade700),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -691,7 +690,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.paddingLG,
               decoration: BoxDecoration(
                 color: Colors.purple.shade50,
                 borderRadius: const BorderRadius.only(
@@ -705,10 +704,10 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
                     widget.contact != null ? Icons.edit : Icons.person_add,
                     color: Colors.purple.shade700,
                   ),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   Text(
                     widget.contact != null ? 'Sửa cơ sở' : 'Thêm cơ sở mới',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: AppTextStyles.title,
                   ),
                   const Spacer(),
                   IconButton(
@@ -722,7 +721,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
             // Form
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: AppSpacing.paddingLG,
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -737,7 +736,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
                         validator: (v) => v == null || v.isEmpty ? 'Vui lòng nhập tên cơ sở' : null,
                         textCapitalization: TextCapitalization.words,
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       // Position dropdown
                       DropdownButtonFormField<String>(
@@ -751,7 +750,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
                         }).toList(),
                         onChanged: (v) => setState(() => _selectedPosition = v),
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       TextFormField(
                         controller: _phoneController,
@@ -761,7 +760,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
                         ),
                         keyboardType: TextInputType.phone,
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       TextFormField(
                         controller: _emailController,
@@ -771,7 +770,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
                         ),
                         keyboardType: TextInputType.emailAddress,
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       // Address dropdown (optional)
                       if (widget.addresses.isNotEmpty) ...[
@@ -796,7 +795,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
                           ],
                           onChanged: (v) => setState(() => _selectedAddressId = v),
                         ),
-                        const SizedBox(height: 16),
+                        AppSpacing.gapLG,
                       ],
 
                       TextFormField(
@@ -808,7 +807,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
                         ),
                         maxLines: 2,
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       CheckboxListTile(
                         value: _isPrimary,
@@ -826,7 +825,7 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
 
             // Actions
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.paddingLG,
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 borderRadius: const BorderRadius.only(
@@ -839,20 +838,20 @@ class _ContactFormDialogState extends State<ContactFormDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Hủy'),
+                    child: Text('Hủy'),
                   ),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   ElevatedButton(
                     onPressed: _isLoading ? null : _save,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.purple,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                     ),
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
                           )
                         : Text(widget.contact != null ? 'Lưu thay đổi' : 'Thêm cơ sở'),
                   ),

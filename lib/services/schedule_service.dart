@@ -198,9 +198,10 @@ class ScheduleService {
   // Delete schedule
   Future<void> deleteSchedule(String scheduleId) async {
     try {
+      // Soft delete - sets is_active=false
       await _supabase
           .from('schedules')
-          .delete()
+          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
           .eq('id', scheduleId);
     } catch (e) {
       throw Exception('Lỗi khi xóa lịch làm việc: $e');
@@ -210,9 +211,10 @@ class ScheduleService {
   // Delete multiple schedules
   Future<void> deleteMultipleSchedules(List<String> scheduleIds) async {
     try {
+      // Soft delete - sets is_active=false
       await _supabase
           .from('schedules')
-          .delete()
+          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
           .inFilter('id', scheduleIds);
     } catch (e) {
       throw Exception('Lỗi khi xóa nhiều lịch làm việc: $e');
@@ -224,7 +226,7 @@ class ScheduleService {
     try {
       var query = _supabase
           .from('schedules')
-          .select('id, employee_id, date, shift_type, custom_start_time, custom_end_time')
+          .select('id, employee_id, date, shift_type, start_time, end_time')
           .eq('company_id', schedule.companyId)
           .eq('employee_id', schedule.employeeId)
           .eq('date', schedule.date.toIso8601String().split('T').first)
@@ -358,9 +360,10 @@ class ScheduleService {
   // Delete time-off request
   Future<void> deleteTimeOffRequest(String requestId) async {
     try {
+      // Soft delete - sets is_active=false
       await _supabase
           .from('time_off_requests')
-          .delete()
+          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
           .eq('id', requestId);
     } catch (e) {
       throw Exception('Lỗi khi xóa đơn xin nghỉ phép: $e');

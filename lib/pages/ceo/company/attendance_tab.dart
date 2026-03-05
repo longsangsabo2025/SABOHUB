@@ -67,10 +67,10 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
               ElevatedButton.icon(
                 onPressed: () => _showAttendanceReport(context),
                 icon: const Icon(Icons.analytics),
-                label: const Text('Báo cáo'),
+                label: Text('Báo cáo'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue[700],
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                 ),
               ),
             ],
@@ -251,9 +251,9 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
               onTap: () => _selectDate(context),
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey[300]!),
                 ),
@@ -286,7 +286,7 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
               decoration: InputDecoration(
                 labelText: 'Trạng thái',
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -320,9 +320,9 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
             child: TextField(
               decoration: InputDecoration(
                 labelText: 'Tìm kiếm',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -447,9 +447,9 @@ class _AttendanceTabState extends ConsumerState<AttendanceTab> {
 
   Widget _buildAttendanceRow(EmployeeAttendanceRecord record) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         border: Border(
           bottom: BorderSide(color: Colors.grey[200]!),
         ),

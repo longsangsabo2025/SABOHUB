@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// CEO Profile Page
 /// Displays CEO profile information, settings, and account management
@@ -365,10 +367,10 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Hồ sơ cá nhân'),
-          backgroundColor: Colors.white,
+          title: Text('Hồ sơ cá nhân'),
+          backgroundColor: Theme.of(context).colorScheme.surface,
         ),
-        body: const Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -377,17 +379,17 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface54),
         ),
-        title: const Text(
+        title: Text(
           'Hồ sơ cá nhân',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
         actions: [
@@ -472,13 +474,13 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
             // Profile header
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -521,15 +523,15 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                           bottom: 0,
                           right: 0,
                           child: Container(
-                            padding: const EdgeInsets.all(6),
+                            padding: EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               color: Colors.blue,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
+                              border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.camera_alt,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               size: 16,
                             ),
                           ),
@@ -542,10 +544,10 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                   if (!_isEditingProfile) ...[
                     Text(
                       profile['full_name'] ?? 'User',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface87,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -619,18 +621,18 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Personal Information
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -639,12 +641,12 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Thông tin cá nhân',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface87,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -678,18 +680,18 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Activity Information
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -698,12 +700,12 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Hoạt động',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface87,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -727,18 +729,18 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Settings
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -747,12 +749,12 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Cài đặt',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface87,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -761,6 +763,20 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                     Icons.lock,
                     () => _showChangePasswordDialog(),
                   ),
+                  const SizedBox(height: 12),
+                  Consumer(builder: (context, ref, _) {
+                    final isDarkMode = ref.watch(themeProvider).value == ThemeMode.dark;
+                    return _buildSwitchSettingOption(
+                      'Giao diện tối',
+                      isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                      isDarkMode,
+                      (value) {
+                        ref.read(themeProvider.notifier).setTheme(
+                          value ? ThemeMode.dark : ThemeMode.light
+                        );
+                      },
+                    );
+                  }),
                   const SizedBox(height: 12),
                   _buildSettingOption(
                     'Cài đặt thông báo',
@@ -892,19 +908,47 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                   color: Colors.grey.shade600,
                 ),
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: 2),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+                  color: Theme.of(context).colorScheme.onSurface87,
                 ),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  // ignore: unused_element
+  Widget _buildSwitchSettingOption(String title, IconData icon, bool value, ValueChanged<bool> onChanged) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: Colors.grey[600]),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+            ),
+            Switch(value: value, onChanged: onChanged),
+          ],
+        ),
+      ),
     );
   }
 
@@ -942,7 +986,7 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: isDestructive ? Colors.red : Colors.black87,
+                  color: isDestructive ? Colors.red : Theme.of(context).colorScheme.onSurface87,
                 ),
               ),
             ),
@@ -961,8 +1005,10 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
   // CHANGE PASSWORD Dialog
   // ═══════════════════════════════════════════════════════
   void _showChangePasswordDialog() {
+    final currentPassCtrl = TextEditingController();
     final newPassCtrl = TextEditingController();
     final confirmPassCtrl = TextEditingController();
+    bool obscureCurrent = true;
     bool obscureNew = true;
     bool obscureConfirm = true;
 
@@ -974,6 +1020,25 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // SECURITY: Require current password verification
+              TextField(
+                controller: currentPassCtrl,
+                obscureText: obscureCurrent,
+                decoration: InputDecoration(
+                  labelText: 'Mật khẩu hiện tại',
+                  prefixIcon: const Icon(Icons.lock_clock),
+                  suffixIcon: IconButton(
+                    icon: Icon(obscureCurrent
+                        ? Icons.visibility_off
+                        : Icons.visibility),
+                    onPressed: () =>
+                        setDialogState(() => obscureCurrent = !obscureCurrent),
+                  ),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: newPassCtrl,
                 obscureText: obscureNew,
@@ -1021,8 +1086,18 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
             ),
             FilledButton(
               onPressed: () async {
+                final currentPass = currentPassCtrl.text.trim();
                 final newPass = newPassCtrl.text.trim();
                 final confirmPass = confirmPassCtrl.text.trim();
+                
+                // SECURITY: Require current password
+                if (currentPass.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Vui lòng nhập mật khẩu hiện tại')),
+                  );
+                  return;
+                }
                 if (newPass.length < 8) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -1041,8 +1116,24 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
                 Navigator.pop(ctx);
                 try {
                   final user = ref.read(currentUserProvider);
+                  
+                  // SECURITY: Verify current password before allowing change
+                  final currentHash = await _supabase.rpc('hash_password', params: {
+                    'p_password': currentPass,
+                  });
+                  final employee = await _supabase
+                      .from('employees')
+                      .select('password_hash')
+                      .eq('id', user!.id)
+                      .single();
+                  final storedHash = employee['password_hash'] as String?;
+                  if (storedHash == null || storedHash != currentHash) {
+                    throw Exception('Mật khẩu hiện tại không đúng');
+                  }
+                  
+                  // Current password verified, proceed with change
                   await _supabase.rpc('change_employee_password', params: {
-                    'p_employee_id': user?.id,
+                    'p_employee_id': user.id,
                     'p_new_password': newPass,
                   });
                   if (mounted) {
@@ -1208,3 +1299,6 @@ class _CEOProfilePageState extends ConsumerState<CEOProfilePage> {
     );
   }
 }
+
+
+

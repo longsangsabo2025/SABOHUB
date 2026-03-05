@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../core/theme/app_text_styles.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../business_types/distribution/models/odori_customer.dart';
 import '../../providers/auth_provider.dart';
+import '../core/theme/app_spacing.dart';
 
 final supabase = Supabase.instance.client;
 final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
@@ -160,7 +162,7 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
       context: context,
       builder: (context) => RecordPaymentDialog(
         customer: widget.customer,
-        companyId: ref.read(authProvider).user?.companyId ?? '',
+        companyId: ref.read(currentUserProvider)?.companyId ?? '',
         unpaidOrders: _unpaidOrders,
         currentDebt: _totalDebt,
         onSaved: () {
@@ -182,7 +184,7 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.paddingLG,
             decoration: BoxDecoration(
               color: Colors.red.shade50,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -199,18 +201,18 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
                       ),
                       child: Icon(Icons.account_balance_wallet, color: Colors.red.shade600, size: 24),
                     ),
-                    const SizedBox(width: 12),
+                    AppSpacing.hGapMD,
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Công nợ khách hàng',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: AppTextStyles.title,
                           ),
                           Text(
                             widget.customer.name,
-                            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                            style: AppTextStyles.body.copyWith(color: Colors.grey.shade600),
                           ),
                         ],
                       ),
@@ -224,7 +226,7 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
 
                 // Debt summary cards
                 if (!_isLoading && _error == null) ...[
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
                   Row(
                     children: [
                       Expanded(
@@ -235,7 +237,7 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
                           Icons.warning_amber_rounded,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      AppSpacing.hGapMD,
                       Expanded(
                         child: _buildSummaryCard(
                           'Đơn chưa TT',
@@ -246,13 +248,13 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  AppSpacing.gapSM,
                   Row(
                     children: [
                       Expanded(
                         child: _buildMiniStat('Tổng mua', _currencyFormat.format(_totalOrders)),
                       ),
-                      const SizedBox(width: 8),
+                      AppSpacing.hGapSM,
                       Expanded(
                         child: _buildMiniStat('Đã thanh toán', _currencyFormat.format(_totalPaid)),
                       ),
@@ -290,9 +292,9 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
-                              const SizedBox(height: 8),
+                              AppSpacing.gapSM,
                               Text('Lỗi: $_error'),
-                              const SizedBox(height: 16),
+                              AppSpacing.gapLG,
                               ElevatedButton(onPressed: _loadData, child: const Text('Thử lại')),
                             ],
                           ),
@@ -310,7 +312,7 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
           // Record payment button
           if (!_isLoading && _totalDebt > 0)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.paddingLG,
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 border: Border(top: BorderSide(color: Colors.grey.shade200)),
@@ -319,11 +321,11 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _showRecordPaymentDialog,
-                  icon: const Icon(Icons.payments),
-                  label: const Text('Ghi nhận thanh toán'),
+                  icon: Icon(Icons.payments),
+                  label: Text('Ghi nhận thanh toán'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green.shade600,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -337,18 +339,18 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
 
   Widget _buildSummaryCard(String label, String value, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: AppSpacing.paddingMD,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+          BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05), blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: AppSpacing.paddingSM,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
@@ -360,8 +362,8 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+                Text(label, style: AppTextStyles.label.copyWith(color: Colors.grey.shade600)),
+                Text(value, style: AppTextStyles.bodyBold.copyWith(color: color)),
               ],
             ),
           ),
@@ -372,16 +374,16 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
 
   Widget _buildMiniStat(String label, String value) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
+        color: Theme.of(context).colorScheme.surface.withOpacity(0.7),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(label, style: AppTextStyles.caption.copyWith(color: Colors.grey.shade600)),
+          Text(value, style: AppTextStyles.captionBold),
         ],
       ),
     );
@@ -394,22 +396,22 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: AppSpacing.paddingXXL,
               decoration: BoxDecoration(
                 color: Colors.green.shade50,
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.check_circle, size: 48, color: Colors.green.shade400),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             Text(
               'Không có công nợ!',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.green.shade700),
+              style: AppTextStyles.subtitle.copyWith(color: Colors.green.shade700),
             ),
-            const SizedBox(height: 8),
+            AppSpacing.gapSM,
             Text(
               'Khách hàng đã thanh toán hết',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              style: AppTextStyles.body.copyWith(color: Colors.grey.shade500),
             ),
           ],
         ),
@@ -417,9 +419,9 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       itemCount: _unpaidOrders.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => AppSpacing.gapMD,
       itemBuilder: (context, index) {
         final order = _unpaidOrders[index];
         final total = (order['total'] as num?)?.toDouble() ?? 0;
@@ -431,7 +433,7 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
 
         return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isOverdue ? Colors.red.shade300 : Colors.grey.shade200,
@@ -442,7 +444,7 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
             children: [
               ListTile(
                 leading: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: AppSpacing.paddingSM,
                   decoration: BoxDecoration(
                     color: isOverdue ? Colors.red.shade50 : Colors.orange.shade50,
                     borderRadius: BorderRadius.circular(8),
@@ -459,16 +461,16 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     if (isOverdue) ...[
-                      const SizedBox(width: 8),
+                      AppSpacing.hGapSM,
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.red,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text(
+                        child: Text(
                           'QUÁ HẠN',
-                          style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -499,14 +501,14 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Tổng đơn', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                        Text('Tổng đơn', style: AppTextStyles.label.copyWith(color: Colors.grey.shade600)),
                         Text(_currencyFormat.format(total), style: const TextStyle(fontWeight: FontWeight.w500)),
                       ],
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text('Đã TT', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                        Text('Đã TT', style: AppTextStyles.label.copyWith(color: Colors.grey.shade600)),
                         Text(_currencyFormat.format(paidAmount), 
                              style: TextStyle(fontWeight: FontWeight.w500, color: Colors.green.shade600)),
                       ],
@@ -514,7 +516,7 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('Còn nợ', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                        Text('Còn nợ', style: AppTextStyles.label.copyWith(color: Colors.grey.shade600)),
                         Text(_currencyFormat.format(remaining),
                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red.shade600)),
                       ],
@@ -536,11 +538,11 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: AppSpacing.paddingXXL,
               decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
               child: Icon(Icons.payment, size: 48, color: Colors.grey.shade400),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             Text('Chưa có lịch sử thu tiền', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
           ],
         ),
@@ -548,18 +550,18 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       itemCount: _payments.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, __) => AppSpacing.gapSM,
       itemBuilder: (context, index) {
         final payment = _payments[index];
         final paymentDate = DateTime.tryParse(payment['payment_date']?.toString() ?? '');
         final amount = (payment['amount'] as num?)?.toDouble() ?? 0;
 
         return Container(
-          padding: const EdgeInsets.all(12),
+          padding: AppSpacing.paddingMD,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.grey.shade200),
           ),
@@ -573,7 +575,7 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
                 ),
                 child: Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMD,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -585,12 +587,12 @@ class _CustomerDebtSheetState extends ConsumerState<CustomerDebtSheet> with Sing
                     if (paymentDate != null)
                       Text(
                         DateFormat('dd/MM/yyyy HH:mm').format(paymentDate),
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        style: AppTextStyles.caption.copyWith(color: Colors.grey.shade600),
                       ),
                     if (payment['payment_method'] != null)
                       Text(
                         _getPaymentMethodText(payment['payment_method']),
-                        style: TextStyle(fontSize: 12, color: Colors.blue.shade600),
+                        style: AppTextStyles.caption.copyWith(color: Colors.blue.shade600),
                       ),
                   ],
                 ),
@@ -753,7 +755,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         width: 400,
-        padding: const EdgeInsets.all(20),
+        padding: AppSpacing.paddingXL,
         child: Form(
           key: _formKey,
           child: Column(
@@ -763,15 +765,15 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
               Row(
                 children: [
                   Icon(Icons.payments, color: Colors.green.shade600),
-                  const SizedBox(width: 12),
-                  const Text('Ghi nhận thanh toán', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  AppSpacing.hGapMD,
+                  Text('Ghi nhận thanh toán', style: AppTextStyles.title),
                   const Spacer(),
                   IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
                 ],
               ),
-              const SizedBox(height: 8),
+              AppSpacing.gapSM,
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: AppSpacing.paddingMD,
                 decoration: BoxDecoration(
                   color: Colors.red.shade50,
                   borderRadius: BorderRadius.circular(8),
@@ -787,7 +789,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              AppSpacing.gapXL,
 
               TextFormField(
                 controller: _amountController,
@@ -799,7 +801,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                 keyboardType: TextInputType.number,
                 validator: (v) => v == null || v.isEmpty ? 'Vui lòng nhập số tiền' : null,
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gapLG,
 
               DropdownButtonFormField<String>(
                 value: _paymentMethod,
@@ -812,7 +814,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                 }).toList(),
                 onChanged: (v) => setState(() => _paymentMethod = v ?? 'cash'),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gapLG,
 
               TextFormField(
                 controller: _referenceController,
@@ -822,7 +824,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                   hintText: 'VD: Mã chuyển khoản...',
                 ),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gapLG,
 
               TextFormField(
                 controller: _notesController,
@@ -832,21 +834,21 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
                 ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gapXXL,
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
-                  const SizedBox(width: 12),
+                  TextButton(onPressed: () => Navigator.pop(context), child: Text('Hủy')),
+                  AppSpacing.hGapMD,
                   ElevatedButton(
                     onPressed: _isLoading ? null : _save,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green.shade600,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                     ),
                     child: _isLoading
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface))
                         : const Text('Xác nhận thanh toán'),
                   ),
                 ],

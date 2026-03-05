@@ -86,7 +86,7 @@ final analyticsTrackingInitProvider = Provider<void>((ref) {
 
 /// Provider for CEO analytics event tracking summary
 final analyticsTrackingSummaryProvider =
-    FutureProvider.family<Map<String, dynamic>, String>(
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, companyId) async {
     return analyticsTracking.getCompanySummary(companyId: companyId);
   },

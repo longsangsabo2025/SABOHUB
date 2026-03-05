@@ -78,14 +78,14 @@ class _OdoriOrdersPageState extends ConsumerState<OdoriOrdersPage>
                     error: (_, __) => const SizedBox.shrink(),
                     data: (orders) => orders.isNotEmpty
                         ? Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.red,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
                               '${orders.length}',
-                              style: const TextStyle(color: Colors.white, fontSize: 10),
+                              style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 10),
                             ),
                           )
                         : const SizedBox.shrink(),
@@ -100,7 +100,7 @@ class _OdoriOrdersPageState extends ConsumerState<OdoriOrdersPage>
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            onPressed: () => _showFilterSheet(),
+            onPressed: () => _showFilterSheet(context),
           ),
         ],
       ),
@@ -153,21 +153,21 @@ class _OdoriOrdersPageState extends ConsumerState<OdoriOrdersPage>
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateOrderSheet(),
+        onPressed: () => _showCreateOrderSheet(context),
         icon: const Icon(Icons.add),
         label: const Text('Tạo đơn'),
       ),
     );
   }
 
-  void _showFilterSheet() {
+  void _showFilterSheet(BuildContext context) {
     // TODO: Implement date range filter
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Bộ lọc ngày đang phát triển')),
     );
   }
 
-  void _showCreateOrderSheet() {
+  void _showCreateOrderSheet(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const OrderFormPage(),

@@ -60,7 +60,7 @@ class _ScheduleFormPageState extends ConsumerState<ScheduleFormPage> {
       appBar: AppBar(
         title: Text(widget.schedule == null ? 'Thêm Lịch Làm Việc' : 'Sửa Lịch Làm Việc'),
         backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.surface,
       ),
       body: Form(
         key: _formKey,
@@ -313,15 +313,15 @@ class _ScheduleFormPageState extends ConsumerState<ScheduleFormPage> {
                       onPressed: _isLoading ? null : _saveSchedule,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue.shade700,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                       ),
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                               ),
                             )
                           : Text(widget.schedule == null ? 'Thêm' : 'Cập nhật'),

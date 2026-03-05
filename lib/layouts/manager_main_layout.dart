@@ -10,11 +10,10 @@ import '../pages/manager/manager_dashboard_page.dart';
 import '../pages/manager/manager_staff_page.dart';
 import '../pages/manager/manager_tasks_page.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/company_switcher.dart';
 import '../widgets/error_boundary.dart';
-import '../widgets/grouped_navigation_drawer.dart';
 import '../widgets/unified_bottom_navigation.dart';
 import '../widgets/realtime_notification_widgets.dart';
-import '../utils/app_logger.dart';
 
 /// Manager Main Layout
 /// Complete layout with navigation for manager role
@@ -55,31 +54,28 @@ class _ManagerMainLayoutState extends ConsumerState<ManagerMainLayout>
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final user = authState.user;
+    final user = ref.watch(currentUserProvider);
     final companyId = user?.companyId;
-    final currentRoute = GoRouterState.of(context).uri.path;
-
-    // 🔥 DEBUG: Log why this layout is shown instead of DistributionManagerLayout
-    AppLogger.box('⚠️ SABO ManagerLayout SHOWN', {
-      'userName': user?.name ?? 'null',
-      'role': user?.role.toString() ?? 'null',
-      'businessType': user?.businessType?.toString() ?? '❌ NULL',
-      'companyName': user?.companyName ?? 'null',
-      'companyId': user?.companyId ?? 'null',
-    });
 
     return ErrorBoundary(
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('SABOHUB Manager'),
-          actions: const [
-            RealtimeNotificationBell(),
+          title: const Text('Quản lý'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.assignment),
+              tooltip: 'Báo cáo nhân viên',
+              onPressed: () => context.push('/manager-reports'),
+            ),
+            const CompanySwitcher(),
+            const SizedBox(width: 4),
+            const RealtimeNotificationBell(),
+            IconButton(
+              icon: const Icon(Icons.person_outline),
+              tooltip: 'Hồ sơ cá nhân',
+              onPressed: () => context.push('/profile'),
+            ),
           ],
-        ),
-        drawer: GroupedNavigationDrawer(
-          userRole: UserRole.manager,
-          currentRoute: currentRoute,
         ),
         body: Stack(
           children: [
@@ -99,7 +95,7 @@ class _ManagerMainLayoutState extends ConsumerState<ManagerMainLayout>
                 const ManagerTasksPage(),
                 const ManagerAttendancePage(),
                 const ManagerAnalyticsPage(),
-                const ManagerStaffPage(),
+                ManagerStaffPage(),
               ],
             ),
             // Debug banner removed - Musk fix applied 🚀
@@ -113,4 +109,5 @@ class _ManagerMainLayoutState extends ConsumerState<ManagerMainLayout>
       ),
     );
   }
+
 }

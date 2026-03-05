@@ -80,17 +80,17 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.error_outline,
                 size: 64,
                 color: Colors.red,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 'Không thể tải AI Assistant',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 error.toString(),
                 style: Theme.of(context).textTheme.bodyMedium,
@@ -135,7 +135,7 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
         ChatInputWidget(
           assistantId: assistant.id,
           companyId: widget.companyId,
-          userId: ref.read(authProvider).user?.id ?? '',
+          userId: ref.read(currentUserProvider)?.id ?? '',
           onMessageSent: () {
             // Scroll to bottom after sending message
             Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
@@ -147,9 +147,9 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
 
   Widget _buildHeader(AIAssistant assistant) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         border: Border(
           bottom: BorderSide(color: Colors.grey[300]!),
         ),
@@ -193,8 +193,8 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
         maxChildSize: 0.95,
         builder: (context, scrollController) {
           return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
@@ -217,7 +217,7 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
                     children: [
                       Icon(Icons.lightbulb,
                           size: 28, color: Colors.orange[700]),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Text(
                         'Đề xuất từ AI',
                         style: Theme.of(context)
@@ -262,8 +262,8 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
         maxChildSize: 0.95,
         builder: (context, scrollController) {
           return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
@@ -285,7 +285,7 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
                   child: Row(
                     children: [
                       Icon(Icons.folder, size: 28, color: Colors.blue[700]),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Text(
                         'File đã tải lên',
                         style: Theme.of(context)
@@ -378,14 +378,14 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
               size: 80,
               color: Colors.grey[400],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Text(
               'Xin chào! 👋',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Tôi là trợ lý AI của ${widget.companyName}',
               style: Theme.of(context).textTheme.bodyLarge,
@@ -393,7 +393,7 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
             ),
             const SizedBox(height: 24),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.blue[50],
                 borderRadius: BorderRadius.circular(12),
@@ -418,7 +418,7 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Text(
               'Gửi tin nhắn để bắt đầu trò chuyện! 💬',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -458,7 +458,7 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
               size: 64,
               color: Colors.red[400],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Lỗi tải AI Assistant',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -466,7 +466,7 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Chi tiết lỗi:\n$errorMessage',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -474,7 +474,7 @@ class _AIAssistantTabState extends ConsumerState<AIAssistantTab> {
                   ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Company ID: ${widget.companyId}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(

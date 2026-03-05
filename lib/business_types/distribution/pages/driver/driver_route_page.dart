@@ -9,7 +9,6 @@ import '../../../../providers/auth_provider.dart';
 import '../../../../utils/app_logger.dart';
 import '../../../../widgets/bug_report_dialog.dart';
 import '../../../../widgets/realtime_notification_widgets.dart';
-import '../../../../pages/staff/staff_profile_page.dart';
 import 'delivery_detail_sheet.dart';
 import 'delivery_completion_dialog.dart';
 
@@ -39,9 +38,9 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
   Future<void> _loadDashboardData() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final driverId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final driverId = user?.id;
 
       if (companyId == null || driverId == null) {
         setState(() => _isLoading = false);
@@ -149,8 +148,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final user = authState.user;
+    final user = ref.watch(currentUserProvider);
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -250,35 +248,35 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
                     child: Text(
                       (user?.name ?? 'T')[0].toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 22, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Xin chào, ${user?.name ?? 'Tài xế'}! 👋',
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 2),
+                          style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 18, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 2),
                       Text(user?.companyName ?? 'Công ty',
-                          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13)),
+                          style: TextStyle(color: Theme.of(context).colorScheme.surface.withOpacity(0.8), fontSize: 13)),
                     ],
                   ),
                 ),
-                const RealtimeNotificationBell(iconColor: Colors.white),
+                RealtimeNotificationBell(iconColor: Theme.of(context).colorScheme.surface),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.surface),
                   onSelected: (value) async {
                     if (value == 'profile') {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (context) => const Scaffold(body: StaffProfilePage())));
+                      context.push('/profile');
                     } else if (value == 'bug_report') {
                       BugReportDialog.show(context);
                     } else if (value == 'logout') {
@@ -299,18 +297,18 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
             ),
             const SizedBox(height: 24),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Theme.of(context).colorScheme.surface.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.calendar_today, color: Colors.white, size: 18),
-                  const SizedBox(width: 8),
+                  Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.surface, size: 18),
+                  SizedBox(width: 8),
                   Text(DateFormat('EEEE, dd/MM/yyyy', 'vi').format(DateTime.now()),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+                      style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),
@@ -322,11 +320,11 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04), blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -359,23 +357,23 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(14)),
-                child: const Icon(Icons.payments, color: Colors.white, size: 28),
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withOpacity(0.2), borderRadius: BorderRadius.circular(14)),
+                child: Icon(Icons.payments, color: Theme.of(context).colorScheme.surface, size: 28),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Thu hộ hôm nay', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13)),
-                    const SizedBox(height: 4),
+                    Text('Thu hộ hôm nay', style: TextStyle(color: Theme.of(context).colorScheme.surface.withOpacity(0.9), fontSize: 13)),
+                    SizedBox(height: 4),
                     Text(currencyFormat.format(_stats['todayRevenue'] ?? 0),
-                        style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                        style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 24, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.5), size: 16),
+              Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.surface.withOpacity(0.5), size: 16),
             ],
           ),
         ),
@@ -384,9 +382,9 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
   }
 
   Future<void> _showTodayRevenueDetails() async {
-    final authState = ref.read(authProvider);
-    final companyId = authState.user?.companyId;
-    final driverId = authState.user?.id;
+    final user = ref.read(currentUserProvider);
+    final companyId = user?.companyId;
+    final driverId = user?.id;
 
     if (companyId == null || driverId == null) return;
 
@@ -489,8 +487,8 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
       minChildSize: 0.5,
       maxChildSize: 0.95,
       builder: (_, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -676,14 +674,14 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.02),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -743,8 +741,8 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
   Widget _buildEmptyState() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      padding: EdgeInsets.all(40),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(20)),
       child: Column(
         children: [
           Container(
@@ -844,9 +842,9 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04), blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Material(
         color: Colors.transparent,
@@ -1018,7 +1016,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Row(children: [Icon(Icons.info, color: Colors.white), SizedBox(width: 12), Text('Đã báo cáo không giao được')]),
+          content: Row(children: [Icon(Icons.info, color: Theme.of(context).colorScheme.surface), SizedBox(width: 12), Text('Đã báo cáo không giao được')]),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1128,14 +1126,14 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
           'payment_status': 'paid', 'payment_method': 'cash',
           'payment_collected_at': DateTime.now().toIso8601String(), 'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', orderId);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Row(children: [Icon(Icons.check_circle, color: Colors.white), SizedBox(width: 12), Text('💰 Đã xác nhận thu tiền mặt!')]), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Row(children: [Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface), SizedBox(width: 12), Text('💰 Đã xác nhận thu tiền mặt!')]), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
       } else if (confirmed == 'transfer') {
         await supabase.from('sales_orders').update({'payment_status': 'pending_transfer', 'payment_method': 'transfer', 'updated_at': DateTime.now().toIso8601String()}).eq('id', orderId);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Row(children: [Icon(Icons.schedule, color: Colors.white), SizedBox(width: 12), Expanded(child: Text('🏦 Đã ghi nhận chuyển khoản. Chờ Finance xác nhận.'))]), backgroundColor: Colors.blue, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Row(children: [Icon(Icons.schedule, color: Theme.of(context).colorScheme.surface), SizedBox(width: 12), Expanded(child: Text('🏦 Đã ghi nhận chuyển khoản. Chờ Finance xác nhận.'))]), backgroundColor: Colors.blue, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
       } else if (confirmed == 'debt') {
         await supabase.from('sales_orders').update({'payment_status': 'debt', 'payment_method': 'debt', 'updated_at': DateTime.now().toIso8601String()}).eq('id', orderId);
         if (customerId != null) await supabase.from('customers').update({'total_debt': currentDebt + total, 'updated_at': DateTime.now().toIso8601String()}).eq('id', customerId);
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Row(children: [const Icon(Icons.receipt_long, color: Colors.white), const SizedBox(width: 12), Expanded(child: Text('📝 Đã ghi nợ ${currencyFormat.format(total)}'))]), backgroundColor: Colors.orange, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Row(children: [Icon(Icons.receipt_long, color: Theme.of(context).colorScheme.surface), SizedBox(width: 12), Expanded(child: Text('📝 Đã ghi nợ ${currencyFormat.format(total)}'))]), backgroundColor: Colors.orange, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
       }
       if (mounted) _loadDashboardData();
     } catch (e) {
@@ -1147,9 +1145,9 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
   Future<void> _pickupDelivery(String? deliveryId, String orderId, bool isFromSalesOrders) async {
     try {
       final supabase = Supabase.instance.client;
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final driverId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final driverId = user?.id;
 
       if (isFromSalesOrders) {
         final now = DateTime.now().toIso8601String();
@@ -1173,7 +1171,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Row(children: [Icon(Icons.local_shipping, color: Colors.white), SizedBox(width: 12), Text('Đã nhận đơn! Bắt đầu giao hàng.')]), backgroundColor: Colors.blue, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Row(children: [Icon(Icons.local_shipping, color: Theme.of(context).colorScheme.surface), SizedBox(width: 12), Text('Đã nhận đơn! Bắt đầu giao hàng.')]), backgroundColor: Colors.blue, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
         _loadDashboardData();
       }
     } catch (e) {
@@ -1225,7 +1223,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Row(children: [const Icon(Icons.celebration, color: Colors.white), const SizedBox(width: 12), Expanded(child: Text(result['updatePayment'] == true ? '🎉 Giao hàng và thanh toán thành công!' : '🎉 Giao hàng thành công!'))]),
+          content: Row(children: [Icon(Icons.celebration, color: Theme.of(context).colorScheme.surface), SizedBox(width: 12), Expanded(child: Text(result['updatePayment'] == true ? '🎉 Giao hàng và thanh toán thành công!' : '🎉 Giao hàng thành công!'))]),
           backgroundColor: Colors.green, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
         _loadDashboardData();

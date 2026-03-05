@@ -1,3 +1,4 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../business_types/service/models/tournament.dart';
 import '../../../business_types/service/providers/tournament_provider.dart';
 import '../../../providers/auth_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Tournament Create/Edit Form — SABO Billiard Tournaments
 class TournamentFormPage extends ConsumerStatefulWidget {
@@ -219,8 +221,8 @@ class _TournamentFormPageState extends ConsumerState<TournamentFormPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEdit ? 'Sửa giải đấu' : 'Tạo giải đấu mới'),
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.backgroundDark,
+        foregroundColor: Theme.of(context).colorScheme.surface,
         actions: [
           if (_isEdit)
             IconButton(
@@ -451,7 +453,7 @@ class _TournamentFormPageState extends ConsumerState<TournamentFormPage> {
         style: const TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF0F172A),
+          color: AppColors.backgroundDark,
         ),
       ),
     );
@@ -476,7 +478,7 @@ class _TournamentFormPageState extends ConsumerState<TournamentFormPage> {
         child: Text(
           value != null ? fmt.format(value) : 'Chọn ngày',
           style: TextStyle(
-            color: value != null ? Colors.black87 : Colors.grey,
+            color: value != null ? Theme.of(context).colorScheme.onSurface87 : Colors.grey,
           ),
         ),
       ),

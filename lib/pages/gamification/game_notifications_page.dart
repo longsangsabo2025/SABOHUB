@@ -4,7 +4,7 @@ import '../../models/gamification/gamification_models.dart';
 import '../../providers/gamification_provider.dart';
 
 class GameNotificationsPage extends ConsumerStatefulWidget {
-  const GameNotificationsPage({super.key});
+  GameNotificationsPage({super.key});
 
   @override
   ConsumerState<GameNotificationsPage> createState() => _GameNotificationsPageState();

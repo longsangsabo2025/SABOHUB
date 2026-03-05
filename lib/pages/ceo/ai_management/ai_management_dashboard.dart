@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'ai_assistants_page.dart';
@@ -7,6 +7,7 @@ import 'ai_chat_interface.dart';
 import 'ai_models_page.dart';
 import 'ai_projects_page.dart';
 import 'ai_prompts_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// AI Management Dashboard - Mobile-first design with tabs
 class AIManagementDashboard extends ConsumerStatefulWidget {
@@ -36,11 +37,11 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Row(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Row(
           children: [
             Icon(
               Icons.psychology,
@@ -51,7 +52,7 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
             Text(
               'AI Center',
               style: TextStyle(
-                color: Colors.black87,
+                color: Theme.of(context).colorScheme.onSurface87,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -96,14 +97,14 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
           _buildOverviewTab(),
           const AIModelsPage(),
           const AIPromptsPage(),
-          const AIAssistantsPage(),
+          AIAssistantsPage(),
           const AIProjectsPage(),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openQuickChat,
         backgroundColor: AppColors.info,
-        child: const Icon(Icons.chat, color: Colors.white),
+        child: Icon(Icons.chat, color: Theme.of(context).colorScheme.surface),
       ),
     );
   }
@@ -207,10 +208,10 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
       ],
@@ -224,9 +225,9 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -275,9 +276,9 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
   ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -336,12 +337,12 @@ class _AIManagementDashboardState extends ConsumerState<AIManagementDashboard>
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: Colors.white, size: 24),
+              child: Icon(icon, color: Theme.of(context).colorScheme.surface, size: 24),
             ),
             const SizedBox(height: 8),
             Text(

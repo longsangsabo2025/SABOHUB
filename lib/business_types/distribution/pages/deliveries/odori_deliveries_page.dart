@@ -60,22 +60,22 @@ class _OdoriDeliveriesPageState extends ConsumerState<OdoriDeliveriesPage>
         controller: _tabController,
         children: [
           // Today tab
-          _buildDeliveriesList(deliveriesAsync),
+          _buildDeliveriesList(context, deliveriesAsync),
           // Active tab
-          _buildActiveDeliveries(activeAsync),
+          _buildActiveDeliveries(context, activeAsync),
           // History tab
-          _buildDeliveriesList(deliveriesAsync),
+          _buildDeliveriesList(context, deliveriesAsync),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateDeliverySheet(),
+        onPressed: () => _showCreateDeliverySheet(context),
         icon: const Icon(Icons.add),
         label: const Text('Tạo chuyến'),
       ),
     );
   }
 
-  Widget _buildDeliveriesList(AsyncValue<List<OdoriDelivery>> deliveriesAsync) {
+  Widget _buildDeliveriesList(BuildContext context, AsyncValue<List<OdoriDelivery>> deliveriesAsync) {
     return deliveriesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
@@ -123,7 +123,7 @@ class _OdoriDeliveriesPageState extends ConsumerState<OdoriDeliveriesPage>
     );
   }
 
-  Widget _buildActiveDeliveries(AsyncValue<List<OdoriDelivery>> activeAsync) {
+  Widget _buildActiveDeliveries(BuildContext context, AsyncValue<List<OdoriDelivery>> activeAsync) {
     return activeAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
@@ -199,7 +199,7 @@ class _OdoriDeliveriesPageState extends ConsumerState<OdoriDeliveriesPage>
     }
   }
 
-  void _showCreateDeliverySheet() {
+  void _showCreateDeliverySheet(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const DeliveryFormPage()),
@@ -414,7 +414,7 @@ class _ActiveDeliveryCard extends StatelessWidget {
               backgroundColor: Colors.blue,
               child: Text(
                 delivery.driverName?[0].toUpperCase() ?? 'D',
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Theme.of(context).colorScheme.surface),
               ),
             ),
             Positioned(
@@ -426,7 +426,7 @@ class _ActiveDeliveryCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.green,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
                 ),
               ),
             ),

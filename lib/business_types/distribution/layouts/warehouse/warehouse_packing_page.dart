@@ -51,8 +51,8 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
 
   Future<void> _loadReadyForDriverOrders() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 
@@ -77,8 +77,8 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
 
   Future<void> _loadAwaitingPickupOrders() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 
@@ -103,8 +103,8 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
 
   Future<void> _loadHandedOverOrders() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 
@@ -141,8 +141,8 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
 
   Future<void> _loadPackedOrders() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 
@@ -187,9 +187,9 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.local_shipping, color: Colors.white),
+                Icon(Icons.local_shipping, color: Theme.of(context).colorScheme.surface),
                 SizedBox(width: 12),
                 Text('Đơn hàng sẵn sàng để giao!'),
               ],
@@ -238,9 +238,9 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
+                Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface),
                 SizedBox(width: 12),
                 Text('Đã xác nhận giao hàng cho tài xế!'),
               ],
@@ -278,7 +278,7 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
           children: [
             // Header with TabBar
             Container(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 children: [
                   Padding(
@@ -302,7 +302,7 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                   ),
                   // TabBar
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    margin: EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(12),
@@ -310,11 +310,11 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                     child: TabBar(
                       controller: _tabController,
                       indicator: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
                             blurRadius: 4,
                           ),
                         ],
@@ -335,14 +335,14 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                               if (_packedOrders.isNotEmpty) ...[
                                 const SizedBox(width: 4),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  padding: EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: Colors.grey,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
                                     '${_packedOrders.length}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 10, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
@@ -359,14 +359,14 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                               if (_readyForDriverOrders.isNotEmpty) ...[
                                 const SizedBox(width: 4),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  padding: EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: Colors.blue,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
                                     '${_readyForDriverOrders.length}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 10, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
@@ -383,14 +383,14 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                               if (_awaitingPickupOrders.isNotEmpty) ...[
                                 const SizedBox(width: 4),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  padding: EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: Colors.purple,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
                                     '${_awaitingPickupOrders.length}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 10, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
@@ -407,14 +407,14 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                               if (_handedOverOrders.isNotEmpty) ...[
                                 const SizedBox(width: 4),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  padding: EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: Colors.green,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
                                     '${_handedOverOrders.length}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 10, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
@@ -492,9 +492,9 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
           return GestureDetector(
             onTap: () => _showOrderDetailSheet(order),
             child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.blue.shade100, width: 2),
               boxShadow: [
@@ -731,13 +731,13 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
     return GestureDetector(
       onTap: () => _showOrderDetailSheet(order),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -911,15 +911,15 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                     ? null
                     : () => _markReadyForDelivery(order['id']),
                 icon: _processingOrders.contains(order['id'])
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                         ),
                       )
-                    : const Icon(Icons.local_shipping, size: 20),
+                    : Icon(Icons.local_shipping, size: 20),
                 label: Text(_processingOrders.contains(order['id'])
                     ? 'Đang xử lý...'
                     : 'Sẵn sàng giao cho tài xế'),
@@ -927,7 +927,7 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                   backgroundColor: _processingOrders.contains(order['id'])
                       ? Colors.grey
                       : Colors.blue,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -1001,9 +1001,9 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
           return GestureDetector(
             onTap: () => _showOrderDetailSheet(delivery, isFromDeliveries: true),
             child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.purple.shade100, width: 2),
               boxShadow: [
@@ -1192,15 +1192,15 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                           ? null
                           : () => _confirmHandoverToDriver(deliveryId, orderId),
                       icon: _processingOrders.contains(deliveryId)
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                               ),
                             )
-                          : const Icon(Icons.check_circle, size: 20),
+                          : Icon(Icons.check_circle, size: 20),
                       label: Text(_processingOrders.contains(deliveryId)
                           ? 'Đang xử lý...'
                           : 'Xác nhận đã giao cho tài xế'),
@@ -1208,7 +1208,7 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                         backgroundColor: _processingOrders.contains(deliveryId)
                             ? Colors.grey
                             : Colors.green,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -1367,19 +1367,19 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.fact_check, color: Colors.white, size: 24),
+                      child: Icon(Icons.fact_check, color: Theme.of(context).colorScheme.surface, size: 24),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Đối soát hôm nay',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1403,19 +1403,19 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Tổng giá trị:', style: TextStyle(color: Colors.white, fontSize: 14)),
+                      Text('Tổng giá trị:', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 14)),
                       Text(
                         currencyFmt.format(totalAmount),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.surface,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1461,9 +1461,9 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
             return GestureDetector(
               onTap: () => _showOrderDetailSheet(delivery, isFromDeliveries: true),
               child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
+              margin: EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isCompleted ? Colors.green.shade100 : Colors.blue.shade100,
@@ -1471,7 +1471,7 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -1641,8 +1641,8 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
         minChildSize: 0.4,
         maxChildSize: 0.95,
         builder: (_, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: ListView(
@@ -1854,12 +1854,12 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
   Widget _buildSummaryItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white.withOpacity(0.8), size: 20),
+        Icon(icon, color: Theme.of(context).colorScheme.surface.withOpacity(0.8), size: 20),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.surface,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -1867,7 +1867,7 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
             fontSize: 11,
           ),
         ),

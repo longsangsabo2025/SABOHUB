@@ -6,6 +6,7 @@ import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cached_data_providers.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Employee List Page — REAL DATA from employees table
 /// Danh sách nhân viên với khả năng tìm kiếm và quản lý
@@ -39,7 +40,7 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
         _error = null;
       });
 
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       final companyId = user?.companyId;
       if (companyId == null) {
         setState(() {
@@ -108,32 +109,32 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface87),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
+        title: Text(
           'Danh sách nhân viên',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.black54),
+            icon: Icon(Icons.refresh, color: Theme.of(context).colorScheme.onSurface54),
             onPressed: _loadEmployees,
           ),
           IconButton(
-            icon: const Icon(Icons.person_add, color: Colors.black87),
+            icon: Icon(Icons.person_add, color: Theme.of(context).colorScheme.onSurface87),
             onPressed: () => _navigateToCreateEmployee(),
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
                   child: Column(
@@ -162,8 +163,8 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
 
   Widget _buildSearchAndFilter() {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(16),
+      color: Theme.of(context).colorScheme.surface,
+      padding: EdgeInsets.all(16),
       child: Column(
         children: [
           // Search bar
@@ -282,7 +283,7 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
     final inactiveEmployees = totalEmployees - activeEmployees;
 
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Row(
         children: [
@@ -450,10 +451,10 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
                       Expanded(
                         child: Text(
                           name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: Theme.of(context).colorScheme.onSurface87,
                           ),
                         ),
                       ),
@@ -646,6 +647,18 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
           'title': 'Nhân viên kho',
           'icon': Icons.warehouse,
           'color': Colors.brown,
+        };
+      case UserRole.finance:
+        return {
+          'title': 'Kế toán',
+          'icon': Icons.account_balance,
+          'color': Colors.green.shade700,
+        };
+      case UserRole.shareholder:
+        return {
+          'title': 'Cổ đông',
+          'icon': Icons.trending_up,
+          'color': Colors.cyan,
         };
     }
   }

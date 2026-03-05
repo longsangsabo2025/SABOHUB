@@ -9,7 +9,6 @@ import '../../../../widgets/realtime_notification_widgets.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../utils/app_logger.dart';
 import '../../../../utils/quick_date_range_picker.dart';
-import '../../../../pages/staff/staff_profile_page.dart';
 
 // ============================================================================
 // FINANCE DASHBOARD PAGE - Modern 2026 UI
@@ -39,8 +38,8 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
 
   Future<void> _loadDashboardData() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) {
         setState(() => _isLoading = false);
@@ -161,8 +160,7 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final user = authState.user;
+    final user = ref.watch(currentUserProvider);
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
 
     return Scaffold(
@@ -201,14 +199,14 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
                                     width: 50,
                                     height: 50,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
+                                      color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Center(
                                       child: Text(
                                         (user?.name ?? 'F')[0].toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.surface,
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -223,29 +221,29 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
                                       children: [
                                         Text(
                                           'Xin chào, ${user?.name ?? 'Kế toán'}! 💰',
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          style: TextStyle(
+                                            color: Theme.of(context).colorScheme.surface,
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        const SizedBox(height: 2),
+                                        SizedBox(height: 2),
                                         Text(
                                           user?.companyName ?? 'Công ty',
                                           style: TextStyle(
                                             color:
-                                                Colors.white.withOpacity(0.8),
+                                                Theme.of(context).colorScheme.surface.withOpacity(0.8),
                                             fontSize: 13,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const RealtimeNotificationBell(
-                                      iconColor: Colors.white),
+                                  RealtimeNotificationBell(
+                                      iconColor: Theme.of(context).colorScheme.surface),
                                   // Refresh button
                                   IconButton(
-                                    icon: const Icon(Icons.refresh, color: Colors.white),
+                                    icon: Icon(Icons.refresh, color: Theme.of(context).colorScheme.surface),
                                     onPressed: () {
                                       setState(() => _isLoading = true);
                                       _loadDashboardData();
@@ -253,14 +251,10 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
                                     tooltip: 'Làm mới dữ liệu',
                                   ),
                                   PopupMenuButton<String>(
-                                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                                    icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.surface),
                                     onSelected: (value) async {
                                       if (value == 'profile') {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (context) => const Scaffold(body: StaffProfilePage()),
-                                          ),
-                                        );
+                                        context.push('/profile');
                                       } else if (value == 'bug_report') {
                                         BugReportDialog.show(context);
                                       } else if (value == 'logout') {
@@ -319,22 +313,22 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
                                   }
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.calendar_today, size: 15, color: Colors.white),
-                                      const SizedBox(width: 6),
+                                      Icon(Icons.calendar_today, size: 15, color: Theme.of(context).colorScheme.surface),
+                                      SizedBox(width: 6),
                                       Text(
                                         _dateFilter != null ? getDateRangeLabel(_dateFilter!) : 'Tháng này',
-                                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                                        style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 13, fontWeight: FontWeight.w500),
                                       ),
-                                      const SizedBox(width: 4),
-                                      const Icon(Icons.arrow_drop_down, size: 20, color: Colors.white),
+                                      SizedBox(width: 4),
+                                      Icon(Icons.arrow_drop_down, size: 20, color: Theme.of(context).colorScheme.surface),
                                     ],
                                   ),
                                 ),
@@ -343,9 +337,9 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
 
                               // Total receivable card
                               Container(
-                                padding: const EdgeInsets.all(20),
+                                padding: EdgeInsets.all(20),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
+                                  color: Theme.of(context).colorScheme.surface.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Column(
@@ -359,22 +353,22 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
                                           'Tổng công nợ phải thu',
                                           style: TextStyle(
                                               color:
-                                                  Colors.white.withOpacity(0.9),
+                                                  Theme.of(context).colorScheme.surface.withOpacity(0.9),
                                               fontSize: 13),
                                         ),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(
+                                          padding: EdgeInsets.symmetric(
                                               horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(
                                             color:
-                                                Colors.white.withOpacity(0.2),
+                                                Theme.of(context).colorScheme.surface.withOpacity(0.2),
                                             borderRadius:
                                                 BorderRadius.circular(20),
                                           ),
                                           child: Text(
                                             '${_stats['customersWithDebt'] ?? 0} KH',
-                                            style: const TextStyle(
-                                                color: Colors.white,
+                                            style: TextStyle(
+                                                color: Theme.of(context).colorScheme.surface,
                                                 fontSize: 12),
                                           ),
                                         ),
@@ -384,8 +378,8 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
                                     Text(
                                       currencyFormat.format(
                                           _stats['totalReceivable'] ?? 0),
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.surface,
                                         fontSize: 28,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -638,9 +632,9 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Container(
-                            padding: const EdgeInsets.all(32),
+                            padding: EdgeInsets.all(32),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Column(
@@ -688,13 +682,13 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
   Widget _buildStatCard(String title, String value, String subtitle,
       IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -736,13 +730,13 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -776,14 +770,14 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
     final createdAt = DateTime.tryParse(order['created_at'] ?? '');
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.blue.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -877,10 +871,10 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
                 child: ElevatedButton.icon(
                   onPressed: () => _confirmTransfer(order['id'], orderNumber, total),
                   icon: const Icon(Icons.check, size: 18),
-                  label: const Text('Đã nhận tiền'),
+                  label: Text('Đã nhận tiền'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -961,9 +955,9 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
 
     try {
       final supabase = Supabase.instance.client;
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
 
       // 1. Update order: mark as paid with paid_amount = total
       await supabase.from('sales_orders').update({
@@ -1012,7 +1006,7 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
+                Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface),
                 const SizedBox(width: 12),
                 Text('✅ Đã xác nhận chuyển khoản đơn #$orderNumber'),
               ],
@@ -1086,7 +1080,7 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.info, color: Colors.white),
+                Icon(Icons.info, color: Theme.of(context).colorScheme.surface),
                 const SizedBox(width: 12),
                 Text('Đã từ chối xác nhận đơn #$orderNumber'),
               ],
@@ -1129,14 +1123,14 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.purple.shade400, Colors.purple.shade600],
                       ),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.analytics, color: Colors.white, size: 24),
+                    child: Icon(Icons.analytics, color: Theme.of(context).colorScheme.surface, size: 24),
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
@@ -1236,10 +1230,10 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
                         widget.onNavigate?.call(4); // Go to Thu tiền tab
                       },
                       icon: const Icon(Icons.payments),
-                      label: const Text('Thu tiền'),
+                      label: Text('Thu tiền'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.purple,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1302,13 +1296,13 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

@@ -7,6 +7,7 @@ import '../../../../../services/geocoding_service.dart';
 import '../../../models/odori_customer.dart';
 import '../../../../../providers/auth_provider.dart';
 import '../../../providers/odori_providers.dart';
+import '../../../../../utils/app_logger.dart';
 
 final _supabase = Supabase.instance.client;
 
@@ -82,7 +83,7 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
   Future<void> _generateCustomerCode() async {
     setState(() => _isGeneratingCode = true);
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       if (companyId.isEmpty) return;
       
       // Lấy mã KH lớn nhất hiện có với format KH-XXXX
@@ -114,7 +115,7 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Error generating customer code: $e');
+      AppLogger.error('Error generating customer code: $e');
       // Fallback to timestamp-based code
       if (mounted) {
         setState(() {
@@ -181,8 +182,8 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       
       if (companyId == null || companyId.isEmpty) {
         throw Exception('Không tìm thấy company_id. Vui lòng đăng nhập lại.');
@@ -661,13 +662,13 @@ class _CustomerFormSheetState extends ConsumerState<CustomerFormSheet> {
                       onPressed: _isLoading ? null : _saveCustomer,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                       ),
                       child: _isLoading 
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 20, 
                               width: 20, 
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
                             )
                           : Text(isEditing ? 'Cập nhật' : 'Thêm mới'),
                     ),

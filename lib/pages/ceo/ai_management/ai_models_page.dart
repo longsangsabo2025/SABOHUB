@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// AI Models Configuration Page
 class AIModelsPage extends ConsumerStatefulWidget {
@@ -86,7 +87,7 @@ class _AIModelsPageState extends ConsumerState<AIModelsPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -95,7 +96,7 @@ class _AIModelsPageState extends ConsumerState<AIModelsPage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface87,
                       ),
                     ),
                     Text(
@@ -110,10 +111,10 @@ class _AIModelsPageState extends ConsumerState<AIModelsPage> {
               ElevatedButton.icon(
                 onPressed: _addNewModel,
                 icon: const Icon(Icons.add),
-                label: const Text('Add Model'),
+                label: Text('Add Model'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                 ),
               ),
             ],
@@ -187,9 +188,9 @@ class _AIModelsPageState extends ConsumerState<AIModelsPage> {
   Widget _buildStatCard(
       String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -235,7 +236,7 @@ class _AIModelsPageState extends ConsumerState<AIModelsPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isActive
@@ -384,7 +385,7 @@ class _AIModelsPageState extends ConsumerState<AIModelsPage> {
                         : () => _activateModel(model),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isActive ? Colors.blue : Colors.green,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                       padding: const EdgeInsets.symmetric(vertical: 8),
                     ),
                     child: Text(isActive ? 'Test' : 'Activate'),

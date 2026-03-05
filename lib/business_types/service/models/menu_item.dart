@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 
 enum MenuCategory {
   food('Món ăn', Icons.restaurant_menu, AppColors.success),

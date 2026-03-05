@@ -32,8 +32,8 @@ class _CSKHTicketsPageState extends ConsumerState<CSKHTicketsPage>
 
   Future<void> _loadTickets() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) {
         setState(() => _isLoading = false);
@@ -164,9 +164,9 @@ class _CSKHTicketsPageState extends ConsumerState<CSKHTicketsPage>
                     }
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: _dateFilter != null ? Colors.indigo.shade50 : Colors.white.withOpacity(0.15),
+                      color: _dateFilter != null ? Colors.indigo.shade50 : Theme.of(context).colorScheme.surface.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(10),
                       border: _dateFilter != null ? Border.all(color: Colors.indigo.shade300) : null,
                     ),
@@ -259,8 +259,8 @@ class _CSKHTicketsPageState extends ConsumerState<CSKHTicketsPage>
       ),
       child: Text(
         '$count',
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.surface,
           fontSize: 11,
           fontWeight: FontWeight.bold,
         ),

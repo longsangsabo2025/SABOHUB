@@ -83,9 +83,9 @@ class _CEODocumentsPageState extends ConsumerState<CEODocumentsPage> {
   /// Company Selector
   Widget _buildCompanySelector(List<Company> companies) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withValues(alpha: 0.1),

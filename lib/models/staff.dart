@@ -31,14 +31,16 @@ class Staff {
     return Staff(
       id: json['id'] as String,
       name:
-          json['name'] as String? ?? json['full_name'] as String? ?? 'Unknown',
+          json['full_name'] as String? ?? json['name'] as String? ?? 'Unknown',
       email: json['email'] as String,
       role: json['role'] as String? ?? 'staff',
       phone: json['phone'] as String?,
-      avatar: json['avatar'] as String?,
+      avatar: json['avatar_url'] as String? ?? json['avatar'] as String?,
       companyId: json['company_id'] as String?,
       companyName: json['company_name'] as String?,
-      status: json['status'] as String? ?? 'active',
+      status: json['is_active'] != null
+          ? ((json['is_active'] == true) ? 'active' : 'inactive')
+          : (json['status'] as String? ?? 'active'),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
@@ -49,19 +51,19 @@ class Staff {
   }
 
   Map<String, dynamic> toJson() {
+    // Only include columns that exist in employees table
+    // Note: 'name' and 'company_name' are NOT valid columns
     return {
       'id': id,
-      'name': name,
       'full_name': name,
       'email': email,
       'role': role,
       'phone': phone,
-      'avatar': avatar,
+      'avatar_url': avatar,
       'company_id': companyId,
-      'company_name': companyName,
-      'status': status,
+      'is_active': status == 'active',
       'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
+      if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
     };
   }
 

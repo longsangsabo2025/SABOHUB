@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../core/router/app_router.dart';
 
 /// Employee Onboarding Page
 /// Nhân viên click invite link → Nhập email/password → Tạo Auth account
@@ -133,7 +136,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       if (!mounted) return;
 
       // BƯỚC 3: Navigate to app
-      Navigator.of(context).pushReplacementNamed('/');
+      context.go(AppRoutes.home);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -219,8 +222,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () =>
-                  Navigator.of(context).pushReplacementNamed('/login'),
+              onPressed: () => context.go(AppRoutes.login),
               icon: const Icon(Icons.login),
               label: const Text('Về trang đăng nhập'),
             ),

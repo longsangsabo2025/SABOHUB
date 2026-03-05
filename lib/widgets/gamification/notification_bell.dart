@@ -23,14 +23,14 @@ class GameNotificationBell extends ConsumerWidget {
                     top: -4,
                     child: Container(
                       padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
                       ),
-                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      constraints: BoxConstraints(minWidth: 16, minHeight: 16),
                       child: Text(
                         count > 9 ? '9+' : '$count',
-                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                        style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 10),
                         textAlign: TextAlign.center,
                       ),
                     ),

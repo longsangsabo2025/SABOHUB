@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/media_channel.dart';
 import '../../services/media_channel_service.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 final _mediaServiceProvider = Provider((ref) => MediaChannelService(ref));
 
@@ -29,9 +30,9 @@ class _MediaDashboardPageState extends ConsumerState<MediaDashboardPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('SABO Media'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        title: Text('SABO Media'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface87,
         elevation: 0,
         actions: [
           IconButton(
@@ -100,11 +101,11 @@ class _MediaDashboardPageState extends ConsumerState<MediaDashboardPage> {
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,12 +158,12 @@ class _MediaDashboardPageState extends ConsumerState<MediaDashboardPage> {
     final videoPct = (channel.videoProgress * 100).clamp(0, 100).toInt();
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,7 +248,7 @@ class _MediaDashboardPageState extends ConsumerState<MediaDashboardPage> {
   Widget _buildPlatformAvatar(String platform) {
     final colors = {
       'youtube': Colors.red,
-      'tiktok': Colors.black,
+      'tiktok': Theme.of(context).colorScheme.onSurface,
       'instagram': Colors.purple,
       'facebook': Colors.blue.shade800,
       'twitter': Colors.lightBlue,

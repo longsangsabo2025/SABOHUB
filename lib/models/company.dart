@@ -35,6 +35,9 @@ class Company {
   
   // Which bank account is active (1 or 2)
   final int activeBankAccount;
+  
+  // AI API key for Gemini
+  final String? aiApiKey;
 
   const Company({
     required this.id,
@@ -63,6 +66,7 @@ class Company {
     this.bankAccountName2,
     this.bankBin2,
     this.activeBankAccount = 1,
+    this.aiApiKey,
   });
 
   // Helper getters for active bank account
@@ -125,6 +129,7 @@ class Company {
       bankAccountName2: json['bank_account_name_2'] as String?,
       bankBin2: json['bank_bin_2'] as String?,
       activeBankAccount: (json['active_bank_account'] as int?) ?? 1,
+      aiApiKey: json['ai_api_key'] as String?,
     );
   }
 
@@ -135,13 +140,10 @@ class Company {
       'name': name,
       'business_type': type.toString().split('.').last,
       'address': address,
-      'table_count': tableCount,
-      'monthly_revenue': monthlyRevenue,
-      'employee_count': employeeCount,
       'phone': phone,
       'email': email,
       'logo': logo,
-      'status': status,
+      'is_active': status == 'active',
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
     };
@@ -175,6 +177,7 @@ class Company {
     String? bankAccountName2,
     String? bankBin2,
     int? activeBankAccount,
+    String? aiApiKey,
   }) {
     return Company(
       id: id ?? this.id,
@@ -203,6 +206,7 @@ class Company {
       bankAccountName2: bankAccountName2 ?? this.bankAccountName2,
       bankBin2: bankBin2 ?? this.bankBin2,
       activeBankAccount: activeBankAccount ?? this.activeBankAccount,
+      aiApiKey: aiApiKey ?? this.aiApiKey,
     );
   }
 }

@@ -1,13 +1,13 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../models/gamification/employee_game_profile.dart';
 
 class StaffPerformanceCard extends StatelessWidget {
   final EmployeeGameProfile profile;
   final VoidCallback? onTap;
 
-  const StaffPerformanceCard({
+  StaffPerformanceCard({
     super.key,
     required this.profile,
     this.onTap,
@@ -18,7 +18,7 @@ class StaffPerformanceCard extends StatelessWidget {
     final tierColor = _tierColor(profile.level);
 
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
@@ -34,7 +34,7 @@ class StaffPerformanceCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  _levelBadge(tierColor),
+                  _levelBadge(context, tierColor),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -127,7 +127,7 @@ class StaffPerformanceCard extends StatelessWidget {
     );
   }
 
-  Widget _levelBadge(Color tierColor) {
+  Widget _levelBadge(BuildContext context, Color tierColor) {
     return Container(
       width: 40,
       height: 40,
@@ -142,10 +142,10 @@ class StaffPerformanceCard extends StatelessWidget {
       child: Center(
         child: Text(
           '${profile.level}',
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
           ),
         ),
       ),
@@ -172,20 +172,20 @@ class StaffPerformanceCard extends StatelessWidget {
   }
 
   Color _tierColor(int level) {
-    if (level >= 50) return const Color(0xFFC62828);
-    if (level >= 40) return const Color(0xFF00BCD4);
-    if (level >= 30) return const Color(0xFF9C27B0);
-    if (level >= 20) return const Color(0xFFFFD700);
-    if (level >= 15) return const Color(0xFFC0C0C0);
-    if (level >= 10) return const Color(0xFFCD7F32);
-    if (level >= 5) return const Color(0xFF607D8B);
-    return const Color(0xFF9E9E9E);
+    if (level >= 50) return Color(0xFFC62828);
+    if (level >= 40) return Color(0xFF00BCD4);
+    if (level >= 30) return Color(0xFF9C27B0);
+    if (level >= 20) return Color(0xFFFFD700);
+    if (level >= 15) return Color(0xFFC0C0C0);
+    if (level >= 10) return AppColors.tierBronze;
+    if (level >= 5) return Color(0xFF607D8B);
+    return AppColors.grey500;
   }
 
   Color _ratingColor(double rating) {
     if (rating >= 80) return AppColors.success;
     if (rating >= 60) return AppColors.warning;
-    if (rating >= 40) return const Color(0xFFFF9800);
+    if (rating >= 40) return AppColors.warning;
     return AppColors.error;
   }
 }

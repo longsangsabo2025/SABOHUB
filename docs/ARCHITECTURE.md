@@ -159,23 +159,35 @@ main.dart → SaboHubApp → GoRouter (app_router.dart) → RoleBasedDashboard �
 ```dart
 switch (role) {
   superAdmin  → SuperAdminMainLayout          // Platform admin
-  ceo         → CEOMainLayout                  // Executive dashboard
+  ceo:
+    isManufacturing                          → ManufacturingCEOLayout
+    isDistribution                           → DistributionCEOLayout
+    isService && !isCorporation              → ServiceCEOLayout
+    corporation / null                       → CEOMainLayout (generic fallback)
   manager:
-    if (isDistribution) → DistributionManagerLayout
-    else                → ManagerMainLayout     // Default
-  shiftLeader → ShiftLeaderMainLayout
+    isManufacturing                          → ManufacturingManagerLayout
+    isDistribution                           → DistributionManagerLayout
+    isService && !isCorporation              → ServiceManagerLayout
+    corporation / null                       → ManagerMainLayout (generic fallback)
+  shiftLeader:
+    isService && !isCorporation              → ServiceShiftLeaderLayout ← MỚI
+    distribution / corporation / null        → ShiftLeaderMainLayout (generic)
   staff:
-    if (isDistribution):
-      department == 'sales'            → DistributionSalesLayout
-      department == 'warehouse'        → DistributionWarehouseLayout
-      department == 'delivery'|'driver'→ DistributionDriverLayout
-      department == 'customer_service' → DistributionCustomerServiceLayout
-      department == 'finance'          → DistributionFinanceLayout
-    else → StaffMainLayout              // Default
+    isDistribution:
+      department == 'sales'                  → DistributionSalesLayout
+      department == 'warehouse'             → DistributionWarehouseLayout
+      department == 'delivery'|'driver'     → DistributionDriverLayout
+      department == 'customer_service'      → DistributionCustomerServiceLayout
+      department == 'finance'               → DistributionFinanceLayout
+      department unknown / null             → DistributionSalesLayout (fallback)
+    isService && !isCorporation              → ServiceStaffLayout
+    corporation / null                       → StaffMainLayout (generic fallback)
   driver:
-    if (isDistribution) → DistributionDriverLayout
-    else                → DriverMainLayout
-  warehouse → WarehouseMainLayout
+    isDistribution                           → DistributionDriverLayout
+    else                                     → DriverMainLayout
+  warehouse:
+    isDistribution                           → DistributionWarehouseLayout
+    else                                     → WarehouseMainLayout
 }
 ```
 

@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../models/odori_sales_order.dart';
 import '../../../../pages/orders/order_form_page.dart';
+import '../../../../utils/app_logger.dart';
+import 'package:flutter_sabohub/utils/postgrest_sanitizer.dart';
 
 /// Orders Management Page
 /// Trang quản lý đơn hàng với các tab theo trạng thái
@@ -36,7 +38,7 @@ class _OrdersManagementPageState extends ConsumerState<OrdersManagementPage> wit
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: Row(
             children: [
               Expanded(
@@ -130,6 +132,37 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
   int _totalOrders = 0;
   double _totalAmount = 0;
 
+  /// Retry a future with exponential backoff for transient errors
+  Future<T> _retryWithBackoff<T>(Future<T> Function() fn, {int maxRetries = 3}) async {
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (e) {
+        final isTransient = e.toString().contains('reset by peer') ||
+            e.toString().contains('Connection closed') ||
+            e.toString().contains('SocketException') ||
+            e.toString().contains('TimeoutException') ||
+            e.toString().contains('HandshakeException');
+        if (!isTransient || attempt == maxRetries) rethrow;
+        await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+      }
+    }
+    throw StateError('Unreachable');
+  }
+
+  String _friendlyError(Object e) {
+    final msg = e.toString();
+    if (msg.contains('reset by peer') ||
+        msg.contains('Connection closed') ||
+        msg.contains('SocketException')) {
+      return 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.';
+    }
+    if (msg.contains('TimeoutException')) {
+      return 'Kết nối quá thời gian. Vui lòng thử lại.';
+    }
+    return msg.replaceAll('Exception: ', '');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -153,7 +186,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
 
   Future<void> _loadStats() async {
     try {
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null || user.companyId == null) return;
 
       final supabase = Supabase.instance.client;
@@ -199,7 +232,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
     });
 
     try {
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null || user.companyId == null) {
         setState(() {
           _errorMessage = 'Vui lòng đăng nhập lại';
@@ -230,12 +263,13 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
       }
 
       if (_searchQuery.isNotEmpty) {
-        query = query.or('order_number.ilike.%$_searchQuery%,customer_name.ilike.%$_searchQuery%');
+        final sanitized = PostgrestSanitizer.sanitizeSearch(_searchQuery);
+        query = query.or('order_number.ilike.%$sanitized%,customer_name.ilike.%$sanitized%');
       }
 
-      final response = await query
+      final response = await _retryWithBackoff(() => query
           .order('created_at', ascending: false)
-          .range(_currentOffset, _currentOffset + _pageSize - 1);
+          .range(_currentOffset, _currentOffset + _pageSize - 1));
 
       final orders = (response as List).map((json) => OdoriSalesOrder.fromJson(json)).toList();
 
@@ -247,7 +281,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _errorMessage = _friendlyError(e);
         _isInitialLoading = false;
       });
     }
@@ -259,7 +293,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
     setState(() => _isLoadingMore = true);
 
     try {
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null || user.companyId == null) return;
 
       final supabase = Supabase.instance.client;
@@ -284,12 +318,13 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
       }
 
       if (_searchQuery.isNotEmpty) {
-        query = query.or('order_number.ilike.%$_searchQuery%,customer_name.ilike.%$_searchQuery%');
+        final sanitized = PostgrestSanitizer.sanitizeSearch(_searchQuery);
+        query = query.or('order_number.ilike.%$sanitized%,customer_name.ilike.%$sanitized%');
       }
 
-      final response = await query
+      final response = await _retryWithBackoff(() => query
           .order('created_at', ascending: false)
-          .range(_currentOffset, _currentOffset + _pageSize - 1);
+          .range(_currentOffset, _currentOffset + _pageSize - 1));
 
       final orders = (response as List).map((json) => OdoriSalesOrder.fromJson(json)).toList();
 
@@ -311,7 +346,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
 
   Future<void> _approveOrder(OdoriSalesOrder order) async {
     try {
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null) return;
 
       final supabase = Supabase.instance.client;
@@ -348,7 +383,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
 
   Future<void> _rejectOrder(OdoriSalesOrder order, String reason) async {
     try {
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null) return;
 
       final supabase = Supabase.instance.client;
@@ -436,8 +471,8 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
   Future<void> _createCommissionIfApplicable(OdoriSalesOrder order) async {
     try {
       final supabase = Supabase.instance.client;
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       
       // Get customer to check if they have a referrer
       final customerData = await supabase
@@ -447,7 +482,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
           .maybeSingle();
       
       if (customerData == null || customerData['referrer_id'] == null) {
-        debugPrint('No referrer for this customer, skipping commission');
+        AppLogger.info('No referrer for this customer, skipping commission');
         return;
       }
       
@@ -461,7 +496,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
           .maybeSingle();
       
       if (referrerData == null || referrerData['status'] != 'active') {
-        debugPrint('Referrer not found or inactive');
+        AppLogger.info('Referrer not found or inactive');
         return;
       }
       
@@ -478,7 +513,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
             .limit(1);
         
         if ((existingCommissions as List).isNotEmpty) {
-          debugPrint('Commission already exists for first_order type, skipping');
+          AppLogger.info('Commission already exists for first_order type, skipping');
           return;
         }
       }
@@ -491,7 +526,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
           .maybeSingle();
       
       if (existingForOrder != null) {
-        debugPrint('Commission already exists for this order');
+        AppLogger.info('Commission already exists for this order');
         return;
       }
       
@@ -524,9 +559,9 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
           .update({'total_earned': currentTotalEarned + commissionAmount})
           .eq('id', referrerId);
       
-      debugPrint('✅ Commission created: ${commissionAmount.toStringAsFixed(0)}đ for referrer $referrerId (total_earned updated)');
+      AppLogger.info('Commission created: ${commissionAmount.toStringAsFixed(0)}đ for referrer $referrerId (total_earned updated)');
     } catch (e) {
-      debugPrint('Error creating commission: $e');
+      AppLogger.error('Error creating commission: $e');
       // Don't throw - commission creation failure shouldn't block order completion
     }
   }
@@ -665,7 +700,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
 
             // Order list
             if (_isInitialLoading)
-              const Expanded(child: Center(child: CircularProgressIndicator()))
+              Expanded(child: Center(child: CircularProgressIndicator()))
             else if (_errorMessage != null)
               Expanded(
                 child: Center(
@@ -728,7 +763,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
                         );
                       }
                       final order = _allOrders[index];
-                      return _buildOrderCard(order);
+                      return _buildOrderCard(context, order);
                     },
                   ),
                 ),
@@ -744,7 +779,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
             child: FloatingActionButton.extended(
               onPressed: () => _showCreateOrderSheet(context),
               backgroundColor: Colors.teal,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.surface,
               icon: const Icon(Icons.add),
               label: const Text('Tạo đơn'),
             ),
@@ -793,19 +828,19 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
     );
   }
 
-  Widget _buildOrderCard(OdoriSalesOrder order) {
+  Widget _buildOrderCard(BuildContext context, OdoriSalesOrder order) {
     final statusColor = _getStatusColor(order.status);
     final paymentColor = _getPaymentColor(order.paymentStatus);
     final timeAgo = _getTimeAgo(order.createdAt);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -816,7 +851,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => _showOrderDetail(order),
+          onTap: () => _showOrderDetail(context, order),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -949,7 +984,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
                     const SizedBox(width: 8),
 
                     // Action buttons based on status
-                    ..._buildActionButtons(order),
+                    ..._buildActionButtons(context, order),
                   ],
                 ),
               ],
@@ -960,22 +995,22 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
     );
   }
 
-  List<Widget> _buildActionButtons(OdoriSalesOrder order) {
+  List<Widget> _buildActionButtons(BuildContext context, OdoriSalesOrder order) {
     switch (widget.status) {
       case 'pending_approval':
         return [
           IconButton(
-            onPressed: () => _showRejectDialog(order),
+            onPressed: () => _showRejectDialog(context, order),
             icon: Icon(Icons.close, color: Colors.red.shade400),
             tooltip: 'Từ chối',
             style: IconButton.styleFrom(
               backgroundColor: Colors.red.shade50,
             ),
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: 4),
           IconButton(
             onPressed: () => _approveOrder(order),
-            icon: const Icon(Icons.check, color: Colors.white),
+            icon: Icon(Icons.check, color: Theme.of(context).colorScheme.surface),
             tooltip: 'Duyệt',
             style: IconButton.styleFrom(
               backgroundColor: Colors.green,
@@ -987,10 +1022,10 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
           ElevatedButton.icon(
             onPressed: () => _updateOrderStatus(order, 'processing'),
             icon: const Icon(Icons.local_shipping, size: 16),
-            label: const Text('Giao hàng'),
+            label: Text('Giao hàng'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.surface,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               textStyle: const TextStyle(fontSize: 12),
             ),
@@ -1001,10 +1036,10 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
           ElevatedButton.icon(
             onPressed: () => _updateOrderStatus(order, 'completed'),
             icon: const Icon(Icons.check_circle, size: 16),
-            label: const Text('Hoàn thành'),
+            label: Text('Hoàn thành'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.teal,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.surface,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               textStyle: const TextStyle(fontSize: 12),
             ),
@@ -1044,7 +1079,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
     return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
   }
 
-  void _showOrderDetail(OdoriSalesOrder order) {
+  void _showOrderDetail(BuildContext context, OdoriSalesOrder order) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1053,11 +1088,11 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
         order: order,
         currencyFormat: currencyFormat,
         onApprove: widget.status == 'pending_approval' ? () => _approveOrder(order) : null,
-        onReject: widget.status == 'pending_approval' ? () => _showRejectDialog(order) : null,
+        onReject: widget.status == 'pending_approval' ? () => _showRejectDialog(context, order) : null,
         onUpdateStatus: (newStatus) => _updateOrderStatus(order, newStatus),
-        onEdit: _canEdit(order.status) ? () => _editOrder(order) : null,
-        onCancel: _canCancel(order.status) ? () => _showCancelDialog(order) : null,
-        onDelete: _canDelete(order.status) ? () => _showDeleteConfirmation(order) : null,
+        onEdit: _canEdit(order.status) ? () => _editOrder(context, order) : null,
+        onCancel: _canCancel(order.status) ? () => _showCancelDialog(context, order) : null,
+        onDelete: _canDelete(order.status) ? () => _showDeleteConfirmation(context, order) : null,
       ),
     );
   }
@@ -1078,7 +1113,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
   }
   
   /// Navigate to edit order form
-  void _editOrder(OdoriSalesOrder order) {
+  void _editOrder(BuildContext context, OdoriSalesOrder order) {
     Navigator.pop(context); // Close the detail sheet
     Navigator.push(
       context,
@@ -1089,7 +1124,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
   }
   
   /// Show cancel order dialog
-  void _showCancelDialog(OdoriSalesOrder order) {
+  void _showCancelDialog(BuildContext context, OdoriSalesOrder order) {
     final reasonController = TextEditingController();
     showDialog(
       context: context,
@@ -1120,7 +1155,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Quay lại'),
+            child: Text('Quay lại'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1128,7 +1163,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
               _cancelOrder(order, reasonController.text.trim());
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Hủy đơn', style: TextStyle(color: Colors.white)),
+            child: Text('Hủy đơn', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),
@@ -1138,13 +1173,13 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
   /// Cancel order
   Future<void> _cancelOrder(OdoriSalesOrder order, String reason) async {
     try {
-      final authState = ref.read(authProvider);
+      final user = ref.read(currentUserProvider);
       await Supabase.instance.client
           .from('sales_orders')
           .update({
             'status': 'cancelled',
             'cancelled_at': DateTime.now().toIso8601String(),
-            'cancelled_by': authState.user?.id,
+            'cancelled_by': user?.id,
             'cancellation_reason': reason.isNotEmpty ? reason : null,
             'updated_at': DateTime.now().toIso8601String(),
           })
@@ -1170,7 +1205,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
   }
   
   /// Show delete confirmation dialog
-  void _showDeleteConfirmation(OdoriSalesOrder order) {
+  void _showDeleteConfirmation(BuildContext context, OdoriSalesOrder order) {
     final isCompleted = ['completed', 'confirmed', 'delivered'].contains(order.status);
     final isPaid = order.paymentStatus == 'paid';
     
@@ -1197,7 +1232,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1205,28 +1240,24 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
               _deleteOrder(order);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+            child: Text('Xóa', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),
     );
   }
   
-  /// Delete order permanently (including all related records)
+  /// Soft-delete order (mark inactive instead of permanent delete)
   Future<void> _deleteOrder(OdoriSalesOrder order) async {
     try {
       final supabase = Supabase.instance.client;
+      final now = DateTime.now().toIso8601String();
       
-      // Delete all related records first (foreign key dependencies)
-      await supabase.from('delivery_items').delete().eq('order_id', order.id);
-      await supabase.from('deliveries').delete().eq('order_id', order.id);
-      await supabase.from('sell_in_transactions').delete().eq('sales_order_id', order.id);
-      await supabase.from('product_samples').delete().eq('order_id', order.id);
-      await supabase.from('sales_order_history').delete().eq('order_id', order.id);
-      await supabase.from('sales_order_items').delete().eq('order_id', order.id);
-      
-      // Delete the order itself
-      await supabase.from('sales_orders').delete().eq('id', order.id);
+      // Soft-delete the main order — child rows remain for audit trail
+      await supabase.from('sales_orders').update({
+        'is_active': false,
+        'updated_at': now,
+      }).eq('id', order.id);
       
       if (mounted) {
         Navigator.pop(context); // Close detail sheet
@@ -1247,7 +1278,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
     }
   }
 
-  void _showRejectDialog(OdoriSalesOrder order) {
+  void _showRejectDialog(BuildContext context, OdoriSalesOrder order) {
     final reasonController = TextEditingController();
     showDialog(
       context: context,
@@ -1373,8 +1404,8 @@ class OrderDetailSheet extends StatelessWidget {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -1453,7 +1484,7 @@ class OrderDetailSheet extends StatelessWidget {
                   // Customer Info Section
                   _buildSectionTitle('Thông tin khách hàng', Icons.person),
                   const SizedBox(height: 12),
-                  _buildInfoCard([
+                  _buildInfoCard(context, [
                     _buildInfoRow('Tên khách hàng', order.customerName ?? 'Khách lẻ'),
                     if (order.customerPhone != null)
                       _buildInfoRow('Số điện thoại', order.customerPhone!),
@@ -1470,7 +1501,7 @@ class OrderDetailSheet extends StatelessWidget {
                   // Order Info Section
                   _buildSectionTitle('Thông tin đơn hàng', Icons.info_outline),
                   const SizedBox(height: 12),
-                  _buildInfoCard([
+                  _buildInfoCard(context, [
                     _buildInfoRow('Ngày tạo', _formatDate(order.createdAt)),
                     _buildInfoRow('Ngày đặt', _formatDate(order.orderDate)),
                     if (order.source != null && order.source!.isNotEmpty)
@@ -1485,9 +1516,9 @@ class OrderDetailSheet extends StatelessWidget {
                   _buildSectionTitle('Thanh toán', Icons.payments),
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
@@ -1588,9 +1619,9 @@ class OrderDetailSheet extends StatelessWidget {
                     _buildSectionTitle('Sản phẩm (${order.items!.length})', Icons.inventory_2),
                     const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: Colors.grey.shade200),
                       ),
@@ -1691,25 +1722,25 @@ class OrderDetailSheet extends StatelessWidget {
 
           // Action Buttons
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -5),
                 ),
               ],
             ),
-            child: _buildActionButtons(),
+            child: _buildActionButtons(context),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(BuildContext context) {
     // Pending approval: Approve/Reject + Edit
     if (onApprove != null && onReject != null) {
       return Column(
@@ -1738,10 +1769,10 @@ class OrderDetailSheet extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: onApprove,
                   icon: const Icon(Icons.check),
-                  label: const Text('Duyệt đơn hàng'),
+                  label: Text('Duyệt đơn hàng'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1779,10 +1810,10 @@ class OrderDetailSheet extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: () => onUpdateStatus!('processing'),
             icon: const Icon(Icons.local_shipping),
-            label: const Text('Bắt đầu giao hàng'),
+            label: Text('Bắt đầu giao hàng'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.surface,
               minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1817,10 +1848,10 @@ class OrderDetailSheet extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: () => onUpdateStatus!('completed'),
             icon: const Icon(Icons.check_circle),
-            label: const Text('Xác nhận đã giao'),
+            label: Text('Xác nhận đã giao'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.teal,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.surface,
               minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1891,10 +1922,10 @@ class OrderDetailSheet extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit),
-                label: const Text('Chỉnh sửa'),
+                label: Text('Chỉnh sửa'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -1943,11 +1974,11 @@ class OrderDetailSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoCard(List<Widget> children) {
+  Widget _buildInfoCard(BuildContext context, List<Widget> children) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
       ),

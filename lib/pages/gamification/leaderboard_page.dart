@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/gamification_provider.dart';
 
 class LeaderboardPage extends ConsumerWidget {
-  const LeaderboardPage({super.key});
+  LeaderboardPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

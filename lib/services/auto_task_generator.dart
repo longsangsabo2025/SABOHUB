@@ -14,7 +14,7 @@ class AutoTaskGenerator {
   AutoTaskGenerator(this._ref);
 
   Future<AutoGenResult> generateTodayTasks() async {
-    final user = _ref.read(authProvider).user;
+    final user = _ref.read(currentUserProvider);
     if (user == null) return AutoGenResult.empty();
 
     final companyId = user.companyId;
@@ -155,7 +155,7 @@ class AutoTaskGenerator {
   }
 
   Future<TodayTaskStats> getTodayStats() async {
-    final user = _ref.read(authProvider).user;
+    final user = _ref.read(currentUserProvider);
     if (user == null) return TodayTaskStats.empty();
 
     final companyId = user.companyId;
@@ -199,7 +199,7 @@ class AutoTaskGenerator {
   }
 
   Future<int> getRecurringTemplateCount() async {
-    final user = _ref.read(authProvider).user;
+    final user = _ref.read(currentUserProvider);
     if (user == null) return 0;
 
     var query = _supabase

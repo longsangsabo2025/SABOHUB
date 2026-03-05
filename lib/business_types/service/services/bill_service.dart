@@ -71,7 +71,7 @@ class BillService {
       query = query.lt('bill_date', toDate.add(const Duration(days: 1)).toIso8601String());
     }
 
-    final response = await query.order('bill_date', ascending: false);
+    final response = await query.order('bill_date', ascending: false).limit(200);
     return (response as List).map((json) => Bill.fromJson(json)).toList();
   }
 
@@ -161,9 +161,10 @@ class BillService {
     return publicUrl;
   }
 
-  /// Delete bill (CEO only)
+  /// Delete bill (CEO only) - soft delete
   Future<void> deleteBill(String billId) async {
-    await _supabase.from('bills').delete().eq('id', billId);
+    // Soft delete - sets is_active=false
+    await _supabase.from('bills').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', billId);
   }
 
   /// Update bill

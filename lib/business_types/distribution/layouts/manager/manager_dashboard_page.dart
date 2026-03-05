@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../providers/odori_providers.dart';
 import '../../models/odori_sales_order.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Manager Dashboard Page with Role Switcher
 /// Dashboard tổng quan cho Manager với khả năng chuyển đổi vai trò
@@ -34,15 +35,22 @@ class ManagerDashboardPage extends ConsumerWidget {
             
             // Quick Stats from real data
             statsAsync.when(
-              data: (stats) => _buildQuickStats(stats),
+              data: (stats) => _buildQuickStats(context, stats),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Lỗi: $e'),
+              error: (e, _) => _buildErrorWidget(context, 
+                'Lỗi tải thống kê',
+                '$e',
+                () {
+                  ref.invalidate(dashboardStatsProvider);
+                  ref.invalidate(recentOrdersProvider);
+                },
+              ),
             ),
             const SizedBox(height: 16),
             
             // Revenue Summary
             statsAsync.when(
-              data: (stats) => _buildRevenueSummary(stats, currencyFormat),
+              data: (stats) => _buildRevenueSummary(context, stats, currencyFormat),
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
             ),
@@ -55,9 +63,15 @@ class ManagerDashboardPage extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             recentOrdersAsync.when(
-              data: (orders) => _buildRecentOrders(orders, currencyFormat),
+              data: (orders) => _buildRecentOrders(context, orders, currencyFormat),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Lỗi: $e'),
+              error: (e, _) => _buildErrorWidget(context, 
+                'Lỗi tải đơn hàng',
+                '$e',
+                () {
+                  ref.invalidate(recentOrdersProvider);
+                },
+              ),
             ),
           ],
         ),
@@ -65,7 +79,7 @@ class ManagerDashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickStats(OdoriDashboardStats stats) {
+  Widget _buildQuickStats(BuildContext context, OdoriDashboardStats stats) {
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -74,23 +88,23 @@ class ManagerDashboardPage extends ConsumerWidget {
       crossAxisSpacing: 12,
       childAspectRatio: 1.6,
       children: [
-        _buildStatCard('Đơn chờ xử lý', '${stats.pendingOrders}', Icons.shopping_cart, Colors.blue),
-        _buildStatCard('Đang giao', '${stats.inProgressDeliveries}', Icons.local_shipping, Colors.orange),
-        _buildStatCard('Hoàn thành', '${stats.completedOrdersToday}', Icons.check_circle, Colors.green),
-        _buildStatCard('Khách hàng', '${stats.totalCustomers}', Icons.people, Colors.purple),
+        _buildStatCard(context, 'Đơn chờ xử lý', '${stats.pendingOrders}', Icons.shopping_cart, Colors.blue),
+        _buildStatCard(context, 'Đang giao', '${stats.inProgressDeliveries}', Icons.local_shipping, Colors.orange),
+        _buildStatCard(context, 'Hoàn thành', '${stats.completedOrdersToday}', Icons.check_circle, Colors.green),
+        _buildStatCard(context, 'Khách hàng', '${stats.totalCustomers}', Icons.people, Colors.purple),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(BuildContext context, String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -113,7 +127,7 @@ class ManagerDashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildRevenueSummary(OdoriDashboardStats stats, NumberFormat currencyFormat) {
+  Widget _buildRevenueSummary(BuildContext context, OdoriDashboardStats stats, NumberFormat currencyFormat) {
     final unpaidToday = stats.todaySales - stats.todayRevenue;
     final unpaidMonth = stats.monthSales - stats.monthRevenue;
     
@@ -131,16 +145,16 @@ class ManagerDashboardPage extends ConsumerWidget {
           // Main: Total Sales Today
           Row(
             children: [
-              const Icon(Icons.trending_up, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              const Text('Doanh số hôm nay', style: TextStyle(color: Colors.white70, fontSize: 14)),
+              Icon(Icons.trending_up, color: Theme.of(context).colorScheme.surface, size: 20),
+              SizedBox(width: 8),
+              Text('Doanh số hôm nay', style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 14)),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             currencyFormat.format(stats.todaySales),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.surface,
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
@@ -157,14 +171,14 @@ class ManagerDashboardPage extends ConsumerWidget {
                     Row(
                       children: [
                         Icon(Icons.check_circle, color: Colors.green.shade200, size: 14),
-                        const SizedBox(width: 4),
-                        const Text('Đã thu', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                        SizedBox(width: 4),
+                        Text('Đã thu', style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 11)),
                       ],
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       currencyFormat.format(stats.todayRevenue),
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -176,15 +190,15 @@ class ManagerDashboardPage extends ConsumerWidget {
                     Row(
                       children: [
                         Icon(Icons.schedule, color: Colors.orange.shade200, size: 14),
-                        const SizedBox(width: 4),
-                        const Text('Chưa thu', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                        SizedBox(width: 4),
+                        Text('Chưa thu', style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 11)),
                       ],
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       currencyFormat.format(unpaidToday),
                       style: TextStyle(
-                        color: unpaidToday > 0 ? Colors.orange.shade200 : Colors.white,
+                        color: unpaidToday > 0 ? Colors.orange.shade200 : Theme.of(context).colorScheme.surface,
                         fontSize: 14, 
                         fontWeight: FontWeight.w600,
                       ),
@@ -195,11 +209,11 @@ class ManagerDashboardPage extends ConsumerWidget {
             ],
           ),
           
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           // Divider
           Container(
             height: 1,
-            color: Colors.white.withOpacity(0.2),
+            color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
           ),
           const SizedBox(height: 8),
           
@@ -209,7 +223,7 @@ class ManagerDashboardPage extends ConsumerWidget {
             children: [
               Text(
                 'Tháng này: ${currencyFormat.format(stats.monthSales)}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 12),
               ),
               if (unpaidMonth > 0)
                 Text(
@@ -223,7 +237,7 @@ class ManagerDashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentOrders(List<OdoriSalesOrder> orders, NumberFormat currencyFormat) {
+  Widget _buildRecentOrders(BuildContext context, List<OdoriSalesOrder> orders, NumberFormat currencyFormat) {
     if (orders.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -241,9 +255,9 @@ class ManagerDashboardPage extends ConsumerWidget {
       children: orders.take(5).map((order) {
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.shade200),
           ),
@@ -340,5 +354,49 @@ class ManagerDashboardPage extends ConsumerWidget {
       case 'cancelled': return 'Đã hủy';
       default: return status;
     }
+  }
+
+  Widget _buildErrorWidget(BuildContext context, String title, String detail, VoidCallback onRetry) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 40),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.red,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            detail,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: Text('Thử lại'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade400,
+              foregroundColor: Theme.of(context).colorScheme.surface,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

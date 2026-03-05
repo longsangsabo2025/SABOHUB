@@ -23,15 +23,15 @@ class AnalyticsService {
 
       // Get total branches (stores) for this company
       final branchesResponse =
-          await _supabase.from('branches').select('id').eq('company_id', cid).eq('is_active', true);
+          await _supabase.from('branches').select('id').eq('company_id', cid).eq('is_active', true).limit(500);
       final totalStores = (branchesResponse as List).length;
 
       // Get total tables for this company's stores
-      final tablesResponse = await _supabase.from('tables').select('id').eq('company_id', cid);
+      final tablesResponse = await _supabase.from('tables').select('id').eq('company_id', cid).limit(1000);
       final totalTables = (tablesResponse as List).length;
 
       // Get total employees for this company
-      final usersResponse = await _supabase.from('employees').select('id').eq('company_id', cid);
+      final usersResponse = await _supabase.from('employees').select('id').eq('company_id', cid).limit(1000);
       final totalEmployees = (usersResponse as List).length;
 
       // Get active tasks today for this company
@@ -226,7 +226,7 @@ class AnalyticsService {
 
         // Get employee count
         final employeesResponse =
-            await _supabase.from('employees').select('id').eq('branch_id', storeId);
+            await _supabase.from('employees').select('id').eq('branch_id', storeId).limit(500);
         final employeeCount = (employeesResponse as List).length;
 
         // Calculate revenue from daily_revenue table
@@ -342,7 +342,7 @@ class AnalyticsService {
       if (cid != null) {
         totalQuery = totalQuery.eq('company_id', cid);
       }
-      final totalResponse = await totalQuery;
+      final totalResponse = await totalQuery.limit(5000);
       final totalCustomers = (totalResponse as List).length;
 
       // New customers this month

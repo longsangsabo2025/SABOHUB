@@ -105,12 +105,12 @@ class _CreditLimitSheetState extends State<CreditLimitSheet> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Hủy'),
+              child: Text('Hủy'),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-              child: const Text('Đồng ý', style: TextStyle(color: Colors.white)),
+              child: Text('Đồng ý', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
             ),
           ],
         ),
@@ -188,8 +188,8 @@ class _CreditLimitSheetState extends State<CreditLimitSheet> {
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: _isLoading
@@ -443,14 +443,14 @@ class _CreditLimitSheetState extends State<CreditLimitSheet> {
                         child: ElevatedButton.icon(
                           onPressed: _isSaving || _newLimit == _currentLimit ? null : _save,
                           icon: _isSaving 
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 18, height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
                                 )
-                              : const Icon(Icons.save, color: Colors.white),
+                              : Icon(Icons.save, color: Theme.of(context).colorScheme.surface),
                           label: Text(
                             _isSaving ? 'Đang lưu...' : 'Lưu thay đổi',
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: Theme.of(context).colorScheme.surface),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,

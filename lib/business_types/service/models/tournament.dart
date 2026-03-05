@@ -1,5 +1,5 @@
-/// SABO Corporation — Tournament Model
-/// Quản lý giải đấu billiard
+// SABO Corporation — Tournament Model
+// Quản lý giải đấu billiard
 
 enum TournamentType {
   singleElimination('single_elimination', 'Loại trực tiếp'),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/company.dart';
@@ -129,16 +129,12 @@ class _ManagerCompanyInfoPageState
                   Expanded(
                     child: _buildCurrentTab(company, permissions),
                   ),
+                  _buildBottomNavigationBar(permissions),
                 ],
               );
             },
           );
         },
-      ),
-      bottomNavigationBar: permissionsAsync.maybeWhen(
-        data: (permissions) =>
-            permissions != null ? _buildBottomNavigationBar(permissions) : null,
-        orElse: () => null,
       ),
     );
   }
@@ -152,7 +148,7 @@ class _ManagerCompanyInfoPageState
         color: company.type.color,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -168,7 +164,7 @@ class _ManagerCompanyInfoPageState
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -185,10 +181,10 @@ class _ManagerCompanyInfoPageState
                   children: [
                     Text(
                       company.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -199,7 +195,7 @@ class _ManagerCompanyInfoPageState
                           : 'Không có quyền',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.8),
+                        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
@@ -304,10 +300,10 @@ class _ManagerCompanyInfoPageState
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),

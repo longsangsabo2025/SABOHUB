@@ -1,9 +1,9 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
-import '../../core/theme/app_colors.dart';
 import '../../models/gamification/gamification_models.dart';
 import '../../providers/gamification_provider.dart';
 import '../../widgets/gamification/ceo_game_summary_card.dart';
@@ -16,6 +16,7 @@ import '../../widgets/gamification/streak_freeze_button.dart';
 import '../../widgets/gamification/business_health_bar.dart';
 import '../../widgets/gamification/staff_leaderboard.dart';
 import '../../widgets/gamification/notification_bell.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class QuestHubPage extends ConsumerStatefulWidget {
   const QuestHubPage({super.key});
@@ -46,10 +47,10 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
     final profile = profileState.profile;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Quest Hub'),
-        backgroundColor: Colors.white,
+        title: Text('Quest Hub'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         actions: [
@@ -102,25 +103,25 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
                 children: [
                   _quickActionChip(
                     '🏪 Cửa hàng Uy Tín',
-                    const Color(0xFFFF8F00),
+                    Color(0xFFFF8F00),
                     () => context.push(AppRoutes.uytinStore),
                   ),
                   const SizedBox(width: 8),
                   _quickActionChip(
                     '🎫 Season Pass',
-                    const Color(0xFF7B1FA2),
+                    Color(0xFF7B1FA2),
                     () => context.push(AppRoutes.seasonPass),
                   ),
                   const SizedBox(width: 8),
                   _quickActionChip(
                     '⚔️ Guild War',
-                    const Color(0xFFC62828),
+                    Color(0xFFC62828),
                     () => context.push(AppRoutes.companyRanking),
                   ),
                   const SizedBox(width: 8),
                   _quickActionChip(
                     '📊 Xếp hạng CEO',
-                    const Color(0xFF1565C0),
+                    Color(0xFF1565C0),
                     () => context.push(AppRoutes.leaderboard),
                   ),
                 ],
@@ -131,11 +132,11 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildMainQuestsTab(),
+                _buildMainQuestsTab(context),
                 _buildDailyTab(profile),
-                _buildAchievementsTab(),
-                _buildLeaderboardTab(),
-                _buildTeamTab(),
+                _buildAchievementsTab(context),
+                _buildLeaderboardTab(context),
+                _buildTeamTab(context),
               ],
             ),
           ),
@@ -146,7 +147,7 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
 
   // ──────── Tab 1: Main Quests ────────
 
-  Widget _buildMainQuestsTab() {
+  Widget _buildMainQuestsTab(BuildContext context) {
     final activeQuests = ref.watch(activeQuestsProvider);
     final completedQuests = ref.watch(completedQuestsProvider);
 
@@ -170,7 +171,7 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
                 children: quests
                     .map((q) => Padding(
                           padding: const EdgeInsets.only(bottom: 10),
-                          child: QuestCard(progress: q, onTap: () => _onQuestTap(q)),
+                          child: QuestCard(progress: q, onTap: () => _onQuestTap(context, q)),
                         ))
                     .toList(),
               );
@@ -261,6 +262,7 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
         title: 'Daily Combo hoàn thành!',
         subtitle: 'Tất cả 5 nhiệm vụ hàng ngày',
         xpEarned: 50,
+        tokenEarned: 30,
       );
     }
 
@@ -278,7 +280,7 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
 
   // ──────── Tab 3: Achievements ────────
 
-  Widget _buildAchievementsTab() {
+  Widget _buildAchievementsTab(BuildContext context) {
     final allAchievements = ref.watch(allAchievementsProvider);
     final userAchievements = ref.watch(userAchievementsProvider);
 
@@ -308,15 +310,15 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
                 child: Row(
                   children: [
                     const Text('🏆', style: TextStyle(fontSize: 28)),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             '$unlockedCount / ${achievements.length} Thành Tựu',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.surface,
                             ),
                           ),
                           ClipRRect(
@@ -324,19 +326,19 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
                             child: LinearProgressIndicator(
                               value: achievements.isEmpty ? 0 : unlockedCount / achievements.length,
                               minHeight: 6,
-                              backgroundColor: Colors.white24,
-                              valueColor: const AlwaysStoppedAnimation(Colors.white),
+                              backgroundColor: Theme.of(context).colorScheme.surface24,
+                              valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.surface),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: _onScanAchievements,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        foregroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -351,7 +353,7 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
                 final isUnlocked = unlockedIds.contains(achievement.id);
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: _buildAchievementTile(achievement, isUnlocked),
+                  child: _buildAchievementTile(context, achievement, isUnlocked),
                 );
               }),
             ],
@@ -377,6 +379,7 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
         type: CelebrationType.achievementUnlock,
         title: first['achievement_name'] as String? ?? 'Thành tựu mới!',
         subtitle: 'Rarity: ${first['rarity']}',
+        tokenEarned: 50,
       );
     } else {
       QuestNotificationBar.show(
@@ -387,20 +390,20 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
     }
   }
 
-  Widget _buildAchievementTile(Achievement achievement, bool isUnlocked) {
+  Widget _buildAchievementTile(BuildContext context, Achievement achievement, bool isUnlocked) {
     final rarityColors = {
-      AchievementRarity.common: const Color(0xFF78909C),
-      AchievementRarity.rare: const Color(0xFF1E88E5),
-      AchievementRarity.epic: const Color(0xFF7B1FA2),
-      AchievementRarity.legendary: const Color(0xFFFF8F00),
-      AchievementRarity.mythic: const Color(0xFFC62828),
+      AchievementRarity.common: Color(0xFF78909C),
+      AchievementRarity.rare: Color(0xFF1E88E5),
+      AchievementRarity.epic: Color(0xFF7B1FA2),
+      AchievementRarity.legendary: Color(0xFFFF8F00),
+      AchievementRarity.mythic: Color(0xFFC62828),
     };
     final color = rarityColors[achievement.rarity] ?? Colors.grey;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isUnlocked ? color.withValues(alpha: 0.4) : Colors.grey.shade200,
@@ -465,7 +468,7 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
 
   // ──────── Tab 4: Leaderboard ────────
 
-  Widget _buildLeaderboardTab() {
+  Widget _buildLeaderboardTab(BuildContext context) {
     final leaderboard = ref.watch(leaderboardProvider);
 
     return leaderboard.when(
@@ -483,10 +486,10 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
             final isTopThree = rank <= 3;
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
+              margin: EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isTopThree
@@ -566,7 +569,7 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
 
   // ──────── Tab 5: Team (Staff Performance) ────────
 
-  Widget _buildTeamTab() {
+  Widget _buildTeamTab(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -666,14 +669,14 @@ class _QuestHubPageState extends ConsumerState<QuestHubPage>
 
   Color _rankColor(int rank) {
     switch (rank) {
-      case 1: return const Color(0xFFFFD700);
-      case 2: return const Color(0xFFC0C0C0);
-      case 3: return const Color(0xFFCD7F32);
+      case 1: return Color(0xFFFFD700);
+      case 2: return Color(0xFFC0C0C0);
+      case 3: return AppColors.tierBronze;
       default: return Colors.grey;
     }
   }
 
-  void _onQuestTap(QuestProgress progress) {
+  void _onQuestTap(BuildContext context, QuestProgress progress) {
     if (progress.quest == null) return;
     showModalBottomSheet(
       context: context,
@@ -800,7 +803,7 @@ class _QuestDetailSheet extends StatelessWidget {
               if (quest?.badgeReward != null)
                 _rewardChip('🎖️ Badge: ${quest!.badgeReward}', AppColors.secondary),
               if (quest?.titleReward != null)
-                _rewardChip('👑 Title: ${quest!.titleReward}', const Color(0xFFFF8F00)),
+                _rewardChip('👑 Title: ${quest!.titleReward}', Color(0xFFFF8F00)),
             ],
           ),
           const SizedBox(height: 20),
@@ -811,11 +814,11 @@ class _QuestDetailSheet extends StatelessWidget {
                 onRefreshQuests?.call();
                 Navigator.pop(context);
               },
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Kiểm tra tiến độ'),
+              icon: Icon(Icons.refresh, size: 18),
+              label: Text('Kiểm tra tiến độ'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),

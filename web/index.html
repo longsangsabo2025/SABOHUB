@@ -18,13 +18,18 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="SABOHUB - Hệ thống quản lý doanh nghiệp đa ngành">
+
+  <!-- Viewport: Critical for iOS proper scaling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="flutter_sabohub">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SABOHUB">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
@@ -47,6 +52,32 @@
       originalWarn.apply(console, args);
     };
   </script>
+  <style>
+    /* Prevent iOS Safari from auto-adjusting text size */
+    html, body {
+      -webkit-text-size-adjust: 100%;
+      -moz-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      /* Prevent pull-to-refresh and overscroll on iOS */
+      overscroll-behavior: none;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      /* Respect safe area (notch, home indicator) */
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    /* Prevent iOS double-tap zoom */
+    * {
+      touch-action: manipulation;
+    }
+    /* Prevent font boosting on mobile browsers */
+    body {
+      max-height: 100vh;
+      font-size: 100%;
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

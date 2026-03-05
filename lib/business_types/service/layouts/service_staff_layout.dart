@@ -5,12 +5,17 @@ import 'package:go_router/go_router.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/error_boundary.dart';
 import '../../../widgets/bug_report_dialog.dart';
+import '../../../widgets/realtime_notification_widgets.dart';
 import '../../../pages/staff/staff_checkin_page.dart';
-import '../pages/tables/table_list_page.dart';
 import '../pages/sessions/session_list_page.dart';
 import '../pages/sessions/session_form_page.dart';
-import '../providers/table_provider.dart';
+import '../pages/reports/staff_daily_report_page.dart';
+import '../../../providers/schedule_provider.dart';
+import '../widgets/daily_checklist_widget.dart';
+import '../../../pages/schedules/schedule_list_page.dart';
 import '../providers/session_provider.dart';
+import '../pages/learning/staff_learning_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class ServiceStaffLayout extends ConsumerStatefulWidget {
   const ServiceStaffLayout({super.key});
@@ -26,15 +31,16 @@ class _ServiceStaffLayoutState
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final userName = authState.user?.name ?? 'Nhân viên';
-    final companyName = authState.user?.companyName ?? 'Sabo Billiard';
+    final user = ref.watch(currentUserProvider);
+    final userName = user?.name ?? 'Nhân viên';
+    final companyName = user?.companyName ?? 'Sabo Billiard';
 
     final pages = <Widget>[
       const _StaffOverviewPage(),
-      const TableListPage(),
       const SessionListPage(),
+      const StaffDailyReportPage(),
       const StaffCheckinPage(),
+      const StaffLearningPage(),
     ];
 
     return ErrorBoundary(
@@ -73,8 +79,6 @@ class _ServiceStaffLayoutState
               icon: const Icon(Icons.refresh),
               tooltip: 'Làm mới',
               onPressed: () {
-                ref.invalidate(tablesProvider);
-                ref.invalidate(tableStatsProvider);
                 ref.invalidate(allSessionsProvider);
                 ref.invalidate(sessionStatsProvider);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -82,6 +86,7 @@ class _ServiceStaffLayoutState
                 );
               },
             ),
+            const RealtimeNotificationBell(),
             IconButton(
               icon: const Icon(Icons.more_vert),
               onPressed: () => _showMenu(context),
@@ -100,23 +105,28 @@ class _ServiceStaffLayoutState
               label: 'Tổng quan',
             ),
             NavigationDestination(
-              icon: Icon(Icons.table_bar_outlined),
-              selectedIcon: Icon(Icons.table_bar),
-              label: 'Bàn',
-            ),
-            NavigationDestination(
               icon: Icon(Icons.timer_outlined),
               selectedIcon: Icon(Icons.timer),
               label: 'Phiên',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.receipt_long_outlined),
+              selectedIcon: Icon(Icons.receipt_long),
+              label: 'Báo cáo',
             ),
             NavigationDestination(
               icon: Icon(Icons.fingerprint_outlined),
               selectedIcon: Icon(Icons.fingerprint),
               label: 'Check-in',
             ),
+            NavigationDestination(
+              icon: Icon(Icons.menu_book_outlined),
+              selectedIcon: Icon(Icons.menu_book),
+              label: 'Học',
+            ),
           ],
         ),
-        floatingActionButton: _currentIndex == 0 || _currentIndex == 1
+        floatingActionButton: _currentIndex == 0
             ? FloatingActionButton.extended(
                 onPressed: () {
                   Navigator.push(
@@ -125,9 +135,9 @@ class _ServiceStaffLayoutState
                   );
                 },
                 icon: const Icon(Icons.play_arrow),
-                label: const Text('Mở bàn'),
+                label: Text('Mở phiên'),
                 backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.surface,
               )
             : null,
       ),
@@ -185,12 +195,10 @@ class _StaffOverviewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tableStats = ref.watch(tableStatsProvider);
     final sessionStats = ref.watch(sessionStatsProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(tableStatsProvider);
         ref.invalidate(sessionStatsProvider);
       },
       child: SingleChildScrollView(
@@ -211,14 +219,14 @@ class _StaffOverviewPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '🎱 Sabo Billiard',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.surface),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     'Hôm nay ${DateTime.now().day}/${DateTime.now().month}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 14),
                   ),
                 ],
               ),
@@ -229,36 +237,7 @@ class _StaffOverviewPage extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _quickStatCard(
-                    icon: Icons.table_bar,
-                    label: 'Đang chơi',
-                    value: tableStats.when(
-                      data: (s) => '${s['occupied'] ?? 0}',
-                      loading: () => '...',
-                      error: (_, __) => '—',
-                    ),
-                    color: Colors.red,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _quickStatCard(
-                    icon: Icons.check_circle,
-                    label: 'Bàn trống',
-                    value: tableStats.when(
-                      data: (s) => '${s['available'] ?? 0}',
-                      loading: () => '...',
-                      error: (_, __) => '—',
-                    ),
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _quickStatCard(
+                    context,
                     icon: Icons.done_all,
                     label: 'Xong hôm nay',
                     value: sessionStats.when(
@@ -272,6 +251,7 @@ class _StaffOverviewPage extends ConsumerWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _quickStatCard(
+                    context,
                     icon: Icons.attach_money,
                     label: 'Doanh thu',
                     value: sessionStats.when(
@@ -291,6 +271,14 @@ class _StaffOverviewPage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
+            // Daily checklist
+            const DailyChecklistWidget(),
+            const SizedBox(height: 24),
+
+            // Lịch làm việc tuần này
+            _MyScheduleSection(),
+            const SizedBox(height: 24),
+
             const Text(
               'Phiên đang hoạt động',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -303,20 +291,20 @@ class _StaffOverviewPage extends ConsumerWidget {
     );
   }
 
-  Widget _quickStatCard({
+  Widget _quickStatCard(BuildContext context, {
     required IconData icon,
     required String label,
     required String value,
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withAlpha(50)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(color: Theme.of(context).colorScheme.onSurface.withAlpha(13), blurRadius: 6, offset: Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -328,6 +316,144 @@ class _StaffOverviewPage extends ConsumerWidget {
           Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
         ],
       ),
+    );
+  }
+}
+
+/// My Schedule Section - Shows this week's upcoming shifts
+class _MyScheduleSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    if (user == null || user.companyId == null) return const SizedBox.shrink();
+
+    final schedulesAsync = ref.watch(schedulesByEmployeeProvider({
+      'companyId': user.companyId!,
+      'employeeId': user.id,
+    }));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Lịch làm việc tuần này',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ScheduleListPage()),
+                );
+              },
+              child: const Text('Xem tất cả'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        schedulesAsync.when(
+          data: (schedules) {
+            // Filter for upcoming schedules (today and next 7 days)
+            final now = DateTime.now();
+            final today = DateTime(now.year, now.month, now.day);
+            final nextWeek = today.add(const Duration(days: 7));
+            
+            final upcoming = schedules.where((s) {
+              return !s.date.isBefore(today) && s.date.isBefore(nextWeek);
+            }).toList();
+            
+            upcoming.sort((a, b) => a.date.compareTo(b.date));
+
+            if (upcoming.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.calendar_month, size: 40, color: Colors.grey.shade400),
+                      const SizedBox(height: 8),
+                      Text('Chưa có lịch làm việc tuần này',
+                          style: TextStyle(color: Colors.grey.shade600)),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.teal.shade100),
+              ),
+              child: Column(
+                children: upcoming.take(5).map((schedule) {
+                  final isToday = schedule.date.day == now.day &&
+                      schedule.date.month == now.month &&
+                      schedule.date.year == now.year;
+                  final dateStr = isToday
+                      ? 'Hôm nay'
+                      : '${schedule.date.day}/${schedule.date.month}';
+                  
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 60,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isToday ? Colors.teal.shade100 : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            dateStr,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                              color: isToday ? Colors.teal.shade700 : Colors.grey.shade700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: schedule.shiftType.color,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          schedule.shiftType.label,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                        ),
+                        const Spacer(),
+                        Text(
+                          schedule.shiftType.timeRange,
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Text('Lỗi: $e', style: const TextStyle(color: Colors.red)),
+        ),
+      ],
     );
   }
 }

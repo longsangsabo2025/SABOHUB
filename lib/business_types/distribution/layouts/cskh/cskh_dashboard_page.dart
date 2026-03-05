@@ -30,8 +30,8 @@ class _CSKHDashboardPageState extends ConsumerState<CSKHDashboardPage> {
 
   Future<void> _loadDashboardData() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) {
         setState(() => _isLoading = false);
@@ -142,8 +142,7 @@ class _CSKHDashboardPageState extends ConsumerState<CSKHDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final user = authState.user;
+    final user = ref.watch(currentUserProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -466,7 +465,7 @@ class _CSKHDashboardPageState extends ConsumerState<CSKHDashboardPage> {
                 '#${ticket['id']}',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 ticket['subject'],
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(

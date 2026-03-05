@@ -134,29 +134,45 @@ class User extends Equatable {
     );
   }
 
-  /// Convert User to JSON
+  /// Convert to JSON for local storage / serialization (includes all fields)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'full_name': name, // Use full_name for DB
-      'name': name, // Keep for compatibility
+      'full_name': name,
+      'name': name, // Local compatibility only — NOT a DB column
       'email': email,
       'role': role.toUpperString(),
-      'department': department, // Add department
+      'department': department,
       'phone': phone,
       'avatar_url': avatarUrl,
-      'branch_id': branchId, // Add branchId
-      'company_id': companyId, // Add companyId
-      'company_name': companyName, // Add companyName for local storage
-      'business_type': businessType?.toString().split('.').last, // Add businessType for local storage
-      'warehouse_id': warehouseId, // Add warehouseId for local storage
-      'is_active': isActive, // Add isActive
+      'branch_id': branchId,
+      'company_id': companyId,
+      'company_name': companyName, // Local storage only — NOT a DB column
+      'business_type': businessType?.toString().split('.').last, // Local storage only — NOT a DB column
+      'warehouse_id': warehouseId,
+      'is_active': isActive,
       'invite_token': inviteToken,
       'invite_expires_at': inviteExpiresAt?.toIso8601String(),
       'invited_at': invitedAt?.toIso8601String(),
       'onboarded_at': onboardedAt?.toIso8601String(),
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
+
+  /// Convert to JSON for database operations (only DB-valid columns)
+  Map<String, dynamic> toJsonForDb() {
+    return {
+      'full_name': name,
+      'email': email,
+      'role': role.toUpperString(),
+      'department': department,
+      'phone': phone,
+      'avatar_url': avatarUrl,
+      'branch_id': branchId,
+      'company_id': companyId,
+      'warehouse_id': warehouseId,
+      'is_active': isActive,
     };
   }
 
@@ -249,6 +265,10 @@ class User extends Equatable {
         return '🚗 $name (Tài xế)';
       case UserRole.warehouse:
         return '📦 $name (Nhân viên kho)';
+      case UserRole.finance:
+        return '💰 $name (Kế toán)';
+      case UserRole.shareholder:
+        return '📈 $name (Cổ đông)';
     }
   }
 
@@ -269,6 +289,10 @@ class User extends Equatable {
         return 'Tài xế';
       case UserRole.warehouse:
         return 'Nhân viên kho';
+      case UserRole.finance:
+        return 'Kế toán';
+      case UserRole.shareholder:
+        return 'Cổ đông';
     }
   }
 }

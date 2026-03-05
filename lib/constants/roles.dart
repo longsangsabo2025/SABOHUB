@@ -7,7 +7,9 @@ enum SaboRole {
   shiftLeader,
   staff,
   driver,
-  warehouse;
+  warehouse,
+  finance,
+  shareholder; // Cổ đông - xem thông tin cổ phần
 
   /// Get display name in Vietnamese
   String get displayName {
@@ -26,6 +28,10 @@ enum SaboRole {
         return 'Tài xế';
       case SaboRole.warehouse:
         return 'Nhân viên kho';
+      case SaboRole.finance:
+        return 'Kế toán';
+      case SaboRole.shareholder:
+        return 'Cổ đông';
     }
   }
 
@@ -48,15 +54,30 @@ enum SaboRole {
         return SaboRole.driver;
       case 'WAREHOUSE':
         return SaboRole.warehouse;
+      case 'FINANCE':
+        return SaboRole.finance;
+      case 'SHAREHOLDER':
+        return SaboRole.shareholder;
       default:
         return SaboRole.staff; // Default fallback
     }
   }
 
-  /// Convert to uppercase string (for database storage)
-  String toUpperString() {
-    return name.toUpperCase();
+  /// Convert to database string (lowercase snake_case for DB storage)
+  /// DB CHECK constraint accepts: staff, shift_leader, manager, ceo, driver, warehouse, super_admin, finance
+  String toDbString() {
+    switch (this) {
+      case SaboRole.superAdmin:
+        return 'super_admin';
+      case SaboRole.shiftLeader:
+        return 'shift_leader';
+      default:
+        return name.toLowerCase();
+    }
   }
+
+  /// @deprecated Use toDbString() instead. This method returns uppercase which doesn't match DB.
+  String toUpperString() => toDbString();
 
   /// Convert to lowercase string (for web compatibility)
   String toLowerString() {
@@ -86,4 +107,7 @@ enum SaboRole {
   
   /// Check if role has platform-wide access
   bool get hasPlatformAccess => this == SaboRole.superAdmin;
+  
+  /// Check if role is shareholder (cổ đông)
+  bool get isShareholder => this == SaboRole.shareholder;
 }

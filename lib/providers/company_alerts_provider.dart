@@ -32,71 +32,62 @@ class CompanyAlerts {
 }
 
 /// Provider to fetch alerts for a specific company
-final companyAlertsProvider = FutureProvider.family<CompanyAlerts, String>((ref, companyId) async {
+final companyAlertsProvider = FutureProvider.autoDispose.family<CompanyAlerts, String>((ref, companyId) async {
   final sb = Supabase.instance.client;
   final now = DateTime.now();
-  
-  int overdueCount = 0;
-  int pendingCount = 0;
-  int reportsCount = 0;
-  int unreadCount = 0;
+  final today = DateTime(now.year, now.month, now.day);
+  final startOfMonth = DateTime(now.year, now.month, 1);
 
-  try {
+  Future<int> safeCount(Future<dynamic> query) async {
+    try {
+      final res = await query;
+      return (res as List).length;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  // Run all 4 queries in parallel instead of sequentially
+  final results = await Future.wait([
     // 1. Overdue tasks: tasks with deadline < now and status not completed
-    final overdueRes = await sb
+    safeCount(sb
         .from('tasks')
         .select('id')
         .eq('company_id', companyId)
         .lt('deadline', now.toIso8601String())
         .neq('status', 'completed')
-        .neq('status', 'cancelled');
-    overdueCount = (overdueRes as List).length;
-  } catch (_) {}
-
-  try {
+        .neq('status', 'cancelled')),
     // 2. Pending approval: tasks with status = 'pending_approval' or 'review'
-    final pendingRes = await sb
+    safeCount(sb
         .from('tasks')
         .select('id')
         .eq('company_id', companyId)
-        .or('status.eq.pending_approval,status.eq.review');
-    pendingCount = (pendingRes as List).length;
-  } catch (_) {}
-
-  try {
+        .or('status.eq.pending_approval,status.eq.review')),
     // 3. New reports: financial reports (monthly_pnl) created this month
-    final startOfMonth = DateTime(now.year, now.month, 1);
-    final reportsRes = await sb
+    safeCount(sb
         .from('monthly_pnl')
         .select('id')
         .eq('company_id', companyId)
-        .gte('created_at', startOfMonth.toIso8601String());
-    reportsCount = (reportsRes as List).length;
-  } catch (_) {}
-
-  try {
+        .gte('created_at', startOfMonth.toIso8601String())),
     // 4. Unread messages: task_comments not yet read (simplified: count all comments today)
-    // Note: A proper implementation would track read status per user
-    final today = DateTime(now.year, now.month, now.day);
-    final commentsRes = await sb
+    safeCount(sb
         .from('task_comments')
         .select('id, tasks!inner(company_id)')
         .eq('tasks.company_id', companyId)
-        .gte('created_at', today.toIso8601String());
-    unreadCount = (commentsRes as List).length;
-  } catch (_) {}
+        .gte('created_at', today.toIso8601String())),
+  ]);
 
   return CompanyAlerts(
     companyId: companyId,
-    overdueTasksCount: overdueCount,
-    pendingApprovalCount: pendingCount,
-    newReportsCount: reportsCount,
-    unreadMessagesCount: unreadCount,
+    overdueTasksCount: results[0],
+    pendingApprovalCount: results[1],
+    newReportsCount: results[2],
+    unreadMessagesCount: results[3],
   );
 });
 
 /// Provider to fetch alerts for multiple companies at once
-final multiCompanyAlertsProvider = FutureProvider.family<Map<String, CompanyAlerts>, List<String>>((ref, companyIds) async {
+final multiCompanyAlertsProvider = FutureProvider.autoDispose.family<Map<String, CompanyAlerts>, List<String>>((ref, companyIds) async {
   final results = <String, CompanyAlerts>{};
   
   for (final id in companyIds) {

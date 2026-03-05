@@ -81,7 +81,7 @@ class NotificationService {
         content: Row(
           children: [
             Icon(config.icon, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: Text(
                 message,

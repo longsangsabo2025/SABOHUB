@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../core/theme/app_colors.dart';
 import '../models/daily_work_report.dart';
+import '../providers/token_provider.dart';
 import '../services/daily_work_report_service.dart';
 
 /// Work Report Preview Dialog
@@ -71,11 +73,11 @@ class _WorkReportPreviewDialogState
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue[50],
+                    color: AppColors.infoLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child:
-                      Icon(Icons.assignment, color: Colors.blue[700], size: 32),
+                      Icon(Icons.assignment, color: AppColors.infoDark, size: 32),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -91,7 +93,7 @@ class _WorkReportPreviewDialogState
                       ),
                       Text(
                         'Xem lại và bổ sung thông tin',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                       ),
                     ],
                   ),
@@ -116,9 +118,9 @@ class _WorkReportPreviewDialogState
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
+                        color: AppColors.grey50,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[200]!),
+                        border: Border.all(color: AppColors.grey200),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,14 +143,14 @@ class _WorkReportPreviewDialogState
                                 'Không có tóm tắt',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey[700],
+                              color: AppColors.grey700,
                               height: 1.6,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     // Completed tasks
                     if (widget.report.completedTasks.isNotEmpty) ...[
@@ -157,7 +159,7 @@ class _WorkReportPreviewDialogState
                       ...widget.report.completedTasks.map(
                         (task) => _buildTaskCard(task),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                     ],
 
                     // Employee notes (editable)
@@ -173,10 +175,10 @@ class _WorkReportPreviewDialogState
                           borderRadius: BorderRadius.circular(12),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Achievements (editable)
                     _buildSectionHeader('🎯 Thành tựu (tùy chọn)', Icons.stars),
@@ -190,10 +192,10 @@ class _WorkReportPreviewDialogState
                           borderRadius: BorderRadius.circular(12),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Challenges (editable)
                     _buildSectionHeader(
@@ -208,10 +210,10 @@ class _WorkReportPreviewDialogState
                           borderRadius: BorderRadius.circular(12),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Tomorrow plan (editable)
                     _buildSectionHeader(
@@ -225,7 +227,7 @@ class _WorkReportPreviewDialogState
                           borderRadius: BorderRadius.circular(12),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                     ),
                   ],
@@ -264,8 +266,8 @@ class _WorkReportPreviewDialogState
                       : const Icon(Icons.send),
                   label: Text(_isSubmitting ? 'Đang nộp...' : 'Nộp báo cáo'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700],
-                    foregroundColor: Colors.white,
+                  backgroundColor: AppColors.infoDark,
+                  foregroundColor: AppColors.textOnPrimary,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
                   ),
@@ -283,7 +285,7 @@ class _WorkReportPreviewDialogState
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.blue[700]),
+          Icon(icon, size: 20, color: AppColors.infoDark),
           const SizedBox(width: 8),
           Text(
             title,
@@ -308,7 +310,7 @@ class _WorkReportPreviewDialogState
             child: Text(
               label,
               style: TextStyle(
-                color: Colors.grey[600],
+                color: AppColors.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -332,14 +334,14 @@ class _WorkReportPreviewDialogState
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.green[50],
+        color: AppColors.successLight,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.green[200]!),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_circle, color: Colors.green[700], size: 20),
+          Icon(Icons.check_circle, color: AppColors.successDark, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -357,7 +359,7 @@ class _WorkReportPreviewDialogState
                   Text(
                     task.notes!,
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: AppColors.textSecondary,
                       fontSize: 13,
                     ),
                   ),
@@ -366,7 +368,7 @@ class _WorkReportPreviewDialogState
                 Text(
                   'Hoàn thành: ${DateFormat('HH:mm').format(task.completedAt)}',
                   style: TextStyle(
-                    color: Colors.grey[500],
+                    color: AppColors.textTertiary,
                     fontSize: 12,
                   ),
                 ),
@@ -412,6 +414,18 @@ class _WorkReportPreviewDialogState
       // Submit report
       await service.submitReport(updatedReport.id);
 
+      // 🪙 SABO Token: Thưởng token khi nộp báo cáo công việc
+      try {
+        await ref.read(tokenWalletProvider.notifier).earnTokens(
+          10,
+          sourceType: 'work_report',
+          sourceId: updatedReport.id,
+          description: 'Nộp báo cáo công việc cuối ca',
+        );
+      } catch (_) {
+        // Token reward is non-critical
+      }
+
       if (mounted) {
         Navigator.pop(context, true);
         widget.onSubmitted?.call();
@@ -421,7 +435,7 @@ class _WorkReportPreviewDialogState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Lỗi nộp báo cáo: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../../providers/auth_provider.dart';
+import '../../../../../utils/app_logger.dart';
 import 'inventory_constants.dart';
 
 // ==================== CATEGORY MANAGEMENT SHEET ====================
@@ -33,7 +34,7 @@ class _CategoryManagementSheetState extends ConsumerState<CategoryManagementShee
 
   Future<void> _loadCategoryData() async {
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       if (companyId.isEmpty) return;
 
       final response = await supabase
@@ -49,7 +50,7 @@ class _CategoryManagementSheetState extends ConsumerState<CategoryManagementShee
         });
       }
     } catch (e) {
-      debugPrint('❌ Error loading categories: $e');
+      AppLogger.error('Error loading categories: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -62,7 +63,7 @@ class _CategoryManagementSheetState extends ConsumerState<CategoryManagementShee
 
     if (result != null && result['name']?.isNotEmpty == true) {
       try {
-        final companyId = ref.read(authProvider).user?.companyId ?? '';
+        final companyId = ref.read(currentUserProvider)?.companyId ?? '';
         
         await supabase.from('product_categories').insert({
           'company_id': companyId,
@@ -168,7 +169,7 @@ class _CategoryManagementSheetState extends ConsumerState<CategoryManagementShee
 
         await supabase
             .from('product_categories')
-            .delete()
+            .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
             .eq('id', category['id']);
 
         if (mounted) {
@@ -191,8 +192,8 @@ class _CategoryManagementSheetState extends ConsumerState<CategoryManagementShee
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -393,7 +394,7 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Hủy'),
+          child: Text('Hủy'),
         ),
         ElevatedButton(
           onPressed: () {
@@ -410,7 +411,7 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.teal,
-            foregroundColor: Colors.white,
+            foregroundColor: Theme.of(context).colorScheme.surface,
           ),
           child: Text(isEdit ? 'Cập nhật' : 'Thêm'),
         ),

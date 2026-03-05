@@ -2,7 +2,9 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../core/theme/app_colors.dart';
 import '../services/image_upload_service.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Widget để chọn và hiển thị ảnh sản phẩm/đối tượng
 /// Hỗ trợ:
@@ -75,10 +77,10 @@ class _SaboImagePickerState extends State<SaboImagePicker> {
         width: widget.width,
         height: widget.height,
         decoration: BoxDecoration(
-          color: widget.emptyBackgroundColor ?? Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(widget.borderRadius),
-          border: Border.all(
-            color: Colors.grey.shade300,
+        color: widget.emptyBackgroundColor ?? AppColors.grey100,
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        border: Border.all(
+            color: AppColors.grey300,
             width: 1,
             style: BorderStyle.solid,
           ),
@@ -91,10 +93,10 @@ class _SaboImagePickerState extends State<SaboImagePicker> {
               _buildImageContent(),
               if (_isLoading)
                 Container(
-                  color: Colors.black26,
-                  child: const Center(
+                  color: Theme.of(context).colorScheme.onSurface26,
+                  child: Center(
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       strokeWidth: 2,
                     ),
                   ),
@@ -111,7 +113,7 @@ class _SaboImagePickerState extends State<SaboImagePicker> {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.7),
+                        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                         Colors.transparent,
                       ],
                     ),
@@ -121,14 +123,14 @@ class _SaboImagePickerState extends State<SaboImagePicker> {
                     children: [
                       Icon(
                         _hasImage ? Icons.edit : Icons.add_a_photo,
-                        color: Colors.white,
+                        color: AppColors.textOnPrimary,
                         size: 16,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         _hasImage ? 'Đổi ảnh' : 'Thêm ảnh',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textOnPrimary,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                         ),
@@ -169,7 +171,7 @@ class _SaboImagePickerState extends State<SaboImagePicker> {
         placeholder: (context, url) => Center(
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: Colors.grey.shade400,
+            color: AppColors.grey400,
           ),
         ),
         errorWidget: (context, url, error) => _buildPlaceholder(),
@@ -191,14 +193,14 @@ class _SaboImagePickerState extends State<SaboImagePicker> {
           Icon(
             widget.emptyIcon,
             size: 32,
-            color: Colors.grey.shade400,
+            color: AppColors.grey400,
           ),
           const SizedBox(height: 4),
           Text(
             'Chọn ảnh',
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey.shade500,
+              color: AppColors.grey500,
             ),
           ),
         ],
@@ -209,7 +211,7 @@ class _SaboImagePickerState extends State<SaboImagePicker> {
   Future<void> _showImageOptions() async {
     final options = <Widget>[
       ListTile(
-        leading: const Icon(Icons.photo_library, color: Colors.blue),
+        leading: const Icon(Icons.photo_library, color: AppColors.info),
         title: const Text('Chọn từ thư viện'),
         onTap: () {
           Navigator.pop(context);
@@ -218,7 +220,7 @@ class _SaboImagePickerState extends State<SaboImagePicker> {
       ),
       if (widget.allowCamera)
         ListTile(
-          leading: const Icon(Icons.camera_alt, color: Colors.green),
+          leading: const Icon(Icons.camera_alt, color: AppColors.success),
           title: const Text('Chụp ảnh mới'),
           onTap: () {
             Navigator.pop(context);
@@ -227,7 +229,7 @@ class _SaboImagePickerState extends State<SaboImagePicker> {
         ),
       if (_hasImage && widget.allowDelete)
         ListTile(
-          leading: const Icon(Icons.delete_outline, color: Colors.red),
+          leading: const Icon(Icons.delete_outline, color: AppColors.error),
           title: const Text('Xóa ảnh'),
           onTap: () {
             Navigator.pop(context);
@@ -250,7 +252,7 @@ class _SaboImagePickerState extends State<SaboImagePicker> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: AppColors.grey300,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -296,7 +298,7 @@ class _SaboImagePickerState extends State<SaboImagePicker> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lỗi chọn ảnh: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -361,9 +363,9 @@ class _ProductImagePickerState extends State<ProductImagePicker> {
                 width: widget.size,
                 height: widget.size,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: AppColors.grey100,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: AppColors.grey300),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -381,7 +383,7 @@ class _ProductImagePickerState extends State<ProductImagePicker> {
                   icon: const Icon(Icons.photo_library, size: 18),
                   label: const Text('Chọn ảnh'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blue,
+                    foregroundColor: AppColors.info,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -391,7 +393,7 @@ class _ProductImagePickerState extends State<ProductImagePicker> {
                     icon: const Icon(Icons.delete_outline, size: 18),
                     label: const Text('Xóa'),
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
+                      foregroundColor: AppColors.error,
                     ),
                   ),
               ],
@@ -405,7 +407,7 @@ class _ProductImagePickerState extends State<ProductImagePicker> {
               '* Ảnh sẽ được upload khi lưu',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.orange.shade700,
+                color: AppColors.warningDark,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -445,7 +447,7 @@ class _ProductImagePickerState extends State<ProductImagePicker> {
       child: Icon(
         Icons.add_photo_alternate_outlined,
         size: 40,
-        color: Colors.grey.shade400,
+        color: AppColors.grey400,
       ),
     );
   }
@@ -515,11 +517,11 @@ class _AvatarPickerState extends State<AvatarPicker> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: AppColors.info,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(color: AppColors.textOnPrimary, width: 2),
               ),
-              child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+              child: const Icon(Icons.camera_alt, color: AppColors.textOnPrimary, size: 16),
             ),
           ),
         ],
@@ -546,17 +548,17 @@ class _AvatarPickerState extends State<AvatarPicker> {
 
     return CircleAvatar(
       radius: widget.size / 2,
-      backgroundColor: widget.backgroundColor ?? Colors.blue.shade100,
+      backgroundColor: widget.backgroundColor ?? AppColors.infoLight,
       child: widget.initials != null
           ? Text(
               widget.initials!,
               style: TextStyle(
                 fontSize: widget.size / 3,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue.shade700,
+                color: AppColors.infoDark,
               ),
             )
-          : Icon(Icons.person, size: widget.size / 2, color: Colors.blue.shade700),
+          : Icon(Icons.person, size: widget.size / 2, color: AppColors.infoDark),
     );
   }
 
@@ -577,7 +579,7 @@ class _AvatarPickerState extends State<AvatarPicker> {
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.blue),
+              leading: const Icon(Icons.photo_library, color: AppColors.info),
               title: const Text('Chọn từ thư viện'),
               onTap: () {
                 Navigator.pop(context);
@@ -585,7 +587,7 @@ class _AvatarPickerState extends State<AvatarPicker> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.green),
+              leading: const Icon(Icons.camera_alt, color: AppColors.success),
               title: const Text('Chụp ảnh mới'),
               onTap: () {
                 Navigator.pop(context);
@@ -594,7 +596,7 @@ class _AvatarPickerState extends State<AvatarPicker> {
             ),
             if (_previewBytes != null || widget.currentAvatarUrl != null)
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                leading: const Icon(Icons.delete_outline, color: AppColors.error),
                 title: const Text('Xóa ảnh'),
                 onTap: () {
                   Navigator.pop(context);

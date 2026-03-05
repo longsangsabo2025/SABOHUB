@@ -1,4 +1,4 @@
-/// SABO Corporation — Event Model
+// SABO Corporation — Event Model
 
 enum EventType {
   tournament('tournament', 'Giải đấu'),

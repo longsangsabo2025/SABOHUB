@@ -483,8 +483,8 @@ class StoreVisitService {
     final path = url.split('/visit-assets/').last;
     await _supabase.storage.from('visit-assets').remove([path]);
     
-    // Delete record
-    await _supabase.from('visit_photos').delete().eq('id', photoId);
+    // Soft-delete record
+    await _supabase.from('visit_photos').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', photoId);
   }
 
   // ==================== COMPETITOR OBSERVATIONS ====================

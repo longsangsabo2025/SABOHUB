@@ -12,6 +12,8 @@ enum UserRole {
   ceo,
   driver,
   warehouse,
+  finance,
+  shareholder,
 }
 
 /// Navigation item configuration
@@ -123,15 +125,40 @@ class NavigationConfig {
     ),
   ];
 
+  // Manager-specific navigation
+  static const List<NavigationItem> managerNavItems = [
+    NavigationItem(
+      route: '/manager/dashboard',
+      icon: Icons.home,
+      activeIcon: Icons.home,
+      label: 'Trang chủ',
+      allowedRoles: [UserRole.manager],
+    ),
+    NavigationItem(
+      route: '/company/settings',
+      icon: Icons.business,
+      activeIcon: Icons.business,
+      label: 'Công ty',
+      allowedRoles: [UserRole.manager],
+    ),
+    NavigationItem(
+      route: '/staff/tasks',
+      icon: Icons.task_alt,
+      activeIcon: Icons.task_alt,
+      label: 'Nhiệm vụ',
+      allowedRoles: [UserRole.manager],
+    ),
+    NavigationItem(
+      route: '/employees/list',
+      icon: Icons.people,
+      activeIcon: Icons.people,
+      label: 'Nhân viên',
+      allowedRoles: [UserRole.manager],
+    ),
+  ];
+
   // Staff-specific simple navigation
   static const List<NavigationItem> staffNavItems = [
-    NavigationItem(
-      route: '/staff/tables',
-      icon: Icons.table_chart,
-      activeIcon: Icons.table_chart,
-      label: 'Bàn',
-      allowedRoles: [UserRole.staff, UserRole.shiftLeader, UserRole.manager],
-    ),
     NavigationItem(
       route: '/staff/checkin',
       icon: Icons.fingerprint,
@@ -184,6 +211,42 @@ class NavigationConfig {
       allowedRoles: [UserRole.ceo],
     )),
 
+    // SABO Wallet (Token Economy)
+    SingleNav(const NavigationItem(
+      route: '/sabo-wallet',
+      icon: Icons.account_balance_wallet,
+      activeIcon: Icons.account_balance_wallet,
+      label: 'SABO Wallet',
+      allowedRoles: [UserRole.ceo, UserRole.manager, UserRole.shiftLeader, UserRole.staff],
+    )),
+
+    // Marketing & Growth
+    GroupNav(NavigationGroup(
+      title: 'Marketing & Growth',
+      icon: Icons.campaign,
+      allowedRoles: const [UserRole.ceo, UserRole.manager, UserRole.shiftLeader, UserRole.staff],
+      items: const [
+        NavigationItem(
+          route: '/referral',
+          icon: Icons.group_add,
+          label: 'Giới thiệu',
+          allowedRoles: [UserRole.ceo, UserRole.manager, UserRole.shiftLeader, UserRole.staff],
+        ),
+        NavigationItem(
+          route: '/sabo-token-leaderboard',
+          icon: Icons.leaderboard,
+          label: 'BXH Token',
+          allowedRoles: [UserRole.ceo, UserRole.manager, UserRole.shiftLeader, UserRole.staff],
+        ),
+        NavigationItem(
+          route: '/company-showcase',
+          icon: Icons.storefront,
+          label: 'Showcase',
+          allowedRoles: [UserRole.ceo, UserRole.manager],
+        ),
+      ],
+    )),
+
     // Core Operations Group
     GroupNav(NavigationGroup(
       title: 'Vận hành',
@@ -197,7 +260,7 @@ class NavigationConfig {
           allowedRoles: [UserRole.ceo, UserRole.manager],
         ),
         NavigationItem(
-          route: '/manager/staff',
+          route: '/employees/list',
           icon: Icons.people,
           label: 'Nhân viên',
           allowedRoles: [UserRole.ceo, UserRole.manager],
@@ -215,12 +278,6 @@ class NavigationConfig {
           allowedRoles: [UserRole.staff, UserRole.shiftLeader, UserRole.manager, UserRole.ceo],
         ),
         NavigationItem(
-          route: '/manager/attendance',
-          icon: Icons.access_time,
-          label: 'Lịch làm việc',
-          allowedRoles: [UserRole.manager, UserRole.ceo],
-        ),
-        NavigationItem(
           route: '/shift-leader/reports',
           icon: Icons.assessment,
           label: 'Báo cáo ngày',
@@ -236,15 +293,15 @@ class NavigationConfig {
       allowedRoles: const [UserRole.ceo, UserRole.manager],
       items: const [
         NavigationItem(
-          route: '/manager/analytics',
+          route: '/manager-reports',
           icon: Icons.bar_chart,
-          label: 'KPI Dashboard',
+          label: 'Báo cáo quản lý',
           allowedRoles: [UserRole.manager, UserRole.ceo],
         ),
         NavigationItem(
-          route: '/manager/analytics',
+          route: '/gamification-analytics',
           icon: Icons.insights,
-          label: 'Thống kê',
+          label: 'Thống kê Game',
           allowedRoles: [UserRole.manager, UserRole.ceo],
         ),
       ],
@@ -257,15 +314,15 @@ class NavigationConfig {
       allowedRoles: const [UserRole.ceo, UserRole.manager],
       items: const [
         NavigationItem(
-          route: '/commission/my-commission',
+          route: '/sabo-wallet',
           icon: Icons.account_balance_wallet,
-          label: 'Hoa hồng',
+          label: 'SABO Wallet',
           allowedRoles: [UserRole.staff, UserRole.shiftLeader, UserRole.manager, UserRole.ceo],
         ),
         NavigationItem(
-          route: '/commission/bills',
-          icon: Icons.receipt_long,
-          label: 'Bills',
+          route: '/odori/receivables',
+          icon: Icons.credit_card,
+          label: 'Công nợ phải thu',
           allowedRoles: [UserRole.manager, UserRole.ceo],
         ),
       ],
@@ -380,51 +437,48 @@ class NavigationConfig {
       allowedRoles: const [UserRole.ceo, UserRole.manager, UserRole.shiftLeader],
       items: const [
         NavigationItem(
-          route: '/odori/inventory',
+          route: '/warehouse/picking',
           icon: Icons.inventory_2,
-          label: 'Tồn kho',
+          label: 'Soạn hàng',
           allowedRoles: [UserRole.ceo, UserRole.manager, UserRole.shiftLeader],
         ),
         NavigationItem(
-          route: '/odori/payments',
-          icon: Icons.payments,
-          label: 'Thanh toán',
+          route: '/warehouse',
+          icon: Icons.warehouse,
+          label: 'Kho tổng quan',
           allowedRoles: [UserRole.ceo, UserRole.manager],
         ),
       ],
     )),
 
-    // Map & GPS Group
+    // Delivery & Routes Group
     GroupNav(NavigationGroup(
-      title: 'Bản đồ & GPS',
-      icon: Icons.map,
+      title: 'Giao hàng',
+      icon: Icons.local_shipping,
       allowedRoles: const [UserRole.ceo, UserRole.manager, UserRole.shiftLeader, UserRole.staff],
       items: const [
         NavigationItem(
-          route: '/map/overview',
-          icon: Icons.map_outlined,
-          label: 'Bản đồ tổng quan',
-          allowedRoles: [UserRole.ceo, UserRole.manager, UserRole.shiftLeader],
-        ),
-        NavigationItem(
-          route: '/map/delivery-tracking',
-          icon: Icons.local_shipping,
-          label: 'Theo dõi giao hàng',
-          allowedRoles: [UserRole.ceo, UserRole.manager, UserRole.shiftLeader, UserRole.staff],
-        ),
-        NavigationItem(
-          route: '/map/staff-tracking',
-          icon: Icons.person_pin_circle,
-          label: 'Theo dõi nhân viên',
-          allowedRoles: [UserRole.ceo, UserRole.manager, UserRole.shiftLeader],
-        ),
-        NavigationItem(
-          route: '/map/route-planning',
+          route: '/delivery/route-planning',
           icon: Icons.route,
-          label: 'Tuyến đường',
+          label: 'Lộ trình giao hàng',
+          allowedRoles: [UserRole.ceo, UserRole.manager, UserRole.shiftLeader],
+        ),
+        NavigationItem(
+          route: '/driver/dashboard',
+          icon: Icons.directions_car,
+          label: 'Tài xế',
           allowedRoles: [UserRole.ceo, UserRole.manager, UserRole.shiftLeader, UserRole.staff],
         ),
       ],
+    )),
+
+    // Travis AI
+    SingleNav(const NavigationItem(
+      route: '/travis',
+      icon: Icons.smart_toy,
+      activeIcon: Icons.smart_toy,
+      label: 'Travis AI',
+      allowedRoles: [UserRole.ceo],
     )),
 
     // Settings
@@ -468,10 +522,10 @@ class NavigationConfig {
       allowedRoles: [UserRole.manager, UserRole.ceo],
     ),
     NavigationItem(
-      route: '/commission/my-commission',
+      route: '/sabo-wallet',
       icon: Icons.account_balance_wallet,
       activeIcon: Icons.account_balance_wallet,
-      label: 'Hoa hồng',
+      label: 'SABO Wallet',
       allowedRoles: [
         UserRole.staff,
         UserRole.shiftLeader,
@@ -480,18 +534,11 @@ class NavigationConfig {
       ],
     ),
     NavigationItem(
-      route: '/commission/bills',
-      icon: Icons.receipt_long,
-      activeIcon: Icons.receipt_long,
-      label: 'Bills',
-      allowedRoles: [UserRole.manager, UserRole.ceo],
-    ),
-    NavigationItem(
-      route: '/commission/rules',
-      icon: Icons.rule,
-      activeIcon: Icons.rule,
-      label: 'Quy tắc',
-      allowedRoles: [UserRole.ceo],
+      route: '/quest-hub',
+      icon: Icons.emoji_events,
+      activeIcon: Icons.emoji_events,
+      label: 'Quest Hub',
+      allowedRoles: [UserRole.ceo, UserRole.manager],
     ),
   ];
 
@@ -503,6 +550,8 @@ class NavigationConfig {
         return driverNavItems;
       case UserRole.warehouse:
         return warehouseNavItems;
+      case UserRole.manager:
+        return managerNavItems;
       case UserRole.staff:
       case UserRole.shiftLeader:
         return staffNavItems;

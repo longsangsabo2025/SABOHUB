@@ -41,7 +41,7 @@ class FileGalleryWidget extends ConsumerWidget {
               size: 80,
               color: Colors.grey[400],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Text(
               'Chưa có file nào',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -49,7 +49,7 @@ class FileGalleryWidget extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Đính kèm file trong tin nhắn để bắt đầu phân tích',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -103,7 +103,7 @@ class FileGalleryWidget extends ConsumerWidget {
               size: 64,
               color: Colors.red[400],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Lỗi tải danh sách file',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -111,7 +111,7 @@ class FileGalleryWidget extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               error.toString(),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -149,8 +149,8 @@ class FileGalleryWidget extends ConsumerWidget {
       maxChildSize: 0.95,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -192,7 +192,7 @@ class FileGalleryWidget extends ConsumerWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             '${file.fileSizeFormatted} • ${file.uploadedDateFormatted}',
                             style:

@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+
 import '../../../core/services/supabase_service.dart';
 import '../../../models/accounting.dart';
 import '../../../models/company.dart';
@@ -134,12 +137,12 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
     );
 
     return Container(
-      color: Colors.grey[50],
+      color: AppColors.surface,
       child: Column(
         children: [
           // Header with filters
           Container(
-            color: Colors.white,
+            color: AppColors.background,
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,7 +165,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                           button: true,
                           child: IconButton(
                             icon: const Icon(Icons.help_outline,
-                                color: Colors.orange),
+                                color: AppColors.warning),
                             tooltip: 'Hướng dẫn sử dụng',
                             onPressed: () => _showAccountingGuide(),
                           ),
@@ -173,7 +176,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                           button: true,
                           child: IconButton(
                             icon: const Icon(Icons.add_circle,
-                                color: Colors.blue),
+                                color: AppColors.info),
                             tooltip: 'Thêm giao dịch',
                             onPressed: () => _showAddTransactionDialog(),
                           ),
@@ -182,7 +185,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                AppSpacing.gapMD,
                 // Date range selector
                 Row(
                   children: [
@@ -196,12 +199,12 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                         onPressed: () => _selectDateRange(),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    AppSpacing.hGapSM,
                     // Quick filters
                     _buildQuickFilter('Tuần này', 7),
-                    const SizedBox(width: 4),
+                    AppSpacing.hGapXXS,
                     _buildQuickFilter('Tháng này', 30),
-                    const SizedBox(width: 4),
+                    AppSpacing.hGapXXS,
                     _buildQuickFilter('Quý này', 90),
                   ],
                 ),
@@ -224,12 +227,12 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
 
           // Tabs
           Container(
-            color: Colors.white,
+            color: AppColors.background,
             child: TabBar(
               controller: _tabController,
-              labelColor: Colors.blue,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.blue,
+              labelColor: AppColors.info,
+              unselectedLabelColor: AppColors.textTertiary,
+              indicatorColor: AppColors.info,
               isScrollable: true,
               tabs: const [
                 Tab(text: 'Tổng quan'),
@@ -277,7 +280,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
 
   Widget _buildSummaryCards(AccountingSummary summary) {
     return Container(
-      color: Colors.white,
+      color: AppColors.background,
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
@@ -285,34 +288,34 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
             child: _buildSummaryCard(
               '💰 Doanh thu',
               summary.formattedRevenue,
-              Colors.green,
+              AppColors.success,
               Icons.trending_up,
             ),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMD,
           Expanded(
             child: _buildSummaryCard(
               '💸 Chi phí',
               summary.formattedExpense,
-              Colors.orange,
+              AppColors.warning,
               Icons.trending_down,
             ),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMD,
           Expanded(
             child: _buildSummaryCard(
               '💵 Lợi nhuận',
               summary.formattedNetProfit,
-              summary.netProfit >= 0 ? Colors.blue : Colors.red,
+              summary.netProfit >= 0 ? AppColors.info : AppColors.error,
               Icons.account_balance_wallet,
             ),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMD,
           Expanded(
             child: _buildSummaryCard(
               '📊 Biên lợi nhuận',
               summary.formattedProfitMargin,
-              Colors.purple,
+              AppColors.primary,
               Icons.pie_chart,
             ),
           ),
@@ -340,20 +343,20 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
           Row(
             children: [
               Icon(icon, size: 20, color: color),
-              const SizedBox(width: 8),
+              AppSpacing.hGapSM,
               Expanded(
                 child: Text(
                   title,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[700],
+                    color: AppColors.grey700,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          AppSpacing.gapSM,
           Text(
             value,
             style: TextStyle(
@@ -376,13 +379,13 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
           children: [
             // Shimmer for summary cards
             const ShimmerSummaryCards(itemCount: 3),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             // Shimmer for revenue chart
             const ShimmerChart(height: 200),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             // Shimmer for expense chart
             const ShimmerChart(height: 200),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             // Shimmer for transactions
             const ShimmerTransactionRow(itemCount: 5),
           ],
@@ -400,10 +403,10 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               Icons.show_chart,
               _buildRevenueTrendChart(),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             // Expense breakdown
             _buildExpenseBreakdownCard(),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             // Recent transactions
             _buildRecentTransactions(),
           ],
@@ -416,7 +419,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -430,8 +433,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.blue),
-              const SizedBox(width: 8),
+              Icon(icon, color: AppColors.info),
+              AppSpacing.hGapSM,
               Text(
                 title,
                 style: const TextStyle(
@@ -441,7 +444,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           SizedBox(height: 200, child: chart),
         ],
       ),
@@ -511,12 +514,12 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                   );
                 }).toList(),
                 isCurved: true,
-                color: Colors.blue,
+                color: AppColors.info,
                 barWidth: 3,
                 dotData: FlDotData(show: true),
                 belowBarData: BarAreaData(
                   show: true,
-                  color: Colors.blue.withValues(alpha: 0.1),
+                  color: AppColors.info.withValues(alpha: 0.1),
                 ),
               ),
             ],
@@ -530,7 +533,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -544,8 +547,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
         children: [
           const Row(
             children: [
-              Icon(Icons.pie_chart, color: Colors.orange),
-              SizedBox(width: 8),
+              Icon(Icons.pie_chart, color: AppColors.warning),
+              AppSpacing.hGapSM,
               Text(
                 'Phân bổ chi phí',
                 style: TextStyle(
@@ -555,12 +558,12 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           // Expense breakdown list
-          _buildExpenseItem('Lương nhân viên', 45000000, Colors.blue),
-          _buildExpenseItem('Tiện ích', 8000000, Colors.orange),
-          _buildExpenseItem('Bảo trì', 3000000, Colors.green),
-          _buildExpenseItem('Khác', 2000000, Colors.purple),
+          _buildExpenseItem('Lương nhân viên', 45000000, AppColors.info),
+          _buildExpenseItem('Tiện ích', 8000000, AppColors.warning),
+          _buildExpenseItem('Bảo trì', 3000000, AppColors.success),
+          _buildExpenseItem('Khác', 2000000, AppColors.primary),
         ],
       ),
     );
@@ -579,7 +582,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMD,
           Expanded(child: Text(label)),
           Text(
             NumberFormat.currency(
@@ -608,7 +611,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -622,8 +625,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
         children: [
           const Row(
             children: [
-              Icon(Icons.history, color: Colors.blue),
-              SizedBox(width: 8),
+              Icon(Icons.history, color: AppColors.info),
+              AppSpacing.hGapSM,
               Text(
                 'Giao dịch gần đây',
                 style: TextStyle(
@@ -633,7 +636,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           transactionsAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => Text('Lỗi: $error'),
@@ -655,7 +658,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
 
   Widget _buildTransactionItem(AccountingTransaction transaction) {
     final isExpense = transaction.type != TransactionType.revenue;
-    final color = isExpense ? Colors.red : Colors.green;
+    final color = isExpense ? AppColors.error : AppColors.success;
     final counterparty = transaction.counterpartyName;
     final itemsSummary = transaction.itemsSummary;
     final statusLabel = _formatStatus(transaction.status);
@@ -679,19 +682,19 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
         children: [
           Text(
             DateFormat('dd/MM/yyyy HH:mm').format(transaction.date),
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           if (counterparty != null && counterparty.isNotEmpty)
             Text(
               'Khách: $counterparty',
-              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+              style: TextStyle(fontSize: 12, color: AppColors.grey700),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           if (itemsSummary != null && itemsSummary.isNotEmpty)
             Text(
               'SP: $itemsSummary',
-              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+              style: TextStyle(fontSize: 12, color: AppColors.grey700),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -714,12 +717,12 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               margin: const EdgeInsets.only(top: 4),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: AppColors.grey200,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 statusLabel,
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
+                style: TextStyle(fontSize: 10, color: AppColors.grey700),
               ),
             ),
         ],
@@ -772,7 +775,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: AppColors.background,
                     ),
                     onChanged: (value) => setState(() => _transactionSearch = value.trim()),
                   ),
@@ -786,13 +789,13 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                           selected: _transactionTypeFilter == null,
                           onSelected: () => setState(() => _transactionTypeFilter = null),
                         ),
-                        const SizedBox(width: 6),
+                        AppSpacing.hGapXS,
                         _buildFilterChip(
                           label: 'Thu',
                           selected: _transactionTypeFilter == TransactionType.revenue,
                           onSelected: () => setState(() => _transactionTypeFilter = TransactionType.revenue),
                         ),
-                        const SizedBox(width: 6),
+                        AppSpacing.hGapXS,
                         _buildFilterChip(
                           label: 'Chi',
                           selected: _transactionTypeFilter == TransactionType.expense,
@@ -801,7 +804,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  AppSpacing.gapXS,
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -811,7 +814,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                           selected: _paymentFilter == null,
                           onSelected: () => setState(() => _paymentFilter = null),
                         ),
-                        const SizedBox(width: 6),
+                        AppSpacing.hGapXS,
                         ...PaymentMethod.values.map((method) {
                           return Padding(
                             padding: const EdgeInsets.only(right: 6),
@@ -825,7 +828,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  AppSpacing.gapXS,
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -835,7 +838,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                           selected: _statusFilter == null,
                           onSelected: () => setState(() => _statusFilter = null),
                         ),
-                        const SizedBox(width: 6),
+                        AppSpacing.hGapXS,
                         ...statusOptions.map((status) {
                           return Padding(
                             padding: const EdgeInsets.only(right: 6),
@@ -904,10 +907,10 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.check_circle_outline, size: 64, color: Colors.green.shade300),
-                const SizedBox(height: 16),
-                const Text('Không có công nợ phải thu',
-                    style: TextStyle(fontSize: 16, color: Colors.grey)),
+                Icon(Icons.check_circle_outline, size: 64, color: AppColors.successLight),
+                AppSpacing.gapLG,
+                Text('Không có công nợ phải thu',
+                    style: TextStyle(fontSize: 16, color: AppColors.textTertiary)),
               ],
             ),
           );
@@ -932,18 +935,18 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                 children: [
                   _buildCongNoCard('Tổng công nợ', '${cf.format(totalOutstanding)} ₫',
                       Colors.orange, Icons.account_balance_wallet),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   _buildCongNoCard('Quá hạn', '${cf.format(totalOverdue)} ₫',
                       Colors.red, Icons.warning_amber_rounded,
                       subtitle: '${overduePercent.toStringAsFixed(1)}%'),
                 ],
               ),
-              const SizedBox(height: 12),
+              AppSpacing.gapMD,
               Row(
                 children: [
                   _buildCongNoCard('Khách hàng nợ', '${customers.length}',
                       Colors.blue, Icons.people),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   _buildCongNoCard('Trung bình/KH',
                       customers.isNotEmpty 
                           ? '${cf.format(totalOutstanding / customers.length)} ₫'
@@ -954,16 +957,16 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               
               // Aging distribution bar
               if (totalOutstanding > 0) ...[
-                const SizedBox(height: 20),
+                AppSpacing.gapXL,
                 const Text('Phân bổ tuổi nợ',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
+                AppSpacing.gapSM,
                 _buildAgingBarCompany(aging, totalOutstanding),
               ],
 
               // Aging pie chart
               if (totalOutstanding > 0) ...[
-                const SizedBox(height: 20),
+                AppSpacing.gapXL,
                 SizedBox(
                   height: 200,
                   child: PieChart(
@@ -977,10 +980,10 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               ],
 
               // Top customers
-              const SizedBox(height: 20),
+              AppSpacing.gapXL,
               const Text('Top khách hàng nợ',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
+              AppSpacing.gapSM,
               ...customers.take(10).map((c) {
                 final custOutstanding = (c['outstanding'] ?? 0).toDouble();
                 final custOverdue = (c['overdue_amount'] ?? 0).toDouble();
@@ -991,7 +994,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.background,
                     borderRadius: BorderRadius.circular(12),
                     border: isOverdue ? Border.all(color: Colors.red.shade100) : null,
                     boxShadow: [BoxShadow(
@@ -1013,7 +1016,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                             Text(c['name'] ?? '', 
                                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                             Text('${(pct * 100).toStringAsFixed(1)}% tổng nợ',
-                                style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                style: TextStyle(fontSize: 11, color: AppColors.grey500)),
                           ],
                         ),
                       ),
@@ -1103,7 +1106,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.background,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [BoxShadow(
             color: Colors.black.withOpacity(0.04), blurRadius: 8,
@@ -1123,8 +1126,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                  const SizedBox(height: 2),
+                  Text(title, style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  AppSpacing.gapXXXS,
                   Text(value, style: TextStyle(
                     fontSize: 14, fontWeight: FontWeight.bold, color: color.shade700)),
                   if (subtitle != null)
@@ -1140,11 +1143,11 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
 
   Widget _buildAgingBarCompany(Map<String, double> aging, double total) {
     final buckets = [
-      ('Chưa hạn', aging['current'] ?? 0, Colors.green),
+      ('Chưa hạn', aging['current'] ?? 0, AppColors.success),
       ('1-30 ngày', aging['1-30'] ?? 0, Colors.yellow.shade700),
-      ('31-60', aging['31-60'] ?? 0, Colors.orange),
+      ('31-60', aging['31-60'] ?? 0, AppColors.warning),
       ('61-90', aging['61-90'] ?? 0, Colors.deepOrange),
-      ('>90 ngày', aging['90+'] ?? 0, Colors.red),
+      ('>90 ngày', aging['90+'] ?? 0, AppColors.error),
     ];
     
     return Column(
@@ -1165,7 +1168,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        AppSpacing.gapSM,
         Wrap(
           spacing: 14,
           runSpacing: 4,
@@ -1177,9 +1180,9 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               children: [
                 Container(width: 10, height: 10,
                   decoration: BoxDecoration(color: b.$3, shape: BoxShape.circle)),
-                const SizedBox(width: 4),
+                AppSpacing.hGapXXS,
                 Text('${b.$1}: ${cf.format(b.$2)}₫ ($pct%)',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
               ],
             );
           }).toList(),
@@ -1225,8 +1228,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
       label: Text(label, style: const TextStyle(fontSize: 12)),
       selected: selected,
       onSelected: (_) => onSelected(),
-      selectedColor: Colors.blue.withValues(alpha: 0.15),
-      side: BorderSide(color: selected ? Colors.blue : Colors.grey.shade300),
+      selectedColor: AppColors.info.withValues(alpha: 0.15),
+      side: BorderSide(color: selected ? AppColors.info : AppColors.grey300),
     );
   }
 
@@ -1344,7 +1347,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                     'Loại giao dịch *',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
-                  const SizedBox(height: 8),
+                  AppSpacing.gapSM,
                   DropdownButtonFormField<TransactionType>(
                     initialValue: selectedType,
                     decoration: const InputDecoration(
@@ -1366,8 +1369,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                         child: Row(
                           children: [
                             Icon(icons[type],
-                                size: 20, color: Colors.blue[700]),
-                            const SizedBox(width: 8),
+                                size: 20, color: AppColors.infoDark),
+                            AppSpacing.hGapSM,
                             Text(type.label),
                           ],
                         ),
@@ -1379,7 +1382,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                       }
                     },
                   ),
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
 
                   // Amount
                   TextFormField(
@@ -1401,14 +1404,14 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
 
                   // Payment Method
                   const Text(
                     'Phương thức thanh toán *',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
-                  const SizedBox(height: 8),
+                  AppSpacing.gapSM,
                   DropdownButtonFormField<PaymentMethod>(
                     initialValue: selectedPayment,
                     decoration: const InputDecoration(
@@ -1429,8 +1432,8 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                         child: Row(
                           children: [
                             Icon(icons[method],
-                                size: 20, color: Colors.green[700]),
-                            const SizedBox(width: 8),
+                                size: 20, color: AppColors.successDark),
+                            AppSpacing.hGapSM,
                             Text(method.label),
                           ],
                         ),
@@ -1442,14 +1445,14 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                       }
                     },
                   ),
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
 
                   // Date
                   const Text(
                     'Ngày giao dịch *',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
-                  const SizedBox(height: 8),
+                  AppSpacing.gapSM,
                   InkWell(
                     onTap: () async {
                       final picked = await showDatePicker(
@@ -1465,13 +1468,13 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
+                        border: Border.all(color: AppColors.grey400),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
                         children: [
                           const Icon(Icons.calendar_today, size: 20),
-                          const SizedBox(width: 8),
+                          AppSpacing.hGapSM,
                           Text(DateFormat('dd/MM/yyyy').format(selectedDate)),
                           const Spacer(),
                           const Icon(Icons.arrow_drop_down),
@@ -1479,7 +1482,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
 
                   // Description
                   TextFormField(
@@ -1515,7 +1518,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                     );
 
                     final service = AccountingService();
-                    final userId = ref.read(authProvider).user?.id;
+                    final userId = ref.read(currentUserProvider)?.id;
 
                     if (userId == null) {
                       throw Exception('User not authenticated');
@@ -1541,7 +1544,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('✅ Đã thêm giao dịch thành công!'),
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppColors.success,
                         ),
                       );
                     }
@@ -1550,7 +1553,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('❌ Lỗi: $e'),
-                          backgroundColor: Colors.red,
+                          backgroundColor: AppColors.error,
                         ),
                       );
                     }
@@ -1558,7 +1561,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[700],
+                backgroundColor: AppColors.infoDark,
                 foregroundColor: Colors.white,
               ),
               child: const Text('Lưu'),
@@ -1582,14 +1585,14 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.blue[700]!, Colors.blue[500]!],
+                    colors: [AppColors.infoDark, AppColors.info],
                   ),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.help_outline,
                         color: Colors.white, size: 32),
-                    const SizedBox(width: 12),
+                    AppSpacing.hGapMD,
                     const Expanded(
                       child: Text(
                         'Hướng dẫn Kế toán Doanh nghiệp',
@@ -1614,9 +1617,9 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
                   child: Column(
                     children: [
                       TabBar(
-                        labelColor: Colors.blue[700],
-                        unselectedLabelColor: Colors.grey,
-                        indicatorColor: Colors.blue[700],
+                        labelColor: AppColors.infoDark,
+                        unselectedLabelColor: AppColors.textTertiary,
+                        indicatorColor: AppColors.infoDark,
                         tabs: const [
                           Tab(text: '📚 Kiến thức cơ bản'),
                           Tab(text: '🎯 Hướng dẫn sử dụng'),
@@ -1658,7 +1661,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               '• Doanh thu trước thuế và phí',
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           _buildGuideSection(
             '💸 Chi phí là gì?',
             'Chi phí là tổng số tiền doanh nghiệp phải chi ra để duy trì hoạt động.',
@@ -1669,7 +1672,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               '• Mua sắm hàng hóa, vật tư',
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           _buildGuideSection(
             '💵 Lợi nhuận là gì?',
             'Lợi nhuận = Doanh thu - Chi phí',
@@ -1679,7 +1682,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               '• Mục tiêu: Tối đa hóa lợi nhuận',
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           _buildGuideSection(
             '📊 Biên lợi nhuận là gì?',
             'Biên lợi nhuận = (Lợi nhuận / Doanh thu) × 100%',
@@ -1690,7 +1693,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               '• Ví dụ: Biên 20% = cứ 100đ doanh thu thì lãi 20đ',
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           _buildGuideSection(
             '📝 Các loại giao dịch',
             'Phân loại giao dịch giúp theo dõi tiền bạc rõ ràng:',
@@ -1703,7 +1706,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               '• 📦 Khác: Chi phí khác',
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           _buildGuideSection(
             '💳 Phương thức thanh toán',
             'Theo dõi cách khách hàng thanh toán:',
@@ -1735,7 +1738,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               '• 📊 Biên lợi nhuận: % lợi nhuận/doanh thu',
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           _buildGuideSection(
             '2️⃣ Chọn khoảng thời gian',
             'Sử dụng bộ lọc thời gian để xem báo cáo:',
@@ -1747,7 +1750,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               '  - "Quý này": 90 ngày gần nhất',
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           _buildGuideSection(
             '3️⃣ Tab Tổng quan',
             'Xem biểu đồ và phân tích:',
@@ -1757,7 +1760,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               '• 📋 5 giao dịch gần đây',
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           _buildGuideSection(
             '4️⃣ Tab Giao dịch',
             'Quản lý chi tiết các giao dịch:',
@@ -1768,7 +1771,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               '• Sửa/xóa giao dịch',
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           _buildGuideSection(
             '5️⃣ Tab Doanh thu',
             'Quản lý doanh thu hàng ngày:',
@@ -1778,7 +1781,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               '• Ghi chú số bàn, số khách',
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           _buildGuideSection(
             '6️⃣ Tab Báo cáo',
             'Xuất báo cáo tài chính:',
@@ -1789,7 +1792,7 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               '• Gửi email báo cáo',
             ],
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           _buildGuideSection(
             '➕ Thêm giao dịch mới',
             'Click nút ➕ ở góc trên bên phải:',
@@ -1816,88 +1819,88 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
           _buildTipCard(
             '✅ Nhập dữ liệu đều đặn',
             'Hãy nhập doanh thu và chi phí hàng ngày để có báo cáo chính xác.',
-            Colors.green,
+            AppColors.success,
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           _buildTipCard(
             '📊 Theo dõi biên lợi nhuận',
             'Biên lợi nhuận giảm = cần giảm chi phí hoặc tăng giá. Mục tiêu: Biên > 20%',
-            Colors.blue,
+            AppColors.info,
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           _buildTipCard(
             '💡 Phân loại chi phí rõ ràng',
             'Chia chi phí thành: Lương, Tiện ích, Bảo trì... để dễ quản lý và tối ưu.',
-            Colors.orange,
+            AppColors.warning,
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           _buildTipCard(
             '📅 So sánh theo tháng',
             'So sánh doanh thu tháng này vs tháng trước để thấy xu hướng tăng/giảm.',
-            Colors.purple,
+            AppColors.primary,
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           _buildTipCard(
             '🎯 Đặt mục tiêu cụ thể',
             'Đặt mục tiêu doanh thu/lợi nhuận cho từng tháng, quý để có động lực.',
-            Colors.teal,
+            AppColors.info,
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           _buildTipCard(
             '📝 Ghi chú chi tiết',
             'Thêm ghi chú cho mỗi giao dịch để sau này dễ nhớ và tra cứu.',
-            Colors.indigo,
+            AppColors.primary,
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           _buildTipCard(
             '🔍 Kiểm tra dữ liệu',
             'Cuối ngày, đối chiếu số tiền thực tế với số liệu đã nhập để tránh sai sót.',
-            Colors.red,
+            AppColors.error,
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           _buildTipCard(
             '📊 Xuất báo cáo định kỳ',
             'Mỗi tháng xuất báo cáo để lưu trữ và phân tích xu hướng dài hạn.',
-            Colors.brown,
+            AppColors.warning,
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           _buildTipCard(
             '💰 Quản lý tiền mặt',
             'Theo dõi tiền mặt vs chuyển khoản để biết luồng tiền của doanh nghiệp.',
-            Colors.green[700]!,
+            AppColors.successDark,
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           _buildTipCard(
             '⚡ Tối ưu chi phí tiện ích',
             'Chi phí điện, nước thường chiếm 10-15% doanh thu. Nên tiết kiệm năng lượng.',
-            Colors.amber,
+            AppColors.warning,
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue[50],
+              color: AppColors.infoLight,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue[200]!),
+              border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.lightbulb, color: Colors.blue[700]),
-                    const SizedBox(width: 8),
+                    Icon(Icons.lightbulb, color: AppColors.infoDark),
+                    AppSpacing.hGapSM,
                     Text(
                       'Công thức vàng trong kinh doanh',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue[900],
+                        color: AppColors.infoDark,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                AppSpacing.gapMD,
                 const Text(
                   '📈 Tăng doanh thu:\n'
                   '   • Chăm sóc khách hàng tốt\n'
@@ -1928,26 +1931,26 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 8),
+        AppSpacing.gapSM,
         Text(
           description,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey[700],
+            color: AppColors.grey700,
             height: 1.5,
           ),
         ),
-        const SizedBox(height: 8),
+        AppSpacing.gapSM,
         ...points.map((point) => Padding(
               padding: const EdgeInsets.only(left: 12, top: 4),
               child: Text(
                 point,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[800],
+                  color: AppColors.grey800,
                   height: 1.5,
                 ),
               ),
@@ -1975,13 +1978,13 @@ class _AccountingTabState extends ConsumerState<AccountingTab>
               color: color,
             ),
           ),
-          const SizedBox(height: 8),
+          AppSpacing.gapSM,
           Text(
             description,
             style: const TextStyle(
               fontSize: 14,
               height: 1.5,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
         ],

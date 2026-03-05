@@ -128,7 +128,7 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
                       final sample = samples[index];
                       return _SampleCard(
                         sample: sample,
-                        onTap: () => _showSampleDetail(sample),
+                        onTap: () => _showSampleDetail(context, sample),
                         onStatusChange: () => _updateSampleStatus(sample),
                       );
                     },
@@ -245,7 +245,7 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
     });
   }
 
-  void _showSampleDetail(ProductSample sample) {
+  void _showSampleDetail(BuildContext context, ProductSample sample) {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
 
     showModalBottomSheet(
@@ -357,7 +357,7 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
                       label: const Text('Cập nhật'),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
@@ -365,8 +365,8 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
                         _deleteSample(sample);
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      icon: const Icon(Icons.delete_outline, color: Colors.white),
-                      label: const Text('Xóa', style: TextStyle(color: Colors.white)),
+                      icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.surface),
+                      label: Text('Xóa', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
                     ),
                   ),
                 ],
@@ -579,12 +579,12 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+            child: Text('Xóa', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),
@@ -595,7 +595,7 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
     try {
       await Supabase.instance.client
           .from('product_samples')
-          .delete()
+          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
           .eq('id', sample.id);
 
       ref.invalidate(productSamplesProvider);
@@ -941,10 +941,10 @@ class _AddSamplePageState extends ConsumerState<_AddSamplePage> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
-      final userName = authState.user?.name;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
+      final userName = user?.name;
 
       if (companyId == null) throw Exception('Không tìm thấy công ty');
 

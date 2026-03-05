@@ -308,17 +308,17 @@ class _SignUpPageNewState extends ConsumerState<SignUpPageNew> {
                         onPressed: isLoading ? null : _handleSignup,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppConstants.primaryColor,
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(context).colorScheme.surface,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                         child: isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 height: 20,
                                 width: 20,
                                 child: CircularProgressIndicator(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                   strokeWidth: 2,
                                 ),
                               )
@@ -374,6 +374,10 @@ class _SignUpPageNewState extends ConsumerState<SignUpPageNew> {
         return 'Tài xế';
       case UserRole.warehouse:
         return 'Nhân viên kho';
+      case UserRole.finance:
+        return 'Kế toán';
+      case UserRole.shareholder:
+        return 'Cổ đông';
     }
   }
 }

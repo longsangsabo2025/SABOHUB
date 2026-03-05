@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../providers/auth_provider.dart';
+import '../../../../providers/token_provider.dart';
 import '../../../../utils/app_logger.dart';
 import '../../widgets/sales_features_widgets.dart';
 import '../../widgets/sales_features_widgets_2.dart';
@@ -43,8 +44,8 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
 
   Future<void> _loadCustomersAndProducts() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 
@@ -120,8 +121,8 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
     if (_selectedCustomer == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(
-            children: [Icon(Icons.warning, color: Colors.white), SizedBox(width: 12), Text('Vui lòng chọn khách hàng')],
+          content: Row(
+            children: [Icon(Icons.warning, color: Theme.of(context).colorScheme.surface), SizedBox(width: 12), Text('Vui lòng chọn khách hàng')],
           ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
@@ -134,8 +135,8 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
     if (_orderItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(
-            children: [Icon(Icons.warning, color: Colors.white), SizedBox(width: 12), Text('Vui lòng thêm ít nhất 1 sản phẩm')],
+          content: Row(
+            children: [Icon(Icons.warning, color: Theme.of(context).colorScheme.surface), SizedBox(width: 12), Text('Vui lòng thêm ít nhất 1 sản phẩm')],
           ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
@@ -147,8 +148,8 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
 
     // === Check overdue receivables & credit limit before allowing order ===
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId != null && _selectedCustomer != null) {
         final cf = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
 
@@ -183,12 +184,12 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Hủy'),
+                    child: Text('Hủy'),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Vẫn tạo đơn', style: TextStyle(color: Colors.white)),
+                    child: Text('Vẫn tạo đơn', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
                   ),
                 ],
               ),
@@ -226,12 +227,12 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Hủy'),
+                  child: Text('Hủy'),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                   onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Vẫn tạo đơn', style: TextStyle(color: Colors.white)),
+                  child: Text('Vẫn tạo đơn', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
                 ),
               ],
             ),
@@ -246,9 +247,9 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
     setState(() => _isSubmitting = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
 
       if (companyId == null || userId == null) throw Exception('Missing company or user ID');
 
@@ -286,11 +287,22 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
         });
       }
 
+      // 🪙 SABO Token: Thưởng token khi tạo đơn hàng
+      try {
+        await ref.read(tokenWalletProvider.notifier).earnTokens(
+          5,
+          sourceType: 'sales_order',
+          description: 'Tạo đơn hàng $orderNumber',
+        );
+      } catch (_) {
+        // Token reward is non-critical
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
-              children: [const Icon(Icons.check_circle, color: Colors.white), const SizedBox(width: 12), Text('✅ Đã tạo đơn hàng $orderNumber')],
+              children: [Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface), SizedBox(width: 12), Text('✅ Đã tạo đơn hàng $orderNumber')],
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
@@ -332,8 +344,8 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
-              color: Colors.white,
+              padding: EdgeInsets.all(20),
+              color: Theme.of(context).colorScheme.surface,
               child: Row(
                 children: [
                   Container(
@@ -399,7 +411,7 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
 
                       // Order total
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(colors: [Colors.green.shade400, Colors.green.shade600]),
                           borderRadius: BorderRadius.circular(16),
@@ -407,8 +419,8 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('TỔNG CỘNG:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
-                            Text(currencyFormat.format(_orderTotal), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
+                            Text('TỔNG CỘNG:', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.w600, fontSize: 16)),
+                            Text(currencyFormat.format(_orderTotal), style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold, fontSize: 22)),
                           ],
                         ),
                       ),
@@ -420,9 +432,9 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
                     _buildSectionTitle('Giao hàng', Icons.local_shipping),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Column(
@@ -471,7 +483,7 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 32),
+                    SizedBox(height: 32),
 
                     // Submit button
                     SizedBox(
@@ -479,12 +491,12 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
                       child: ElevatedButton.icon(
                         onPressed: _isSubmitting ? null : _submitOrder,
                         icon: _isSubmitting
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Icon(Icons.send),
+                            ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface))
+                            : Icon(Icons.send),
                         label: Text(_isSubmitting ? 'Đang tạo...' : 'TẠO ĐƠN HÀNG'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(context).colorScheme.surface,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           elevation: 0,
@@ -519,9 +531,9 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
     return GestureDetector(
       onTap: _showCustomerPicker,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: _selectedCustomer != null ? Colors.green : Colors.grey.shade300, width: _selectedCustomer != null ? 2 : 1),
         ),
@@ -575,8 +587,8 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
           
           return Container(
             height: MediaQuery.of(context).size.height * 0.85,
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
@@ -701,11 +713,11 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
                           bottom: 0,
                           child: Container(
                             padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: Colors.green,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.check, color: Colors.white, size: 12),
+                            child: Icon(Icons.check, color: Theme.of(context).colorScheme.surface, size: 12),
                           ),
                         ),
                     ],
@@ -937,8 +949,8 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
           
           return Container(
             height: MediaQuery.of(context).size.height * 0.75,
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
@@ -1044,9 +1056,9 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade200),
       ),

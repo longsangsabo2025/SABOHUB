@@ -34,8 +34,8 @@ class _CSKHCustomersPageState extends ConsumerState<CSKHCustomersPage> {
 
   Future<void> _loadCustomers() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 

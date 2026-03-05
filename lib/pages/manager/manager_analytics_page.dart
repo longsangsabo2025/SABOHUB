@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../providers/cached_data_providers.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/multi_account_switcher.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Manager Analytics Page
 /// Detailed analytics for management operations
@@ -26,8 +27,8 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final branchId = authState.user?.branchId;
+    final user = ref.watch(currentUserProvider);
+    final branchId = user?.branchId;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -51,23 +52,23 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       elevation: 0,
-      backgroundColor: Colors.white,
-      title: const Text(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      title: Text(
         'Phân tích dữ liệu',
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: Theme.of(context).colorScheme.onSurface87,
         ),
       ),
       actions: [
         // Multi-Account Switcher
-        const MultiAccountSwitcher(),
+        MultiAccountSwitcher(),
         IconButton(
           onPressed: () {
-            final authState = ref.read(authProvider);
-            final branchId = authState.user?.branchId;
-            final companyId = authState.user?.companyId;
+            final user = ref.read(currentUserProvider);
+            final branchId = user?.branchId;
+            final companyId = user?.companyId;
             ref.invalidate(cachedManagerDashboardKPIsProvider(branchId));
             ref.invalidate(cachedStaffStatsProvider(companyId ?? ''));
             ref.invalidate(cachedCompanyEmployeesProvider(companyId ?? ''));
@@ -79,7 +80,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
               ),
             );
           },
-          icon: const Icon(Icons.refresh, color: Colors.black54),
+          icon: Icon(Icons.refresh, color: Theme.of(context).colorScheme.onSurface54),
         ),
         IconButton(
           onPressed: () {
@@ -96,7 +97,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
               ),
             );
           },
-          icon: const Icon(Icons.share, color: Colors.black54),
+          icon: Icon(Icons.share, color: Theme.of(context).colorScheme.onSurface54),
         ),
       ],
     );
@@ -104,14 +105,14 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
 
   Widget _buildPeriodSelector() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(4),
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -133,7 +134,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
       child: GestureDetector(
         onTap: () => setState(() => _selectedPeriod = period),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.success : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
@@ -144,7 +145,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? Colors.white : Colors.grey.shade600,
+              color: isSelected ? Theme.of(context).colorScheme.surface : Colors.grey.shade600,
             ),
           ),
         ),
@@ -156,13 +157,13 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
     const tabs = ['Doanh thu', 'Nhân viên', 'Vận hành'];
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -178,7 +179,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
             child: GestureDetector(
               onTap: () => setState(() => _selectedTab = index),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color:
                       isSelected ? AppColors.info : Colors.transparent,
@@ -190,7 +191,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : Colors.grey.shade600,
+                    color: isSelected ? Theme.of(context).colorScheme.surface : Colors.grey.shade600,
                   ),
                 ),
               ),
@@ -215,9 +216,9 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildRevenueTab() {
-    final authState = ref.watch(authProvider);
-    final branchId = authState.user?.branchId;
-    final companyId = authState.user?.companyId;
+    final user = ref.watch(currentUserProvider);
+    final branchId = user?.branchId;
+    final companyId = user?.companyId;
 
     final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider(branchId));
     final staffStatsAsync = ref.watch(cachedStaffStatsProvider(companyId));
@@ -253,7 +254,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: const Center(child: CircularProgressIndicator()),
@@ -269,13 +270,13 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
     final customerChange = kpis['customerChange'] ?? 0.0;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -351,13 +352,13 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
     final inactiveStaff = stats['inactiveStaff'] ?? 0;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -381,7 +382,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
                   'Tổng số',
                   '$totalStaff',
                   '',
-                  const Color(0xFF6B7280),
+                  AppColors.neutral500,
                   Icons.people_outline,
                 ),
               ),
@@ -435,13 +436,13 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
     final totalTables = kpis['totalTables'] ?? 0;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -550,8 +551,8 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildCustomerStats() {
-    final authState = ref.watch(authProvider);
-    final companyId = authState.user?.companyId;
+    final user = ref.watch(currentUserProvider);
+    final companyId = user?.companyId;
     final employeesAsync = ref.watch(cachedCompanyEmployeesProvider(companyId ?? ''));
 
     return employeesAsync.when(
@@ -561,13 +562,13 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
         final onLeave = employees.where((e) => !e.isActive).length;
 
         return Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -625,13 +626,13 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
     return Column(
       children: [
         Icon(icon, size: 32, color: AppColors.primary),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
         Text(
@@ -646,8 +647,8 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildCustomerSegments() {
-    final authState = ref.watch(authProvider);
-    final companyId = authState.user?.companyId;
+    final user = ref.watch(currentUserProvider);
+    final companyId = user?.companyId;
     final employeesAsync = ref.watch(cachedCompanyEmployeesProvider(companyId ?? ''));
 
     return employeesAsync.when(
@@ -655,12 +656,12 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
         final total = employees.length;
         if (total == 0) {
           return Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Center(child: Text('Chưa có nhân viên')),
+            child: Center(child: Text('Chưa có nhân viên')),
           );
         }
 
@@ -671,13 +672,13 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
         }
 
         return Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -787,21 +788,21 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildTopProducts() {
-    final authState = ref.watch(authProvider);
-    final branchId = authState.user?.branchId;
+    final user = ref.watch(currentUserProvider);
+    final branchId = user?.branchId;
     final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider(branchId));
 
     return kpisAsync.when(
       data: (cachedKpis) {
         final kpis = cachedKpis;
         return Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -900,21 +901,21 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildProductCategories() {
-    final authState = ref.watch(authProvider);
-    final companyId = authState.user?.companyId;
+    final user = ref.watch(currentUserProvider);
+    final companyId = user?.companyId;
     final statsAsync = ref.watch(cachedStaffStatsProvider(companyId));
 
     return statsAsync.when(
       data: (cachedStats) {
         final stats = cachedStats;
         return Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

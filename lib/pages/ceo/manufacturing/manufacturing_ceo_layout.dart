@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/router/app_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../utils/app_logger.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/realtime_notification_widgets.dart';
-import '../ceo_profile_page.dart';
 import '../ceo_notifications_page.dart';
 import '../shared/ceo_more_page.dart';
 
@@ -22,6 +24,7 @@ import '../../../business_types/manufacturing/pages/manufacturing/production_ord
 // Shared CEO pages (these use existing tables, NOT manufacturing tables)
 import '../ceo_tasks_page.dart';
 import '../ceo_employees_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Manufacturing CEO Layout — 5 tabs focused on manufacturing business
 /// Dashboard | Sản xuất | Mua hàng | Tài chính | Nhiệm vụ
@@ -53,17 +56,17 @@ class _ManufacturingCEOLayoutState
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Theme.of(context).colorScheme.surface,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               companyName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Theme.of(context).colorScheme.onSurface87,
               ),
             ),
             const Text(
@@ -73,14 +76,13 @@ class _ManufacturingCEOLayoutState
           ],
         ),
         actions: [
-          const RealtimeNotificationBell(),
+          RealtimeNotificationBell(),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.black54),
+            icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onSurface54),
             onSelected: (value) {
               switch (value) {
                 case 'profile':
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const CEOProfilePage()));
+                  context.push(AppRoutes.profile);
                   break;
                 case 'notifications':
                   Navigator.push(
@@ -180,7 +182,7 @@ class _ManufacturingCEODashboardState
   void initState() {
     super.initState();
     _service = ManufacturingService(
-        companyId: ref.read(authProvider).user?.companyId);
+        companyId: ref.read(currentUserProvider)?.companyId);
     _loadStats();
   }
 
@@ -338,7 +340,7 @@ class _ManufacturingCEOProductionState
   void initState() {
     super.initState();
     _service = ManufacturingService(
-        companyId: ref.read(authProvider).user?.companyId);
+        companyId: ref.read(currentUserProvider)?.companyId);
     _loadOrders();
   }
 
@@ -430,8 +432,8 @@ class _ManufacturingCEOProductionState
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: _statusColor(o.status),
-                            child: const Icon(Icons.factory,
-                                color: Colors.white, size: 18),
+                            child: Icon(Icons.factory,
+                                color: Theme.of(context).colorScheme.surface, size: 18),
                           ),
                           title: Text('MO-${o.orderNumber}'),
                           subtitle: Text(
@@ -475,7 +477,7 @@ class _ManufacturingCEOProcurementState
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _service = ManufacturingService(
-        companyId: ref.read(authProvider).user?.companyId);
+        companyId: ref.read(currentUserProvider)?.companyId);
     _loadAll();
   }
 
@@ -507,7 +509,7 @@ class _ManufacturingCEOProcurementState
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: TabBar(
             controller: _tabController,
             labelColor: AppColors.primary,
@@ -526,9 +528,9 @@ class _ManufacturingCEOProcurementState
               : TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildPOList(),
-                    _buildSupplierList(),
-                    _buildMaterialList(),
+                    _buildPOList(context),
+                    _buildSupplierList(context),
+                    _buildMaterialList(context),
                   ],
                 ),
         ),
@@ -536,7 +538,7 @@ class _ManufacturingCEOProcurementState
     );
   }
 
-  Widget _buildPOList() {
+  Widget _buildPOList(BuildContext context) {
     if (_pos.isEmpty) {
       return const Center(
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -551,7 +553,7 @@ class _ManufacturingCEOProcurementState
       itemBuilder: (context, index) {
         final po = _pos[index];
         return Card(
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: EdgeInsets.only(bottom: 8),
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: po.status == 'received'
@@ -560,7 +562,7 @@ class _ManufacturingCEOProcurementState
                       ? Colors.red
                       : Colors.orange,
               child:
-                  const Icon(Icons.receipt, color: Colors.white, size: 18),
+                  Icon(Icons.receipt, color: Theme.of(context).colorScheme.surface, size: 18),
             ),
             title: Text('PO-${po.poNumber}'),
             subtitle: Text(po.status),
@@ -572,7 +574,7 @@ class _ManufacturingCEOProcurementState
     );
   }
 
-  Widget _buildSupplierList() {
+  Widget _buildSupplierList(BuildContext context) {
     if (_suppliers.isEmpty) {
       return const Center(
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -598,7 +600,7 @@ class _ManufacturingCEOProcurementState
     );
   }
 
-  Widget _buildMaterialList() {
+  Widget _buildMaterialList(BuildContext context) {
     if (_materials.isEmpty) {
       return const Center(
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -642,7 +644,7 @@ class _ManufacturingCEOFinanceState
   void initState() {
     super.initState();
     _service = ManufacturingService(
-        companyId: ref.read(authProvider).user?.companyId);
+        companyId: ref.read(currentUserProvider)?.companyId);
     _loadPayables();
   }
 
@@ -710,8 +712,8 @@ class _ManufacturingCEOFinanceState
                                 : p.status == 'overdue'
                                     ? Colors.red
                                     : Colors.orange,
-                            child: const Icon(Icons.payment,
-                                color: Colors.white, size: 18),
+                            child: Icon(Icons.payment,
+                                color: Theme.of(context).colorScheme.surface, size: 18),
                           ),
                           title: Text('${p.totalAmount.toStringAsFixed(0)}đ'),
                           subtitle: Text(p.status == 'paid'
@@ -763,7 +765,7 @@ class _ManufacturingCEOTeamState extends State<_ManufacturingCEOTeam>
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: TabBar(
             controller: _tabController,
             labelColor: AppColors.primary,

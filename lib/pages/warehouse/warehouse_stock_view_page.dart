@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
 import '../../business_types/distribution/models/odori_product.dart';
 import '../../business_types/distribution/pages/manager/inventory/warehouse_dialogs.dart';
+import '../../utils/app_logger.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -98,9 +100,9 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
   // Load warehouse assigned to this user
   Future<void> _loadWarehouse() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
       if (companyId == null) return;
       
       // Get warehouse assigned to this warehouse staff (or first warehouse)
@@ -129,7 +131,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
         _loadMovements();
       }
     } catch (e) {
-      debugPrint('❌ Error loading warehouse: $e');
+      AppLogger.error('Error loading warehouse: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -140,7 +142,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
     setState(() => _isLoading = true);
     
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       final warehouseId = _warehouse!['id'];
       
       final data = await supabase
@@ -171,7 +173,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
         });
       }
     } catch (e) {
-      debugPrint('❌ Error loading stocks: $e');
+      AppLogger.error('Error loading stocks: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -179,7 +181,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
   // Load all products for stock-in selection
   Future<void> _loadAllProducts() async {
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       if (companyId.isEmpty) return;
 
       final data = await supabase
@@ -196,7 +198,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
         setState(() => _allProducts = products);
       }
     } catch (e) {
-      debugPrint('❌ Error loading products: $e');
+      AppLogger.error('Error loading products: $e');
     }
   }
   
@@ -206,7 +208,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
     setState(() => _isLoadingMovements = true);
     
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       final warehouseId = _warehouse!['id'];
       
       final data = await supabase
@@ -224,7 +226,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
         });
       }
     } catch (e) {
-      debugPrint('❌ Error loading movements: $e');
+      AppLogger.error('Error loading movements: $e');
       if (mounted) setState(() => _isLoadingMovements = false);
     }
   }
@@ -232,7 +234,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
   // Get warehouse stock for stock out/transfer
   Future<List<Map<String, dynamic>>> _getWarehouseStock(String warehouseId) async {
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       final data = await supabase
           .from('inventory')
           .select('*, products(id, name, sku, unit)')
@@ -241,7 +243,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
           .gt('quantity', 0);
       return List<Map<String, dynamic>>.from(data);
     } catch (e) {
-      debugPrint('❌ Error getting warehouse stock: $e');
+      AppLogger.error('Error getting warehouse stock: $e');
       return [];
     }
   }
@@ -319,7 +321,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
           SliverAppBar(
             title: Text(warehouseName),
             backgroundColor: typeColor,
-            foregroundColor: Colors.white,
+            foregroundColor: Theme.of(context).colorScheme.surface,
             elevation: 0,
             floating: true,
             snap: true,
@@ -347,14 +349,14 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               warehouseType == 'main' ? Icons.warehouse : Icons.store,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               size: 22,
                             ),
                           ),
@@ -365,26 +367,26 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
+                                    color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     warehouseType == 'main' ? 'Kho chính' : 'Kho phụ',
-                                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 10, fontWeight: FontWeight.w600),
                                   ),
                                 ),
                                 if (_warehouse?['address']?.isNotEmpty == true) ...[
-                                  const SizedBox(height: 3),
+                                  SizedBox(height: 3),
                                   Row(
                                     children: [
-                                      const Icon(Icons.location_on_outlined, size: 12, color: Colors.white70),
-                                      const SizedBox(width: 3),
+                                      Icon(Icons.location_on_outlined, size: 12, color: Theme.of(context).colorScheme.surface70),
+                                      SizedBox(width: 3),
                                       Expanded(
                                         child: Text(
                                           _warehouse!['address'],
-                                          style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                          style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 11),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -407,8 +409,8 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
           // Quick Actions
           SliverToBoxAdapter(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              color: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              color: Theme.of(context).colorScheme.surface,
               child: Row(
                 children: [
                   Expanded(
@@ -477,8 +479,8 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
         body: TabBarView(
           controller: _tabController,
           children: [
-            _buildProductsContent(),
-            _buildHistoryContent(),
+            _buildProductsContent(context),
+            _buildHistoryContent(context),
           ],
         ),
       ),
@@ -529,7 +531,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
   }
   
   // Products Tab Content
-  Widget _buildProductsContent() {
+  Widget _buildProductsContent(BuildContext context) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -538,8 +540,8 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
       children: [
         // Search bar
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          color: Colors.white,
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          color: Theme.of(context).colorScheme.surface,
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
@@ -592,7 +594,7 @@ class _WarehouseStockViewPageState extends ConsumerState<WarehouseStockViewPage>
   }
   
   // History Tab Content
-  Widget _buildHistoryContent() {
+  Widget _buildHistoryContent(BuildContext context) {
     if (_isLoadingMovements) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -875,7 +877,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       child: tabBar,
     );
   }

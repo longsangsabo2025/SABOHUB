@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../../../../../../../../00-MASTER-ADMIN"
+		},
+		{
+			"path": "../../../../.."
+		}
+	],
+	"settings": {
+		"powershell.cwd": "00-MASTER-ADMIN"
+	}
+}

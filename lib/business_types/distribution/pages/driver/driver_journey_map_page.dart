@@ -15,6 +15,7 @@ import '../../../../providers/auth_provider.dart';
 import '../../../../utils/app_logger.dart';
 import 'driver_providers.dart';
 import 'google_maps_route_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Driver Journey Map Page - Bản đồ hành trình với GPS tracking và Route Optimization
 class DriverJourneyMapPage extends ConsumerStatefulWidget {
@@ -239,7 +240,7 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface, size: 20),
                 const SizedBox(width: 8),
                 Text('Đã xác định vị trí: ${_currentLocation!.latitude.toStringAsFixed(4)}, ${_currentLocation!.longitude.toStringAsFixed(4)}'),
               ],
@@ -274,9 +275,9 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
 
   Future<void> _loadDeliveryStops() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final driverId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final driverId = user?.id;
 
       if (companyId == null || driverId == null) {
         setState(() => _isLoading = false);
@@ -448,9 +449,9 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
+                Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface),
                 SizedBox(width: 12),
                 Text('Đã cập nhật vị trí khách hàng!'),
               ],
@@ -812,16 +813,16 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
           SafeArea(
             child: Container(
               margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: _isEditingLocation ? Colors.orange.shade50 : Colors.white,
+                color: _isEditingLocation ? Colors.orange.shade50 : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: _isEditingLocation 
                     ? Border.all(color: Colors.orange, width: 2)
                     : null,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -856,7 +857,7 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: _isEditingLocation ? Colors.orange.shade800 : Colors.black87,
+                            color: _isEditingLocation ? Colors.orange.shade800 : Theme.of(context).colorScheme.onSurface87,
                           ),
                         ),
                         Text(
@@ -939,13 +940,13 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
 
   Widget _buildPickedLocationCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
             blurRadius: 10,
           ),
         ],
@@ -978,16 +979,16 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
             child: ElevatedButton.icon(
               onPressed: _isUpdatingLocation ? null : _updateCustomerLocation,
               icon: _isUpdatingLocation 
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
                     )
-                  : const Icon(Icons.save),
+                  : Icon(Icons.save),
               label: Text(_isUpdatingLocation ? 'Đang lưu...' : 'Lưu vị trí này'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -1007,56 +1008,56 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
         FloatingActionButton.small(
           heroTag: 'optimize_route',
           onPressed: _optimizeAndReorderStops,
-          backgroundColor: _isRouteOptimized ? Colors.green : Colors.white,
+          backgroundColor: _isRouteOptimized ? Colors.green : Theme.of(context).colorScheme.surface,
           tooltip: 'Tối ưu tuyến đường',
           child: Icon(
             Icons.route,
-            color: _isRouteOptimized ? Colors.white : Colors.orange.shade700,
+            color: _isRouteOptimized ? Theme.of(context).colorScheme.surface : Colors.orange.shade700,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         // Open full route in Google Maps (embedded view)
         FloatingActionButton.small(
           heroTag: 'google_maps_route',
           onPressed: () => _openGoogleMapsRoutePage(),
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           tooltip: 'Xem tuyến đường Google Maps',
           child: Icon(Icons.map_outlined, color: Colors.red.shade700),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         // Open in external Google Maps app
         FloatingActionButton.small(
           heroTag: 'google_maps_external',
           onPressed: _openFullRouteInGoogleMaps,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           tooltip: 'Mở Google Maps App',
           child: Icon(Icons.navigation_outlined, color: Colors.blue.shade700),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         // GPS tracking toggle
         FloatingActionButton.small(
           heroTag: 'gps_toggle',
           onPressed: _isTracking ? _stopGPSTracking : _startGPSTracking,
-          backgroundColor: _isTracking ? Colors.green : Colors.white,
+          backgroundColor: _isTracking ? Colors.green : Theme.of(context).colorScheme.surface,
           child: Icon(
             _isTracking ? Icons.gps_fixed : Icons.gps_not_fixed,
-            color: _isTracking ? Colors.white : Colors.grey.shade700,
+            color: _isTracking ? Theme.of(context).colorScheme.surface : Colors.grey.shade700,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         // Fit all markers
         FloatingActionButton.small(
           heroTag: 'fit_bounds',
           onPressed: _fitMapToMarkers,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           child: Icon(Icons.zoom_out_map, color: Colors.grey.shade700),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         // My location
         FloatingActionButton(
           heroTag: 'my_location',
           onPressed: _getCurrentLocation,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           child: _isLocating
               ? const SizedBox(
                   width: 24,
@@ -1119,7 +1120,7 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
             decoration: BoxDecoration(
               color: Colors.blue.shade600,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
+              border: Border.all(color: Theme.of(context).colorScheme.surface, width: 3),
               boxShadow: [
                 BoxShadow(
                   color: Colors.blue.withOpacity(0.3),
@@ -1128,7 +1129,7 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
                 ),
               ],
             ),
-            child: const Icon(Icons.local_shipping, color: Colors.white, size: 24),
+            child: Icon(Icons.local_shipping, color: Theme.of(context).colorScheme.surface, size: 24),
           ),
         ),
       );
@@ -1172,12 +1173,12 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
             child: GestureDetector(
               onTap: () => setState(() => _selectedStopIndex = i),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: Duration(milliseconds: 200),
                 decoration: BoxDecoration(
                   color: markerColor,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     width: isSelected ? 4 : 2,
                   ),
                   boxShadow: [
@@ -1192,7 +1193,7 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
                   child: Text(
                     '${i + 1}',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       fontWeight: FontWeight.bold,
                       fontSize: isSelected ? 18 : 14,
                     ),
@@ -1212,11 +1213,11 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
     return Container(
       height: 120,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -1319,20 +1320,20 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white.withOpacity(0.2) : statusColor,
+                color: isSelected ? Theme.of(context).colorScheme.surface.withOpacity(0.2) : statusColor,
                 shape: BoxShape.circle,
               ),
               child: Center(
                 child: hasLocation
                     ? Text(
                         '${index + 1}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.surface,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),
                       )
-                    : const Icon(Icons.location_off, color: Colors.white, size: 14),
+                    : Icon(Icons.location_off, color: Theme.of(context).colorScheme.surface, size: 14),
               ),
             ),
             const SizedBox(width: 10),
@@ -1345,7 +1346,7 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
-                    color: isSelected ? Colors.white : Colors.black87,
+                    color: isSelected ? Theme.of(context).colorScheme.surface : Theme.of(context).colorScheme.onSurface87,
                   ),
                 ),
                 Text(
@@ -1353,7 +1354,7 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
                   style: TextStyle(
                     fontSize: 10,
                     color: isSelected 
-                        ? Colors.white.withOpacity(0.8) 
+                        ? Theme.of(context).colorScheme.surface.withOpacity(0.8) 
                         : (hasLocation ? Colors.grey.shade600 : Colors.red.shade600),
                   ),
                 ),
@@ -1400,13 +1401,13 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
     final lng = customer?['lng'] as double?;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.15),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1537,7 +1538,7 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
                   label: Text(hasLocation ? 'Chỉ đường' : 'Tìm trên Maps'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1563,9 +1564,9 @@ class _DriverJourneyMapPageState extends ConsumerState<DriverJourneyMapPage> {
                 });
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Row(
+                    content: Row(
                       children: [
-                        Icon(Icons.touch_app, color: Colors.white),
+                        Icon(Icons.touch_app, color: Theme.of(context).colorScheme.surface),
                         SizedBox(width: 12),
                         Text('Chạm vào bản đồ để chọn vị trí mới'),
                       ],

@@ -32,8 +32,8 @@ class InvitationService {
       String? companyId;
 
       if (_ref != null) {
-        final authState = _ref.read(authProvider);
-        currentUser = authState.user;
+        final user = _ref.read(currentUserProvider);
+        currentUser = user;
         companyId = currentUser?.companyId;
       }
 
@@ -284,6 +284,10 @@ extension UserRoleInvitation on UserRole {
         return 'Tài xế';
       case UserRole.warehouse:
         return 'Nhân viên kho';
+      case UserRole.shareholder:
+        return 'Cổ đông';
+      case UserRole.finance:
+        return 'Kế toán';
     }
   }
 
@@ -303,6 +307,10 @@ extension UserRoleInvitation on UserRole {
         return 'Giao hàng và vận chuyển';
       case UserRole.warehouse:
         return 'Quản lý kho hàng và xuất nhập';
+      case UserRole.shareholder:
+        return 'Xem thông tin tài chính và cổ đông';
+      case UserRole.finance:
+        return 'Quản lý tài chính và kế toán';
     }
   }
 }

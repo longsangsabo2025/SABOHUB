@@ -1,5 +1,7 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../models/management_task.dart';
 import 'task_badges.dart';
 
@@ -15,18 +17,22 @@ class UnifiedTaskCard extends StatelessWidget {
   final ValueChanged<TaskStatus>? onStatusChange;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onDeadlineTap; // inline quick-edit deadline (#3)
+  final VoidCallback? onSendEmail; // Send email notification to assignee
   final bool showAssignee;
   final bool showCreator;
   final bool showProgress;
   final bool showCompany;
 
-  const UnifiedTaskCard({
+  UnifiedTaskCard({
     super.key,
     required this.task,
     this.onTap,
     this.onStatusChange,
     this.onEdit,
     this.onDelete,
+    this.onDeadlineTap,
+    this.onSendEmail,
     this.showAssignee = true,
     this.showCreator = false,
     this.showProgress = true,
@@ -57,23 +63,23 @@ class UnifiedTaskCard extends StatelessWidget {
     final pColor = priorityColor(task.priority);
 
     // Border color: overdue → red, urgent priority or due soon → orange
-    Color borderColor = const Color(0xFFE5E7EB);
+    Color borderColor = AppColors.border;
     if (_isOverdue) {
-      borderColor = const Color(0xFFEF4444);
+      borderColor = AppColors.error;
     } else if (task.priority == TaskPriority.critical || _isDueSoon) {
-      borderColor = const Color(0xFFF59E0B);
+      borderColor = AppColors.warning;
     } else if (task.priority == TaskPriority.high) {
-      borderColor = const Color(0xFFFB923C);
+      borderColor = Color(0xFFFB923C);
     }
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: borderColor, width: _isOverdue ? 2 : 1.5),
       ),
       elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
+      shadowColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -111,12 +117,12 @@ class UnifiedTaskCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 14.5,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF1F2937),
+                            color: AppColors.textPrimary,
                             height: 1.2,
                             decoration: task.status == TaskStatus.completed
                                 ? TextDecoration.lineThrough
                                 : null,
-                            decorationColor: const Color(0xFF9CA3AF),
+                            decorationColor: AppColors.neutral400,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -126,9 +132,9 @@ class UnifiedTaskCard extends StatelessWidget {
                           const SizedBox(height: 3),
                           Text(
                             task.description!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12.5,
-                              color: Color(0xFF6B7280),
+                              color: AppColors.neutral500,
                               height: 1.3,
                             ),
                             maxLines: 1,
@@ -139,15 +145,15 @@ class UnifiedTaskCard extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(width: 6),
+                  AppSpacing.hGapXS,
 
                   // Priority badge
                   PriorityBadge(task.priority),
 
-                  const SizedBox(width: 4),
+                  AppSpacing.hGapXXS,
 
-                  // Status badge
-                  StatusBadge(effectiveStatus),
+                  // Status badge — tappable for quick status change
+                  _buildTappableStatusBadge(effectiveStatus),
 
                   // Menu button
                   if (onEdit != null || onDelete != null) ...[
@@ -182,39 +188,54 @@ class UnifiedTaskCard extends StatelessWidget {
                   else
                     const Spacer(flex: 2),
 
-                  const SizedBox(width: 8),
+                  AppSpacing.hGapSM,
 
-                  // Deadline
+                  // Deadline — tap for inline quick-edit (#3)
                   Expanded(
                     flex: 3,
-                    child: _buildDeadlineChip(),
+                    child: onDeadlineTap != null
+                        ? GestureDetector(
+                            onTap: onDeadlineTap,
+                            child: _buildDeadlineChip(),
+                          )
+                        : _buildDeadlineChip(),
                   ),
 
                   // Category badge (if not general)
                   if (task.category != TaskCategory.general) ...[
-                    const SizedBox(width: 6),
+                    AppSpacing.hGapXS,
                     _buildCompactBadge(
                       task.category.displayName,
-                      const Color(0xFF6366F1),
+                      AppColors.primary,
                     ),
                   ],
 
                   // Recurring badge
                   if (task.isRecurring) ...[
-                    const SizedBox(width: 6),
+                    AppSpacing.hGapXS,
                     _buildCompactBadge(
                       '🔁',
-                      const Color(0xFF8B5CF6),
+                      AppColors.paymentRefunded,
                     ),
                   ],
 
                   // Company badge
                   if (showCompany && task.companyName != null) ...[
-                    const SizedBox(width: 6),
+                    AppSpacing.hGapXS,
                     _buildCompactBadge(
                       task.companyName!,
-                      const Color(0xFF0EA5E9),
+                      AppColors.info,
                       icon: Icons.business_rounded,
+                    ),
+                  ],
+
+                  // Comment count badge (GitHub Issues pattern)
+                  if (task.commentCount > 0) ...[
+                    AppSpacing.hGapXS,
+                    _buildCompactBadge(
+                      '${task.commentCount}',
+                      AppColors.neutral500,
+                      icon: Icons.chat_bubble_outline_rounded,
                     ),
                   ],
                 ],
@@ -226,13 +247,13 @@ class UnifiedTaskCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(child: TaskProgressBar(task.progress, height: 5)),
-                    const SizedBox(width: 8),
+                    AppSpacing.hGapSM,
                     Text(
                       '${task.progress}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.neutral500,
                       ),
                     ),
                   ],
@@ -241,57 +262,77 @@ class UnifiedTaskCard extends StatelessWidget {
 
               // ─── ROW 4: Checklist summary ───
               if (task.checklist.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                AppSpacing.gapSM,
                 _buildChecklistSummary(),
               ],
 
-              // ─── ROW 5: Inline action buttons (for non-completed tasks) ───
-              if (onStatusChange != null &&
-                  task.status != TaskStatus.completed &&
-                  task.status != TaskStatus.cancelled) ...[
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    if (task.status == TaskStatus.pending)
-                      _buildActionButton(
-                        'Bắt đầu',
-                        Icons.play_arrow_rounded,
-                        const Color(0xFF3B82F6),
-                        () => onStatusChange?.call(TaskStatus.inProgress),
-                      ),
-                    if (task.status == TaskStatus.inProgress ||
-                        task.status == TaskStatus.overdue) ...[
-                      _buildActionButton(
-                        'Hoàn thành',
-                        Icons.check_circle_rounded,
-                        const Color(0xFF10B981),
-                        () => onStatusChange?.call(TaskStatus.completed),
-                      ),
-                      const SizedBox(width: 8),
-                      _buildActionButton(
-                        'Tạm dừng',
-                        Icons.pause_rounded,
-                        const Color(0xFFF59E0B),
-                        () => onStatusChange?.call(TaskStatus.pending),
-                      ),
-                    ],
-                    const Spacer(),
-                    if (onEdit != null)
-                      _buildActionButton(
-                        'Sửa',
-                        Icons.edit_rounded,
-                        const Color(0xFF6B7280),
-                        onEdit!,
-                      ),
-                  ],
-                ),
-              ],
+
             ],
           ),
         ),
       ),
     );
   }
+
+  // ─────────── Tappable Status Badge ───────────
+
+  Widget _buildTappableStatusBadge(TaskStatus effectiveStatus) {
+    // No quick-change when completed or cancelled, or no callback
+    if (onStatusChange == null ||
+        effectiveStatus == TaskStatus.completed ||
+        effectiveStatus == TaskStatus.cancelled) {
+      return StatusBadge(effectiveStatus);
+    }
+
+    final color = statusColor(effectiveStatus);
+    final options = _nextStatuses(effectiveStatus);
+
+    return PopupMenuButton<TaskStatus>(
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      tooltip: 'Đổi trạng thái',
+      position: PopupMenuPosition.under,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      onSelected: (s) => onStatusChange!(s),
+      itemBuilder: (_) => options.map((s) => PopupMenuItem(
+        value: s,
+        height: 38,
+        child: Row(children: [
+          Icon(statusIcon(s), size: 15, color: statusColor(s)),
+          AppSpacing.hGapSM,
+          Text(s.label, style: const TextStyle(fontSize: 13)),
+        ]),
+      )).toList(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: 0.35), width: 1.2),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(statusIcon(effectiveStatus), size: 12, color: color),
+            AppSpacing.hGapXXS,
+            Text(
+              effectiveStatus.label,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+            ),
+            const SizedBox(width: 3),
+            Icon(Icons.expand_more_rounded, size: 13, color: color.withValues(alpha: 0.7)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<TaskStatus> _nextStatuses(TaskStatus current) => switch (current) {
+    TaskStatus.pending    => [TaskStatus.inProgress, TaskStatus.completed, TaskStatus.cancelled],
+    TaskStatus.inProgress => [TaskStatus.completed, TaskStatus.pending, TaskStatus.cancelled],
+    TaskStatus.overdue    => [TaskStatus.inProgress, TaskStatus.completed, TaskStatus.cancelled],
+    _                     => [],
+  };
 
   // ─────────── Person chip (Assignee / Creator) ───────────
 
@@ -301,13 +342,13 @@ class UnifiedTaskCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
           color: isAssigned
-              ? const Color(0xFFEFF6FF)
-              : const Color(0xFFF0FDF4),
+              ? AppColors.infoLight
+              : AppColors.successLight,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: isAssigned
-                ? const Color(0xFFBFDBFE)
-                : const Color(0xFFBBF7D0),
+                ? AppColors.info.withValues(alpha: 0.3)
+                : AppColors.success.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
@@ -317,8 +358,8 @@ class UnifiedTaskCard extends StatelessWidget {
               isAssigned ? Icons.person_rounded : Icons.edit_note_rounded,
               size: 13,
               color: isAssigned
-                  ? const Color(0xFF2563EB)
-                  : const Color(0xFF16A34A),
+                  ? AppColors.infoDark
+                  : AppColors.successDark,
             ),
             const SizedBox(width: 5),
             Flexible(
@@ -328,8 +369,8 @@ class UnifiedTaskCard extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: isAssigned
-                      ? const Color(0xFF1E40AF)
-                      : const Color(0xFF15803D),
+                      ? AppColors.infoDark
+                      : AppColors.successDark,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -342,21 +383,21 @@ class UnifiedTaskCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.person_outline_rounded, size: 13,
-              color: Colors.grey.shade500),
+              color: AppColors.grey500),
           const SizedBox(width: 5),
           Text(
             isAssigned ? 'Chưa phân công' : 'N/A',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade500,
+              color: AppColors.grey500,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -374,17 +415,17 @@ class UnifiedTaskCard extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
-          color: const Color(0xFFF9FAFB),
+          color: AppColors.grey50,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          border: Border.all(color: AppColors.grey200),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.event_rounded, size: 13, color: Colors.grey.shade500),
+            Icon(Icons.event_rounded, size: 13, color: AppColors.grey500),
             const SizedBox(width: 5),
             Text('Chưa có deadline',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                style: TextStyle(fontSize: 12, color: AppColors.grey500)),
           ],
         ),
       );
@@ -398,26 +439,34 @@ class UnifiedTaskCard extends StatelessWidget {
     final String label;
 
     if (_isOverdue) {
-      bgColor = const Color(0xFFFEF2F2);
-      borderClr = const Color(0xFFFCA5A5);
-      textColor = const Color(0xFF991B1B);
-      iconColor = const Color(0xFFDC2626);
+      bgColor = AppColors.errorLight;
+      borderClr = Color(0xFFFCA5A5);
+      textColor = Color(0xFF991B1B);
+      iconColor = AppColors.errorDark;
       icon = Icons.warning_rounded;
       label = 'QUÁ HẠN ${-_daysUntilDue}d';
     } else if (_isDueSoon) {
-      bgColor = const Color(0xFFFFFBEB);
-      borderClr = const Color(0xFFFDE68A);
-      textColor = const Color(0xFF92400E);
-      iconColor = const Color(0xFFD97706);
+      bgColor = AppColors.warningLight;
+      borderClr = Color(0xFFFDE68A);
+      textColor = Color(0xFF92400E);
+      iconColor = AppColors.warningDark;
       icon = Icons.access_time_rounded;
       label = 'GẤP ${_daysUntilDue}d · ${fmt.format(task.dueDate!)}';
     } else {
-      bgColor = const Color(0xFFF0FDF4);
-      borderClr = const Color(0xFFBBF7D0);
-      textColor = const Color(0xFF166534);
-      iconColor = const Color(0xFF16A34A);
+      bgColor = AppColors.successLight;
+      borderClr = Color(0xFFBBF7D0);
+      textColor = Color(0xFF166534);
+      iconColor = Color(0xFF16A34A);
       icon = Icons.event_available_rounded;
-      label = fmt.format(task.dueDate!);
+      // Relative deadline (Linear pattern)
+      final diffDays = _daysUntilDue;
+      label = diffDays == 0
+          ? 'Hôm nay'
+          : diffDays == 1
+              ? 'Ngày mai'
+              : diffDays <= 6
+                  ? '$diffDays ngày nữa'
+                  : DateFormat('dd/MM').format(task.dueDate!);
     }
 
     return Container(
@@ -492,7 +541,7 @@ class UnifiedTaskCard extends StatelessWidget {
         Icon(
           allDone ? Icons.check_box_rounded : Icons.checklist_rounded,
           size: 15,
-          color: allDone ? const Color(0xFF10B981) : const Color(0xFF6B7280),
+          color: allDone ? AppColors.success : AppColors.neutral500,
         ),
         const SizedBox(width: 5),
         Text(
@@ -500,61 +549,24 @@ class UnifiedTaskCard extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: allDone ? const Color(0xFF10B981) : const Color(0xFF6B7280),
+            color: allDone ? AppColors.success : AppColors.neutral500,
           ),
         ),
-        const SizedBox(width: 8),
+        AppSpacing.hGapSM,
         Expanded(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
               value: pct,
               minHeight: 3,
-              backgroundColor: const Color(0xFFE5E7EB),
+              backgroundColor: AppColors.border,
               valueColor: AlwaysStoppedAnimation(
-                allDone ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+                allDone ? AppColors.success : AppColors.info,
               ),
             ),
           ),
         ),
       ],
-    );
-  }
-
-  // ─────────── Action buttons ───────────
-
-  Widget _buildActionButton(
-    String label,
-    IconData icon,
-    Color color,
-    VoidCallback onPressed,
-  ) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -566,7 +578,7 @@ class UnifiedTaskCard extends StatelessWidget {
       constraints: const BoxConstraints(),
       iconSize: 20,
       icon: const Icon(Icons.more_vert_rounded,
-          size: 20, color: Color(0xFF9CA3AF)),
+          size: 20, color: AppColors.neutral400),
       position: PopupMenuPosition.under,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       itemBuilder: (ctx) => [
@@ -578,8 +590,8 @@ class UnifiedTaskCard extends StatelessWidget {
               child: const Row(
                 children: [
                   Icon(Icons.play_arrow_rounded,
-                      size: 16, color: Color(0xFF3B82F6)),
-                  SizedBox(width: 8),
+                      size: 16, color: AppColors.info),
+                  AppSpacing.hGapSM,
                   Text('Bắt đầu', style: TextStyle(fontSize: 13)),
                 ],
               ),
@@ -591,8 +603,8 @@ class UnifiedTaskCard extends StatelessWidget {
               child: const Row(
                 children: [
                   Icon(Icons.check_circle_rounded,
-                      size: 16, color: Color(0xFF10B981)),
-                  SizedBox(width: 8),
+                      size: 16, color: AppColors.success),
+                  AppSpacing.hGapSM,
                   Text('Hoàn thành', style: TextStyle(fontSize: 13)),
                 ],
               ),
@@ -604,9 +616,21 @@ class UnifiedTaskCard extends StatelessWidget {
             height: 36,
             child: const Row(
               children: [
-                Icon(Icons.edit_rounded, size: 16, color: Color(0xFF6B7280)),
-                SizedBox(width: 8),
+                Icon(Icons.edit_rounded, size: 16, color: AppColors.neutral500),
+                AppSpacing.hGapSM,
                 Text('Sửa', style: TextStyle(fontSize: 13)),
+              ],
+            ),
+          ),
+        if (onSendEmail != null && task.assignedTo != null)
+          PopupMenuItem(
+            value: 'send_email',
+            height: 36,
+            child: const Row(
+              children: [
+                Icon(Icons.email_outlined, size: 16, color: AppColors.paymentRefunded),
+                AppSpacing.hGapSM,
+                Text('Gửi email', style: TextStyle(fontSize: 13)),
               ],
             ),
           ),
@@ -617,10 +641,10 @@ class UnifiedTaskCard extends StatelessWidget {
             child: const Row(
               children: [
                 Icon(Icons.delete_outline_rounded,
-                    size: 16, color: Color(0xFFEF4444)),
-                SizedBox(width: 8),
+                    size: 16, color: AppColors.error),
+                AppSpacing.hGapSM,
                 Text('Xóa',
-                    style: TextStyle(fontSize: 13, color: Color(0xFFEF4444))),
+                    style: TextStyle(fontSize: 13, color: AppColors.error)),
               ],
             ),
           ),
@@ -633,6 +657,8 @@ class UnifiedTaskCard extends StatelessWidget {
             onStatusChange?.call(TaskStatus.completed);
           case 'edit':
             onEdit?.call();
+          case 'send_email':
+            onSendEmail?.call();
           case 'delete':
             onDelete?.call();
         }

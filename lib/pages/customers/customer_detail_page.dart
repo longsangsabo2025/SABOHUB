@@ -16,6 +16,7 @@ import '../../business_types/distribution/models/product_sample.dart';
 import '../../widgets/customer_tier_widgets.dart';
 import '../../widgets/customer_avatar.dart';
 import '../orders/order_form_page.dart';
+import '../../utils/app_logger.dart';
 
 final supabase = Supabase.instance.client;
 final _currencyFormat =
@@ -74,7 +75,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
         _loadReferrer(),
       ]);
     } catch (e) {
-      debugPrint('Error loading customer data: $e');
+      AppLogger.error('Error loading customer data: $e');
     }
 
     setState(() => _isLoading = false);
@@ -94,7 +95,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
         _referrer = Referrer.fromJson(response);
       }
     } catch (e) {
-      debugPrint('Error loading referrer: $e');
+      AppLogger.error('Error loading referrer: $e');
     }
   }
 
@@ -274,7 +275,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
       expandedHeight: 200,
       pinned: true,
       backgroundColor: Colors.teal,
-      foregroundColor: Colors.white,
+      foregroundColor: Theme.of(context).colorScheme.surface,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
@@ -296,7 +297,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                       CustomerAvatar(
                         seed: _customer.name,
                         radius: 32,
-                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -305,10 +306,10 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                           children: [
                             Text(
                               _customer.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white),
+                                  color: Theme.of(context).colorScheme.surface),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -316,14 +317,14 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                               _customer.code,
                               style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.white.withOpacity(0.8)),
+                                    color: Theme.of(context).colorScheme.surface.withOpacity(0.8)),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Row(
                               children: [
                                 if (_customer.category != null)
                                   _buildHeaderChip(_customer.category!,
-                                      Colors.white.withOpacity(0.2)),
+                                      Theme.of(context).colorScheme.surface.withOpacity(0.2)),
                                 const SizedBox(width: 8),
                                 CustomerTierBadge(
                                     tier: CustomerTierExtension.fromString(
@@ -411,13 +412,13 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
 
   Widget _buildHeaderChip(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(label,
-          style: const TextStyle(fontSize: 11, color: Colors.white)),
+          style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.surface)),
     );
   }
 
@@ -425,13 +426,13 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
     return Column(
       children: [
         Text(value,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.white)),
+                color: Theme.of(context).colorScheme.surface)),
         Text(label,
             style:
-                TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.8))),
+                TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.surface.withOpacity(0.8))),
       ],
     );
   }
@@ -451,7 +452,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
 
   Widget _buildTabBar() {
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       child: TabBar(
         controller: _tabController,
         isScrollable: true,
@@ -474,7 +475,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
     return FloatingActionButton.extended(
       onPressed: _createOrder,
       backgroundColor: Colors.teal,
-      foregroundColor: Colors.white,
+      foregroundColor: Theme.of(context).colorScheme.surface,
       icon: const Icon(Icons.add_shopping_cart),
       label: const Text('Tạo đơn'),
     );
@@ -828,7 +829,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
     if (result == null || !mounted) return;
 
     try {
-      final currentUser = ref.read(authProvider).user;
+      final currentUser = ref.read(currentUserProvider);
       await Supabase.instance.client.from('customers').update({
         'lead_status': result['status'],
         'last_interaction_notes': result['notes'],
@@ -916,14 +917,14 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                     if (addr.isDefault) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                             horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
                           color: Colors.teal,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('Mặc định',
-                            style: TextStyle(fontSize: 9, color: Colors.white)),
+                        child: Text('Mặc định',
+                            style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.surface)),
                       ),
                     ],
                   ],
@@ -1560,11 +1561,11 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
               ),
               ElevatedButton.icon(
                 onPressed: _showAddAddressDialog,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Thêm'),
+                icon: Icon(Icons.add, size: 18),
+                label: Text('Thêm'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   shape: RoundedRectangleBorder(
@@ -1633,15 +1634,15 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                       if (branch.isDefault) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                               color: Colors.purple,
                               borderRadius: BorderRadius.circular(4)),
-                          child: const Text('Chính',
+                          child: Text('Chính',
                               style: TextStyle(
                                   fontSize: 9,
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                   fontWeight: FontWeight.w500)),
                         ),
                       ],
@@ -1797,11 +1798,11 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
               ),
               ElevatedButton.icon(
                 onPressed: _showAddVisitDialog,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Thêm'),
+                icon: Icon(Icons.add, size: 18),
+                label: Text('Thêm'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
@@ -2037,7 +2038,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
       barrierDismissible: false,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.add_location_alt, color: Colors.teal),
               SizedBox(width: 8),
@@ -2194,7 +2195,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
           actions: [
             TextButton(
               onPressed: isLoading ? null : () => Navigator.pop(context, false),
-              child: const Text('Hủy'),
+              child: Text('Hủy'),
             ),
             ElevatedButton(
               onPressed: isLoading
@@ -2202,7 +2203,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                   : () async {
                       setDialogState(() => isLoading = true);
                       try {
-                        final user = ref.read(authProvider).user;
+                        final user = ref.read(currentUserProvider);
                         if (user == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -2265,13 +2266,13 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                       }
                     },
               style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                  backgroundColor: Colors.teal, foregroundColor: Theme.of(context).colorScheme.surface),
               child: isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
+                          strokeWidth: 2, color: Theme.of(context).colorScheme.surface))
                   : const Text('Thêm'),
             ),
           ],
@@ -2350,7 +2351,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.edit, color: Colors.teal),
               SizedBox(width: 8),
@@ -2504,7 +2505,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hủy'),
+              child: Text('Hủy'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -2598,7 +2599,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                 }
               },
               style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                  backgroundColor: Colors.teal, foregroundColor: Theme.of(context).colorScheme.surface),
               child: const Text('Lưu'),
             ),
           ],
@@ -2674,7 +2675,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.edit_location_alt, color: Colors.blue),
               SizedBox(width: 8),
@@ -2800,7 +2801,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hủy'),
+              child: Text('Hủy'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -2860,7 +2861,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                 }
               },
               style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                  backgroundColor: Colors.blue, foregroundColor: Theme.of(context).colorScheme.surface),
               child: const Text('Lưu'),
             ),
           ],
@@ -2886,7 +2887,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.red),
             SizedBox(width: 8),
@@ -2908,12 +2909,12 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, foregroundColor: Colors.white),
+                backgroundColor: Colors.red, foregroundColor: Theme.of(context).colorScheme.surface),
             child: const Text('Xóa'),
           ),
         ],
@@ -2973,7 +2974,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.add_business, color: Colors.purple),
               SizedBox(width: 8),
@@ -3099,7 +3100,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hủy'),
+              child: Text('Hủy'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -3123,7 +3124,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
                 }
 
                 try {
-                  final user = ref.read(authProvider).user;
+                  final user = ref.read(currentUserProvider);
                   if (user?.companyId == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -3173,7 +3174,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
               },
               style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.purple,
-                  foregroundColor: Colors.white),
+                  foregroundColor: Theme.of(context).colorScheme.surface),
               child: const Text('Thêm'),
             ),
           ],
@@ -3204,7 +3205,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
           children: [
             Icon(isArchived ? Icons.unarchive : Icons.archive,
                 color: Colors.orange),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Text(isArchived ? 'Khôi phục khách hàng?' : 'Lưu trữ khách hàng?'),
           ],
         ),
@@ -3216,12 +3217,12 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                backgroundColor: Colors.orange, foregroundColor: Theme.of(context).colorScheme.surface),
             child: Text(isArchived ? 'Khôi phục' : 'Lưu trữ'),
           ),
         ],
@@ -3282,7 +3283,7 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Bạn có chắc muốn xóa khách hàng "${_customer.name}"?'),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -3304,11 +3305,11 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hủy')),
+              child: Text('Hủy')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, foregroundColor: Colors.white),
+                backgroundColor: Colors.red, foregroundColor: Theme.of(context).colorScheme.surface),
             child: const Text('Xóa'),
           ),
         ],
@@ -3318,7 +3319,8 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
     if (confirm != true) return;
 
     try {
-      await supabase.from('customers').delete().eq('id', _customer.id);
+      // Soft delete - sets is_active=false
+      await supabase.from('customers').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', _customer.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

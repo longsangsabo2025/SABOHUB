@@ -1,204 +1,163 @@
 import 'package:flutter/material.dart';
-
 import '../../models/ai_uploaded_file.dart';
 
-/// Card widget to display a single file in the gallery
+/// Card widget for displaying an uploaded AI file
 class FileCard extends StatelessWidget {
   final AIUploadedFile file;
-  final VoidCallback? onTap;
-  final VoidCallback? onDelete;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
   final VoidCallback? onProcess;
 
   const FileCard({
     super.key,
     required this.file,
-    this.onTap,
-    this.onDelete,
+    required this.onTap,
+    required this.onDelete,
     this.onProcess,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      clipBehavior: Clip.antiAlias,
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // File preview/icon
-            Expanded(
-              flex: 3,
-              child: Container(
-                width: double.infinity,
-                color: _getFileColor().withValues(alpha: 0.1),
-                child: file.isImage
-                    ? Image.network(
-                        file.fileUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildFileIcon();
-                        },
-                      )
-                    : _buildFileIcon(),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // File icon and status
+              Row(
+                children: [
+                  _buildFileIcon(),
+                  const Spacer(),
+                  _buildStatusBadge(context),
+                  SizedBox(width: 4),
+                  // Delete button
+                  InkWell(
+                    onTap: onDelete,
+                    borderRadius: BorderRadius.circular(16),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Icon(Icons.close, size: 18, color: Colors.grey),
+                    ),
+                  ),
+                ],
               ),
-            ),
-
-            // File info
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // File name
-                    Text(
-                      file.fileName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
+              SizedBox(height: 12),
+              // File name
+              Text(
+                file.fileName,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(height: 4),
-
-                    // File size and date
-                    Text(
-                      file.fileSizeFormatted,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                      ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: 4),
+              // File info
+              Text(
+                '${file.fileTypeLabel} • ${file.fileSizeFormatted}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
                     ),
-                    const Spacer(),
-
-                    // Status badge
-                    Row(
-                      children: [
-                        Expanded(child: _buildStatusBadge()),
-                        if (onProcess != null)
-                          IconButton(
-                            icon: const Icon(Icons.refresh, size: 18),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: onProcess,
-                            tooltip: 'Xử lý lại',
-                          ),
-                        if (onDelete != null)
-                          IconButton(
-                            icon: const Icon(Icons.delete, size: 18),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: onDelete,
-                            color: Colors.red[400],
-                            tooltip: 'Xóa',
-                          ),
-                      ],
+              ),
+              const Spacer(),
+              // Process button
+              if (onProcess != null)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: onProcess,
+                    icon: const Icon(Icons.play_arrow, size: 18),
+                    label: const Text('Phân tích'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      textStyle: const TextStyle(fontSize: 12),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildFileIcon() {
-    return Center(
-      child: Icon(
-        _getIconData(),
-        size: 48,
-        color: _getFileColor(),
+    IconData icon;
+    Color color;
+    switch (file.fileType) {
+      case 'image':
+        icon = Icons.image;
+        color = Colors.blue;
+        break;
+      case 'pdf':
+        icon = Icons.picture_as_pdf;
+        color = Colors.red;
+        break;
+      case 'spreadsheet':
+        icon = Icons.table_chart;
+        color = Colors.green;
+        break;
+      case 'doc':
+        icon = Icons.description;
+        color = Colors.indigo;
+        break;
+      default:
+        icon = Icons.insert_drive_file;
+        color = Colors.grey;
+    }
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
       ),
+      child: Icon(icon, color: color, size: 24),
     );
   }
 
-  Widget _buildStatusBadge() {
-    Color color;
-    IconData icon;
+  Widget _buildStatusBadge(BuildContext context) {
+    Color bgColor;
+    Color textColor;
     String label;
 
-    if (file.isUploaded) {
-      color = Colors.orange;
-      icon = Icons.hourglass_empty;
-      label = 'Chờ';
-    } else if (file.isProcessing) {
-      color = Colors.blue;
-      icon = Icons.sync;
-      label = 'Đang xử lý';
-    } else if (file.isAnalyzed) {
-      color = Colors.green;
-      icon = Icons.check_circle;
-      label = 'Xong';
-    } else {
-      color = Colors.red;
-      icon = Icons.error;
-      label = 'Lỗi';
+    switch (file.status) {
+      case 'analyzed':
+        bgColor = Colors.green[50]!;
+        textColor = Colors.green[700]!;
+        label = 'Đã phân tích';
+        break;
+      case 'processing':
+        bgColor = Colors.orange[50]!;
+        textColor = Colors.orange[700]!;
+        label = 'Đang xử lý';
+        break;
+      case 'error':
+        bgColor = Colors.red[50]!;
+        textColor = Colors.red[700]!;
+        label = 'Lỗi';
+        break;
+      default:
+        bgColor = Colors.grey[100]!;
+        textColor = Colors.grey[700]!;
+        label = 'Đã tải lên';
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: bgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 0.5),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: color),
-          const SizedBox(width: 3),
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 9,
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 10, color: textColor, fontWeight: FontWeight.w600),
       ),
     );
-  }
-
-  IconData _getIconData() {
-    switch (file.fileType) {
-      case 'image':
-        return Icons.image;
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'doc':
-        return Icons.description;
-      case 'spreadsheet':
-        return Icons.table_chart;
-      default:
-        return Icons.insert_drive_file;
-    }
-  }
-
-  Color _getFileColor() {
-    switch (file.fileType) {
-      case 'image':
-        return Colors.purple;
-      case 'pdf':
-        return Colors.red;
-      case 'doc':
-        return Colors.blue;
-      case 'spreadsheet':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
   }
 }

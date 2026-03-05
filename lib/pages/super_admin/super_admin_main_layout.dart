@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_spacing.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -55,18 +56,18 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF1E1E2E),
+        backgroundColor: Color(0xFF1E1E2E),
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: AppSpacing.paddingSM,
               decoration: BoxDecoration(
                 color: AppColors.error.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.admin_panel_settings, color: AppColors.error, size: 20),
             ),
-            const SizedBox(width: 12),
+            AppSpacing.hGapMD,
             const Text(
               'SABOHUB Admin',
               style: TextStyle(
@@ -90,7 +91,7 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.check_circle, color: AppColors.success, size: 14),
-                SizedBox(width: 4),
+                AppSpacing.hGapXXS,
                 Text('System OK', style: TextStyle(color: AppColors.success, fontSize: 12)),
               ],
             ),
@@ -128,8 +129,8 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
               const PopupMenuItem(
                 value: 'logout',
                 child: ListTile(
-                  leading: Icon(Icons.logout, color: Colors.red),
-                  title: Text('Đăng xuất', style: TextStyle(color: Colors.red)),
+                  leading: Icon(Icons.logout, color: AppColors.error),
+                  title: Text('Đăng xuất', style: TextStyle(color: AppColors.error)),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -149,7 +150,7 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
   Widget _buildBottomNavigation() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E2E),
+        color: Color(0xFF1E1E2E),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.3),
@@ -162,9 +163,9 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
         currentIndex: _currentIndex,
         onTap: _onTabSelected,
         type: BottomNavigationBarType.fixed,
-        backgroundColor: const Color(0xFF1E1E2E),
+        backgroundColor: Color(0xFF1E1E2E),
         selectedItemColor: AppColors.error,
-        unselectedItemColor: Colors.grey[600],
+        unselectedItemColor: AppColors.grey600,
         selectedFontSize: 11,
         unselectedFontSize: 11,
         items: const [
@@ -211,12 +212,12 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
   void _showSystemNotifications(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: Color(0xFF1E1E2E),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: AppSpacing.paddingXL,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,22 +226,22 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
               'System Notifications',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             _buildNotificationItem(
               icon: Icons.business,
-              color: Colors.blue,
+              color: AppColors.info,
               title: 'New company registered',
               subtitle: '2 hours ago',
             ),
             _buildNotificationItem(
               icon: Icons.warning,
-              color: Colors.orange,
+              color: AppColors.warning,
               title: 'High CPU usage detected',
               subtitle: '5 hours ago',
             ),
             _buildNotificationItem(
               icon: Icons.check_circle,
-              color: Colors.green,
+              color: AppColors.success,
               title: 'System backup completed',
               subtitle: 'Yesterday',
             ),
@@ -258,7 +259,7 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
   }) {
     return ListTile(
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: AppSpacing.paddingSM,
         decoration: BoxDecoration(
           color: color.withOpacity(0.2),
           borderRadius: BorderRadius.circular(8),
@@ -266,7 +267,7 @@ class _SuperAdminMainLayoutState extends ConsumerState<SuperAdminMainLayout> {
         child: Icon(icon, color: color, size: 20),
       ),
       title: Text(title, style: const TextStyle(color: Colors.white)),
-      subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[400])),
+      subtitle: Text(subtitle, style: TextStyle(color: AppColors.grey400)),
       contentPadding: EdgeInsets.zero,
     );
   }
@@ -345,18 +346,18 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
       onRefresh: _loadDashboardData,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.paddingLG,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildWelcomeCard(),
-            const SizedBox(height: 20),
+            AppSpacing.gapXL,
             _buildStatsGrid(),
-            const SizedBox(height: 20),
+            AppSpacing.gapXL,
             _buildSystemHealthCard(),
-            const SizedBox(height: 20),
+            AppSpacing.gapXL,
             _buildRecentActivityCard(),
-            const SizedBox(height: 20),
+            AppSpacing.gapXL,
             _buildQuickActionsCard(),
           ],
         ),
@@ -367,12 +368,12 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
   Widget _buildWelcomeCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: AppSpacing.paddingXL,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.error, Color(0xFFDC2626)],
+          colors: [AppColors.error, AppColors.errorDark],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
@@ -389,7 +390,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
           Row(
             children: [
               const Icon(Icons.admin_panel_settings, color: Colors.white, size: 32),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMD,
               const Text(
                 'Platform Admin',
                 style: TextStyle(
@@ -400,12 +401,12 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          AppSpacing.gapSM,
           Text(
             'Quản lý toàn bộ hệ thống SABOHUB',
             style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9)),
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           Row(
             children: [
               _buildMiniStat('Companies', '${_stats['totalCompanies'] ?? 0}'),
@@ -479,7 +480,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
     required String trend,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -508,8 +509,8 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-              Text(trend, style: TextStyle(fontSize: 10, color: Colors.grey[400])),
+              Text(label, style: TextStyle(fontSize: 12, color: AppColors.grey600)),
+              Text(trend, style: TextStyle(fontSize: 10, color: AppColors.grey400)),
             ],
           ),
         ],
@@ -519,7 +520,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
 
   Widget _buildSystemHealthCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -533,15 +534,15 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
           const Row(
             children: [
               Icon(Icons.monitor_heart, color: AppColors.success),
-              SizedBox(width: 8),
+              AppSpacing.hGapSM,
               Text('System Health', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildHealthItem('Database', 99.9, Colors.green),
-          _buildHealthItem('API Server', 98.5, Colors.green),
-          _buildHealthItem('Storage', 85.0, Colors.orange),
-          _buildHealthItem('Authentication', 100.0, Colors.green),
+          AppSpacing.gapLG,
+          _buildHealthItem('Database', 99.9, AppColors.success),
+          _buildHealthItem('API Server', 98.5, AppColors.success),
+          _buildHealthItem('Storage', 85.0, AppColors.warning),
+          _buildHealthItem('Authentication', 100.0, AppColors.success),
         ],
       ),
     );
@@ -552,20 +553,20 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Expanded(flex: 2, child: Text(name, style: TextStyle(color: Colors.grey[700]))),
+          Expanded(flex: 2, child: Text(name, style: TextStyle(color: AppColors.grey700))),
           Expanded(
             flex: 5,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: percentage / 100,
-                backgroundColor: Colors.grey[200],
+                backgroundColor: AppColors.grey200,
                 valueColor: AlwaysStoppedAnimation<Color>(color),
                 minHeight: 8,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMD,
           Text('${percentage.toStringAsFixed(1)}%', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
         ],
       ),
@@ -574,7 +575,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
 
   Widget _buildRecentActivityCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -588,16 +589,16 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
           const Row(
             children: [
               Icon(Icons.history, color: AppColors.info),
-              SizedBox(width: 8),
+              AppSpacing.hGapSM,
               Text('Recent Activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           if (_recentActivity.isEmpty)
             Center(
               child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text('Chưa có hoạt động nào', style: TextStyle(color: Colors.grey[500])),
+                padding: AppSpacing.paddingXL,
+                child: Text('Chưa có hoạt động nào', style: TextStyle(color: AppColors.grey500)),
               ),
             )
           else
@@ -627,13 +628,13 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
 
   (IconData, Color) _activityIconForCategory(String category) {
     return switch (category) {
-      'auth' => (Icons.login, Colors.green),
-      'business' => (Icons.business, Colors.blue),
+      'auth' => (Icons.login, AppColors.success),
+      'business' => (Icons.business, AppColors.info),
       'page_view' => (Icons.visibility, Colors.indigo),
-      'user_action' => (Icons.touch_app, Colors.orange),
-      'error' => (Icons.error, Colors.red),
+      'user_action' => (Icons.touch_app, AppColors.warning),
+      'error' => (Icons.error, AppColors.error),
       'performance' => (Icons.speed, Colors.purple),
-      _ => (Icons.circle, Colors.grey),
+      _ => (Icons.circle, AppColors.grey500),
     };
   }
 
@@ -643,20 +644,20 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: AppSpacing.paddingSM,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 16),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMD,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: const TextStyle(fontSize: 13)),
-                Text(time, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                Text(time, style: TextStyle(fontSize: 11, color: AppColors.grey500)),
               ],
             ),
           ),
@@ -667,7 +668,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
 
   Widget _buildQuickActionsCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -681,11 +682,11 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
           const Row(
             children: [
               Icon(Icons.flash_on, color: AppColors.warning),
-              SizedBox(width: 8),
+              AppSpacing.hGapSM,
               Text('Quick Actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           Row(
             children: [
               Expanded(child: _buildActionButton('Add Company', Icons.add_business, AppColors.info, () {
@@ -693,7 +694,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
                   const SnackBar(content: Text('Thêm công ty: Chuyển sang tab Companies')),
                 );
               })),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMD,
               Expanded(child: _buildActionButton('Add User', Icons.person_add, AppColors.success, () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Thêm user: Chuyển sang tab Users')),
@@ -701,7 +702,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
               })),
             ],
           ),
-          const SizedBox(height: 12),
+          AppSpacing.gapMD,
           Row(
             children: [
               Expanded(child: _buildActionButton('System Backup', Icons.backup, AppColors.primary, () {
@@ -709,7 +710,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
                   const SnackBar(content: Text('Backup: Supabase tự động backup hàng ngày (PITR)')),
                 );
               })),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMD,
               Expanded(child: _buildActionButton('View Logs', Icons.article, AppColors.warning, () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Xem logs: Chuyển sang tab Audit Logs')),
@@ -730,7 +731,7 @@ class _SuperAdminDashboardPageState extends ConsumerState<_SuperAdminDashboardPa
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: AppSpacing.paddingVMD,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
@@ -790,7 +791,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
       children: [
         // Header & Search
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: AppSpacing.paddingLG,
           child: Column(
             children: [
               Row(
@@ -811,7 +812,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gapLG,
               TextField(
                 onChanged: (value) => setState(() => _searchQuery = value),
                 decoration: InputDecoration(
@@ -819,7 +820,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: AppColors.grey100,
                 ),
               ),
             ],
@@ -832,7 +833,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
               : RefreshIndicator(
                   onRefresh: _loadCompanies,
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: AppSpacing.paddingHLG,
                     itemCount: _filteredCompanies.length,
                     itemBuilder: (context, index) {
                       final company = _filteredCompanies[index];
@@ -855,7 +856,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
+        contentPadding: AppSpacing.paddingLG,
         leading: CircleAvatar(
           backgroundColor: _getBusinessTypeColor(businessType).withOpacity(0.2),
           child: Icon(
@@ -866,7 +867,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
         title: Row(
           children: [
             Text(company['name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(width: 8),
+            AppSpacing.hGapSM,
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
@@ -877,7 +878,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
                 status.toUpperCase(),
                 style: TextStyle(
                   fontSize: 10,
-                  color: status == 'active' ? Colors.green : Colors.red,
+                  color: status == 'active' ? AppColors.success : AppColors.error,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -887,9 +888,9 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-            Text('Type: ${_formatBusinessType(businessType)}', style: TextStyle(color: Colors.grey[600])),
-            Text('$employeeCount employees', style: TextStyle(color: Colors.grey[600])),
+            AppSpacing.gapXXS,
+            Text('Type: ${_formatBusinessType(businessType)}', style: TextStyle(color: AppColors.grey600)),
+            Text('$employeeCount employees', style: TextStyle(color: AppColors.grey600)),
           ],
         ),
         trailing: PopupMenuButton<String>(
@@ -913,7 +914,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
             ),
             const PopupMenuItem(
               value: 'delete',
-              child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Delete', style: TextStyle(color: Colors.red))),
+              child: ListTile(leading: Icon(Icons.delete, color: AppColors.error), title: Text('Delete', style: TextStyle(color: AppColors.error))),
             ),
           ],
         ),
@@ -934,11 +935,11 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
 
   Color _getBusinessTypeColor(String type) {
     switch (type) {
-      case 'billiards': return Colors.blue;
-      case 'distribution': return Colors.green;
+      case 'billiards': return AppColors.info;
+      case 'distribution': return AppColors.success;
       case 'manufacturing': return Colors.purple;
-      case 'fnb': return Colors.orange;
-      default: return Colors.grey;
+      case 'fnb': return AppColors.warning;
+      default: return AppColors.grey500;
     }
   }
 
@@ -967,7 +968,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
               controller: nameController,
               decoration: const InputDecoration(labelText: 'Company Name', border: OutlineInputBorder()),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             DropdownButtonFormField<String>(
               value: selectedType,
               decoration: const InputDecoration(labelText: 'Business Type', border: OutlineInputBorder()),
@@ -1019,7 +1020,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
               controller: nameController,
               decoration: const InputDecoration(labelText: 'Company Name', border: OutlineInputBorder()),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             DropdownButtonFormField<String>(
               value: selectedType,
               decoration: const InputDecoration(labelText: 'Business Type', border: OutlineInputBorder()),
@@ -1065,12 +1066,13 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
-              await SupabaseService().client.from('companies').delete().eq('id', company['id']);
+              // Soft delete - sets is_active=false
+              await SupabaseService().client.from('companies').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', company['id']);
               if (!context.mounted) return;
               Navigator.pop(context);
               _loadCompanies();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -1096,7 +1098,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
         expand: false,
         builder: (context, scrollController) => SingleChildScrollView(
           controller: scrollController,
-          padding: const EdgeInsets.all(20),
+          padding: AppSpacing.paddingXL,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1104,20 +1106,20 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
                 child: Container(
                   width: 40,
                   height: 4,
-                  decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
                 ),
               ),
-              const SizedBox(height: 20),
+              AppSpacing.gapXL,
               Text(company['name'] ?? 'Unknown', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text('ID: ${company['id']}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-              const SizedBox(height: 20),
+              AppSpacing.gapSM,
+              Text('ID: ${company['id']}', style: TextStyle(color: AppColors.grey600, fontSize: 12)),
+              AppSpacing.gapXL,
               _buildDetailRow('Business Type', _formatBusinessType(company['business_type'] ?? '')),
               _buildDetailRow('Status', (company['status'] ?? 'active').toUpperCase()),
               _buildDetailRow('Created', company['created_at']?.toString().substring(0, 10) ?? 'N/A'),
-              const SizedBox(height: 20),
+              AppSpacing.gapXL,
               const Text('Employees', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
+              AppSpacing.gapSM,
               Text('${company['employees']?[0]?['count'] ?? 0} total employees'),
             ],
           ),
@@ -1132,7 +1134,7 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(label, style: TextStyle(color: AppColors.grey600)),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),
@@ -1203,7 +1205,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: AppSpacing.paddingLG,
           child: Column(
             children: [
               Row(
@@ -1218,7 +1220,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gapLG,
               TextField(
                 onChanged: (value) => setState(() => _searchQuery = value),
                 decoration: InputDecoration(
@@ -1226,10 +1228,10 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: AppColors.grey100,
                 ),
               ),
-              const SizedBox(height: 12),
+              AppSpacing.gapMD,
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -1252,7 +1254,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
               : RefreshIndicator(
                   onRefresh: _loadUsers,
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: AppSpacing.paddingHLG,
                     itemCount: _filteredUsers.length,
                     itemBuilder: (context, index) {
                       final user = _filteredUsers[index];
@@ -1289,7 +1291,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
+        contentPadding: AppSpacing.paddingMD,
         leading: CircleAvatar(
           backgroundColor: _getRoleColor(role).withOpacity(0.2),
           child: Text(
@@ -1300,7 +1302,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
         title: Row(
           children: [
             Text(user['full_name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(width: 8),
+            AppSpacing.hGapSM,
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
@@ -1314,8 +1316,8 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(user['email'] ?? user['username'] ?? 'N/A', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-            Text(companyName, style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+            Text(user['email'] ?? user['username'] ?? 'N/A', style: TextStyle(color: AppColors.grey600, fontSize: 12)),
+            Text(companyName, style: TextStyle(color: AppColors.grey500, fontSize: 11)),
           ],
         ),
         trailing: Row(
@@ -1325,7 +1327,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
               width: 8,
               height: 8,
               decoration: BoxDecoration(
-                color: status == 'active' ? Colors.green : Colors.red,
+                color: status == 'active' ? AppColors.success : AppColors.error,
                 shape: BoxShape.circle,
               ),
             ),
@@ -1350,7 +1352,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
                 ),
                 const PopupMenuItem(
                   value: 'delete',
-                  child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Delete', style: TextStyle(color: Colors.red))),
+                  child: ListTile(leading: Icon(Icons.delete, color: AppColors.error), title: Text('Delete', style: TextStyle(color: AppColors.error))),
                 ),
               ],
             ),
@@ -1367,9 +1369,9 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
       case 'MANAGER': return AppColors.success;
       case 'SHIFT_LEADER': return AppColors.primary;
       case 'STAFF': return AppColors.warning;
-      case 'DRIVER': return const Color(0xFF0EA5E9);
-      case 'WAREHOUSE': return const Color(0xFFF97316);
-      default: return Colors.grey;
+      case 'DRIVER': return Color(0xFF0EA5E9);
+      case 'WAREHOUSE': return Color(0xFFF97316);
+      default: return AppColors.grey500;
     }
   }
 
@@ -1392,7 +1394,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
                 prefixIcon: Icon(Icons.person),
               ),
             ),
-            const SizedBox(height: 12),
+            AppSpacing.gapMD,
             TextField(
               controller: usernameController,
               decoration: const InputDecoration(
@@ -1400,7 +1402,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
                 prefixIcon: Icon(Icons.account_circle),
               ),
             ),
-            const SizedBox(height: 12),
+            AppSpacing.gapMD,
             DropdownButtonFormField<String>(
               value: selectedRole,
               decoration: const InputDecoration(
@@ -1449,7 +1451,7 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
               controller: nameController,
               decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder()),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             DropdownButtonFormField<String>(
               value: selectedRole,
               decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
@@ -1496,12 +1498,13 @@ class _UsersManagementPageState extends ConsumerState<_UsersManagementPage> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
-              await SupabaseService().client.from('employees').delete().eq('id', user['id']);
+              // Soft delete - sets is_active=false
+              await SupabaseService().client.from('employees').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', user['id']);
               if (!context.mounted) return;
               Navigator.pop(context);
               _loadUsers();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -1536,12 +1539,12 @@ class _SystemSettingsPageState extends ConsumerState<_SystemSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('System Settings', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           
           // General Settings
           _buildSettingsSection(
@@ -1559,7 +1562,7 @@ class _SystemSettingsPageState extends ConsumerState<_SystemSettingsPage> {
               }),
             ],
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           
           // Feature Flags
           _buildSettingsSection(
@@ -1582,7 +1585,7 @@ class _SystemSettingsPageState extends ConsumerState<_SystemSettingsPage> {
               }),
             ],
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           
           // Security Settings
           _buildSettingsSection(
@@ -1600,7 +1603,7 @@ class _SystemSettingsPageState extends ConsumerState<_SystemSettingsPage> {
               }),
             ],
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           
           // Backup & Maintenance
           _buildSettingsSection(
@@ -1610,7 +1613,7 @@ class _SystemSettingsPageState extends ConsumerState<_SystemSettingsPage> {
               _buildSettingTile('Auto Backup', 'Supabase manages', Icons.schedule, () {
                 _showInfoSnack('Supabase tự động backup hàng ngày (Point-in-Time Recovery)');
               }),
-              _buildActionTile('Clear Analytics Events', Icons.clear_all, Colors.orange, () {
+              _buildActionTile('Clear Analytics Events', Icons.clear_all, AppColors.warning, () {
                 _showConfirmDialog(
                   'Clear Analytics?',
                   'Xóa toàn bộ analytics_events cũ hơn 30 ngày?',
@@ -1627,14 +1630,14 @@ class _SystemSettingsPageState extends ConsumerState<_SystemSettingsPage> {
               }),
             ],
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           
           // Danger Zone
           _buildSettingsSection(
             'Danger Zone',
             Icons.warning,
             [
-              _buildActionTile('Reset All Settings', Icons.restore, Colors.orange, () {
+              _buildActionTile('Reset All Settings', Icons.restore, AppColors.warning, () {
                 _showConfirmDialog(
                   'Reset Settings?',
                   'Reset tất cả feature flags về mặc định?',
@@ -1670,7 +1673,7 @@ class _SystemSettingsPageState extends ConsumerState<_SystemSettingsPage> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
           ElevatedButton(
             onPressed: () { Navigator.pop(ctx); onConfirm(); },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -1692,12 +1695,12 @@ class _SystemSettingsPageState extends ConsumerState<_SystemSettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.paddingLG,
             child: Row(
               children: [
-                Icon(icon, color: isDanger ? Colors.red : AppColors.info),
-                const SizedBox(width: 8),
-                Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDanger ? Colors.red : null)),
+                Icon(icon, color: isDanger ? AppColors.error : AppColors.info),
+                AppSpacing.hGapSM,
+                Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDanger ? AppColors.error : null)),
               ],
             ),
           ),
@@ -1710,9 +1713,9 @@ class _SystemSettingsPageState extends ConsumerState<_SystemSettingsPage> {
 
   Widget _buildSettingTile(String title, String value, IconData icon, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(icon, color: Colors.grey),
+      leading: Icon(icon, color: AppColors.grey500),
       title: Text(title),
-      subtitle: Text(value, style: TextStyle(color: Colors.grey[600])),
+      subtitle: Text(value, style: TextStyle(color: AppColors.grey600)),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
     );
@@ -1807,7 +1810,7 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: AppSpacing.paddingLG,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1822,9 +1825,9 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text('${_logs.length} events', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-              const SizedBox(height: 12),
+              AppSpacing.gapSM,
+              Text('${_logs.length} events', style: TextStyle(color: AppColors.grey600, fontSize: 13)),
+              AppSpacing.gapMD,
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -1849,9 +1852,9 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.history, size: 48, color: Colors.grey.shade300),
-                          const SizedBox(height: 8),
-                          Text('Chưa có log nào', style: TextStyle(color: Colors.grey.shade500)),
+                          Icon(Icons.history, size: 48, color: AppColors.grey300),
+                          AppSpacing.gapSM,
+                          Text('Chưa có log nào', style: TextStyle(color: AppColors.grey500)),
                         ],
                       ),
                     )
@@ -1861,7 +1864,7 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
                         await _loadLogs();
                       },
                       child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: AppSpacing.paddingHLG,
                         itemCount: _logs.length,
                         itemBuilder: (context, index) => _buildLogCard(_logs[index]),
                       ),
@@ -1902,7 +1905,7 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: AppSpacing.paddingSM,
           decoration: BoxDecoration(
             color: _getCategoryColor(category).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
@@ -1913,8 +1916,8 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(userId, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-            Text(_formatTime(createdAt), style: TextStyle(color: Colors.grey[400], fontSize: 11)),
+            Text(userId, style: TextStyle(color: AppColors.grey600, fontSize: 12)),
+            Text(_formatTime(createdAt), style: TextStyle(color: AppColors.grey400, fontSize: 11)),
           ],
         ),
         trailing: Container(
@@ -1934,13 +1937,13 @@ class _AuditLogsPageState extends ConsumerState<_AuditLogsPage> {
 
   Color _getCategoryColor(String category) {
     switch (category) {
-      case 'auth': return Colors.green;
-      case 'business': return Colors.blue;
+      case 'auth': return AppColors.success;
+      case 'business': return AppColors.info;
       case 'page_view': return Colors.purple;
-      case 'user_action': return Colors.orange;
-      case 'error': return Colors.red;
+      case 'user_action': return AppColors.warning;
+      case 'error': return AppColors.error;
       case 'performance': return Colors.teal;
-      default: return Colors.grey;
+      default: return AppColors.grey500;
     }
   }
 
@@ -1974,18 +1977,18 @@ class _SuperAdminProfilePage extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       child: Column(
         children: [
           // Profile Header
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(24),
+            padding: AppSpacing.paddingXXL,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppColors.error, Color(0xFFDC2626)],
+                colors: [AppColors.error, AppColors.errorDark],
               ),
               borderRadius: BorderRadius.circular(16),
             ),
@@ -1999,17 +2002,17 @@ class _SuperAdminProfilePage extends ConsumerWidget {
                     style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: AppColors.error),
                   ),
                 ),
-                const SizedBox(height: 16),
+                AppSpacing.gapLG,
                 Text(
                   user?.name ?? 'Super Admin',
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
-                const SizedBox(height: 4),
+                AppSpacing.gapXXS,
                 Text(
                   user?.email ?? 'admin@sabohub.com',
                   style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9)),
                 ),
-                const SizedBox(height: 8),
+                AppSpacing.gapSM,
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
@@ -2021,7 +2024,7 @@ class _SuperAdminProfilePage extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           
           // Settings Cards
           _buildSettingsCard('Account Settings', [
@@ -2035,7 +2038,7 @@ class _SuperAdminProfilePage extends ConsumerWidget {
               _showSnack(context, '2FA chưa triển khai — xác thực qua mã nhân viên');
             }),
           ]),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           
           _buildSettingsCard('Preferences', [
             _buildMenuItem(Icons.notifications, 'Notifications', () {
@@ -2048,7 +2051,7 @@ class _SuperAdminProfilePage extends ConsumerWidget {
               _showSnack(context, 'Ngôn ngữ: Tiếng Việt (mặc định)');
             }),
           ]),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           
           _buildSettingsCard('Support', [
             _buildMenuItem(Icons.help, 'Help Center', () {
@@ -2061,7 +2064,7 @@ class _SuperAdminProfilePage extends ConsumerWidget {
               _showSnack(context, 'SABOHUB v1.2.0+16 — Hệ thống quản lý đa ngành');
             }),
           ]),
-          const SizedBox(height: 24),
+          AppSpacing.gapXXL,
           
           // Logout Button
           SizedBox(
@@ -2071,9 +2074,9 @@ class _SuperAdminProfilePage extends ConsumerWidget {
               icon: const Icon(Icons.logout),
               label: const Text('Đăng xuất'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: AppColors.error,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: AppSpacing.paddingVLG,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -2096,7 +2099,7 @@ class _SuperAdminProfilePage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.paddingLG,
             child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
           ...children,
@@ -2107,9 +2110,9 @@ class _SuperAdminProfilePage extends ConsumerWidget {
 
   Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(icon, color: Colors.grey[600]),
+      leading: Icon(icon, color: AppColors.grey600),
       title: Text(title),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      trailing: const Icon(Icons.chevron_right, color: AppColors.grey500),
       onTap: onTap,
     );
   }

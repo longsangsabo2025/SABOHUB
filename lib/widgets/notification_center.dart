@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../business_types/distribution/services/odori_notification_service.dart';
+import '../core/theme/app_spacing.dart';
 
 /// Format a DateTime as relative time in Vietnamese
 String _formatTimeAgo(DateTime dateTime) {
@@ -50,14 +51,14 @@ class NotificationBell extends ConsumerWidget {
                 color: Colors.red,
                 borderRadius: BorderRadius.circular(10),
               ),
-              constraints: const BoxConstraints(
+              constraints: BoxConstraints(
                 minWidth: 18,
                 minHeight: 18,
               ),
               child: Text(
                 unreadCount > 99 ? '99+' : unreadCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.surface,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -140,7 +141,7 @@ class NotificationCenterPage extends ConsumerWidget {
             size: 64,
             color: Colors.grey.shade400,
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           Text(
             'Không có thông báo',
             style: TextStyle(
@@ -148,7 +149,7 @@ class NotificationCenterPage extends ConsumerWidget {
               color: Colors.grey.shade600,
             ),
           ),
-          const SizedBox(height: 8),
+          AppSpacing.gapSM,
           Text(
             'Bạn sẽ nhận thông báo về đơn hàng,\ngiao hàng và thanh toán tại đây',
             textAlign: TextAlign.center,
@@ -217,8 +218,8 @@ class NotificationTile extends StatelessWidget {
       background: Container(
         color: Colors.red,
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete, color: Colors.white),
+        padding: EdgeInsets.only(right: 20),
+        child: Icon(Icons.delete, color: Theme.of(context).colorScheme.surface),
       ),
       child: ListTile(
         onTap: onTap,
@@ -261,7 +262,7 @@ class NotificationTile extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
+            AppSpacing.gapXXS,
             Text(
               notification.message,
               style: TextStyle(
@@ -269,7 +270,7 @@ class NotificationTile extends StatelessWidget {
                 color: Colors.grey.shade600,
               ),
             ),
-            const SizedBox(height: 4),
+            AppSpacing.gapXXS,
             Text(
               _formatTimeAgo(notification.createdAt),
               style: TextStyle(
@@ -326,7 +327,7 @@ class NotificationPopupSheet extends ConsumerWidget {
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.paddingLG,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../models/task.dart';
+import '../../models/management_task.dart';
 import '../../utils/app_logger.dart';
 import '../../models/user.dart';
 import '../../providers/employee_provider.dart';
@@ -10,7 +10,7 @@ import '../../services/task_service.dart';
 
 /// Dialog for editing an existing task
 class EditTaskDialog extends ConsumerStatefulWidget {
-  final Task task;
+  final ManagementTask task;
   final String companyId; // Added companyId to get employees list
 
   const EditTaskDialog({
@@ -65,8 +65,8 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
               primary: Colors.blue[700]!,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
+              onPrimary: Theme.of(context).colorScheme.surface,
+              onSurface: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           child: child!,
@@ -115,7 +115,7 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'priority': _selectedPriority.name,
-        'status': _selectedStatus.name,
+        'status': _selectedStatus.value,
         'due_date': _selectedDueDate?.toIso8601String(),
         'assigned_to': _selectedAssigneeId,
         'assigned_to_name': assigneeName,
@@ -383,24 +383,24 @@ class _EditTaskDialogState extends ConsumerState<EditTaskDialog> {
                         _isLoading ? null : () => Navigator.of(context).pop(),
                     child: const Text('Hủy'),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   ElevatedButton.icon(
                     onPressed: _isLoading ? null : _updateTask,
                     icon: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                                  AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                             ),
                           )
-                        : const Icon(Icons.check),
+                        : Icon(Icons.check),
                     label: Text(_isLoading ? 'Đang lưu...' : 'Lưu thay đổi'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[700],
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 12,

@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
 
 import '../../providers/auth_provider.dart';
+import '../../services/gemini_service.dart';
 import '../../providers/company_list_provider.dart';
 import '../../services/employee_auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../utils/app_logger.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Login Page với thiết kế mới:
 /// - Giao diện chính: Đăng nhập Nhân viên (Company/Username/Password)
@@ -58,11 +61,11 @@ class _DualLoginPageState extends ConsumerState<DualLoginPage> {
                           width: 80,
                           height: 80,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                                 blurRadius: 10,
                                 offset: const Offset(0, 5),
                               ),
@@ -74,13 +77,13 @@ class _DualLoginPageState extends ConsumerState<DualLoginPage> {
                             color: AppColors.primary,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
+                        SizedBox(height: 16),
+                        Text(
                           'SABOHUB',
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             letterSpacing: 2,
                           ),
                         ),
@@ -88,9 +91,9 @@ class _DualLoginPageState extends ConsumerState<DualLoginPage> {
                           _showCEOLogin
                               ? 'Đăng nhập CEO'
                               : 'Hệ thống quản lý giao hàng',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white70,
+                            color: Theme.of(context).colorScheme.surface70,
                           ),
                         ),
                       ],
@@ -100,8 +103,8 @@ class _DualLoginPageState extends ConsumerState<DualLoginPage> {
                   // Login form container
                   Expanded(
                     child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(30),
                           topRight: Radius.circular(30),
@@ -142,34 +145,34 @@ class _DualLoginPageState extends ConsumerState<DualLoginPage> {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      key: const Key('ceo_toggle_button'),
+                      key: Key('ceo_toggle_button'),
                       onTap: _toggleLoginMode,
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.5),
+                            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.admin_panel_settings,
                               size: 16,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                             ),
                             SizedBox(width: 4),
                             Text(
                               'CEO',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -318,6 +321,15 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
             _passwordController.text = saved['password'] ?? '';
           });
           AppLogger.auth('📥 Loaded saved credentials for ${saved['username']}');
+          
+          // Auto-login if password is saved (remember me)
+          final password = saved['password'] as String?;
+          if (password != null && password.isNotEmpty) {
+            AppLogger.auth('🔄 Auto-login with saved credentials...');
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _login();
+            });
+          }
         }
       }
     } catch (e) {
@@ -332,10 +344,11 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
       
       if (_rememberMe) {
         await prefs.setBool(_rememberKey, true);
-        // Only save company + username (NOT password) for security
+        // Save company + username + password for auto-login
         await prefs.setString(_savedCredentialsKey, jsonEncode({
           'company': _companyController.text.trim(),
           'username': _usernameController.text.trim(),
+          'password': _passwordController.text,
         }));
         // Also save to multi-account list
         await _saveAccountToList();
@@ -403,6 +416,21 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
         final authNotifier = ref.read(authProvider.notifier);
         await authNotifier.loginWithUser(user);
         AppLogger.success('✅ Auth state updated!');
+
+        // Load company AI API key for Gemini
+        try {
+          final companyData = await Supabase.instance.client
+              .from('companies')
+              .select('ai_api_key')
+              .eq('id', result.employee!.companyId)
+              .maybeSingle();
+          if (companyData != null && companyData['ai_api_key'] != null) {
+            GeminiService.setApiKey(companyData['ai_api_key'] as String);
+            AppLogger.info('🤖 AI API key loaded for company');
+          }
+        } catch (e) {
+          AppLogger.warn('Failed to load AI API key: $e');
+        }
 
         if (mounted) {
           AppLogger.nav('🧭 Navigating to home...');
@@ -493,9 +521,9 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
       onLongPress: () => _showDeleteAccountDialog(index, username, company),
       child: Container(
         width: 140,
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
@@ -570,7 +598,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -579,7 +607,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.surface,
             ),
             child: const Text('Xóa'),
           ),
@@ -613,7 +641,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -627,7 +655,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                       'Sử dụng thông tin tài khoản được cấp',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black54,
+                        color: Theme.of(context).colorScheme.onSurface54,
                       ),
                     ),
                   ],
@@ -711,10 +739,10 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                         elevation: 4,
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
-                          constraints: const BoxConstraints(maxHeight: 200),
+                          constraints: BoxConstraints(maxHeight: 200),
                           width: MediaQuery.of(context).size.width - 48,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: ListView.builder(
@@ -826,11 +854,11 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                   onTap: () {
                     setState(() => _rememberMe = !_rememberMe);
                   },
-                  child: const Text(
+                  child: Text(
                     'Ghi nhớ đăng nhập',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface87,
                     ),
                   ),
                 ),
@@ -864,7 +892,7 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                key: const Key('employee_login_button'),
+                key: Key('employee_login_button'),
                 onPressed: _isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -874,26 +902,26 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                   elevation: 2,
                 ),
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 22,
                         width: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
                           valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                              AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                         ),
                       )
-                    : const Row(
+                    : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.login, color: Colors.white),
+                          Icon(Icons.login, color: Theme.of(context).colorScheme.surface),
                           SizedBox(width: 8),
                           Text(
                             'Đăng nhập',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                             ),
                           ),
                         ],
@@ -917,13 +945,13 @@ class _EmployeeLoginFormState extends ConsumerState<EmployeeLoginForm> {
                   Icon(Icons.info_outline,
                       color: Colors.blue.shade700, size: 20),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Thông tin đăng nhập được cấp bởi quản lý.\n'
                       'Nếu chưa có tài khoản, vui lòng liên hệ CEO.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface87,
                         height: 1.4,
                       ),
                     ),
@@ -990,12 +1018,77 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _rememberMe = false;
+
+  // Keys for SharedPreferences
+  static const String _ceoRememberKey = '@ceo_remember_me';
+  static const String _ceoSavedCredentialsKey = '@ceo_saved_credentials';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  /// Load saved CEO credentials from SharedPreferences
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final remember = prefs.getBool(_ceoRememberKey) ?? false;
+
+      if (remember) {
+        final savedJson = prefs.getString(_ceoSavedCredentialsKey);
+        if (savedJson != null) {
+          final saved = jsonDecode(savedJson);
+          setState(() {
+            _rememberMe = true;
+            _emailController.text = saved['email'] ?? '';
+            _passwordController.text = saved['password'] ?? '';
+          });
+          AppLogger.auth('📥 Loaded saved CEO credentials for ${saved['email']}');
+
+          // Auto-login if password is saved
+          final password = saved['password'] as String?;
+          if (password != null && password.isNotEmpty) {
+            AppLogger.auth('🔄 Auto-login CEO with saved credentials...');
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _login();
+            });
+          }
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Failed to load CEO saved credentials', e);
+    }
+  }
+
+  /// Save CEO credentials to SharedPreferences
+  Future<void> _saveCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      if (_rememberMe) {
+        await prefs.setBool(_ceoRememberKey, true);
+        await prefs.setString(_ceoSavedCredentialsKey, jsonEncode({
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text,
+        }));
+        AppLogger.auth('💾 Saved CEO credentials for ${_emailController.text}');
+      } else {
+        await prefs.setBool(_ceoRememberKey, false);
+        await prefs.remove(_ceoSavedCredentialsKey);
+        AppLogger.auth('🗑️ Cleared CEO saved credentials');
+      }
+    } catch (e) {
+      AppLogger.error('Failed to save CEO credentials', e);
+    }
   }
 
   Future<void> _login() async {
@@ -1008,7 +1101,10 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
           .read(authProvider.notifier)
           .login(_emailController.text.trim(), _passwordController.text);
 
-      if (!success && mounted) {
+      if (success) {
+        // Save credentials on successful login
+        await _saveCredentials();
+      } else if (mounted) {
         final authState = ref.read(authProvider);
         _showError(authState.error ?? 'Đăng nhập thất bại');
       }
@@ -1049,21 +1145,21 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
                   onTap: widget.onBack,
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.arrow_back, size: 18, color: Colors.black54),
+                        Icon(Icons.arrow_back, size: 18, color: Theme.of(context).colorScheme.onSurface54),
                         SizedBox(width: 4),
                         Text(
                           'Nhân viên',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.black54,
+                            color: Theme.of(context).colorScheme.onSurface54,
                           ),
                         ),
                       ],
@@ -1090,7 +1186,7 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -1104,7 +1200,7 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
                       'Sử dụng email và mật khẩu',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black54,
+                        color: Theme.of(context).colorScheme.onSurface54,
                       ),
                     ),
                   ],
@@ -1196,6 +1292,61 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
               },
             ),
 
+            const SizedBox(height: 16),
+
+            // Remember me checkbox
+            Row(
+              children: [
+                SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: Checkbox(
+                    value: _rememberMe,
+                    onChanged: (value) {
+                      setState(() => _rememberMe = value ?? false);
+                    },
+                    activeColor: Colors.amber.shade700,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    setState(() => _rememberMe = !_rememberMe);
+                  },
+                  child: Text(
+                    'Ghi nhớ đăng nhập',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurface87,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                if (_rememberMe)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle, size: 14, color: Colors.green.shade700),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Sẽ lưu',
+                          style: TextStyle(fontSize: 12, color: Colors.green.shade700),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+
             const SizedBox(height: 28),
 
             // Login button
@@ -1203,7 +1354,7 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                key: const Key('ceo_login_button'),
+                key: Key('ceo_login_button'),
                 onPressed: _isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber.shade700,
@@ -1213,26 +1364,26 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
                   elevation: 2,
                 ),
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 22,
                         width: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
                           valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                              AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                         ),
                       )
-                    : const Row(
+                    : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.login, color: Colors.white),
+                          Icon(Icons.login, color: Theme.of(context).colorScheme.surface),
                           SizedBox(width: 8),
                           Text(
                             'Đăng nhập CEO',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                             ),
                           ),
                         ],
@@ -1255,13 +1406,13 @@ class _CEOLoginFormState extends ConsumerState<CEOLoginForm> {
                 children: [
                   Icon(Icons.security, color: Colors.amber.shade800, size: 20),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Trang này chỉ dành cho CEO/Admin.\n'
                       'Nhân viên vui lòng sử dụng giao diện đăng nhập nhân viên.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface87,
                         height: 1.4,
                       ),
                     ),

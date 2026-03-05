@@ -35,7 +35,7 @@ class _DistributionCEOTeamState extends ConsumerState<DistributionCEOTeam>
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: TabBar(
             controller: _tabController,
             labelColor: AppColors.primary,

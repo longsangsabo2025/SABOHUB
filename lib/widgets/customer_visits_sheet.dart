@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../core/theme/app_text_styles.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../business_types/distribution/models/odori_customer.dart';
+import '../core/theme/app_spacing.dart';
 // import 'sales_features_widgets.dart'; // Unused
 // import 'sales_features_widgets_2.dart'; // Unused
 
@@ -95,7 +97,7 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
     }
   }
 
-  void _showVisitDetail(Map<String, dynamic> visit) {
+  void _showVisitDetail(BuildContext context, Map<String, dynamic> visit) {
     showDialog(
       context: context,
       builder: (context) => VisitDetailDialog(visit: visit),
@@ -113,7 +115,7 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.paddingLG,
             decoration: BoxDecoration(
               color: Colors.indigo.shade50,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -130,18 +132,18 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
                       ),
                       child: Icon(Icons.place, color: Colors.indigo.shade600, size: 24),
                     ),
-                    const SizedBox(width: 12),
+                    AppSpacing.hGapMD,
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Lịch sử viếng thăm',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: AppTextStyles.title,
                           ),
                           Text(
                             widget.customer.name,
-                            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                            style: AppTextStyles.body.copyWith(color: Colors.grey.shade600),
                           ),
                         ],
                       ),
@@ -155,15 +157,15 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
 
                 // Stats
                 if (!_isLoading && _error == null) ...[
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
                   Row(
                     children: [
-                      Expanded(child: _buildStatCard('Tổng lượt', '$_totalVisits', Colors.indigo, Icons.directions_walk)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildStatCard('Tháng này', '$_visitsThisMonth', Colors.teal, Icons.calendar_month)),
-                      const SizedBox(width: 12),
+                      Expanded(child: _buildStatCard(context, 'Tổng lượt', '$_totalVisits', Colors.indigo, Icons.directions_walk)),
+                      AppSpacing.hGapMD,
+                      Expanded(child: _buildStatCard(context, 'Tháng này', '$_visitsThisMonth', Colors.teal, Icons.calendar_month)),
+                      AppSpacing.hGapMD,
                       Expanded(
-                        child: _buildStatCard(
+                        child: _buildStatCard(context, 
                           'Lần cuối',
                           _lastVisitDate != null ? DateFormat('dd/MM').format(_lastVisitDate!) : 'N/A',
                           Colors.orange,
@@ -192,9 +194,9 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
-                              const SizedBox(height: 8),
+                              AppSpacing.gapSM,
                               Text('Lỗi: $_error'),
-                              const SizedBox(height: 16),
+                              AppSpacing.gapLG,
                               ElevatedButton(onPressed: _loadVisits, child: const Text('Thử lại')),
                             ],
                           ),
@@ -202,26 +204,26 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
                       )
                     : _visits.isEmpty
                         ? _buildEmptyState()
-                        : _buildVisitsList(),
+                        : _buildVisitsList(context),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
+  Widget _buildStatCard(BuildContext context, String label, String value, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         children: [
           Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
+          AppSpacing.gapXXS,
           Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+          Text(label, style: AppTextStyles.label.copyWith(color: Colors.grey.shade600)),
         ],
       ),
     );
@@ -235,22 +237,22 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: AppSpacing.paddingXXL,
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.location_off, size: 48, color: Colors.grey.shade400),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             Text(
               'Chưa có lượt viếng thăm nào',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey.shade600),
+              style: AppTextStyles.subtitle.copyWith(color: Colors.grey.shade600),
             ),
-            const SizedBox(height: 8),
+            AppSpacing.gapSM,
             Text(
               'Lịch sử check-in sẽ hiển thị ở đây',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+              style: AppTextStyles.body.copyWith(color: Colors.grey.shade500),
               textAlign: TextAlign.center,
             ),
           ],
@@ -259,7 +261,7 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
     );
   }
 
-  Widget _buildVisitsList() {
+  Widget _buildVisitsList(BuildContext context) {
     // Group visits by month
     final groupedVisits = <String, List<Map<String, dynamic>>>{};
     for (final visit in _visits) {
@@ -271,7 +273,7 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       itemCount: groupedVisits.length,
       itemBuilder: (context, index) {
         final monthKey = groupedVisits.keys.elementAt(index);
@@ -281,7 +283,7 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: AppSpacing.paddingVSM,
               child: Row(
                 children: [
                   Container(
@@ -292,26 +294,26 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
                     ),
                     child: Text(
                       'Tháng $monthKey',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.indigo.shade700),
+                      style: AppTextStyles.captionBold.copyWith(color: Colors.indigo.shade700),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  AppSpacing.hGapSM,
                   Text(
                     '${monthVisits.length} lượt',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: AppTextStyles.caption.copyWith(color: Colors.grey.shade600),
                   ),
                 ],
               ),
             ),
-            ...monthVisits.map((visit) => _buildVisitCard(visit)),
-            const SizedBox(height: 8),
+            ...monthVisits.map((visit) => _buildVisitCard(context, visit)),
+            AppSpacing.gapSM,
           ],
         );
       },
     );
   }
 
-  Widget _buildVisitCard(Map<String, dynamic> visit) {
+  Widget _buildVisitCard(BuildContext context, Map<String, dynamic> visit) {
     final visitDate = DateTime.tryParse(visit['visit_date']?.toString() ?? '');
     final checkIn = DateTime.tryParse(visit['check_in_time']?.toString() ?? '');
     final checkOut = DateTime.tryParse(visit['check_out_time']?.toString() ?? '');
@@ -336,17 +338,17 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: () => _showVisitDetail(visit),
+        onTap: () => _showVisitDetail(context, visit),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: AppSpacing.paddingMD,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: AppSpacing.paddingSM,
                     decoration: BoxDecoration(
                       color: _getResultColor(result).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -357,7 +359,7 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -372,13 +374,13 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
                             if (checkIn != null) ...[
                               Text(
                                 ' • ${DateFormat('HH:mm').format(checkIn)}',
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                style: AppTextStyles.bodySmall.copyWith(color: Colors.grey.shade600),
                               ),
                             ],
                             if (duration != null) ...[
                               Text(
                                 ' ($duration)',
-                                style: TextStyle(color: Colors.indigo.shade600, fontSize: 12),
+                                style: AppTextStyles.caption.copyWith(color: Colors.indigo.shade600),
                               ),
                             ],
                           ],
@@ -386,7 +388,7 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
                         if (employee != null)
                           Text(
                             employee['full_name'] ?? 'Nhân viên',
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                            style: AppTextStyles.caption.copyWith(color: Colors.grey.shade600),
                           ),
                       ],
                     ),
@@ -399,7 +401,7 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
                 ],
               ),
               if (purpose != null || result != null) ...[
-                const SizedBox(height: 8),
+                AppSpacing.gapSM,
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
@@ -412,7 +414,7 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
                 ),
               ],
               if (order != null) ...[
-                const SizedBox(height: 8),
+                AppSpacing.gapSM,
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
@@ -423,16 +425,16 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.receipt, size: 14, color: Colors.green.shade700),
-                      const SizedBox(width: 4),
+                      AppSpacing.hGapXXS,
                       Text(
                         'Đơn: ${order['order_number']}',
-                        style: TextStyle(fontSize: 12, color: Colors.green.shade700, fontWeight: FontWeight.w500),
+                        style: AppTextStyles.chip.copyWith(color: Colors.green.shade700),
                       ),
                       if (order['total'] != null) ...[
                         const Text(' • '),
                         Text(
                           NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0).format(order['total']),
-                          style: TextStyle(fontSize: 12, color: Colors.green.shade700, fontWeight: FontWeight.bold),
+                          style: AppTextStyles.captionBold.copyWith(color: Colors.green.shade700),
                         ),
                       ],
                     ],
@@ -440,7 +442,7 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
                 ),
               ],
               if (visit['notes'] != null && (visit['notes'] as String).isNotEmpty) ...[
-                const SizedBox(height: 6),
+                AppSpacing.gapXS,
                 Text(
                   visit['notes'],
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
@@ -462,7 +464,7 @@ class _CustomerVisitsSheetState extends State<CustomerVisitsSheet> {
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(text, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w500)),
+      child: Text(text, style: AppTextStyles.label.copyWith(color: color)),
     );
   }
 
@@ -546,7 +548,7 @@ class VisitDetailDialog extends StatelessWidget {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.paddingLG,
               decoration: BoxDecoration(
                 color: Colors.indigo.shade50,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -554,11 +556,11 @@ class VisitDetailDialog extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(Icons.place, color: Colors.indigo.shade600),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   Expanded(
                     child: Text(
                       visitDate != null ? DateFormat('dd/MM/yyyy').format(visitDate) : 'Chi tiết viếng thăm',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: AppTextStyles.title,
                     ),
                   ),
                   IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
@@ -569,7 +571,7 @@ class VisitDetailDialog extends StatelessWidget {
             // Content
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: AppSpacing.paddingLG,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -591,12 +593,12 @@ class VisitDetailDialog extends StatelessWidget {
 
                     // Notes
                     if (visit['notes'] != null && (visit['notes'] as String).isNotEmpty) ...[
-                      const SizedBox(height: 12),
+                      AppSpacing.gapMD,
                       const Text('Ghi chú:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
+                      AppSpacing.gapXXS,
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(12),
+                        padding: AppSpacing.paddingMD,
                         decoration: BoxDecoration(
                           color: Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(8),
@@ -607,7 +609,7 @@ class VisitDetailDialog extends StatelessWidget {
 
                     // Location
                     if (checkInLat != null && checkInLng != null) ...[
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
@@ -620,15 +622,15 @@ class VisitDetailDialog extends StatelessWidget {
 
                     // Photos
                     if (photos != null && photos.isNotEmpty) ...[
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
                       Text('Hình ảnh (${photos.length}):', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
+                      AppSpacing.gapSM,
                       SizedBox(
                         height: 100,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: photos.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          separatorBuilder: (_, __) => AppSpacing.hGapSM,
                           itemBuilder: (context, index) {
                             final photoUrl = photos[index] as String?;
                             if (photoUrl == null) return const SizedBox();
@@ -667,7 +669,7 @@ class VisitDetailDialog extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon, size: 18, color: Colors.grey.shade600),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMD,
           Text('$label: ', style: TextStyle(color: Colors.grey.shade600)),
           Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500))),
         ],

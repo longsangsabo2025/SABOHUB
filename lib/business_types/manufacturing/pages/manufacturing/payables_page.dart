@@ -19,7 +19,7 @@ class _PayablesPageState extends ConsumerState<PayablesPage> {
   @override
   void initState() {
     super.initState();
-    _service = ManufacturingService(companyId: ref.read(authProvider).user?.companyId);
+    _service = ManufacturingService(companyId: ref.read(currentUserProvider)?.companyId);
     _loadPayables();
   }
 
@@ -92,11 +92,11 @@ class _PayablesPageState extends ConsumerState<PayablesPage> {
                   itemBuilder: (context, index) {
                     final payable = _payables[index];
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: _getStatusColor(payable.status),
-                          child: const Icon(Icons.payment, color: Colors.white),
+                          child: Icon(Icons.payment, color: Theme.of(context).colorScheme.surface),
                         ),
                         title: Text('NCC: ${payable.supplierId}'),
                         subtitle: Text(

@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../core/services/supabase_service.dart';
 import '../providers/auth_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
 /// **EMPLOYEE KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
@@ -17,14 +18,14 @@ import '../providers/auth_provider.dart';
 /// Bug Report Dialog Widget
 /// Allows users to report bugs/issues with optional screenshot
 class BugReportDialog extends ConsumerStatefulWidget {
-  const BugReportDialog({super.key});
+  BugReportDialog({super.key});
 
   /// Show the bug report dialog
   static Future<void> show(BuildContext context) async {
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const BugReportDialog(),
+      builder: (context) => BugReportDialog(),
     );
   }
 
@@ -160,7 +161,7 @@ class _BugReportDialogState extends ConsumerState<BugReportDialog> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
+                Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface),
                 const SizedBox(width: 8),
                 const Expanded(child: Text('Đã gửi báo cáo lỗi! Cảm ơn bạn đã đóng góp.')),
               ],
@@ -268,13 +269,13 @@ class _BugReportDialogState extends ConsumerState<BugReportDialog> {
                             avatar: Icon(
                               cat['icon'] as IconData,
                               size: 18,
-                              color: isSelected ? Colors.white : Colors.grey.shade700,
+                              color: isSelected ? Theme.of(context).colorScheme.surface : Colors.grey.shade700,
                             ),
                             label: Text(cat['label'] as String),
                             selected: isSelected,
                             selectedColor: colorScheme.primary,
                             labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : Colors.grey.shade700,
+                              color: isSelected ? Theme.of(context).colorScheme.surface : Colors.grey.shade700,
                             ),
                             onSelected: (selected) {
                               if (selected) {
@@ -367,11 +368,11 @@ class _BugReportDialogState extends ConsumerState<BugReportDialog> {
                               top: 8,
                               right: 8,
                               child: Material(
-                                color: Colors.black54,
+                                color: Theme.of(context).colorScheme.onSurface54,
                                 borderRadius: BorderRadius.circular(20),
                                 child: IconButton(
                                   onPressed: _removeImage,
-                                  icon: const Icon(Icons.close, color: Colors.white),
+                                  icon: Icon(Icons.close, color: Theme.of(context).colorScheme.surface),
                                   iconSize: 20,
                                   constraints: const BoxConstraints(
                                     minWidth: 32,
@@ -476,12 +477,12 @@ class _BugReportDialogState extends ConsumerState<BugReportDialog> {
                     child: FilledButton.icon(
                       onPressed: _isSubmitting ? null : _submitReport,
                       icon: _isSubmitting 
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                               ),
                             )
                           : const Icon(Icons.send),

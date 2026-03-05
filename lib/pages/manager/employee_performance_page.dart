@@ -4,11 +4,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/kpi_service.dart';
 import '../../services/performance_metrics_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/app_logger.dart';
 
 /// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
 /// **MANAGER KHÔNG CÓ TÀI KHOẢN AUTH SUPABASE!**
 /// - ❌ KHÔNG ĐƯỢC dùng `supabase.client.auth.currentUser`
-/// - ✅ PHẢI dùng `ref.read(authProvider).user`
+/// - ✅ PHẢI dùng `ref.read(currentUserProvider)`
 /// - Manager login qua mã nhân viên, lưu trong `employees` table
 /// - employee.id là userId cho mọi operation
 
@@ -44,14 +45,14 @@ class _EmployeePerformancePageState
 
     try {
       // Get current user from authProvider (Manager is employee, not auth user)
-      final currentUser = ref.read(authProvider).user;
+      final currentUser = ref.read(currentUserProvider);
       if (currentUser == null) {
-        debugPrint('🔴 [EmployeePerformance] No user logged in from authProvider');
+        AppLogger.error('[EmployeePerformance] No user logged in from authProvider');
         setState(() => _isLoading = false);
         return;
       }
 
-      debugPrint('🔍 [EmployeePerformance] Loading data for employee: ${currentUser.id}');
+      AppLogger.data('[EmployeePerformance]', {'status': 'Loading', 'employeeId': currentUser.id});
       _companyId = currentUser.companyId;
 
       if (_companyId == null) {
@@ -95,7 +96,7 @@ class _EmployeePerformancePageState
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading data: $e');
+      AppLogger.error('Error loading data: $e');
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -164,9 +165,9 @@ class _EmployeePerformancePageState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Đánh giá hiệu suất nhân viên'),
+        title: Text('Đánh giá hiệu suất nhân viên'),
         backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.surface,
         actions: [
           IconButton(
             icon: const Icon(Icons.calculate),
@@ -438,11 +439,11 @@ class _EmployeePerformancePageState
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () => _showEvaluationDialog(evaluation),
-                  icon: const Icon(Icons.rate_review),
-                  label: const Text('Đánh giá'),
+                  icon: Icon(Icons.rate_review),
+                  label: Text('Đánh giá'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigo,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
                   ),
                 ),
               ],
@@ -614,12 +615,12 @@ class _EmployeePerformancePageState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy'),
+              child: Text('Hủy'),
             ),
             ElevatedButton(
               onPressed: () async {
                 try {
-                  final currentUser = ref.read(authProvider).user;
+                  final currentUser = ref.read(currentUserProvider);
                   if (currentUser == null) {
                     throw Exception('User not authenticated');
                   }
@@ -647,7 +648,7 @@ class _EmployeePerformancePageState
                     );
                   }
                 } catch (e) {
-                  debugPrint('❌ Failed to save evaluation: $e');
+                  AppLogger.error('Failed to save evaluation: $e');
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -660,7 +661,7 @@ class _EmployeePerformancePageState
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.surface,
               ),
               child: const Text('Lưu đánh giá'),
             ),

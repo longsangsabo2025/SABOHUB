@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_sabohub/utils/postgrest_sanitizer.dart';
 import '../models/odori_customer.dart';
 import '../models/odori_product.dart';
 import '../models/odori_sales_order.dart';
@@ -9,6 +10,7 @@ import '../../../models/inventory_movement.dart';
 import '../models/product_sample.dart';
 import '../../../models/referrer.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../utils/app_logger.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -24,12 +26,12 @@ class _AuthLoadingException implements Exception {
 // ============================================================================
 final customersProvider = FutureProvider.autoDispose
     .family<List<OdoriCustomer>, CustomerFilters>((ref, filters) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
-  print('🔍 customersProvider: START - companyId=$companyId, filters: ch=${filters.channel}, search=${filters.search}');
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
+  AppLogger.data('customersProvider: START', {'companyId': companyId, 'channel': filters.channel, 'search': filters.search});
   
   if (companyId == null) {
-    print('⚠️ customersProvider: companyId is NULL');
+    AppLogger.warn('customersProvider: companyId is NULL');
     return [];
   }
 
@@ -49,24 +51,23 @@ final customersProvider = FutureProvider.autoDispose
       query = query.eq('channel', filters.channel!);
     }
     if (filters.search != null && filters.search!.isNotEmpty) {
-      query = query.or('name.ilike.%${filters.search}%,code.ilike.%${filters.search}%'); // DB uses 'code' not 'customer_code'
+      query = query.or('name.ilike.%${PostgrestSanitizer.sanitizeSearch(filters.search!)}%,code.ilike.%${PostgrestSanitizer.sanitizeSearch(filters.search!)}%'); // DB uses 'code' not 'customer_code'
     }
 
     // Pagination: limit results for better performance
     final limit = filters.limit ?? 50;
     final offset = filters.offset ?? 0;
     
-    print('📤 customersProvider: Executing query with limit=$limit, offset=$offset');
+    AppLogger.data('customersProvider: Executing query', {'limit': limit, 'offset': offset});
     
     final response = await query
         .order('last_order_date', ascending: false, nullsFirst: false) // Ưu tiên KH mới mua gần đây
         .range(offset, offset + limit - 1);
     
-    print('📦 customersProvider: loaded ${(response as List).length} customers (offset=$offset, limit=$limit)');
+    AppLogger.info('customersProvider: loaded ${(response as List).length} customers (offset=$offset, limit=$limit)');
     return response.map((json) => OdoriCustomer.fromJson(json)).toList();
   } catch (e, stack) {
-    print('❌ customersProvider ERROR: $e');
-    print('Stack trace: $stack');
+    AppLogger.error('customersProvider ERROR', e, stack);
     rethrow;
   }
 });
@@ -112,8 +113,8 @@ class CustomerFilters {
 // ============================================================================
 final productsProvider = FutureProvider.autoDispose
     .family<List<OdoriProduct>, ProductFilters>((ref, filters) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   var query = supabase
@@ -129,7 +130,7 @@ final productsProvider = FutureProvider.autoDispose
     query = query.eq('status', filters.isActive! ? 'active' : 'inactive');
   }
   if (filters.search != null && filters.search!.isNotEmpty) {
-    query = query.or('name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%');
+    query = query.or('name.ilike.%${PostgrestSanitizer.sanitizeSearch(filters.search!)}%,sku.ilike.%${PostgrestSanitizer.sanitizeSearch(filters.search!)}%');
   }
 
   final response = await query.order('name');
@@ -137,8 +138,8 @@ final productsProvider = FutureProvider.autoDispose
 });
 
 final productCategoriesProvider = FutureProvider.autoDispose<List<OdoriProductCategory>>((ref) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   final response = await supabase
@@ -164,20 +165,20 @@ class ProductFilters {
 // ============================================================================
 final salesOrdersProvider = FutureProvider.autoDispose
     .family<List<OdoriSalesOrder>, OrderFilters>((ref, filters) async {
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
   // Wait for auth to finish initializing
-  if (!authState.isInitialized || authState.isLoading) {
-    print('🔄 salesOrdersProvider: Waiting for auth to initialize... (isInitialized=${authState.isInitialized}, isLoading=${authState.isLoading})');
+  if (user == null) {
+    AppLogger.info('salesOrdersProvider: Waiting for auth to initialize...');
     // Throw a special "loading" exception to show loading state
     throw const _AuthLoadingException();
   }
   
-  final companyId = authState.user?.companyId;
-  print('🔍 salesOrdersProvider: user=${authState.user?.name}, companyId=$companyId, status=${filters.status}');
+  final companyId = user.companyId;
+  AppLogger.data('salesOrdersProvider', {'user': user.name, 'companyId': companyId, 'status': filters.status});
   
   if (companyId == null) {
-    print('⚠️ salesOrdersProvider: companyId is NULL - user may not have company assigned');
+    AppLogger.warn('salesOrdersProvider: companyId is NULL - user may not have company assigned');
     // Throw error so UI can show proper message instead of silent empty list
     throw Exception('Không tìm thấy công ty. Vui lòng liên hệ Admin để được gán vào công ty.');
   }
@@ -201,7 +202,7 @@ final salesOrdersProvider = FutureProvider.autoDispose
   }
 
   final response = await query.order('order_date', ascending: false).limit(500);
-  print('✅ salesOrdersProvider: loaded ${(response as List).length} orders');
+  AppLogger.info('salesOrdersProvider: loaded ${(response as List).length} orders');
   return response.map((json) => OdoriSalesOrder.fromJson(json)).toList();
 });
 
@@ -217,19 +218,19 @@ final salesOrderDetailProvider = FutureProvider.autoDispose
 });
 
 final pendingApprovalsProvider = FutureProvider.autoDispose<List<OdoriSalesOrder>>((ref) async {
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
   // Wait for auth to finish initializing
-  if (!authState.isInitialized || authState.isLoading) {
-    print('🔄 pendingApprovalsProvider: Waiting for auth to initialize...');
+  if (user == null) {
+    AppLogger.info('pendingApprovalsProvider: Waiting for auth to initialize...');
     return [];
   }
   
-  final companyId = authState.user?.companyId;
-  print('🔍 pendingApprovalsProvider: companyId=$companyId');
+  final companyId = user.companyId;
+  AppLogger.data('pendingApprovalsProvider', {'companyId': companyId});
   
   if (companyId == null) {
-    print('⚠️ pendingApprovalsProvider: companyId is NULL');
+    AppLogger.warn('pendingApprovalsProvider: companyId is NULL');
     return []; // For badge count, return empty instead of error
   }
 
@@ -240,7 +241,7 @@ final pendingApprovalsProvider = FutureProvider.autoDispose<List<OdoriSalesOrder
       .eq('status', 'pending_approval')
       .order('created_at');
 
-  print('✅ pendingApprovalsProvider: loaded ${(response as List).length} pending orders');
+  AppLogger.info('pendingApprovalsProvider: loaded ${(response as List).length} pending orders');
   return response.map((json) => OdoriSalesOrder.fromJson(json)).toList();
 });
 
@@ -258,8 +259,8 @@ class OrderFilters {
 // ============================================================================
 final deliveriesProvider = FutureProvider.autoDispose
     .family<List<OdoriDelivery>, DeliveryFilters>((ref, filters) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   var query = supabase
@@ -293,8 +294,8 @@ final deliveryDetailProvider = FutureProvider.autoDispose
 });
 
 final activeDeliveriesProvider = FutureProvider.autoDispose<List<OdoriDelivery>>((ref) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   final response = await supabase
@@ -320,8 +321,8 @@ class DeliveryFilters {
 // ============================================================================
 final receivablesProvider = FutureProvider.autoDispose
     .family<List<OdoriReceivable>, ReceivableFilters>((ref, filters) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   var query = supabase
@@ -341,8 +342,8 @@ final receivablesProvider = FutureProvider.autoDispose
 });
 
 final overdueReceivablesProvider = FutureProvider.autoDispose<List<OdoriReceivable>>((ref) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   final today = DateTime.now().toIso8601String().split('T')[0];
@@ -369,8 +370,8 @@ class ReceivableFilters {
 // ============================================================================
 final paymentsProvider = FutureProvider.autoDispose
     .family<List<OdoriPayment>, PaymentFilters>((ref, filters) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   var query = supabase
@@ -405,8 +406,8 @@ class PaymentFilters {
 // ============================================================================
 final inventoryMovementsProvider = FutureProvider.autoDispose
     .family<List<InventoryMovement>, InventoryFilters>((ref, filters) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   var query = supabase
@@ -468,8 +469,8 @@ class OdoriDashboardStats {
 
 /// Provider for dashboard statistics
 final dashboardStatsProvider = FutureProvider.autoDispose<OdoriDashboardStats>((ref) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return const OdoriDashboardStats();
 
   try {
@@ -633,15 +634,15 @@ final dashboardStatsProvider = FutureProvider.autoDispose<OdoriDashboardStats>((
       overdueReceivables: overdueReceivables,
     );
   } catch (e) {
-    print('Error loading dashboard stats: $e');
+    AppLogger.error('Error loading dashboard stats: $e');
     return const OdoriDashboardStats();
   }
 });
 
 /// Provider for recent orders
 final recentOrdersProvider = FutureProvider.autoDispose<List<OdoriSalesOrder>>((ref) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   final response = await supabase
@@ -656,8 +657,8 @@ final recentOrdersProvider = FutureProvider.autoDispose<List<OdoriSalesOrder>>((
 
 /// Provider for all customers (simple list)
 final allCustomersProvider = FutureProvider.autoDispose<List<OdoriCustomer>>((ref) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   final response = await supabase
@@ -673,8 +674,8 @@ final allCustomersProvider = FutureProvider.autoDispose<List<OdoriCustomer>>((re
 
 /// Provider for all products (simple list)
 final allProductsProvider = FutureProvider.autoDispose<List<OdoriProduct>>((ref) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   final response = await supabase
@@ -692,8 +693,8 @@ final allProductsProvider = FutureProvider.autoDispose<List<OdoriProduct>>((ref)
 // ============================================================================
 final productSamplesProvider = FutureProvider.autoDispose
     .family<List<ProductSample>, ProductSampleFilters>((ref, filters) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   var query = supabase
@@ -711,7 +712,7 @@ final productSamplesProvider = FutureProvider.autoDispose
     query = query.eq('product_id', filters.productId!);
   }
   if (filters.search != null && filters.search!.isNotEmpty) {
-    query = query.or('product_name.ilike.%${filters.search}%,notes.ilike.%${filters.search}%');
+    query = query.or('product_name.ilike.%${PostgrestSanitizer.sanitizeSearch(filters.search!)}%,notes.ilike.%${PostgrestSanitizer.sanitizeSearch(filters.search!)}%');
   }
 
   final response = await query.order('sent_date', ascending: false);
@@ -723,8 +724,8 @@ final productSamplesProvider = FutureProvider.autoDispose
 // ============================================================================
 final referrersProvider = FutureProvider.autoDispose
     .family<List<Referrer>, ReferrerFilters>((ref, filters) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   var query = supabase
@@ -736,7 +737,7 @@ final referrersProvider = FutureProvider.autoDispose
     query = query.eq('status', filters.status!);
   }
   if (filters.search != null && filters.search!.isNotEmpty) {
-    query = query.or('name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%');
+    query = query.or('name.ilike.%${PostgrestSanitizer.sanitizeSearch(filters.search!)}%,phone.ilike.%${PostgrestSanitizer.sanitizeSearch(filters.search!)}%');
   }
 
   final response = await query.order('name');
@@ -763,8 +764,8 @@ class ReferrerFilters {
 
 /// Provider cho danh sách referrers active (dùng trong dropdown)
 final activeReferrersProvider = FutureProvider.autoDispose<List<Referrer>>((ref) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   final response = await supabase
@@ -782,8 +783,8 @@ final activeReferrersProvider = FutureProvider.autoDispose<List<Referrer>>((ref)
 // ============================================================================
 final commissionsProvider = FutureProvider.autoDispose
     .family<List<Commission>, CommissionFilters>((ref, filters) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   var query = supabase

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/gamification/gamification_models.dart';
 import '../../providers/gamification_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class UytinStorePage extends ConsumerWidget {
   const UytinStorePage({super.key});
@@ -16,17 +17,17 @@ class UytinStorePage extends ConsumerWidget {
     final profile = profileState.profile;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Uy Tín Store'),
-        backgroundColor: Colors.white,
+        title: Text('Uy Tín Store'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildBalanceHeader(profile),
+          _buildBalanceHeader(context, profile),
           const SizedBox(height: 16),
           _buildActivePurchases(purchases),
           const SizedBox(height: 16),
@@ -77,7 +78,7 @@ class UytinStorePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildBalanceHeader(CeoProfile? profile) {
+  Widget _buildBalanceHeader(BuildContext context, CeoProfile? profile) {
     if (profile == null) return const SizedBox();
 
     return Container(
@@ -91,34 +92,34 @@ class UytinStorePage extends ConsumerWidget {
       child: Row(
         children: [
           const Text('⭐', style: TextStyle(fontSize: 36)),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Uy Tín',
-                  style: TextStyle(fontSize: 13, color: Colors.white70),
+                  style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.surface70),
                 ),
                 Text(
                   '${profile.reputationPoints}',
-                  style: const TextStyle(
-                    fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white,
+                  style: TextStyle(
+                    fontSize: 28, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.surface,
                   ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               'Lv.${profile.level}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white,
+              style: TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).colorScheme.surface,
               ),
             ),
           ),
@@ -199,10 +200,10 @@ class UytinStorePage extends ConsumerWidget {
     final canBuy = canAfford && meetsLevel && !owned;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: owned ? AppColors.success.withValues(alpha: 0.04) : Colors.white,
+        color: owned ? AppColors.success.withValues(alpha: 0.04) : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: owned
@@ -221,13 +222,13 @@ class UytinStorePage extends ConsumerWidget {
               shape: BoxShape.circle,
               color: owned
                   ? AppColors.success.withValues(alpha: 0.12)
-                  : const Color(0xFF6A1B9A).withValues(alpha: 0.08),
+                  : Color(0xFF6A1B9A).withValues(alpha: 0.08),
             ),
             child: Center(
-              child: Text(item.iconEmoji, style: const TextStyle(fontSize: 22)),
+              child: Text(item.iconEmoji, style: TextStyle(fontSize: 22)),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,7 +260,7 @@ class UytinStorePage extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6A1B9A).withValues(alpha: 0.1),
+                        color: Color(0xFF6A1B9A).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -295,8 +296,8 @@ class UytinStorePage extends ConsumerWidget {
             ElevatedButton(
               onPressed: canBuy ? () => _onPurchase(context, ref, item) : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: canBuy ? const Color(0xFF6A1B9A) : Colors.grey.shade300,
-                foregroundColor: Colors.white,
+                backgroundColor: canBuy ? Color(0xFF6A1B9A) : Colors.grey.shade300,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 elevation: 0,
@@ -336,12 +337,12 @@ class UytinStorePage extends ConsumerWidget {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Hủy')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6A1B9A),
-              foregroundColor: Colors.white,
+              backgroundColor: Color(0xFF6A1B9A),
+              foregroundColor: Theme.of(context).colorScheme.surface,
             ),
             child: const Text('Xác nhận mua'),
           ),

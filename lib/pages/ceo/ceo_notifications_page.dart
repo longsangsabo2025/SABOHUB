@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/realtime_notification_service.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// CEO Notifications Page — REAL DATA from notification system
 /// Uses the same RealtimeNotificationService that powers the bell widget
@@ -19,18 +20,18 @@ class CEONotificationsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Theme.of(context).colorScheme.surface,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: Colors.black54),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface54),
         ),
-        title: const Text(
+        title: Text(
           'Thông báo',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
         actions: [
@@ -66,14 +67,14 @@ class CEONotificationsPage extends ConsumerWidget {
               // Summary header
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
+                margin: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -141,8 +142,18 @@ class CEONotificationsPage extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 16),
-              Text('Lỗi tải thông báo: $e',
-                  style: const TextStyle(color: Colors.red)),
+              const Text('Đã xảy ra lỗi',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Text('$e',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => ref.invalidate(notificationsProvider),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Thử lại'),
+              ),
             ],
           ),
         ),
@@ -180,13 +191,13 @@ class _NotificationCard extends StatelessWidget {
           color: Colors.red.shade100,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Icon(Icons.delete, color: Colors.red),
+        child: Icon(Icons.delete, color: Colors.red),
       ),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           color: notification.isRead
-              ? Colors.white
+              ? Theme.of(context).colorScheme.surface
               : AppColors.primary.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
           border: !notification.isRead
@@ -195,7 +206,7 @@ class _NotificationCard extends StatelessWidget {
               : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -221,7 +232,7 @@ class _NotificationCard extends StatelessWidget {
                     fontWeight: notification.isRead
                         ? FontWeight.w500
                         : FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface87,
                   ),
                 ),
               ),

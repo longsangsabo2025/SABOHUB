@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/gamification/gamification_models.dart';
 import '../../providers/gamification_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class GamificationAnalyticsPage extends ConsumerWidget {
-  const GamificationAnalyticsPage({super.key});
+  GamificationAnalyticsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -87,18 +88,18 @@ class _WeeklySummaryCard extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.summarize, color: Colors.white, size: 24),
-                    const SizedBox(width: 8),
+                    Icon(Icons.summarize, color: Theme.of(context).colorScheme.surface, size: 24),
+                    SizedBox(width: 8),
                     Text(
                       'Tổng kết tuần',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -108,15 +109,15 @@ class _WeeklySummaryCard extends ConsumerWidget {
                     _SummaryStat(value: '${summary.streakDays}d', label: 'Streak', icon: '🔥'),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text(
                   summary.levelProgress,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 13),
                 ),
                 if (summary.topSource.isNotEmpty)
                   Text(
                     'Top nguồn XP: ${summary.topSource}',
-                    style: const TextStyle(color: Colors.white60, fontSize: 12),
+                    style: TextStyle(color: Theme.of(context).colorScheme.surface60, fontSize: 12),
                   ),
               ],
             ),
@@ -138,10 +139,10 @@ class _SummaryStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(icon, style: const TextStyle(fontSize: 20)),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+        Text(icon, style: TextStyle(fontSize: 20)),
+        SizedBox(height: 4),
+        Text(value, style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold, fontSize: 18)),
+        Text(label, style: TextStyle(color: Theme.of(context).colorScheme.surface60, fontSize: 11)),
       ],
     );
   }
@@ -218,7 +219,7 @@ class _EngagementGrid extends ConsumerWidget {
       'avg_health': Color(0xFF388E3C),
       'season_participants': Color(0xFF5C6BC0),
     };
-    return colors[name] ?? const Color(0xFF455A64);
+    return colors[name] ?? Color(0xFF455A64);
   }
 }
 
@@ -233,7 +234,7 @@ class _MetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withAlpha(51)),
       ),

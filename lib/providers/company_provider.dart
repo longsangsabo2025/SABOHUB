@@ -14,7 +14,7 @@ final companyServiceProvider = Provider<CompanyService>((ref) {
 /// This ensures data isolation - each CEO only sees their own companies
 final companiesProvider = FutureProvider.autoDispose<List<Company>>((ref) async {
   final service = ref.watch(companyServiceProvider);
-  final userId = ref.read(authProvider).user?.id;
+  final userId = ref.watch(currentUserProvider)?.id;
   return await service.getMyCompanies(userId: userId);
 });
 

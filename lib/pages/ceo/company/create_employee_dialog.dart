@@ -231,19 +231,19 @@ class _CreateEmployeeDialogState extends ConsumerState<CreateEmployeeDialog> {
                     ElevatedButton.icon(
                       onPressed: _isLoading ? null : _createEmployee,
                       icon: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                               ),
                             )
-                          : const Icon(Icons.check, size: 18),
+                          : Icon(Icons.check, size: 18),
                       label: Text(_isLoading ? 'Đang tạo...' : 'Tạo nhân viên'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 12,

@@ -12,15 +12,15 @@ class StreakFreezeButton extends ConsumerWidget {
     final profileState = ref.watch(ceoProfileProvider);
     final profile = profileState.profile;
 
-    if (profile == null) return const SizedBox();
+    if (profile == null) return SizedBox();
 
     final freezeRemaining = profile.streakFreezeRemaining;
     final hasFreeze = freezeRemaining > 0;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -31,7 +31,7 @@ class StreakFreezeButton extends ConsumerWidget {
             height: 44,
             decoration: BoxDecoration(
               color: hasFreeze
-                  ? const Color(0xFF00BCD4).withValues(alpha: 0.12)
+                  ? Color(0xFF00BCD4).withValues(alpha: 0.12)
                   : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
             ),
@@ -42,7 +42,7 @@ class StreakFreezeButton extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,14 +60,14 @@ class StreakFreezeButton extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           ElevatedButton(
             onPressed: hasFreeze
                 ? () => _useFreeze(context, ref)
                 : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: hasFreeze ? const Color(0xFF00BCD4) : Colors.grey.shade300,
-              foregroundColor: Colors.white,
+              backgroundColor: hasFreeze ? Color(0xFF00BCD4) : Colors.grey.shade300,
+              foregroundColor: Theme.of(context).colorScheme.surface,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               elevation: 0,
@@ -99,13 +99,13 @@ class StreakFreezeButton extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00BCD4),
-              foregroundColor: Colors.white,
+              backgroundColor: Color(0xFF00BCD4),
+              foregroundColor: Theme.of(context).colorScheme.surface,
             ),
             child: const Text('Kích hoạt'),
           ),

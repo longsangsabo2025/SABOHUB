@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/gamification_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class PrestigeCard extends ConsumerWidget {
-  const PrestigeCard({super.key});
+  PrestigeCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,17 +42,17 @@ class PrestigeCard extends ConsumerWidget {
                       color: info.prestigeLevel > 0 ? Colors.amber : Colors.grey,
                       size: 24,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Text(
                       info.prestigeLevel > 0
                           ? 'Prestige ${info.prestigeLevel}'
                           : 'Prestige',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: info.prestigeLevel > 0 ? Colors.white : null,
+                        color: info.prestigeLevel > 0 ? Theme.of(context).colorScheme.surface : null,
                       ),
                     ),
-                    const Spacer(),
+                    Spacer(),
                     if (info.prestigeLevel > 0)
                       ...List.generate(
                         info.prestigeLevel.clamp(0, 5),
@@ -59,27 +60,27 @@ class PrestigeCard extends ConsumerWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 if (info.prestigeLevel > 0) ...[
                   _BonusRow(
                     label: 'XP Bonus',
                     value: '+${info.xpBonusPercent}%',
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                   _BonusRow(
                     label: 'Uy Tín Bonus',
                     value: '+${info.reputationBonusPercent}%',
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                   _BonusRow(
                     label: 'Max Streak Freeze',
                     value: '${info.maxStreakFreeze}',
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     'Kỷ lục Level: ${info.highestLevelEver}',
-                    style: const TextStyle(color: Colors.white60, fontSize: 12),
+                    style: TextStyle(color: Theme.of(context).colorScheme.surface60, fontSize: 12),
                   ),
                 ] else
                   Text(
@@ -92,19 +93,19 @@ class PrestigeCard extends ConsumerWidget {
                   child: info.canPrestige
                       ? FilledButton.icon(
                           onPressed: () => _confirmPrestige(context, ref),
-                          icon: const Icon(Icons.replay),
-                          label: const Text('PRESTIGE'),
+                          icon: Icon(Icons.replay),
+                          label: Text('PRESTIGE'),
                           style: FilledButton.styleFrom(
                             backgroundColor: Colors.amber,
-                            foregroundColor: Colors.black,
+                            foregroundColor: Theme.of(context).colorScheme.onSurface,
                           ),
                         )
                       : OutlinedButton.icon(
                           onPressed: null,
-                          icon: const Icon(Icons.lock),
-                          label: const Text('Cần Level 50'),
+                          icon: Icon(Icons.lock),
+                          label: Text('Cần Level 50'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: info.prestigeLevel > 0 ? Colors.white54 : null,
+                            foregroundColor: info.prestigeLevel > 0 ? Theme.of(context).colorScheme.surface54 : null,
                           ),
                         ),
                 ),

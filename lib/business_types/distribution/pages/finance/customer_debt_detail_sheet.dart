@@ -54,8 +54,8 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
 
   Future<void> _loadData() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId == null) return;
 
       final supabase = Supabase.instance.client;
@@ -124,8 +124,8 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -183,23 +183,23 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Tổng công nợ', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12)),
-                              Text(cf.format(widget.debt), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                              Text('Tổng công nợ', style: TextStyle(color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9), fontSize: 12)),
+                              Text(cf.format(widget.debt), style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 22, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text('Đơn nợ', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11)),
-                            Text('${_unpaidOrders.length}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                            Text('Đơn nợ', style: TextStyle(color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8), fontSize: 11)),
+                            Text('${_unpaidOrders.length}', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 18, fontWeight: FontWeight.bold)),
                           ],
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 16),
                         ElevatedButton(
                           onPressed: widget.onPayment,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
+                            backgroundColor: Theme.of(context).colorScheme.surface,
                             foregroundColor: Colors.green.shade700,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             elevation: 0,
@@ -221,9 +221,9 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
                     child: TabBar(
                       controller: _detailTabController,
                       indicator: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
-                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)],
+                        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05), blurRadius: 4)],
                       ),
                       indicatorPadding: const EdgeInsets.all(3),
                       labelColor: Colors.orange.shade700,
@@ -291,9 +291,9 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
 
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.grey.shade200),
           ),
@@ -490,9 +490,9 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
           } : null,
           child: Container(
           margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.grey.shade200),
           ),

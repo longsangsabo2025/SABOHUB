@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../core/theme/app_colors.dart';
+import '../core/theme/app_colors.dart';
 
 enum ShiftType {
   morning('Ca sáng', TimeOfDay(hour: 6, minute: 0), TimeOfDay(hour: 14, minute: 0), Color(0xFFFFEB3B)),
-  afternoon('Ca chiều', TimeOfDay(hour: 14, minute: 0), TimeOfDay(hour: 22, minute: 0), Color(0xFF2196F3)),
+  afternoon('Ca chiều', TimeOfDay(hour: 14, minute: 0), TimeOfDay(hour: 22, minute: 0), AppColors.info),
   night('Ca đêm', TimeOfDay(hour: 22, minute: 0), TimeOfDay(hour: 6, minute: 0), Color(0xFF9C27B0)),
-  full('Ca full', TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 17, minute: 0), Color(0xFF4CAF50));
+  full('Ca full', TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 17, minute: 0), AppColors.success);
 
   final String label;
   final TimeOfDay startTime;
@@ -24,11 +24,11 @@ enum ShiftType {
 }
 
 enum ScheduleStatus {
-  scheduled('Đã lên lịch', Color(0xFF2196F3)),
-  confirmed('Đã xác nhận', Color(0xFF4CAF50)),
+  scheduled('Đã lên lịch', AppColors.info),
+  confirmed('Đã xác nhận', AppColors.success),
   absent('Vắng mặt', AppColors.error),
   late('Muộn giờ', AppColors.warning),
-  cancelled('Đã hủy', Color(0xFF6B7280));
+  cancelled('Đã hủy', AppColors.neutral500);
 
   final String label;
   final Color color;
@@ -142,11 +142,11 @@ class Schedule {
         (e) => e.name == json['shift_type'],
         orElse: () => ShiftType.full,
       ),
-      customStartTime: json['custom_start_time'] != null
-          ? _timeFromString(json['custom_start_time'])
+      customStartTime: (json['start_time'] ?? json['custom_start_time']) != null
+          ? _timeFromString(json['start_time'] ?? json['custom_start_time'])
           : null,
-      customEndTime: json['custom_end_time'] != null
-          ? _timeFromString(json['custom_end_time'])
+      customEndTime: (json['end_time'] ?? json['custom_end_time']) != null
+          ? _timeFromString(json['end_time'] ?? json['custom_end_time'])
           : null,
       status: ScheduleStatus.values.firstWhere(
         (e) => e.name == json['status'],
@@ -161,24 +161,20 @@ class Schedule {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'employee_id': employeeId,
-      'employee_name': employeeName,
-      'employee_email': employeeEmail,
-      'employee_phone': employeePhone,
       'company_id': companyId,
       'date': date.toIso8601String().split('T').first,
       'shift_type': shiftType.name,
-      'custom_start_time': customStartTime?.format24Hour,
-      'custom_end_time': customEndTime?.format24Hour,
+      'start_time': customStartTime?.format24Hour,
+      'end_time': customEndTime?.format24Hour,
       'status': status.name,
       'notes': notes,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
       'created_by': createdBy,
-      'updated_by': updatedBy,
     };
+    // Only include id if it's a valid non-empty string (for updates)
+    if (id.isNotEmpty) map['id'] = id;
+    return map;
   }
 
   // Helper getters

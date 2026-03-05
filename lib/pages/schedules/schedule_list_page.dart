@@ -5,6 +5,7 @@ import '../../models/schedule.dart';
 import '../../providers/schedule_provider.dart';
 import '../../providers/auth_provider.dart';
 import 'schedule_form_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 // import 'schedule_calendar_page.dart';
 // import 'time_off_requests_page.dart';
 
@@ -40,18 +41,18 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
   }
 
   void _refreshSchedules() {
-    final user = ref.read(authProvider);
-    if (user.user?.companyId != null) {
-      ref.read(scheduleActionsProvider).refreshScheduleData(user.user!.companyId!);
+    final user = ref.read(currentUserProvider);
+    if (user?.companyId != null) {
+      ref.read(scheduleActionsProvider).refreshScheduleData(user!.companyId!);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authProvider);
+    final user = ref.watch(currentUserProvider);
     
-    if (user.user?.companyId == null) {
-      return const Scaffold(
+    if (user?.companyId == null) {
+      return Scaffold(
         body: Center(
           child: Text('Không tìm thấy thông tin công ty'),
         ),
@@ -60,9 +61,9 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quản lý Lịch Làm Việc'),
+        title: Text('Quản lý Lịch Làm Việc'),
         backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.surface,
         actions: [
           // Filter by status
           PopupMenuButton<ScheduleStatus?>(
@@ -112,7 +113,7 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
                 lastDate: DateTime.now().add(const Duration(days: 365)),
                 locale: const Locale('vi', 'VN'),
               );
-              if (picked != null && mounted) {
+              if (picked != null && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Xem lịch ngày ${picked.day}/${picked.month}/${picked.year}'),
@@ -127,9 +128,9 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
+          labelColor: Theme.of(context).colorScheme.surface,
+          unselectedLabelColor: Theme.of(context).colorScheme.surface70,
+          indicatorColor: Theme.of(context).colorScheme.surface,
           tabs: const [
             Tab(text: 'Hôm nay'),
             Tab(text: 'Sắp tới'),
@@ -141,10 +142,10 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildTodayTab(user.user!.companyId!),
-          _buildUpcomingTab(user.user!.companyId!),
-          _buildAllSchedulesTab(user.user!.companyId!),
-          _buildTimeOffTab(user.user!.companyId!),
+          _buildTodayTab(user!.companyId!),
+          _buildUpcomingTab(user.companyId!),
+          _buildAllSchedulesTab(user.companyId!),
+          _buildTimeOffTab(user.companyId!),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -362,11 +363,11 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
                         ),
                       );
                     },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Thêm lịch làm việc'),
+                    icon: Icon(Icons.add),
+                    label: Text('Thêm lịch làm việc'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade700,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                 ],
@@ -540,11 +541,11 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
                           schedule,
                           ScheduleStatus.confirmed,
                         ),
-                        icon: const Icon(Icons.check),
-                        label: const Text('Xác nhận'),
+                        icon: Icon(Icons.check),
+                        label: Text('Xác nhận'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(context).colorScheme.surface,
                         ),
                       ),
                     ),
@@ -557,11 +558,11 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
                           schedule,
                           ScheduleStatus.absent,
                         ),
-                        icon: const Icon(Icons.cancel),
-                        label: const Text('Vắng mặt'),
+                        icon: Icon(Icons.cancel),
+                        label: Text('Vắng mặt'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(context).colorScheme.surface,
                         ),
                       ),
                     ),
@@ -594,8 +595,8 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
         maxChildSize: 0.9,
         minChildSize: 0.3,
         builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -665,11 +666,11 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
                                 Navigator.pop(context);
                                 _deleteSchedule(schedule);
                               },
-                              icon: const Icon(Icons.delete),
-                              label: const Text('Xóa'),
+                              icon: Icon(Icons.delete),
+                              label: Text('Xóa'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
-                                foregroundColor: Colors.white,
+                                foregroundColor: Theme.of(context).colorScheme.surface,
                               ),
                             ),
                           ),
@@ -757,17 +758,17 @@ class _ScheduleListPageState extends ConsumerState<ScheduleListPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xác nhận'),
+        title: Text('Xác nhận'),
         content: Text('Bạn có chắc chắn muốn xóa lịch làm việc của ${schedule.employeeName}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+            child: Text('Xóa', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),

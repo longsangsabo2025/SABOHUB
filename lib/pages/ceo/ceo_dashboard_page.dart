@@ -9,12 +9,13 @@ import '../../core/router/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/ceo_business_provider.dart';
 import '../../providers/ceo_tab_provider.dart';
-import '../../providers/notification_provider.dart';
 import '../../widgets/gamification/ceo_game_summary_card.dart';
+import '../../widgets/company_quick_access_cards.dart';
 import '../../widgets/multi_account_switcher.dart';
+import '../../core/keys/ceo_keys.dart';
 import 'ceo_main_layout.dart';
-import 'ceo_notifications_page.dart';
 import 'ceo_profile_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// CEO Dashboard Page — The CEO's Morning View
 /// Real data from sales_orders, customers, deliveries, payments
@@ -28,6 +29,10 @@ class CEODashboardPage extends ConsumerStatefulWidget {
 class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
   final _cf = NumberFormat('#,###', 'vi_VN');
   final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
+
+  // Track expanded states for collapsible sections
+  bool _kpisExpanded = false;
+  bool _congNoExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -50,31 +55,30 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 0. CEO GAME PROFILE — RPG Summary
+              // 0. CEO GAME PROFILE — Compact RPG Summary
               CeoGameSummaryCard(
                 onTap: () => context.push(AppRoutes.questHub),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // 1. TODAY'S PULSE — First thing CEO sees
-              _buildTodayPulse(pulseAsync),
-              const SizedBox(height: 20),
+              // 1. HERO CARD — Today's Pulse + Key Numbers
+              _buildHeroCard(pulseAsync, kpisAsync),
+              const SizedBox(height: 12),
 
-              // 2. REAL KPIs — Monthly business health
-              _buildRealKPIs(kpisAsync),
-              const SizedBox(height: 20),
-
-              // 3. APPROVAL CENTER — CEO decisions needed
+              // 2. APPROVAL CENTER — Only if items pending
               _buildApprovalCenter(approvalsAsync),
-              const SizedBox(height: 20),
+              
+              // 3. CÔNG TY CON — Quick Access
+              const CompanyQuickAccessCards(),
+              const SizedBox(height: 12),
 
-              // 4. CÔNG NỢ OVERVIEW — Receivables aging
-              _buildCongNoOverviewSection(),
-              const SizedBox(height: 20),
+              // 4. COLLAPSIBLE: Chi tiết KPIs
+              _buildCollapsibleKPIs(kpisAsync),
+              const SizedBox(height: 8),
 
-              // 5. QUICK ACTIONS
-              _buildQuickActionsSection(),
-              const SizedBox(height: 24),
+              // 5. COLLAPSIBLE: Công nợ
+              _buildCollapsibleCongNo(),
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -83,68 +87,397 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
   }
 
   // =========================================================================
-  // APP BAR — With REAL notification count
+  // HERO CARD — Combined Today's Pulse + Key KPIs (Compact)
+  // =========================================================================  
+  Widget _buildHeroCard(AsyncValue<TodayPulse> pulseAsync, AsyncValue<CEOKPIs> kpisAsync) {
+    return pulseAsync.when(
+      data: (pulse) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.primary, Color(0xFF1E88E5)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Row(
+              children: [
+                const Icon(Icons.wb_sunny, color: Colors.amber, size: 20),
+                SizedBox(width: 6),
+                Text(
+                  'Hôm nay • ${DateFormat('dd/MM').format(DateTime.now())}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
+                ),
+                const Spacer(),
+                // Pending orders badge
+                if (pulse.pendingOrders > 0)
+                  GestureDetector(
+                    onTap: () => _navigateToTab(CEOTabs.tasks),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.pending_actions, color: Colors.amber, size: 14),
+                          SizedBox(width: 4),
+                          Text(
+                            '${pulse.pendingOrders} chờ duyệt',
+                            style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 11, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            SizedBox(height: 12),
+
+            // Revenue highlight
+            Text(
+              _currencyFormat.format(pulse.todayRevenue),
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.surface,
+              ),
+            ),
+            Text(
+              'Doanh thu hôm nay',
+              style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+
+            // Quick stats - 4 columns compact
+            Row(
+              children: [
+                _heroStat(Icons.receipt_long, '${pulse.ordersCreated}', 'Đơn'),
+                _heroStat(Icons.local_shipping, '${pulse.deliveringCount}', 'Giao'),
+                _heroStat(Icons.payments, _cf.format(pulse.paymentsCollected), 'Thu'),
+                _heroStat(Icons.person_add, '${pulse.newCustomers}', 'KH mới'),
+              ],
+            ),
+            
+            // Monthly KPIs row (from kpisAsync)
+            kpisAsync.when(
+              data: (kpis) => Column(
+                children: [
+                  Divider(color: Theme.of(context).colorScheme.surface24, height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _monthKpi('Doanh thu tháng', _currencyFormat.format(kpis.monthlyRevenue)),
+                      _monthKpi('Lợi nhuận', '${kpis.grossMargin.toStringAsFixed(1)}%'),
+                      _monthKpi('Công nợ', '${_cf.format(kpis.totalOutstanding)}₫'),
+                    ],
+                  ),
+                ],
+              ),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
+      loading: () => Container(
+        height: 160,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 40),
+            const SizedBox(height: 12),
+            const Text(
+              'Không thể tải dữ liệu',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.red),
+            ),
+            const SizedBox(height: 6),
+            Text('$e', style: TextStyle(fontSize: 12, color: Colors.grey.shade600), textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () {
+                ref.invalidate(todayBusinessPulseProvider);
+                ref.invalidate(realCEOKPIsProvider);
+              },
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Thử lại'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _heroStat(IconData icon, String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: Theme.of(context).colorScheme.surface70, size: 16),
+          SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.surface,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.surface60, fontSize: 10)),
+        ],
+      ),
+    );
+  }
+
+  Widget _monthKpi(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: Theme.of(context).colorScheme.surface60, fontSize: 10)),
+        Text(value, style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.w600, fontSize: 12)),
+      ],
+    );
+  }
+
+  // =========================================================================
+  // COLLAPSIBLE KPIs Section
+  // =========================================================================
+  Widget _buildCollapsibleKPIs(AsyncValue<CEOKPIs> kpisAsync) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          title: Row(
+            children: [
+              Icon(Icons.analytics, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Chi tiết KPIs',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          initiallyExpanded: _kpisExpanded,
+          onExpansionChanged: (expanded) => setState(() => _kpisExpanded = expanded),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _buildKPIContent(kpisAsync),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildKPIContent(AsyncValue<CEOKPIs> kpisAsync) {
+    return kpisAsync.when(
+      data: (kpis) => Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: _miniKpiCard('Doanh thu', _currencyFormat.format(kpis.monthlyRevenue), Icons.trending_up, Colors.green)),
+              const SizedBox(width: 8),
+              Expanded(child: _miniKpiCard('Lợi nhuận', _currencyFormat.format(kpis.grossProfit), Icons.account_balance_wallet, Colors.blue)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _miniKpiCard('Nhân viên', '${kpis.totalEmployees}', Icons.group, Colors.purple)),
+              const SizedBox(width: 8),
+              Expanded(child: _miniKpiCard('Khách hàng', '${kpis.totalCustomers}', Icons.store, Colors.orange)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _miniKpiCard('Đơn xong', '${kpis.completedOrdersThisMonth}', Icons.check_circle, Colors.teal)),
+              const SizedBox(width: 8),
+              Expanded(child: _miniKpiCard('Công nợ', '${_cf.format(kpis.totalOutstanding)}₫', Icons.account_balance, Colors.red)),
+            ],
+          ),
+        ],
+      ),
+      loading: () => SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
+      error: (e, _) => Text('Lỗi: $e'),
+    );
+  }
+
+  Widget _miniKpiCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // COLLAPSIBLE Công Nợ Section
+  // =========================================================================
+  Widget _buildCollapsibleCongNo() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          title: Row(
+            children: [
+              Icon(Icons.account_balance_wallet, color: Colors.orange.shade700, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Công nợ phải thu',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          initiallyExpanded: _congNoExpanded,
+          onExpansionChanged: (expanded) => setState(() => _congNoExpanded = expanded),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _buildCongNoContent(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCongNoContent() {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _loadCongNoData(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(height: 80, child: Center(child: CircularProgressIndicator()));
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(12),
+            child: Text('Không có dữ liệu công nợ'),
+          );
+        }
+        final data = snapshot.data!;
+        final cf = NumberFormat('#,###', 'vi_VN');
+        final totalOutstanding = (data['total_outstanding'] ?? 0).toDouble();
+        final totalOverdue = (data['total_overdue'] ?? 0).toDouble();
+        final customerCount = data['customer_count'] ?? 0;
+        final agingBuckets = data['aging'] as Map<String, double>? ?? {};
+
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(child: _miniKpiCard('Tổng nợ', '${cf.format(totalOutstanding)}₫', Icons.monetization_on, Colors.orange)),
+                const SizedBox(width: 8),
+                Expanded(child: _miniKpiCard('Quá hạn', '${cf.format(totalOverdue)}₫', Icons.warning, Colors.red)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _miniKpiCard('KH nợ', '$customerCount', Icons.people, Colors.blue)),
+                const SizedBox(width: 8),
+                Expanded(child: _miniKpiCard('>60 ngày', '${cf.format((agingBuckets['61-90'] ?? 0) + (agingBuckets['90+'] ?? 0))}₫', Icons.schedule, Colors.deepOrange)),
+              ],
+            ),
+            if (totalOutstanding > 0) ...[
+              const SizedBox(height: 12),
+              _buildAgingBarCEO(agingBuckets, totalOutstanding),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  // =========================================================================
+  // APP BAR — Simplified header
   // =========================================================================
   PreferredSizeWidget _buildAppBar() {
-    final unreadCount = ref.watch(unreadNotificationCountProvider);
-
     return AppBar(
       elevation: 0,
       backgroundColor: Colors.white,
-      title: const Text(
+      leading: IconButton(
+        icon: Icon(Icons.menu, color: Theme.of(context).colorScheme.onSurface87),
+        onPressed: () => ceoScaffoldKey.currentState?.openDrawer(),
+      ),
+      title: Text(
         'CEO Dashboard',
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: Theme.of(context).colorScheme.onSurface87,
         ),
       ),
       actions: [
-        const MultiAccountSwitcher(),
-        IconButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CEONotificationsPage(),
-              ),
-            );
-          },
-          icon: Stack(
-            children: [
-              const Icon(Icons.notifications_outlined, color: Colors.black54),
-              // REAL notification badge
-              unreadCount.when(
-                data: (count) => count > 0
-                    ? Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                              minWidth: 16, minHeight: 16),
-                          child: Text(
-                            count > 99 ? '99+' : '$count',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-            ],
-          ),
-        ),
+        MultiAccountSwitcher(),
         IconButton(
           onPressed: () {
             Navigator.push(
@@ -154,349 +487,14 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
               ),
             );
           },
-          icon: const Icon(Icons.person_outline, color: Colors.black54),
+          icon: Icon(Icons.person_outline, color: Theme.of(context).colorScheme.onSurface54),
         ),
       ],
     );
   }
 
   // =========================================================================
-  // 1. TODAY'S BUSINESS PULSE — Real-time morning view
-  // =========================================================================
-  Widget _buildTodayPulse(AsyncValue<TodayPulse> pulseAsync) {
-    return pulseAsync.when(
-      data: (pulse) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.primary, const Color(0xFF1E88E5)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.wb_sunny, color: Colors.amber, size: 24),
-                const SizedBox(width: 8),
-                const Text(
-                  'Hôm nay',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  DateFormat('dd/MM/yyyy').format(DateTime.now()),
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Revenue highlight
-            Text(
-              _currencyFormat.format(pulse.todayRevenue),
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const Text(
-              'Doanh thu hôm nay',
-              style: TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-
-            // Quick stats row
-            Row(
-              children: [
-                _pulseChip(Icons.receipt_long, '${pulse.ordersCreated}',
-                    'Đơn hàng'),
-                const SizedBox(width: 8),
-                _pulseChip(Icons.local_shipping, '${pulse.deliveringCount}',
-                    'Đang giao'),
-                const SizedBox(width: 8),
-                _pulseChip(Icons.payments,
-                    _cf.format(pulse.paymentsCollected), 'Thu tiền'),
-                const SizedBox(width: 8),
-                _pulseChip(
-                    Icons.person_add, '${pulse.newCustomers}', 'KH mới'),
-              ],
-            ),
-
-            // Approval alert
-            if (pulse.pendingOrders > 0) ...[
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: () => _navigateToTab(CEOTabs.tasks),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: Colors.amber.withValues(alpha: 0.4)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.pending_actions,
-                          color: Colors.amber, size: 18),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${pulse.pendingOrders} đơn hàng chờ duyệt',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.arrow_forward_ios,
-                          color: Colors.white70, size: 14),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-      loading: () => Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.red.shade50,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text('Lỗi tải dữ liệu: $e'),
-      ),
-    );
-  }
-
-  Widget _pulseChip(IconData icon, String value, String label) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              label,
-              style: const TextStyle(color: Colors.white70, fontSize: 10),
-              maxLines: 1,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // =========================================================================
-  // 2. REAL KPIs — from actual sales_orders data
-  // =========================================================================
-  Widget _buildRealKPIs(AsyncValue<CEOKPIs> kpisAsync) {
-    return kpisAsync.when(
-      data: (kpis) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Chỉ số kinh doanh tháng này',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _kpiCard(
-                  'Doanh thu',
-                  _currencyFormat.format(kpis.monthlyRevenue),
-                  Icons.trending_up,
-                  const Color(0xFF4CAF50),
-                  kpis.revenueGrowth,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _kpiCard(
-                  'Lợi nhuận gộp',
-                  _currencyFormat.format(kpis.grossProfit),
-                  Icons.account_balance_wallet,
-                  const Color(0xFF2196F3),
-                  kpis.grossMargin,
-                  suffix: '% margin',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _kpiCard(
-                  'Nhân viên',
-                  '${kpis.totalEmployees}',
-                  Icons.group,
-                  const Color(0xFF9C27B0),
-                  null,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _kpiCard(
-                  'Khách hàng',
-                  '${kpis.totalCustomers}',
-                  Icons.store,
-                  const Color(0xFFFF9800),
-                  null,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _kpiCard(
-                  'Đơn hoàn thành',
-                  '${kpis.completedOrdersThisMonth}',
-                  Icons.check_circle,
-                  const Color(0xFF00BCD4),
-                  null,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _kpiCard(
-                  'Công nợ',
-                  '${_cf.format(kpis.totalOutstanding)}₫',
-                  Icons.account_balance,
-                  kpis.totalOutstanding > 0
-                      ? const Color(0xFFE53935)
-                      : const Color(0xFF4CAF50),
-                  null,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      loading: () => const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Text('Lỗi: $e'),
-    );
-  }
-
-  Widget _kpiCard(
-      String title, String value, IconData icon, Color color, double? change,
-      {String suffix = '%'}) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const Spacer(),
-              if (change != null)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: (change >= 0 ? Colors.green : Colors.red)
-                        .withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${change >= 0 ? '+' : ''}${change.toStringAsFixed(1)}$suffix',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: change >= 0
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // =========================================================================
-  // 3. APPROVAL CENTER — Quick CEO decisions
+  // APPROVAL CENTER — Quick CEO decisions
   // =========================================================================
   Widget _buildApprovalCenter(AsyncValue<PendingApprovals> approvalsAsync) {
     return approvalsAsync.when(
@@ -532,18 +530,18 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
               children: [
                 Icon(Icons.pending_actions,
                     color: Colors.orange.shade700, size: 22),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: 8),
+                Text(
                   'Chờ duyệt',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface87,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                       horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.red,
@@ -551,8 +549,8 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
                   ),
                   child: Text(
                     '${approvals.totalPending}',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.surface,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -631,14 +629,14 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
   Widget _approvalCategory(String title, IconData icon, Color color,
       List<Widget> items, int totalCount) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -719,120 +717,8 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
   }
 
   // =============================================
-  // CÔNG NỢ OVERVIEW SECTION
+  // CÔNG NỢ DATA LOADING (used by collapsible section)
   // =============================================
-  Widget _buildCongNoOverviewSection() {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _loadCongNoData(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (!snapshot.hasData) {
-          return const SizedBox.shrink();
-        }
-        final data = snapshot.data!;
-        final cf = NumberFormat('#,###', 'vi_VN');
-        final totalOutstanding = (data['total_outstanding'] ?? 0).toDouble();
-        final totalOverdue = (data['total_overdue'] ?? 0).toDouble();
-        final customerCount = data['customer_count'] ?? 0;
-        final overdueCount = data['overdue_count'] ?? 0;
-        final agingBuckets = data['aging'] as Map<String, double>? ?? {};
-        final overduePercent = totalOutstanding > 0 
-            ? (totalOverdue / totalOutstanding * 100) : 0.0;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.account_balance_wallet, 
-                    color: Colors.orange.shade700, size: 22),
-                const SizedBox(width: 8),
-                Text('Công nợ phải thu',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    )),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: overdueCount > 0 ? Colors.red.shade50 : Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    overdueCount > 0 ? '$overdueCount quá hạn' : 'Tốt',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: overdueCount > 0 ? Colors.red.shade700 : Colors.green.shade700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Main stats row
-            Row(
-              children: [
-                Expanded(
-                  child: _buildCongNoStatCard(
-                    'Tổng công nợ',
-                    '${cf.format(totalOutstanding)} ₫',
-                    Icons.monetization_on,
-                    Colors.orange,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildCongNoStatCard(
-                    'Quá hạn',
-                    '${cf.format(totalOverdue)} ₫',
-                    Icons.warning_amber_rounded,
-                    Colors.red,
-                    subtitle: '${overduePercent.toStringAsFixed(1)}%',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildCongNoStatCard(
-                    'Khách hàng nợ',
-                    '$customerCount',
-                    Icons.people,
-                    Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildCongNoStatCard(
-                    'Quá hạn >60 ngày',
-                    '${cf.format((agingBuckets['61-90'] ?? 0) + (agingBuckets['90+'] ?? 0))} ₫',
-                    Icons.schedule,
-                    Colors.deepOrange,
-                  ),
-                ),
-              ],
-            ),
-            // Aging bar
-            if (totalOutstanding > 0) ...[
-              const SizedBox(height: 16),
-              _buildAgingBarCEO(agingBuckets, totalOutstanding),
-            ],
-          ],
-        );
-      },
-    );
-  }
-
   Future<Map<String, dynamic>> _loadCongNoData() async {
     try {
       final supabase = Supabase.instance.client;
@@ -875,50 +761,6 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
     } catch (e) {
       return {};
     }
-  }
-
-  Widget _buildCongNoStatCard(String title, String value, IconData icon, 
-      MaterialColor color, {String? subtitle}) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.shade50,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color.shade700, size: 20),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                const SizedBox(height: 2),
-                Text(value, style: TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.bold, color: color.shade700)),
-                if (subtitle != null)
-                  Text(subtitle, style: TextStyle(fontSize: 10, color: color.shade400)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildAgingBarCEO(Map<String, double> aging, double total) {
@@ -969,80 +811,6 @@ class _CEODashboardPageState extends ConsumerState<CEODashboardPage> {
           }).toList(),
         ),
       ],
-    );
-  }
-
-  Widget _buildQuickActionsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Thao tác nhanh',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _actionCard('Phân tích\nKPI', Icons.analytics,
-                const Color(0xFF388E3C), () => _navigateToTab(CEOTabs.analytics)),
-            const SizedBox(width: 12),
-            _actionCard('Quản lý\nNhân sự', Icons.people,
-                const Color(0xFFD32F2F), () => _navigateToTab(CEOTabs.companies)),
-            const SizedBox(width: 12),
-            _actionCard('Công việc', Icons.assignment,
-                const Color(0xFFFF9800), () => _navigateToTab(CEOTabs.tasks)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _actionCard('Báo cáo\ntài chính', Icons.assessment,
-                AppColors.primary, () => _navigateToTab(CEOTabs.reports)),
-            const SizedBox(width: 12),
-            _actionCard('AI Center', Icons.auto_awesome,
-                const Color(0xFF7B1FA2), () => _navigateToTab(CEOTabs.ai)),
-            const SizedBox(width: 12),
-            const Expanded(child: SizedBox()), // Placeholder
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _actionCard(
-      String title, IconData icon, Color color, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.2)),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 28),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                  height: 1.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

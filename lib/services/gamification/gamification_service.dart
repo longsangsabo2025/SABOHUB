@@ -334,7 +334,7 @@ class GamificationService extends BaseService {
         var query = client.from('achievements').select();
         if (!includeSecret) query = query.eq('is_secret', false);
 
-        final response = await query.order('sort_order');
+        final response = await query.order('sort_order').limit(200);
         return (response as List)
             .map((json) => Achievement.fromJson(json as Map<String, dynamic>))
             .toList();

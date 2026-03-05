@@ -8,7 +8,7 @@ import '../../providers/auth_provider.dart';
 
 /// Manager Staff Page - Show all employees in manager's company
 class ManagerStaffPage extends ConsumerStatefulWidget {
-  const ManagerStaffPage({super.key});
+  ManagerStaffPage({super.key});
 
   @override
   ConsumerState<ManagerStaffPage> createState() =>
@@ -42,7 +42,7 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
     });
 
     try {
-      final currentUser = ref.read(authProvider).user;
+      final currentUser = ref.read(currentUserProvider);
       if (currentUser == null || currentUser.companyId == null) {
         throw Exception('User not authenticated or no company assigned');
       }
@@ -138,13 +138,13 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
     final filteredEmployees = _filteredEmployees;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Nhân viên',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         actions: [
           IconButton(
@@ -158,7 +158,7 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
         children: [
           // Search and Filter Bar
           Container(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
@@ -246,14 +246,14 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
 
           // Employee list
           Expanded(
-            child: _buildContent(filteredEmployees, theme),
+            child: _buildContent(context, filteredEmployees, theme),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContent(List<User> employees, ThemeData theme) {
+  Widget _buildContent(BuildContext context, List<User> employees, ThemeData theme) {
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(),
@@ -313,14 +313,14 @@ class _ManagerStaffPageState extends ConsumerState<ManagerStaffPage> {
           final employee = employees[index];
           return _EmployeeCard(
             employee: employee,
-            onTap: () => _showEmployeeDetails(employee),
+            onTap: () => _showEmployeeDetails(context, employee),
           );
         },
       ),
     );
   }
 
-  void _showEmployeeDetails(User employee) {
+  void _showEmployeeDetails(BuildContext context, User employee) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -488,6 +488,10 @@ class _EmployeeCard extends StatelessWidget {
         return Colors.teal;
       case UserRole.warehouse:
         return Colors.brown;
+      case UserRole.finance:
+        return Colors.green.shade700;
+      case UserRole.shareholder:
+        return Colors.cyan;
     }
   }
 }
@@ -533,6 +537,10 @@ class _RoleBadge extends StatelessWidget {
         return Colors.teal;
       case UserRole.warehouse:
         return Colors.brown;
+      case UserRole.finance:
+        return Colors.green.shade700;
+      case UserRole.shareholder:
+        return Colors.cyan;
     }
   }
 }
@@ -765,6 +773,10 @@ class _EmployeeDetailsSheet extends StatelessWidget {
         return Colors.teal;
       case UserRole.warehouse:
         return Colors.brown;
+      case UserRole.finance:
+        return Colors.green.shade700;
+      case UserRole.shareholder:
+        return Colors.cyan;
     }
   }
 

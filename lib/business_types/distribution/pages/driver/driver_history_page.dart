@@ -28,9 +28,9 @@ class _DriverHistoryPageState extends ConsumerState<DriverHistoryPage> {
 
   Future<void> _loadHistory() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
 
       if (companyId == null || userId == null) return;
 
@@ -98,8 +98,8 @@ class _DriverHistoryPageState extends ConsumerState<DriverHistoryPage> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
-              color: Colors.white,
+              padding: EdgeInsets.all(20),
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -160,55 +160,55 @@ class _DriverHistoryPageState extends ConsumerState<DriverHistoryPage> {
                     Column(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.check_circle, color: Colors.white, size: 24),
+                          child: Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface, size: 24),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '${_history.length}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                         Text(
                           'Đơn đã giao',
-                          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.9)),
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.surface.withOpacity(0.9)),
                         ),
                       ],
                     ),
                     Container(
                       width: 1,
                       height: 60,
-                      color: Colors.white.withOpacity(0.3),
+                      color: Theme.of(context).colorScheme.surface.withOpacity(0.3),
                     ),
                     Column(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.payments, color: Colors.white, size: 24),
+                          child: Icon(Icons.payments, color: Theme.of(context).colorScheme.surface, size: 24),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           currencyFormat.format(totalAmount),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                         Text(
                           'Tổng thu hộ',
-                          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.9)),
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.surface.withOpacity(0.9)),
                         ),
                       ],
                     ),
@@ -270,7 +270,7 @@ class _DriverHistoryPageState extends ConsumerState<DriverHistoryPage> {
         _loadHistory();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? Colors.green : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(12),
@@ -278,7 +278,7 @@ class _DriverHistoryPageState extends ConsumerState<DriverHistoryPage> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey.shade700,
+            color: isSelected ? Theme.of(context).colorScheme.surface : Colors.grey.shade700,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -306,13 +306,13 @@ class _DriverHistoryPageState extends ConsumerState<DriverHistoryPage> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

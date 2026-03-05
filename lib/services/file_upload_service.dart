@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/ai_uploaded_file.dart';
-import '../utils/logger_service.dart';
+import '../utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 
 /// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
@@ -111,7 +111,7 @@ class FileUploadService {
         uploadedFiles.add(uploadedFile);
       } catch (e) {
         if (kDebugMode) {
-          logger.debug('Failed to upload file ${file.path}: $e');
+          AppLogger.info('Failed to upload file ${file.path}: $e');
         }
         // Continue with other files
       }

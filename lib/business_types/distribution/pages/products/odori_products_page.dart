@@ -40,7 +40,7 @@ class _OdoriProductsPageState extends ConsumerState<OdoriProductsPage> with Sing
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),
-            onPressed: () => _scanBarcode(),
+            onPressed: () => _scanBarcode(context),
           ),
         ],
         bottom: TabBar(
@@ -54,14 +54,14 @@ class _OdoriProductsPageState extends ConsumerState<OdoriProductsPage> with Sing
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildProductsTab(),
+          _buildProductsTab(context),
           const ProductSamplesPage(),
         ],
       ),
     );
   }
 
-  Widget _buildProductsTab() {
+  Widget _buildProductsTab(BuildContext context) {
     final productsAsync = ref.watch(productsProvider(ProductFilters(
       categoryId: _categoryFilter,
       search: _searchController.text.isEmpty ? null : _searchController.text,
@@ -182,7 +182,7 @@ class _OdoriProductsPageState extends ConsumerState<OdoriProductsPage> with Sing
     );
   }
 
-  void _scanBarcode() {
+  void _scanBarcode(BuildContext context) {
     // TODO: Implement barcode scanning
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Chức năng quét mã đang phát triển')),
@@ -308,9 +308,9 @@ class _ProductCard extends ConsumerWidget {
                     color: Colors.red,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Ngưng',
-                    style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 9, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -423,12 +423,12 @@ class _ProductCard extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+            child: Text('Xóa', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),
@@ -438,7 +438,7 @@ class _ProductCard extends ConsumerWidget {
 
     try {
       final db = Supabase.instance.client;
-      await db.from('products').delete().eq('id', product.id);
+      await db.from('products').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', product.id);
 
       ref.invalidate(productsProvider(const ProductFilters()));
       

@@ -11,7 +11,7 @@ class ErrorBoundary extends ConsumerStatefulWidget {
   final Widget Function(AppError error)? errorBuilder;
   final void Function(AppError error)? onError;
 
-  const ErrorBoundary({
+  ErrorBoundary({
     super.key,
     required this.child,
     this.errorBuilder,
@@ -54,12 +54,12 @@ class _ErrorBoundaryState extends ConsumerState<ErrorBoundary> {
       // Show error snackbar for medium/high severity errors
       if (error.severity == ErrorSeverity.medium ||
           error.severity == ErrorSeverity.high) {
-        _showErrorSnackbar(error);
+        _showErrorSnackbar(context, error);
       }
     }
   }
 
-  void _showErrorSnackbar(AppError error) {
+  void _showErrorSnackbar(BuildContext context, AppError error) {
     if (!mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
@@ -71,14 +71,14 @@ class _ErrorBoundaryState extends ConsumerState<ErrorBoundary> {
           children: [
             Icon(
               _getErrorIcon(error.severity),
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               size: 20,
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 error.userMessage,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Theme.of(context).colorScheme.surface),
               ),
             ),
           ],
@@ -90,15 +90,15 @@ class _ErrorBoundaryState extends ConsumerState<ErrorBoundary> {
         action: error.severity == ErrorSeverity.high
             ? SnackBarAction(
                 label: 'Chi tiết',
-                textColor: Colors.white,
-                onPressed: () => _showErrorDialog(error),
+                textColor: Theme.of(context).colorScheme.surface,
+                onPressed: () => _showErrorDialog(context, error),
               )
             : null,
       ),
     );
   }
 
-  void _showErrorDialog(AppError error) {
+  void _showErrorDialog(BuildContext context, AppError error) {
     if (!mounted) return;
 
     showDialog<void>(
@@ -199,11 +199,11 @@ class _DefaultErrorWidget extends StatelessWidget {
               if (onRetry != null)
                 ElevatedButton.icon(
                   onPressed: onRetry,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Thử lại'),
+                  icon: Icon(Icons.refresh),
+                  label: Text('Thử lại'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: SaboRefreshButton.refreshColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
                   ),
                 ),
             ],
@@ -218,7 +218,7 @@ class _DefaultErrorWidget extends StatelessWidget {
 class ErrorDialog extends StatelessWidget {
   final AppError error;
 
-  const ErrorDialog({
+  ErrorDialog({
     super.key,
     required this.error,
   });

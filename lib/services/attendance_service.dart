@@ -62,8 +62,8 @@ class AttendanceService {
   /// [photoUrl] - Check-in photo URL (optional)
   Future<AttendanceRecord> checkIn({
     required String userId,
-    required String branchId,
-    required String companyId,
+    String? branchId,
+    String? companyId,
     String? location,
     double? latitude,
     double? longitude,
@@ -82,17 +82,23 @@ class AttendanceService {
       // FIXED: Query by employee ID, not user_id (which is NULL for employees)
       final employeeResponse = await _supabase
           .from('employees')
-          .select('name, role')
+          .select('full_name, role')
           .eq('id', userId)  // ← FIX: Query by employee.id, not user_id
           .maybeSingle();
 
-      final employeeName = employeeResponse?['name'] as String?;
+      final employeeName = employeeResponse?['full_name'] as String?;
       final employeeRole = employeeResponse?['role'] as String?;
+
+      // Convert empty strings to null for UUID fields
+      final effectiveBranchId = (branchId?.isEmpty ?? true) ? null : branchId;
+      final effectiveCompanyId = (companyId?.isEmpty ?? true) ? null : companyId;
 
       final response = await _supabase.from('attendance').insert({
         'user_id': userId,
-        'branch_id': branchId,
-        'company_id': companyId,
+        'employee_id': userId,  // Also set employee_id for gamification trigger
+        'branch_id': effectiveBranchId,
+        'company_id': effectiveCompanyId,
+        'date': DateTime.now().toIso8601String().substring(0, 10),  // Set date for streak tracking
         'check_in': now.toIso8601String(),
         'check_in_location': location,
         'check_in_latitude': latitude,
@@ -134,23 +140,19 @@ class AttendanceService {
         branchId: branchId,
       );
 
-      if (!locationResult.isValid) {
-        throw LocationServiceException(
-            'Vị trí check-in không hợp lệ. ${locationResult.statusMessage}');
-      }
-
+      // Chỉ ghi nhận vị trí, không block check-in dù vị trí không khớp
       latitude = locationResult.currentLocation.latitude;
       longitude = locationResult.currentLocation.longitude;
       location = locationService.formatLocationForStorage(locationResult.currentLocation);
     } catch (e) {
-      if (e is LocationServiceException) rethrow;
-      // If location fails, still allow check-in without GPS
+      if (e is LocationServiceException && e.message.contains('GPS chưa được bật')) rethrow;
+      // Nếu không lấy được vị trí, vẫn cho check-in bình thường
     }
 
     return checkIn(
       userId: userId,
-      branchId: branchId ?? '',
-      companyId: companyId ?? '',
+      branchId: branchId,
+      companyId: companyId,
       location: location,
       latitude: latitude,
       longitude: longitude,
@@ -368,18 +370,18 @@ class AttendanceService {
     }
   }
 
-  /// Delete attendance record (soft delete if column exists)
+  /// Delete attendance record (soft delete)
   Future<void> deleteAttendance(String attendanceId) async {
     try {
-      // Try soft delete first
+      // Try soft delete with deleted_at first
       try {
         await _supabase
             .from('attendance')
             .update({'deleted_at': DateTime.now().toIso8601String()})
             .eq('id', attendanceId);
       } catch (_) {
-        // If deleted_at doesn't exist, do hard delete
-        await _supabase.from('attendance').delete().eq('id', attendanceId);
+        // If deleted_at doesn't exist, soft delete with is_active
+        await _supabase.from('attendance').update({'is_active': false}).eq('id', attendanceId);
       }
     } catch (e) {
       rethrow;

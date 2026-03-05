@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/monthly_pnl.dart';
@@ -227,6 +229,260 @@ class MonthlyPnlService {
     return result;
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // UPSERT — Tạo / Cập nhật Monthly P&L record
+  // ═══════════════════════════════════════════════════════════════
+
+  /// Upsert a monthly P&L record — creates if not exists, updates if it does.
+  /// Uses (company_id, report_month) as the logical unique key.
+  Future<MonthlyPnl> upsertMonthlyPnl({
+    required String companyId,
+    required DateTime reportMonth,
+    String? branchId,
+    String? branchName,
+    // Revenue
+    double grossRevenue = 0,
+    double revenueDeductions = 0,
+    double invoiceDiscounts = 0,
+    double returnsValue = 0,
+    double netRevenue = 0,
+    // Costs
+    double cogs = 0,
+    double grossProfit = 0,
+    // Expenses
+    double totalExpenses = 0,
+    double deliveryFees = 0,
+    double qrTransactionFees = 0,
+    double destroyedGoods = 0,
+    double pointsPayment = 0,
+    double salaryExpenses = 0,
+    double operatingProfit = 0,
+    // Monthly Expense Categories
+    double rentExpense = 0,
+    double electricityExpense = 0,
+    double advertisingExpense = 0,
+    double invoicedPurchases = 0,
+    double otherPurchases = 0,
+    // Other
+    double otherIncome = 0,
+    double returnFees = 0,
+    double salaryRefunds = 0,
+    double otherExpenses = 0,
+    double netProfit = 0,
+    String? notes,
+    String? importedBy,
+  }) async {
+    // Normalize month to first day
+    final normalizedMonth = DateTime(reportMonth.year, reportMonth.month, 1);
+    final monthStr = normalizedMonth.toIso8601String().substring(0, 10);
+
+    // Check if record already exists for this company + month
+    final existing = await _client
+        .from('monthly_pnl')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('report_month', monthStr)
+        .maybeSingle();
+
+    final data = {
+      'company_id': companyId,
+      'report_month': monthStr,
+      'branch_id': branchId,
+      'branch_name': branchName,
+      'gross_revenue': grossRevenue,
+      'revenue_deductions': revenueDeductions,
+      'invoice_discounts': invoiceDiscounts,
+      'returns_value': returnsValue,
+      'net_revenue': netRevenue,
+      'cogs': cogs,
+      'gross_profit': grossProfit,
+      'total_expenses': totalExpenses,
+      'delivery_fees': deliveryFees,
+      'qr_transaction_fees': qrTransactionFees,
+      'destroyed_goods': destroyedGoods,
+      'points_payment': pointsPayment,
+      'salary_expenses': salaryExpenses,
+      'operating_profit': operatingProfit,
+      'rent_expense': rentExpense,
+      'electricity_expense': electricityExpense,
+      'advertising_expense': advertisingExpense,
+      'invoiced_purchases': invoicedPurchases,
+      'other_purchases': otherPurchases,
+      'other_income': otherIncome,
+      'return_fees': returnFees,
+      'salary_refunds': salaryRefunds,
+      'other_expenses': otherExpenses,
+      'net_profit': netProfit,
+      'notes': notes,
+      'imported_by': importedBy,
+      'source_file': 'manual_entry',
+    };
+
+    Map<String, dynamic> response;
+
+    if (existing != null) {
+      // Update existing record
+      data['updated_at'] = DateTime.now().toIso8601String();
+      response = await _client
+          .from('monthly_pnl')
+          .update(data)
+          .eq('id', existing['id'] as String)
+          .select()
+          .single();
+    } else {
+      // Insert new record
+      response = await _client
+          .from('monthly_pnl')
+          .insert(data)
+          .select()
+          .single();
+    }
+
+    return MonthlyPnl.fromJson(response);
+  }
+
+  /// Update only expense categories for an existing record
+  Future<MonthlyPnl> updateExpenses({
+    required String recordId,
+    double? salaryExpenses,
+    double? rentExpense,
+    double? electricityExpense,
+    double? advertisingExpense,
+    double? invoicedPurchases,
+    double? otherPurchases,
+    double? totalExpenses,
+    String? notes,
+  }) async {
+    final data = <String, dynamic>{
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+
+    if (salaryExpenses != null) data['salary_expenses'] = salaryExpenses;
+    if (rentExpense != null) data['rent_expense'] = rentExpense;
+    if (electricityExpense != null) data['electricity_expense'] = electricityExpense;
+    if (advertisingExpense != null) data['advertising_expense'] = advertisingExpense;
+    if (invoicedPurchases != null) data['invoiced_purchases'] = invoicedPurchases;
+    if (otherPurchases != null) data['other_purchases'] = otherPurchases;
+    if (totalExpenses != null) data['total_expenses'] = totalExpenses;
+    if (notes != null) data['notes'] = notes;
+
+    final response = await _client
+        .from('monthly_pnl')
+        .update(data)
+        .eq('id', recordId)
+        .select()
+        .single();
+
+    return MonthlyPnl.fromJson(response);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ATTACHMENTS — Upload / List / Delete chứng từ hóa đơn
+  // ═══════════════════════════════════════════════════════════════
+
+  /// Upload file attachment for a P&L record
+  Future<Map<String, dynamic>> uploadPnlAttachment({
+    required String pnlRecordId,
+    required String companyId,
+    required String fileName,
+    required List<int> fileBytes,
+    String? category,
+    String? uploadedBy,
+  }) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final ext = fileName.split('.').last.toLowerCase();
+    final uniqueName = 'pnl_${pnlRecordId}_$timestamp.$ext';
+    final storagePath = 'pnl-attachments/$companyId/$uniqueName';
+
+    // Upload to Supabase Storage
+    await _client.storage.from('documents').uploadBinary(
+      storagePath,
+      Uint8List.fromList(fileBytes),
+      fileOptions: FileOptions(
+        contentType: _getMimeType(ext),
+        upsert: false,
+      ),
+    );
+
+    final fileUrl = _client.storage.from('documents').getPublicUrl(storagePath);
+
+    // Save metadata
+    final response = await _client
+        .from('pnl_attachments')
+        .insert({
+          'pnl_record_id': pnlRecordId,
+          'company_id': companyId,
+          'file_name': fileName,
+          'file_url': fileUrl,
+          'file_size': fileBytes.length,
+          'file_type': _getMimeType(ext),
+          'category': category,
+          'uploaded_by': uploadedBy,
+          'storage_path': storagePath,
+        })
+        .select()
+        .single();
+
+    return response;
+  }
+
+  /// Get all attachments for a P&L record
+  Future<List<Map<String, dynamic>>> getPnlAttachments(String pnlRecordId) async {
+    final response = await _client
+        .from('pnl_attachments')
+        .select()
+        .eq('pnl_record_id', pnlRecordId)
+        .order('created_at', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response as List);
+  }
+
+  /// Delete an attachment
+  Future<void> deletePnlAttachment(String attachmentId) async {
+    // Get the record first to find storage path
+    final record = await _client
+        .from('pnl_attachments')
+        .select('storage_path')
+        .eq('id', attachmentId)
+        .single();
+
+    // Delete from storage
+    final storagePath = record['storage_path'] as String?;
+    if (storagePath != null) {
+      await _client.storage.from('documents').remove([storagePath]);
+    }
+
+    // Soft-delete from DB
+    await _client
+        .from('pnl_attachments')
+        .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', attachmentId);
+  }
+
+  String _getMimeType(String ext) {
+    switch (ext.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'pdf':
+        return 'application/pdf';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls':
+        return 'application/vnd.ms-excel';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
   /// Get financial summary for a company
   /// Returns aggregated stats from the latest 12 months
   /// For corporations, aggregates data from ALL subsidiary companies
@@ -235,9 +491,12 @@ class MonthlyPnlService {
   }) async {
     // Check if this is a corporation - if so, get consolidated data
     final isCorp = await _isCorporation(companyId);
+    // Fetch ALL records for month selector navigation
     final records = isCorp 
-        ? await _getConsolidatedPnlHistory(limit: 12)
-        : await getPnlHistory(companyId: companyId, limit: 12);
+        ? await _getConsolidatedPnlHistory()
+        : await getPnlHistory(companyId: companyId);
+    // 12-month subset for summary calculations
+    final records12m = records.length > 12 ? records.sublist(0, 12) : records;
 
     if (records.isEmpty) {
       return {
@@ -249,17 +508,17 @@ class MonthlyPnlService {
     }
 
     final latest = records.first;
-    final totalRevenue = records.fold<double>(0, (sum, r) => sum + r.netRevenue);
-    final totalProfit = records.fold<double>(0, (sum, r) => sum + r.netProfit);
-    final totalCogs = records.fold<double>(0, (sum, r) => sum + r.cogs);
-    final avgMonthlyRevenue = totalRevenue / records.length;
-    final avgMonthlyProfit = totalProfit / records.length;
+    final totalRevenue = records12m.fold<double>(0, (sum, r) => sum + r.netRevenue);
+    final totalProfit = records12m.fold<double>(0, (sum, r) => sum + r.netProfit);
+    final totalCogs = records12m.fold<double>(0, (sum, r) => sum + r.cogs);
+    final avgMonthlyRevenue = records12m.isNotEmpty ? totalRevenue / records12m.length : 0.0;
+    final avgMonthlyProfit = records12m.isNotEmpty ? totalProfit / records12m.length : 0.0;
 
     // Revenue trend: compare latest 3 months vs previous 3 months
     double revenueGrowth = 0;
-    if (records.length >= 6) {
-      final recent3 = records.take(3).fold<double>(0, (s, r) => s + r.netRevenue);
-      final prev3 = records.skip(3).take(3).fold<double>(0, (s, r) => s + r.netRevenue);
+    if (records12m.length >= 6) {
+      final recent3 = records12m.take(3).fold<double>(0, (s, r) => s + r.netRevenue);
+      final prev3 = records12m.skip(3).take(3).fold<double>(0, (s, r) => s + r.netRevenue);
       if (prev3 > 0) revenueGrowth = ((recent3 - prev3) / prev3) * 100;
     }
 

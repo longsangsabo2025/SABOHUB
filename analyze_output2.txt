@@ -1,0 +1,16 @@
+Analyzing SABOHUB...                                            
+
+   info - Unnecessary braces in a string interpolation - lib\business_types\service\pages\reservations\reservation_form_page.dart:717:41 - unnecessary_brace_in_string_interps
+   info - Statements in an if should be enclosed in a block - lib\business_types\service\services\reservation_service.dart:372:51 - curly_braces_in_flow_control_structures
+   info - Type could be non-nullable - test\services\employee_auth_service_test.dart:604:21 - unnecessary_nullable_for_final_variable_declarations
+   info - Type could be non-nullable - test\services\employee_auth_service_test.dart:606:21 - unnecessary_nullable_for_final_variable_declarations
+warning - The operand can't be 'null', so the condition is always 'false' - test\services\employee_auth_service_test.dart:643:36 - unnecessary_null_comparison
+warning - Unused import: 'package:flutter_sabohub/models/task_comment.dart' - test\services\management_task_service_test.dart:3:8 - unused_import
+warning - The value of the local variable 'task' isn't used - test\services\management_task_service_test.dart:674:18 - unused_local_variable
+   info - Type could be non-nullable - test\services\management_task_service_test.dart:715:21 - unnecessary_nullable_for_final_variable_declarations
+   info - Type could be non-nullable - test\services\management_task_service_test.dart:717:21 - unnecessary_nullable_for_final_variable_declarations
+   info - Type could be non-nullable - test\services\management_task_service_test.dart:735:23 - unnecessary_nullable_for_final_variable_declarations
+warning - Dead code - test\services\management_task_service_test.dart:739:14 - dead_code
+   info - Type could be non-nullable - test\services\management_task_service_test.dart:750:23 - unnecessary_nullable_for_final_variable_declarations
+warning - Dead code - test\services\management_task_service_test.dart:752:25 - dead_code
+

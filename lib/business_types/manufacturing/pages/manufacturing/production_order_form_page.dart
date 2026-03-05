@@ -5,8 +5,8 @@ import '../../../../providers/auth_provider.dart';
 
 /// Local provider to load products for manufacturing (avoids cross-import from distribution)
 final _manufacturingProductsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
-  final authState = ref.read(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.read(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
   
   final db = Supabase.instance.client;
@@ -58,9 +58,9 @@ class _ProductionOrderFormPageState extends ConsumerState<ProductionOrderFormPag
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
       if (companyId == null) throw Exception('User context not found');
 
       final quantity = int.parse(_quantityController.text);

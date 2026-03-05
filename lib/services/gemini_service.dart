@@ -11,8 +11,29 @@ class GeminiService {
   factory GeminiService() => _instance;
   GeminiService._internal();
 
-  static String get apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
+  // Runtime API key override (set by company settings)
+  static String? _runtimeApiKey;
+  
+  /// Set API key at runtime (from company settings in DB)
+  static void setApiKey(String? key) {
+    _runtimeApiKey = key;
+  }
+
+  /// Reset state on user logout (clear company-specific API key)
+  static void reset() {
+    _runtimeApiKey = null;
+  }
+
+  /// Get active API key (runtime > .env)
+  static String get apiKey => 
+    (_runtimeApiKey?.isNotEmpty == true ? _runtimeApiKey : null) 
+    ?? dotenv.env['GEMINI_API_KEY'] 
+    ?? '';
+  
   static bool get isEnabled => apiKey.isNotEmpty;
+  
+  /// Check if using company key vs .env key
+  static bool get isUsingCompanyKey => _runtimeApiKey?.isNotEmpty == true;
 
   static const String _model = 'gemini-2.0-flash';
   static const String _baseUrl =

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../core/theme/app_colors.dart';
+import '../core/theme/app_colors.dart';
 
 /// Payment method enum
 enum PaymentMethod {
   cash('Tiền mặt', AppColors.success), // Green
   card('Thẻ ATM/Credit', AppColors.info), // Blue
   qr('QR Code', AppColors.primary), // Purple
-  transfer('Chuyển khoản', Color(0xFF06B6D4)); // Cyan
+  transfer('Chuyển khoản', AppColors.secondary); // Cyan
 
   final String label;
   final Color color;
@@ -18,7 +18,7 @@ enum PaymentStatus {
   pending('Đang chờ', AppColors.warning),
   completed('Hoàn thành', AppColors.success),
   failed('Thất bại', AppColors.error),
-  refunded('Đã hoàn tiền', Color(0xFF6B7280));
+  refunded('Đã hoàn tiền', AppColors.neutral500);
 
   final String label;
   final Color color;

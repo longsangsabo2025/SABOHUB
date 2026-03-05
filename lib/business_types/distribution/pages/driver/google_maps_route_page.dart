@@ -204,9 +204,9 @@ class _GoogleMapsRoutePageState extends State<GoogleMapsRoutePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tuyến đường giao hàng'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: Text('Tuyến đường giao hàng'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         elevation: 1,
         actions: [
           IconButton(
@@ -236,12 +236,12 @@ class _GoogleMapsRoutePageState extends State<GoogleMapsRoutePage> {
           Expanded(
             flex: 3,
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, -4),
                   ),
@@ -342,8 +342,8 @@ class _GoogleMapsRoutePageState extends State<GoogleMapsRoutePage> {
                                 child: Center(
                                   child: Text(
                                     '${index + 1}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.surface,
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -396,10 +396,10 @@ class _GoogleMapsRoutePageState extends State<GoogleMapsRoutePage> {
                     child: ElevatedButton.icon(
                       onPressed: _openInGoogleMapsApp,
                       icon: const Icon(Icons.navigation, size: 20),
-                      label: const Text('Bắt đầu điều hướng với Google Maps'),
+                      label: Text('Bắt đầu điều hướng với Google Maps'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -524,9 +524,9 @@ class _GoogleMapsRoutePageState extends State<GoogleMapsRoutePage> {
           child: ElevatedButton.icon(
             onPressed: _openInBrowser,
             icon: const Icon(Icons.open_in_browser),
-            label: const Text('Xem bản đồ trong trình duyệt'),
+            label: Text('Xem bản đồ trong trình duyệt'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               foregroundColor: Colors.blue.shade700,
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(

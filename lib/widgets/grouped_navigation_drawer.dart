@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../core/navigation/navigation_models.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Grouped Navigation Drawer for CEO/Manager roles
 class GroupedNavigationDrawer extends StatefulWidget {
   final UserRole userRole;
   final String currentRoute;
 
-  const GroupedNavigationDrawer({
+  GroupedNavigationDrawer({
     super.key,
     required this.userRole,
     required this.currentRoute,
@@ -48,15 +49,15 @@ class _GroupedNavigationDrawerState extends State<GroupedNavigationDrawer> {
                 Text(
                   'SABOHUB',
                   style: theme.textTheme.headlineMedium?.copyWith(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   _getRoleLabel(widget.userRole),
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white70,
+                    color: Theme.of(context).colorScheme.surface70,
                   ),
                 ),
               ],
@@ -193,6 +194,10 @@ class _GroupedNavigationDrawerState extends State<GroupedNavigationDrawer> {
         return 'Tài xế';
       case UserRole.warehouse:
         return 'Nhân viên kho';
+      case UserRole.shareholder:
+        return 'Cổ đông';
+      case UserRole.finance:
+        return 'Kế toán';
     }
   }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_text_styles.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -27,19 +29,16 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          _buildPeriodSelector(),
-          _buildTabBar(),
-          Expanded(child: _buildContent()),
-        ],
-      ),
+    return Column(
+      children: [
+        _buildPeriodSelector(),
+        _buildTabBar(),
+        Expanded(child: _buildContent()),
+      ],
     );
   }
 
+  // ignore: unused_element
   PreferredSizeWidget _buildAppBar() {
     final selectedPeriod = ref.watch(selectedPeriodProvider);
     final periodName = {
@@ -52,14 +51,10 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
 
     return AppBar(
       elevation: 0,
-      backgroundColor: Colors.white,
-      title: const Text(
+      backgroundColor: AppColors.background,
+      title: Text(
         'Phân tích dữ liệu',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
+        style: AppTextStyles.headingSmall.copyWith(color: AppColors.textPrimary),
       ),
       actions: [
         IconButton(
@@ -67,7 +62,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Đang tải xuống báo cáo $periodName...'),
-                backgroundColor: Colors.green,
+                backgroundColor: AppColors.success,
                 duration: const Duration(seconds: 2),
                 action: SnackBarAction(
                   label: 'OK',
@@ -77,14 +72,14 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               ),
             );
           },
-          icon: const Icon(Icons.file_download, color: Colors.black54),
+          icon: const Icon(Icons.file_download, color: AppColors.textSecondary),
         ),
         IconButton(
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Chia sẻ báo cáo phân tích $periodName'),
-                backgroundColor: Colors.blue,
+                backgroundColor: AppColors.info,
                 duration: const Duration(seconds: 2),
                 action: SnackBarAction(
                   label: 'OK',
@@ -94,7 +89,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               ),
             );
           },
-          icon: const Icon(Icons.share, color: Colors.black54),
+          icon: const Icon(Icons.share, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -102,16 +97,16 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
 
   Widget _buildPeriodSelector() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(4),
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
@@ -142,10 +137,10 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
           ref.read(selectedPeriodProvider.notifier).set(periodMap[period]!);
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(7),
           ),
           child: Text(
             period,
@@ -153,7 +148,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? Colors.white : Colors.grey.shade600,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
             ),
           ),
         ),
@@ -163,7 +158,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
 
   Widget _buildTabBar() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.fromLTRB(16, 2, 16, 0),
       child: Row(
         children: [
           _buildTab('Doanh thu', 0),
@@ -182,7 +177,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
       child: GestureDetector(
         onTap: () => setState(() => _selectedTab = index),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
@@ -196,10 +191,10 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               color:
-                  isSelected ? AppColors.primary : Colors.grey.shade600,
+                  isSelected ? AppColors.primary : AppColors.textSecondary,
             ),
           ),
         ),
@@ -231,9 +226,9 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildRevenueOverview(),
-          const SizedBox(height: 24),
+          AppSpacing.gapXXL,
           _buildRevenueChart(),
-          const SizedBox(height: 24),
+          AppSpacing.gapXXL,
           _buildRevenueByCompany(),
         ],
       ),
@@ -248,7 +243,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [AppColors.primary, Color(0xFF7C3AED)],
+          colors: [AppColors.primary, AppColors.primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -272,23 +267,19 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 8),
+              AppSpacing.gapSM,
               Text(
                 currencyFormat.format(totalRevenue),
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                style: AppTextStyles.number.copyWith(color: AppColors.textOnPrimary),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gapLG,
               Row(
                 children: [
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: (isPositive ? Colors.green : Colors.red)
+                      color: (isPositive ? AppColors.success : AppColors.error)
                           .withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -300,7 +291,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                           color: Colors.white,
                           size: 12,
                         ),
-                        const SizedBox(width: 4),
+                        AppSpacing.hGapXXS,
                         Text(
                           '${isPositive ? '+' : ''}${growthPercentage.toStringAsFixed(1)}%',
                           style: const TextStyle(
@@ -312,7 +303,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  AppSpacing.hGapSM,
                   Text(
                     'so với kỳ trước',
                     style: TextStyle(
@@ -335,7 +326,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               'Tổng doanh thu',
               style: TextStyle(fontSize: 14, color: Colors.white),
             ),
-            const SizedBox(height: 8),
+            AppSpacing.gapSM,
             const Text(
               '₫0',
               style: TextStyle(
@@ -344,7 +335,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 8),
+            AppSpacing.gapSM,
             Text(
               'Không có dữ liệu',
               style: TextStyle(
@@ -378,7 +369,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -391,23 +382,19 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Biểu đồ doanh thu 30 ngày',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+            style: AppTextStyles.title.copyWith(color: AppColors.textPrimary),
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           chartAsync.when(
             data: (dataPoints) {
               if (dataPoints.isEmpty) {
                 return Container(
                   height: 200,
                   alignment: Alignment.center,
-                  child: const Text('Chưa có dữ liệu',
-                      style: TextStyle(color: Colors.grey)),
+                  child: Text('Chưa có dữ liệu',
+                      style: TextStyle(color: AppColors.textTertiary)),
                 );
               }
 
@@ -428,7 +415,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                       drawVerticalLine: false,
                       horizontalInterval: maxY > 0 ? maxY / 4 : 1,
                       getDrawingHorizontalLine: (_) => FlLine(
-                        color: Colors.grey.shade200,
+                        color: AppColors.grey200,
                         strokeWidth: 1,
                       ),
                     ),
@@ -443,7 +430,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                                 '${(value / 1000000).toStringAsFixed(0)}M',
                                 style: TextStyle(
                                     fontSize: 10,
-                                    color: Colors.grey.shade500),
+                                    color: AppColors.grey500),
                               );
                             }
                             if (value >= 1000) {
@@ -451,14 +438,14 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                                 '${(value / 1000).toStringAsFixed(0)}K',
                                 style: TextStyle(
                                     fontSize: 10,
-                                    color: Colors.grey.shade500),
+                                    color: AppColors.grey500),
                               );
                             }
                             return Text(
                               value.toStringAsFixed(0),
                               style: TextStyle(
                                   fontSize: 10,
-                                  color: Colors.grey.shade500),
+                                  color: AppColors.grey500),
                             );
                           },
                         ),
@@ -481,7 +468,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                                     .format(dataPoints[idx].date),
                                 style: TextStyle(
                                     fontSize: 9,
-                                    color: Colors.grey.shade500),
+                                    color: AppColors.grey500),
                               ),
                             );
                           },
@@ -554,7 +541,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -567,15 +554,11 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Doanh thu theo công ty',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+            style: AppTextStyles.title.copyWith(color: AppColors.textPrimary),
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           revenueAsync.when(
             data: (data) {
               final breakdown = (data['revenueBreakdown'] as List<dynamic>?)
@@ -591,21 +574,21 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                         Icon(
                           Icons.analytics_outlined,
                           size: 48,
-                          color: Colors.grey.shade300,
+                          color: AppColors.grey300,
                         ),
-                        const SizedBox(height: 12),
+                        AppSpacing.gapMD,
                         Text(
                           'Chưa có dữ liệu doanh thu',
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: AppColors.textSecondary,
                             fontSize: 14,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        AppSpacing.gapXXS,
                         Text(
                           'Dữ liệu sẽ xuất hiện khi có phiên hoàn thành',
                           style: TextStyle(
-                            color: Colors.grey.shade400,
+                            color: AppColors.neutral400,
                             fontSize: 12,
                           ),
                         ),
@@ -632,7 +615,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                 padding: const EdgeInsets.all(20.0),
                 child: Text(
                   'Lỗi tải dữ liệu: ${error.toString()}',
-                  style: const TextStyle(color: Colors.red),
+                  style: const TextStyle(color: AppColors.error),
                 ),
               ),
             ),
@@ -669,7 +652,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               size: 16,
             ),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMD,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -681,11 +664,11 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 4),
+                AppSpacing.gapXXS,
                 Container(
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
+                    color: AppColors.grey200,
                     borderRadius: BorderRadius.circular(2),
                   ),
                   child: FractionallySizedBox(
@@ -702,7 +685,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          AppSpacing.hGapMD,
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -717,7 +700,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                 '${percentage.toStringAsFixed(0)}%',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey.shade600,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -736,11 +719,11 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
       case 'billiards':
         return {'icon': Icons.sports_bar, 'color': AppColors.info};
       case 'karaoke':
-        return {'icon': Icons.mic, 'color': const Color(0xFFEC4899)};
+        return {'icon': Icons.mic, 'color': Color(0xFFEC4899)};
       case 'hotel':
         return {'icon': Icons.hotel, 'color': AppColors.warning};
       default:
-        return {'icon': Icons.business, 'color': const Color(0xFF6366F1)};
+        return {'icon': Icons.business, 'color': AppColors.primary};
     }
   }
 
@@ -776,21 +759,21 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                     'Tổng khách hàng',
                     '${insights.totalActive}',
                     Icons.people,
-                    Colors.blue,
+                    AppColors.info,
                   ),
                 ),
-                const SizedBox(width: 12),
+                AppSpacing.hGapMD,
                 Expanded(
                   child: _buildQuickStatCard(
                     'KH mới tháng này',
                     '${insights.newThisMonth}',
                     Icons.person_add,
-                    Colors.green,
+                    AppColors.success,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            AppSpacing.gapMD,
             Row(
               children: [
                 Expanded(
@@ -798,27 +781,27 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                     'KH có nguy cơ',
                     '${insights.atRiskCount}',
                     Icons.warning_amber,
-                    Colors.orange,
+                    AppColors.warning,
                   ),
                 ),
-                const SizedBox(width: 12),
+                AppSpacing.hGapMD,
                 Expanded(
                   child: _buildQuickStatCard(
                     'Tổng công nợ',
                     '${cf.format(insights.totalDebt)}₫',
                     Icons.account_balance,
-                    Colors.red,
+                    AppColors.error,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            AppSpacing.gapXXL,
 
             // Tier distribution
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.background,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -831,15 +814,11 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Phân bố khách hàng theo hạng',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                    style: AppTextStyles.title.copyWith(color: AppColors.textPrimary),
                   ),
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
                   ...insights.tierDistribution.entries.map((e) {
                     final total = insights.totalActive > 0
                         ? insights.totalActive
@@ -861,7 +840,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                                   shape: BoxShape.circle,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              AppSpacing.hGapSM,
                               Expanded(
                                 child: Text(
                                   _getTierLabel(e.key),
@@ -875,17 +854,17 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                                 '${e.value} (${pct.toStringAsFixed(0)}%)',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey.shade600,
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          AppSpacing.gapXXS,
                           ClipRRect(
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: pct / 100,
-                              backgroundColor: Colors.grey.shade200,
+                              backgroundColor: AppColors.grey200,
                               valueColor:
                                   AlwaysStoppedAnimation<Color>(tierColor),
                               minHeight: 6,
@@ -898,13 +877,13 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            AppSpacing.gapXXL,
 
             // Top 10 customers
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.background,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -917,21 +896,17 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Top 10 khách hàng (theo doanh thu)',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                    style: AppTextStyles.title.copyWith(color: AppColors.textPrimary),
                   ),
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
                   if (insights.top10Customers.isEmpty)
-                    const Center(
+                    Center(
                       child: Padding(
-                        padding: EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(20),
                         child: Text('Chưa có dữ liệu',
-                            style: TextStyle(color: Colors.grey)),
+                            style: TextStyle(color: AppColors.textTertiary)),
                       ),
                     )
                   else
@@ -965,7 +940,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            AppSpacing.hGapMD,
                             Expanded(
                               child: Text(
                                 name,
@@ -978,7 +953,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                               currencyFormat.format(revenue),
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade600,
+                                color: AppColors.textSecondary,
                               ),
                             ),
                           ],
@@ -1001,13 +976,13 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
       case 'vip':
         return Colors.amber;
       case 'gold':
-        return Colors.orange;
+        return AppColors.warning;
       case 'silver':
         return Colors.blueGrey;
       case 'bronze':
         return Colors.brown;
       default:
-        return Colors.grey;
+        return AppColors.neutral500;
     }
   }
 
@@ -1042,7 +1017,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildPerformanceHeaderCard(),
-              const SizedBox(height: 24),
+              AppSpacing.gapXXL,
               if (snapshot.connectionState == ConnectionState.waiting)
                 const Padding(
                   padding: EdgeInsets.all(24),
@@ -1051,36 +1026,36 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               else ...[
                 Row(
                   children: [
-                    Expanded(child: _buildQuickStatCard('Tổng nhân viên', '$totalEmployees', Icons.people, Colors.blue)),
-                    const SizedBox(width: 12),
+                    Expanded(child: _buildQuickStatCard('Tổng nhân viên', '$totalEmployees', Icons.people, AppColors.info)),
+                    AppSpacing.hGapMD,
                     Expanded(child: _buildQuickStatCard('Điểm TB', avgScore is double ? avgScore.toStringAsFixed(1) : '$avgScore', Icons.star, Colors.amber)),
                   ],
                 ),
-                const SizedBox(height: 12),
+                AppSpacing.gapMD,
                 Row(
                   children: [
-                    Expanded(child: _buildQuickStatCard('KPI đạt', '$kpiAchieved%', Icons.check_circle, Colors.green)),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildQuickStatCard('Cần cải thiện', '$needsImprovement', Icons.trending_up, Colors.orange)),
+                    Expanded(child: _buildQuickStatCard('KPI đạt', '$kpiAchieved%', Icons.check_circle, AppColors.success)),
+                    AppSpacing.hGapMD,
+                    Expanded(child: _buildQuickStatCard('Cần cải thiện', '$needsImprovement', Icons.trending_up, AppColors.warning)),
                   ],
                 ),
               ],
-              const SizedBox(height: 24),
+              AppSpacing.gapXXL,
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: AppColors.infoLight,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.shade200),
+                  border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.blue.shade700),
-                    const SizedBox(width: 12),
+                    Icon(Icons.info_outline, color: AppColors.infoDark),
+                    AppSpacing.hGapMD,
                     Expanded(
                       child: Text(
                         'Click vào nút trên để xem bảng xếp hạng, KPI chi tiết và thực hiện đánh giá nhân viên',
-                        style: TextStyle(fontSize: 13, color: Colors.blue.shade700),
+                        style: TextStyle(fontSize: 13, color: AppColors.infoDark),
                       ),
                     ),
                   ],
@@ -1096,7 +1071,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
   Future<Map<String, dynamic>> _loadPerformanceStats() async {
     try {
       final supabase = Supabase.instance.client;
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null) return {};
       
       final companiesData = await supabase
@@ -1134,8 +1109,8 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
         final current = (kpi['current_value'] as num?)?.toDouble() ?? 0;
         final score = target > 0 ? (current / target * 100) : 0.0;
         totalScore += score;
-        if (score >= 80) achieved++;
-        else if (score < 50) needsImprovement++;
+        if (score >= 80) { achieved++; }
+        else if (score < 50) { needsImprovement++; }
       }
       
       return {
@@ -1172,7 +1147,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.analytics, color: Colors.white, size: 40),
-          const SizedBox(height: 12),
+          AppSpacing.gapMD,
           const Text(
             'Đánh giá hiệu suất nhân viên',
             style: TextStyle(
@@ -1181,7 +1156,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 8),
+          AppSpacing.gapSM,
           const Text(
             'Theo dõi KPI, xếp hạng và đánh giá chi tiết',
             style: TextStyle(
@@ -1189,7 +1164,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               color: Colors.white70,
             ),
           ),
-          const SizedBox(height: 20),
+          AppSpacing.gapXL,
           ElevatedButton.icon(
             onPressed: () {
               Navigator.push(
@@ -1227,7 +1202,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -1241,21 +1216,21 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: color, size: 24),
-          const SizedBox(height: 12),
+          AppSpacing.gapMD,
           Text(
             value,
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 4),
+          AppSpacing.gapXXS,
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade600,
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -1292,7 +1267,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(Icons.description, color: Colors.white, size: 40),
-                const SizedBox(height: 12),
+                AppSpacing.gapMD,
                 const Text(
                   'Báo cáo cuối ngày nhân viên',
                   style: TextStyle(
@@ -1301,7 +1276,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 8),
+                AppSpacing.gapSM,
                 const Text(
                   'Xem tổng hợp báo cáo công việc của tất cả nhân viên',
                   style: TextStyle(
@@ -1309,7 +1284,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                     color: Colors.white70,
                   ),
                 ),
-                const SizedBox(height: 20),
+                AppSpacing.gapXL,
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.push(
@@ -1336,37 +1311,37 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          AppSpacing.gapXXL,
           
           // Features List
           _buildFeatureCard(
             'Tự động tạo báo cáo',
             'Báo cáo được tạo tự động khi nhân viên checkout',
             Icons.auto_awesome,
-            Colors.blue,
+            AppColors.info,
           ),
-          const SizedBox(height: 12),
+          AppSpacing.gapMD,
           _buildFeatureCard(
             'AI Summary',
             'Tóm tắt thông minh ca làm việc và công việc hoàn thành',
             Icons.psychology,
-            Colors.purple,
+            AppColors.primary,
           ),
-          const SizedBox(height: 12),
+          AppSpacing.gapMD,
           _buildFeatureCard(
             'Thống kê chi tiết',
             'Xem tỷ lệ nộp, giờ làm trung bình, công việc hoàn thành',
             Icons.analytics,
-            Colors.green,
+            AppColors.success,
           ),
-          const SizedBox(height: 12),
+          AppSpacing.gapMD,
           _buildFeatureCard(
             'Lọc và tìm kiếm',
             'Lọc theo trạng thái, ngày, nhân viên, chi nhánh',
             Icons.filter_list,
-            Colors.orange,
+            AppColors.warning,
           ),
-          const SizedBox(height: 24),
+          AppSpacing.gapXXL,
           
           // Info Card
           Container(
@@ -1379,7 +1354,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
             child: Row(
               children: [
                 Icon(Icons.lightbulb, color: Colors.amber.shade700),
-                const SizedBox(width: 12),
+                AppSpacing.hGapMD,
                 Expanded(
                   child: Text(
                     'Click vào nút trên để xem dashboard báo cáo đầy đủ với bộ lọc và thống kê chi tiết',
@@ -1402,7 +1377,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -1422,7 +1397,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
             ),
             child: Icon(icon, color: color, size: 24),
           ),
-          const SizedBox(width: 16),
+          AppSpacing.hGapLG,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1434,12 +1409,12 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                AppSpacing.gapXXS,
                 Text(
                   description,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -1459,7 +1434,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
         if (companies.isEmpty) {
           return const Center(
             child: Text('Chưa có công ty nào',
-                style: TextStyle(color: Colors.grey)),
+                style: TextStyle(color: AppColors.textTertiary)),
           );
         }
         return SingleChildScrollView(
@@ -1471,7 +1446,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.background,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
@@ -1496,7 +1471,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                           child: const Icon(Icons.business,
                               color: AppColors.primary, size: 20),
                         ),
-                        const SizedBox(width: 12),
+                        AppSpacing.hGapMD,
                         Expanded(
                           child: Text(
                             c.name,
@@ -1508,34 +1483,34 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    AppSpacing.gapLG,
                     Row(
                       children: [
                         _comparisonStat(
                             'Doanh thu tháng',
                             '${cf.format(c.monthlyRevenue)}₫',
                             Icons.trending_up,
-                            Colors.green),
+                            AppColors.success),
                         _comparisonStat(
                             'Đơn hàng',
                             '${c.orderCount}',
                             Icons.receipt_long,
-                            Colors.blue),
+                            AppColors.info),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    AppSpacing.gapSM,
                     Row(
                       children: [
                         _comparisonStat(
                             'Nhân viên',
                             '${c.employeeCount}',
                             Icons.people,
-                            Colors.purple),
+                            AppColors.primary),
                         _comparisonStat(
                             'Khách hàng',
                             '${c.customerCount}',
                             Icons.store,
-                            Colors.orange),
+                            AppColors.warning),
                       ],
                     ),
                   ],
@@ -1556,7 +1531,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
       child: Row(
         children: [
           Icon(icon, color: color, size: 16),
-          const SizedBox(width: 6),
+          AppSpacing.hGapXS,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1566,7 +1541,7 @@ class _CEOAnalyticsPageState extends ConsumerState<CEOAnalyticsPage> {
                         fontSize: 14, fontWeight: FontWeight.bold)),
                 Text(label,
                     style:
-                        TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                        TextStyle(fontSize: 11, color: AppColors.textSecondary)),
               ],
             ),
           ),

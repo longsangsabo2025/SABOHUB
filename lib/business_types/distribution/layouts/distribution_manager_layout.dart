@@ -1,7 +1,9 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/error_boundary.dart';
 import '../../../widgets/notification_center.dart';
@@ -13,12 +15,16 @@ import '../pages/manager/customers_page.dart';
 import '../pages/manager/inventory_page.dart';
 import '../pages/manager/reports_page.dart';
 import '../pages/manager/referrers_page.dart';
+import '../../../utils/app_logger.dart';
 // Distribution-specific layouts
 import 'distribution_warehouse_layout.dart';
 import 'distribution_finance_layout.dart';
 import '../pages/driver/distribution_driver_layout_refactored.dart';
 // Extracted sub-pages
 import 'manager/manager_dashboard_page.dart';
+// Quick Actions navigation targets
+import '../../../pages/manager/manager_tasks_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Distribution Manager Layout
 /// Layout cho Manager của công ty phân phối/sản xuất (Odori - Nước giặt)
@@ -34,12 +40,13 @@ class DistributionManagerLayout extends ConsumerStatefulWidget {
 class _DistributionManagerLayoutState
     extends ConsumerState<DistributionManagerLayout> {
   int _currentIndex = 0;
+  bool _showQuickActions = false; // Tạm tắt — dùng cho ServiceManagerLayout (SABO)
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final userName = authState.user?.name ?? 'Quản lý';
-    final companyName = authState.user?.companyName ?? 'Odori';
+    final currentUser = ref.watch(currentUserProvider);
+    final userName = currentUser?.name ?? 'Quản lý';
+    final companyName = currentUser?.companyName ?? 'Odori';
 
     final pages = <Widget>[
       const ManagerDashboardPage(),
@@ -78,7 +85,9 @@ class _DistributionManagerLayoutState
     ];
 
     return ErrorBoundary(
-      child: Scaffold(
+      child: Stack(
+        children: [
+          Scaffold(
         appBar: AppBar(
           leading: Builder(
             builder: (context) => IconButton(
@@ -144,8 +153,8 @@ class _DistributionManagerLayoutState
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
                       builder: (BuildContext ctx) => Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                         ),
                         child: const NotificationPopupSheet(),
@@ -162,13 +171,13 @@ class _DistributionManagerLayoutState
                       if (state.unreadCount == 0) return const SizedBox.shrink();
                       return Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
                         child: Text(
                           state.unreadCount > 99 ? '99+' : '${state.unreadCount}',
-                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                          style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 10),
                         ),
                       );
                     },
@@ -197,6 +206,227 @@ class _DistributionManagerLayoutState
           },
           destinations: destinations,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        ),
+      ),
+          // Quick Actions Overlay
+          if (_showQuickActions)
+            _buildQuickActionsOverlay(context, userName),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // QUICK ACTIONS OVERLAY — shown once per session on first login
+  // ─────────────────────────────────────────────────────────────────────
+
+  Widget _buildQuickActionsOverlay(BuildContext context, String userName) {
+    return Material(
+      color: AppColors.backgroundDark,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Xin chào, $userName! 👋',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.surface,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Bạn muốn làm gì đầu tiên hôm nay?',
+                          style: TextStyle(color: Theme.of(context).colorScheme.surface60, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.surface54),
+                    tooltip: 'Đóng',
+                    onPressed: () => setState(() => _showQuickActions = false),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Divider line
+              Container(
+                height: 1,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.teal.shade400, Colors.transparent],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // 2x2 action grid
+              Expanded(
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  childAspectRatio: 0.9,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _buildActionCard(
+                      context,
+                      icon: Icons.fingerprint_rounded,
+                      title: 'Check in/out',
+                      subtitle: 'Chấm công hôm nay',
+                      gradientColors: [AppColors.successDark, Color(0xFF34D399)],
+                      onTap: () {
+                        setState(() => _showQuickActions = false);
+                        context.push(AppRoutes.staffCheckin);
+                      },
+                    ),
+                    _buildActionCard(
+                      context,
+                      icon: Icons.task_alt_rounded,
+                      title: 'Nhiệm Vụ',
+                      subtitle: 'Công việc từ CEO & team',
+                      gradientColors: [AppColors.infoDark, Color(0xFF60A5FA)],
+                      onTap: () {
+                        setState(() => _showQuickActions = false);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ManagerTasksPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildActionCard(
+                      context,
+                      icon: Icons.assessment_rounded,
+                      title: 'Báo cáo cuối ngày',
+                      subtitle: 'Doanh thu & tổng kết',
+                      gradientColors: [AppColors.warningDark, Color(0xFFFBBF24)],
+                      onTap: () {
+                        setState(() {
+                          _showQuickActions = false;
+                          _currentIndex = 4; // Reports tab
+                        });
+                      },
+                    ),
+                    _buildActionCard(
+                      context,
+                      icon: Icons.people_alt_rounded,
+                      title: 'Quản lý nhân viên',
+                      subtitle: 'Danh sách & phân công',
+                      gradientColors: [AppColors.primary, Color(0xFFA78BFA)],
+                      onTap: () {
+                        setState(() => _showQuickActions = false);
+                        context.push('/employees/list');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Skip button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Color(0xFF334155)),
+                    foregroundColor: Theme.of(context).colorScheme.surface60,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => setState(() => _showQuickActions = false),
+                  child: const Text('Vào Dashboard →', style: TextStyle(fontSize: 14)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required List<Color> gradientColors,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: gradientColors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: gradientColors[0].withOpacity(0.35),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Icon badge
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: Theme.of(context).colorScheme.surface, size: 26),
+              ),
+              // Text
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.surface,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.surface.withOpacity(0.75),
+                      fontSize: 11,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -259,7 +489,7 @@ class _DistributionManagerLayoutState
   /// Switch to employee role — navigate to that role's layout
   /// Manager has full access so they can view any role's interface
   void _switchToRole(BuildContext context, WidgetRef ref, String role) {
-    debugPrint('🔄 [SWITCH ROLE] Starting switch to role: $role');
+    AppLogger.data('[SWITCH ROLE]', {'status': 'Starting', 'role': role});
 
     Widget? targetLayout;
     switch (role) {
@@ -310,7 +540,7 @@ class _DistributionManagerLayoutState
               children: [
                 CircleAvatar(
                   radius: 35,
-                  backgroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
                   child: Text(
                     userName.isNotEmpty ? userName[0].toUpperCase() : 'M',
                     style: TextStyle(
@@ -323,30 +553,30 @@ class _DistributionManagerLayoutState
                 const SizedBox(height: 12),
                 Text(
                   userName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
+                  child: Text(
                     '👔 MANAGER - Full Access',
-                    style: TextStyle(fontSize: 12, color: Colors.white),
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.surface),
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   companyName,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
                   ),
                 ),
               ],
@@ -511,14 +741,14 @@ class _DistributionManagerLayoutState
   }) {
     return ListTile(
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isActive ? color : color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
           icon,
-          color: isActive ? Colors.white : color,
+          color: isActive ? Theme.of(context).colorScheme.surface : color,
           size: 20,
         ),
       ),
@@ -526,7 +756,7 @@ class _DistributionManagerLayoutState
         title,
         style: TextStyle(
           fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-          color: isActive ? color : Colors.black87,
+          color: isActive ? color : Theme.of(context).colorScheme.onSurface87,
         ),
       ),
       subtitle: Text(

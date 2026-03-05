@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_sabohub/utils/postgrest_sanitizer.dart';
 
 /// Sales Route Model
 class SalesRoute {
@@ -334,9 +335,13 @@ class SalesRouteService {
     return SalesRoute.fromJson(response);
   }
 
-  /// Delete route
+  /// Delete route (soft delete)
   Future<void> deleteRoute(String routeId) async {
-    await _supabase.from('sales_routes').delete().eq('id', routeId);
+    // Soft delete - sets is_active=false
+    await _supabase.from('sales_routes').update({
+      'is_active': false,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', routeId);
   }
 
   // ==================== ROUTE CUSTOMERS ====================
@@ -552,7 +557,7 @@ class SalesRouteService {
         .eq('status', 'active');
     
     if (search != null && search.isNotEmpty) {
-      query = query.or('name.ilike.%$search%,phone.ilike.%$search%,address.ilike.%$search%');
+      query = query.or('name.ilike.%${PostgrestSanitizer.sanitizeSearch(search)}%,phone.ilike.%${PostgrestSanitizer.sanitizeSearch(search)}%,address.ilike.%${PostgrestSanitizer.sanitizeSearch(search)}%');
     }
     if (district != null && district.isNotEmpty) {
       query = query.eq('district', district);

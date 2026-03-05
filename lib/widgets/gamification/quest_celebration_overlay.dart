@@ -4,6 +4,7 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 enum CelebrationType { questComplete, levelUp, achievementUnlock, dailyCombo }
 
@@ -13,15 +14,17 @@ class QuestCelebrationOverlay extends StatefulWidget {
   final String? subtitle;
   final int? xpEarned;
   final int? newLevel;
+  final int? tokenEarned;
   final VoidCallback? onDismiss;
 
-  const QuestCelebrationOverlay({
+  QuestCelebrationOverlay({
     super.key,
     required this.type,
     required this.title,
     this.subtitle,
     this.xpEarned,
     this.newLevel,
+    this.tokenEarned,
     this.onDismiss,
   });
 
@@ -32,12 +35,13 @@ class QuestCelebrationOverlay extends StatefulWidget {
     String? subtitle,
     int? xpEarned,
     int? newLevel,
+    int? tokenEarned,
   }) {
     return showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Celebration',
-      barrierColor: Colors.black54,
+      barrierColor: Theme.of(context).colorScheme.onSurface54,
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (ctx, anim1, anim2) {
         return QuestCelebrationOverlay(
@@ -46,6 +50,7 @@ class QuestCelebrationOverlay extends StatefulWidget {
           subtitle: subtitle,
           xpEarned: xpEarned,
           newLevel: newLevel,
+          tokenEarned: tokenEarned,
           onDismiss: () => Navigator.of(ctx).pop(),
         );
       },
@@ -71,7 +76,7 @@ class _QuestCelebrationOverlayState extends State<QuestCelebrationOverlay> {
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
     _confettiController.play();
 
-    Future.delayed(const Duration(seconds: 4), () {
+    Future.delayed(Duration(seconds: 4), () {
       if (mounted) widget.onDismiss?.call();
     });
   }
@@ -107,10 +112,10 @@ class _QuestCelebrationOverlayState extends State<QuestCelebrationOverlay> {
           GestureDetector(
             onTap: widget.onDismiss,
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 40),
-              padding: const EdgeInsets.all(28),
+              margin: EdgeInsets.symmetric(horizontal: 40),
+              padding: EdgeInsets.all(28),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
@@ -158,6 +163,10 @@ class _QuestCelebrationOverlayState extends State<QuestCelebrationOverlay> {
                     children: [
                       if (widget.xpEarned != null)
                         _rewardPill('⚡ +${widget.xpEarned} XP', AppColors.warning),
+                      if (widget.tokenEarned != null && widget.tokenEarned! > 0) ...[
+                        const SizedBox(width: 8),
+                        _rewardPill('🪙 +${widget.tokenEarned} SABO', Color(0xFFFF8F00)),
+                      ],
                       if (widget.newLevel != null) ...[
                         const SizedBox(width: 8),
                         _rewardPill('🎉 Level ${widget.newLevel}', AppColors.primary),
@@ -180,7 +189,7 @@ class _QuestCelebrationOverlayState extends State<QuestCelebrationOverlay> {
 
   Widget _rewardPill(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
@@ -225,22 +234,22 @@ class _QuestCelebrationOverlayState extends State<QuestCelebrationOverlay> {
       case CelebrationType.levelUp:
         return AppColors.primary;
       case CelebrationType.achievementUnlock:
-        return const Color(0xFFFF8F00);
+        return Color(0xFFFF8F00);
       case CelebrationType.dailyCombo:
-        return const Color(0xFFFF6D00);
+        return Color(0xFFFF6D00);
     }
   }
 
   List<Color> get _confettiColors {
     switch (widget.type) {
       case CelebrationType.levelUp:
-        return [AppColors.primary, const Color(0xFF7C4DFF), const Color(0xFFE040FB), Colors.white];
+        return [AppColors.primary, Color(0xFF7C4DFF), Color(0xFFE040FB), Theme.of(context).colorScheme.surface];
       case CelebrationType.achievementUnlock:
-        return [const Color(0xFFFFD700), const Color(0xFFFFA500), const Color(0xFFFF6F00), Colors.white];
+        return [Color(0xFFFFD700), Color(0xFFFFA500), Color(0xFFFF6F00), Theme.of(context).colorScheme.surface];
       case CelebrationType.dailyCombo:
-        return [const Color(0xFFFF6D00), const Color(0xFFFF9100), const Color(0xFFFFAB40), Colors.white];
+        return [Color(0xFFFF6D00), Color(0xFFFF9100), Color(0xFFFFAB40), Theme.of(context).colorScheme.surface];
       default:
-        return [AppColors.success, const Color(0xFF66BB6A), const Color(0xFF81C784), Colors.white];
+        return [AppColors.success, Color(0xFF66BB6A), Color(0xFF81C784), Theme.of(context).colorScheme.surface];
     }
   }
 }

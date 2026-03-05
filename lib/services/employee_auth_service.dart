@@ -5,7 +5,9 @@ import '../utils/app_logger.dart';
 /// Employee Authentication Service
 /// Handles login for non-auth users (MANAGER, SHIFT_LEADER, STAFF)
 class EmployeeAuthService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final SupabaseClient _supabase;
+
+  EmployeeAuthService({SupabaseClient? supabase}) : _supabase = supabase ?? Supabase.instance.client;
 
   /// Login employee with company name, username, and password
   Future<EmployeeLoginResult> login({
@@ -158,10 +160,24 @@ class EmployeeAuthService {
   /// Change employee password
   Future<bool> changePassword({
     required String employeeId,
-    required String oldPassword,
+    String? oldPassword,
     required String newPassword,
   }) async {
     try {
+      // Verify old password if provided
+      if (oldPassword != null) {
+        final oldPasswordHash = await _hashPassword(oldPassword);
+        final employee = await _supabase
+            .from('employees')
+            .select('password_hash')
+            .eq('id', employeeId)
+            .single();
+        final currentHash = employee['password_hash'] as String?;
+        if (currentHash == null || currentHash != oldPasswordHash) {
+          throw Exception('Mật khẩu hiện tại không đúng');
+        }
+      }
+
       // Hash new password
       final newPasswordHash = await _hashPassword(newPassword);
 
@@ -176,12 +192,12 @@ class EmployeeAuthService {
     }
   }
 
-  /// Delete employee (CEO only)
+  /// Deactivate employee (soft delete — CEO only)
   Future<bool> deleteEmployee(String employeeId) async {
     try {
       await _supabase
           .from('employees')
-          .delete()
+          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
           .eq('id', employeeId);
       return true;
     } catch (e) {

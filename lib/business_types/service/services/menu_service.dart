@@ -25,7 +25,7 @@ class MenuService {
         query = query.eq('company_id', companyId);
       }
 
-      final response = await query.order('created_at', ascending: false);
+      final response = await query.order('created_at', ascending: false).limit(200);
       return (response as List).map((json) => _menuItemFromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch menu items: $e');
@@ -48,7 +48,7 @@ class MenuService {
         query = query.eq('company_id', companyId);
       }
 
-      final response = await query.order('name', ascending: true);
+      final response = await query.order('name', ascending: true).limit(200);
       return (response as List).map((json) => _menuItemFromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch menu items by category: $e');

@@ -29,7 +29,7 @@ class _DistributionCEOOperationsState
   Future<void> _loadData() async {
     setState(() => _loading = true);
     try {
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null) return;
 
       final client = Supabase.instance.client;
@@ -164,13 +164,13 @@ class _DistributionCEOOperationsState
 
   Widget _buildDeliveryStats() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -239,13 +239,13 @@ class _DistributionCEOOperationsState
         warehouses.where((w) => w['is_active'] == true).length;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(

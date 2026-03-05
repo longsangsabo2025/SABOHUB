@@ -28,9 +28,9 @@ class _KpiTargetsCardState extends ConsumerState<KpiTargetsCard> {
   }
 
   Future<void> _loadTarget() async {
-    final authState = ref.read(authProvider);
-    final companyId = authState.user?.companyId;
-    final employeeId = authState.user?.id;
+    final user = ref.read(currentUserProvider);
+    final companyId = user?.companyId;
+    final employeeId = user?.id;
 
     if (companyId == null || employeeId == null) return;
 
@@ -324,23 +324,23 @@ class PromotionBadge extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Icon(Icons.local_offer, color: Colors.white, size: 20),
+              child: Icon(Icons.local_offer, color: Theme.of(context).colorScheme.surface, size: 20),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  Text(name, style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold)),
                   if (description != null)
                     Text(
                       description!,
-                      style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12),
+                      style: TextStyle(color: Theme.of(context).colorScheme.surface.withOpacity(0.9), fontSize: 12),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -348,14 +348,14 @@ class PromotionBadge extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 daysLeft > 0 ? 'Còn $daysLeft ngày' : 'Hết hạn hôm nay',
-                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
+                style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 11, fontWeight: FontWeight.w500),
               ),
             ),
           ],
@@ -388,8 +388,8 @@ class _ActivePromotionsListState extends ConsumerState<ActivePromotionsList> {
   }
 
   Future<void> _loadPromotions() async {
-    final authState = ref.read(authProvider);
-    final companyId = authState.user?.companyId;
+    final user = ref.read(currentUserProvider);
+    final companyId = user?.companyId;
     if (companyId == null) return;
 
     final promotions = await ref.read(promotionServiceProvider).getActivePromotions(companyId);
@@ -661,9 +661,9 @@ class _VisitPhotoCaptureButtonState extends ConsumerState<VisitPhotoCaptureButto
 
       setState(() => _isUploading = true);
 
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
 
       if (companyId == null || userId == null) return;
 
@@ -771,9 +771,9 @@ class _CompetitorReportFormState extends ConsumerState<CompetitorReportForm> {
     setState(() => _isSaving = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
 
       if (companyId == null || userId == null) return;
 

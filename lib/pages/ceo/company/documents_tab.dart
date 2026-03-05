@@ -133,7 +133,7 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
           onUpload: (details) async {
             final scaffoldMessenger = ScaffoldMessenger.of(context);
             // setState(() => _isUploading = true); // Removed unused state
-            final user = ref.read(authProvider).user;
+            final user = ref.read(currentUserProvider);
             
             try {
               // Here you would upload to storage first, then create document record
@@ -162,7 +162,7 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
                   SnackBar(
                     content: Row(
                       children: [
-                        const Icon(Icons.check_circle, color: Colors.white),
+                        Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text('Upload thành công: ${file.name}'),
@@ -245,10 +245,10 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
               ElevatedButton.icon(
                 onPressed: () => _showUploadDialog(context, ref),
                 icon: const Icon(Icons.upload_file),
-                label: const Text('Upload giấy tờ'),
+                label: Text('Upload giấy tờ'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue[700],
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
@@ -535,10 +535,10 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
                     ),
                     child: Text(
                       program['code'] ?? '',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white),
+                          color: Theme.of(context).colorScheme.surface),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -949,11 +949,11 @@ class _DocumentUploadDialogState extends State<_DocumentUploadDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(Icons.upload),
+              : Icon(Icons.upload),
           label: Text(_isUploading ? 'Đang upload...' : 'Upload'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue[700],
-            foregroundColor: Colors.white,
+            foregroundColor: Theme.of(context).colorScheme.surface,
           ),
         ),
       ],

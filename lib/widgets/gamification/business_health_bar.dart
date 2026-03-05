@@ -85,24 +85,24 @@ class BusinessHealthBar extends StatelessWidget {
     if (score >= 80) {
       return _HealthInfo(
         'Tuyệt vời', '💚', AppColors.success,
-        [const Color(0xFF43A047), const Color(0xFF66BB6A)],
+        [Color(0xFF43A047), Color(0xFF66BB6A)],
       );
     }
     if (score >= 60) {
       return _HealthInfo(
         'Khá tốt', '💛', AppColors.warning,
-        [const Color(0xFFFFA726), const Color(0xFFFFCA28)],
+        [Color(0xFFFFA726), Color(0xFFFFCA28)],
       );
     }
     if (score >= 30) {
       return _HealthInfo(
-        'Cần cải thiện', '🟠', const Color(0xFFE65100),
-        [const Color(0xFFE65100), const Color(0xFFFF6D00)],
+        'Cần cải thiện', '🟠', Color(0xFFE65100),
+        [Color(0xFFE65100), Color(0xFFFF6D00)],
       );
     }
     return _HealthInfo(
       'Nguy hiểm', '❤️‍🩹', AppColors.error,
-      [const Color(0xFFC62828), const Color(0xFFE53935)],
+      [Color(0xFFC62828), Color(0xFFE53935)],
     );
   }
 }

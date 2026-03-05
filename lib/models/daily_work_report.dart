@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../core/theme/app_colors.dart';
+import '../core/theme/app_colors.dart';
 
 /// Daily Work Report Model
 /// Auto-generated when employee checks out
@@ -206,7 +206,7 @@ class TaskSummary {
 
 /// Report Status
 enum ReportStatus {
-  draft('Nháp', Color(0xFF9CA3AF)),
+  draft('Nháp', AppColors.neutral400),
   submitted('Đã nộp', AppColors.success),
   reviewed('Đã xem', AppColors.info),
   approved('Đã duyệt', AppColors.primary);

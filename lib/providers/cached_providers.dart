@@ -37,14 +37,14 @@ final cachedManagerAssignedTasksProvider =
     FutureProvider.autoDispose<List<ManagementTask>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
   // Skip if not authenticated
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final userId = authState.user!.id;
+  final userId = user.id;
   final cacheKey = 'assigned_tasks_$userId';
 
   // Layer 1: Memory cache
@@ -120,13 +120,13 @@ final cachedManagerCreatedTasksProvider =
     FutureProvider.autoDispose<List<ManagementTask>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final userId = authState.user!.id;
+  final userId = user.id;
   final cacheKey = 'created_tasks_$userId';
 
   // Layer 1: Memory cache
@@ -175,13 +175,13 @@ final cachedCeoStrategicTasksProvider =
     FutureProvider.autoDispose<List<ManagementTask>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final userId = authState.user!.id;
+  final userId = user.id;
   final cacheKey = 'ceo_strategic_tasks_$userId';
 
   // Memory cache first
@@ -230,9 +230,9 @@ final cachedPendingApprovalsProvider =
     FutureProvider.autoDispose<List<TaskApproval>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated) {
+  if (user == null) {
     return [];
   }
   
@@ -256,13 +256,13 @@ final cachedTaskStatisticsProvider =
     FutureProvider.autoDispose<Map<String, int>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return {};
   }
   
-  final userId = authState.user!.id;
+  final userId = user.id;
   final cacheKey = 'task_stats_$userId';
 
   final cached = memoryCache.get<Map<String, int>>(cacheKey);
@@ -283,13 +283,13 @@ final cachedCompanyTaskStatisticsProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final companyId = authState.user!.companyId;
+  final companyId = user.companyId;
   if (companyId == null) return [];
   
   final cacheKey = 'company_task_stats_$companyId';
@@ -316,13 +316,13 @@ final cachedStaffListProvider =
     FutureProvider.autoDispose<List<Staff>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final companyId = authState.user!.companyId;
+  final companyId = user.companyId;
   final cacheKey = companyId != null ? 'staff_list_$companyId' : 'staff_list_all';
 
   // Memory cache
@@ -371,13 +371,15 @@ final cachedAllStaffProvider =
     FutureProvider.autoDispose<List<Staff>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated) {
+  if (user == null) {
     return [];
   }
   
-  const cacheKey = 'all_staff';
+  // Scope by company to prevent cross-company data leak
+  final companyId = user.companyId;
+  final cacheKey = 'all_staff_${companyId ?? 'global'}';
 
   final cached = memoryCache.get<List<Staff>>(cacheKey);
   if (cached != null) {
@@ -385,7 +387,7 @@ final cachedAllStaffProvider =
   }
 
   final service = ref.watch(staffServiceProvider);
-  final staff = await service.getAllStaff();
+  final staff = await service.getAllStaff(companyId: companyId);
 
   memoryCache.set(cacheKey, staff, config.defaultTTL);
 
@@ -397,14 +399,14 @@ final cachedManagerTeamMembersProvider =
     FutureProvider.autoDispose<List<Staff>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final companyId = authState.user!.companyId;
-  final branchId = authState.user!.branchId;
+  final companyId = user.companyId;
+  final branchId = user.branchId;
   final cacheKey = 'team_members_${companyId ?? 'no_company'}_${branchId ?? 'no_branch'}';
 
   final cached = memoryCache.get<List<Staff>>(cacheKey);
@@ -433,13 +435,13 @@ final cachedManagerDashboardKPIsProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return {};
   }
   
-  final userId = authState.user!.id;
+  final userId = user.id;
   final cacheKey = 'manager_kpis_$userId';
 
   final cached = memoryCache.get<Map<String, dynamic>>(cacheKey);
@@ -475,13 +477,13 @@ final cachedStaffStatsProvider =
     FutureProvider.autoDispose<Map<String, int>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return {};
   }
   
-  final companyId = authState.user!.companyId;
+  final companyId = user.companyId;
   final cacheKey = 'staff_stats_$companyId';
 
   final cached = memoryCache.get<Map<String, int>>(cacheKey);
@@ -509,13 +511,13 @@ final cachedManagerRecentActivitiesProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final userId = authState.user!.id;
+  final userId = user.id;
   final cacheKey = 'recent_activities_$userId';
 
   final cached = memoryCache.get<List<Map<String, dynamic>>>(cacheKey);
@@ -549,9 +551,9 @@ final cachedManagerRecentActivitiesProvider =
 
 /// Refresh assigned tasks
 void refreshManagerAssignedTasks(WidgetRef ref) {
-  final authState = ref.read(authProvider);
-  if (authState.user != null) {
-    final cacheKey = 'assigned_tasks_${authState.user!.id}';
+  final user = ref.read(currentUserProvider);
+  if (user != null) {
+    final cacheKey = 'assigned_tasks_${user.id}';
     ref.read(memoryCacheProvider).remove(cacheKey);
   }
   ref.invalidate(cachedManagerAssignedTasksProvider);
@@ -559,9 +561,9 @@ void refreshManagerAssignedTasks(WidgetRef ref) {
 
 /// Refresh created tasks
 void refreshManagerCreatedTasks(WidgetRef ref) {
-  final authState = ref.read(authProvider);
-  if (authState.user != null) {
-    final cacheKey = 'created_tasks_${authState.user!.id}';
+  final user = ref.read(currentUserProvider);
+  if (user != null) {
+    final cacheKey = 'created_tasks_${user.id}';
     ref.read(memoryCacheProvider).remove(cacheKey);
   }
   ref.invalidate(cachedManagerCreatedTasksProvider);
@@ -579,9 +581,9 @@ void refreshAllManagementTasks(WidgetRef ref) {
 
 /// Refresh staff list
 void refreshStaffList(WidgetRef ref) {
-  final authState = ref.read(authProvider);
-  if (authState.user?.companyId != null) {
-    ref.read(memoryCacheProvider).remove('staff_list_${authState.user!.companyId}');
+  final user = ref.read(currentUserProvider);
+  if (user?.companyId != null) {
+    ref.read(memoryCacheProvider).remove('staff_list_${user!.companyId}');
   }
   ref.invalidate(cachedStaffListProvider);
   ref.invalidate(cachedAllStaffProvider);
@@ -619,9 +621,9 @@ void invalidateAllTasksCache(WidgetRef ref, String? branchId) {
 /// Realtime task updates subscription
 /// Uses simple stream approach for better compatibility
 final taskRealtimeProvider = StreamProvider.autoDispose<List<ManagementTask>>((ref) {
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return const Stream.empty();
   }
   
@@ -648,9 +650,9 @@ final taskRealtimeProvider = StreamProvider.autoDispose<List<ManagementTask>>((r
 
 /// Simple realtime listener that auto-refreshes on changes
 final taskChangeListenerProvider = Provider.autoDispose<void>((ref) {
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return;
   }
   
@@ -731,7 +733,7 @@ class DriverDeliveryCache {
     'status': status,
     'sales_orders': {
       'order_number': orderNumber,
-      'total_amount': totalAmount,
+      'total': totalAmount,
       'customers': {
         'name': customerName,
         'address': customerAddress,
@@ -750,13 +752,13 @@ final cachedDriverDeliveriesProvider =
     FutureProvider.autoDispose<List<DriverDeliveryCache>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final employeeId = authState.user!.id;
+  final employeeId = user.id;
   final cacheKey = 'driver_deliveries_$employeeId';
 
   // Memory cache
@@ -796,13 +798,13 @@ final cachedDriverDeliveryHistoryProvider =
     FutureProvider.autoDispose<List<DriverDeliveryCache>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final employeeId = authState.user!.id;
+  final employeeId = user.id;
   final cacheKey = 'driver_history_$employeeId';
 
   final cached = memoryCache.get<List<DriverDeliveryCache>>(cacheKey);
@@ -840,13 +842,13 @@ final cachedDriverDashboardStatsProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return {};
   }
   
-  final employeeId = authState.user!.id;
+  final employeeId = user.id;
   final cacheKey = 'driver_stats_$employeeId';
 
   final cached = memoryCache.get<Map<String, dynamic>>(cacheKey);
@@ -870,9 +872,9 @@ final cachedDriverDashboardStatsProvider =
 
 /// Refresh driver deliveries
 void refreshDriverDeliveries(WidgetRef ref) {
-  final authState = ref.read(authProvider);
-  if (authState.user != null) {
-    ref.read(memoryCacheProvider).remove('driver_deliveries_${authState.user!.id}');
+  final user = ref.read(currentUserProvider);
+  if (user != null) {
+    ref.read(memoryCacheProvider).remove('driver_deliveries_${user.id}');
   }
   ref.invalidate(cachedDriverDeliveriesProvider);
   ref.invalidate(cachedDriverDashboardStatsProvider);
@@ -880,9 +882,9 @@ void refreshDriverDeliveries(WidgetRef ref) {
 
 /// Refresh driver history
 void refreshDriverHistory(WidgetRef ref) {
-  final authState = ref.read(authProvider);
-  if (authState.user != null) {
-    ref.read(memoryCacheProvider).remove('driver_history_${authState.user!.id}');
+  final user = ref.read(currentUserProvider);
+  if (user != null) {
+    ref.read(memoryCacheProvider).remove('driver_history_${user.id}');
   }
   ref.invalidate(cachedDriverDeliveryHistoryProvider);
 }
@@ -895,9 +897,9 @@ void refreshAllDriverData(WidgetRef ref) {
 
 /// Driver realtime listener
 final driverDeliveryListenerProvider = Provider.autoDispose<void>((ref) {
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return;
   }
   
@@ -1004,13 +1006,13 @@ final cachedWarehouseOrdersProvider =
     FutureProvider.autoDispose<List<WarehouseOrderCache>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final companyId = authState.user!.companyId;
+  final companyId = user.companyId;
   if (companyId == null) return [];
   
   final cacheKey = 'warehouse_orders_$companyId';
@@ -1042,13 +1044,13 @@ final cachedWarehouseDashboardStatsProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return {};
   }
   
-  final companyId = authState.user!.companyId;
+  final companyId = user.companyId;
   if (companyId == null) return {};
   
   final cacheKey = 'warehouse_stats_$companyId';
@@ -1074,9 +1076,9 @@ final cachedWarehouseDashboardStatsProvider =
 
 /// Refresh warehouse orders
 void refreshWarehouseOrders(WidgetRef ref) {
-  final authState = ref.read(authProvider);
-  if (authState.user?.companyId != null) {
-    ref.read(memoryCacheProvider).remove('warehouse_orders_${authState.user!.companyId}');
+  final user = ref.read(currentUserProvider);
+  if (user?.companyId != null) {
+    ref.read(memoryCacheProvider).remove('warehouse_orders_${user!.companyId}');
   }
   ref.invalidate(cachedWarehouseOrdersProvider);
   ref.invalidate(cachedWarehouseDashboardStatsProvider);
@@ -1084,9 +1086,9 @@ void refreshWarehouseOrders(WidgetRef ref) {
 
 /// Warehouse realtime listener
 final warehouseOrderListenerProvider = Provider.autoDispose<void>((ref) {
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return;
   }
   
@@ -1114,14 +1116,14 @@ final cachedShiftLeaderTeamProvider =
     FutureProvider.autoDispose<List<Staff>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final companyId = authState.user!.companyId;
-  final branchId = authState.user!.branchId;
+  final companyId = user.companyId;
+  final branchId = user.branchId;
   final cacheKey = 'shift_team_${companyId ?? 'all'}_${branchId ?? 'all'}';
 
   final cached = memoryCache.get<List<Staff>>(cacheKey);
@@ -1150,13 +1152,13 @@ final cachedShiftLeaderTasksProvider =
     FutureProvider.autoDispose<List<ManagementTask>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final userId = authState.user!.id;
+  final userId = user.id;
   final cacheKey = 'shift_leader_tasks_$userId';
 
   final cached = memoryCache.get<List<ManagementTask>>(cacheKey);
@@ -1188,13 +1190,13 @@ final cachedShiftLeaderDashboardStatsProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return {};
   }
   
-  final userId = authState.user!.id;
+  final userId = user.id;
   final cacheKey = 'shift_leader_stats_$userId';
 
   final cached = memoryCache.get<Map<String, dynamic>>(cacheKey);
@@ -1239,13 +1241,13 @@ final cachedStaffAttendanceProvider =
     FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return null;
   }
   
-  final userId = authState.user!.id;
+  final userId = user.id;
   final today = DateTime.now();
   final cacheKey = 'staff_attendance_${userId}_${today.year}_${today.month}_${today.day}';
 
@@ -1280,13 +1282,13 @@ final cachedStaffMyTasksProvider =
     FutureProvider.autoDispose<List<ManagementTask>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final userId = authState.user!.id;
+  final userId = user.id;
   final cacheKey = 'staff_my_tasks_$userId';
 
   final cached = memoryCache.get<List<ManagementTask>>(cacheKey);
@@ -1307,13 +1309,13 @@ final cachedStaffDashboardStatsProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return {};
   }
   
-  final userId = authState.user!.id;
+  final userId = user.id;
   final cacheKey = 'staff_dashboard_stats_$userId';
 
   final cached = memoryCache.get<Map<String, dynamic>>(cacheKey);
@@ -1354,14 +1356,14 @@ final cachedSalesRoutesProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final companyId = authState.user!.companyId;
-  final employeeId = authState.user!.id;
+  final companyId = user.companyId;
+  final employeeId = user.id;
   final cacheKey = 'sales_routes_${companyId}_$employeeId';
 
   final cached = memoryCache.get<List<Map<String, dynamic>>>(cacheKey);
@@ -1388,13 +1390,13 @@ final cachedSalesCustomersProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final companyId = authState.user!.companyId;
+  final companyId = user.companyId;
   if (companyId == null) return [];
   
   final cacheKey = 'sales_customers_$companyId';
@@ -1424,14 +1426,14 @@ final cachedSalesOrdersProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return [];
   }
   
-  final companyId = authState.user!.companyId;
-  final employeeId = authState.user!.id;
+  final companyId = user.companyId;
+  final employeeId = user.id;
   if (companyId == null) return [];
   
   final cacheKey = 'sales_orders_${companyId}_$employeeId';
@@ -1461,13 +1463,13 @@ final cachedSalesDashboardStatsProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return {};
   }
   
-  final employeeId = authState.user!.id;
+  final employeeId = user.id;
   final cacheKey = 'sales_dashboard_stats_$employeeId';
 
   final cached = memoryCache.get<Map<String, dynamic>>(cacheKey);
@@ -1512,9 +1514,9 @@ void refreshSalesData(WidgetRef ref) {
 
 /// Sales realtime listener
 final salesOrderListenerProvider = Provider.autoDispose<void>((ref) {
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated || authState.user == null) {
+  if (user == null) {
     return;
   }
   
@@ -1542,9 +1544,9 @@ final cachedAllCompaniesProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated) {
+  if (user == null) {
     return [];
   }
   
@@ -1572,9 +1574,9 @@ final cachedPlatformStatsProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final memoryCache = ref.watch(memoryCacheProvider);
   final config = ref.watch(cacheConfigProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!authState.isAuthenticated) {
+  if (user == null) {
     return {};
   }
   
@@ -1628,10 +1630,10 @@ void refreshSuperAdminData(WidgetRef ref) {
 
 /// Refresh all data based on user role
 void refreshAllDataByRole(WidgetRef ref) {
-  final authState = ref.read(authProvider);
-  if (authState.user == null) return;
+  final user = ref.read(currentUserProvider);
+  if (user == null) return;
   
-  final role = authState.user!.role;
+  final role = user.role;
   
   switch (role.name.toUpperCase()) {
     case 'CEO':

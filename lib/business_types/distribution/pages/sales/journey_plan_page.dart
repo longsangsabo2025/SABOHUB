@@ -13,8 +13,10 @@ import '../../widgets/sales_features_widgets.dart';
 import '../../widgets/sales_features_widgets_2.dart';
 import 'sales_journey_map_page.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../../../utils/app_logger.dart';
 import '../../../../providers/auth_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Journey Plan Page - for daily route planning and execution
 class JourneyPlanPage extends ConsumerStatefulWidget {
@@ -133,10 +135,10 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
               child: ElevatedButton.icon(
                 onPressed: _createQuickPlan,
                 icon: const Icon(Icons.add_location_alt),
-                label: const Text('Lên tuyến hôm nay'),
+                label: Text('Lên tuyến hôm nay'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -190,8 +192,8 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
                 ),
                 child: Text(
                   statusText,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.surface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -345,8 +347,8 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
                     child: Center(
                       child: Text(
                         '${stop.stopOrder}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.surface,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -483,10 +485,10 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
       return FloatingActionButton.extended(
         onPressed: _isStarting ? null : () => _startJourney(plan.id),
         icon: _isStarting
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
               )
             : const Icon(Icons.play_arrow),
         label: Text(_isStarting ? 'Đang bắt đầu...' : 'Bắt đầu hành trình'),
@@ -497,10 +499,10 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
       return FloatingActionButton.extended(
         onPressed: _isCompleting ? null : () => _completeJourney(plan.id),
         icon: _isCompleting
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
               )
             : const Icon(Icons.check),
         label: Text(_isCompleting ? 'Đang hoàn thành...' : 'Kết thúc hành trình'),
@@ -628,7 +630,7 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
 
       if (selectedRoute != null) {
         final service = ref.read(salesRouteServiceProvider);
-        final currentUser = ref.read(authProvider).user;
+        final currentUser = ref.read(currentUserProvider);
         await service.createJourneyPlanFromRoute(
           routeId: selectedRoute.id,
           employeeId: currentUser?.id ?? '',
@@ -652,7 +654,7 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
 
   /// Quick plan: let sale pick customers directly
   Future<void> _createQuickPlan() async {
-    final currentUser = ref.read(authProvider).user;
+    final currentUser = ref.read(currentUserProvider);
     final companyId = currentUser?.companyId;
     if (companyId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1103,8 +1105,8 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
           minChildSize: 0.5,
           maxChildSize: 0.95,
           builder: (context, scrollController) => Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: AddSampleSheet(
@@ -1144,7 +1146,9 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
       if (row != null && row['lead_status'] != null) {
         currentStatus = row['lead_status'] as String;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('JourneyPlanPage._showUpdateCustomerStatus error: $e');
+    }
 
     if (!mounted) return;
 
@@ -1224,7 +1228,7 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
     if (result == null || !mounted) return;
 
     try {
-      final currentUser = ref.read(authProvider).user;
+      final currentUser = ref.read(currentUserProvider);
       await Supabase.instance.client.from('customers').update({
         'lead_status': result['status'],
         'last_interaction_notes': result['notes'],
@@ -1331,7 +1335,7 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
   Future<void> _checkInStop(JourneyPlanStop stop) async {
     try {
       final location = await _getCurrentLocation();
-      final currentUser = ref.read(authProvider).user;
+      final currentUser = ref.read(currentUserProvider);
       
       // Check in via store visit service
       final visitService = ref.read(storeVisitServiceProvider);
@@ -1386,7 +1390,7 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
       // Check out via store visit service
       if (stop.storeVisitId != null) {
         final visitService = ref.read(storeVisitServiceProvider);
-        final currentUser = ref.read(authProvider).user;
+        final currentUser = ref.read(currentUserProvider);
         await visitService.checkOut(
           visitId: stop.storeVisitId!,
           location: location ?? {},
@@ -1483,7 +1487,7 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
         'timestamp': DateTime.now().toIso8601String(),
       };
     } catch (e) {
-      debugPrint('Location error: $e');
+      AppLogger.error('Location error: $e');
       return null;
     }
   }
@@ -1602,7 +1606,7 @@ class _CustomerSelectionDialogState extends State<_CustomerSelectionDialog> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading filters: $e');
+      AppLogger.error('Error loading filters: $e');
     }
   }
 
@@ -1789,8 +1793,8 @@ class _CustomerSelectionDialogState extends State<_CustomerSelectionDialog> {
                                   children: [
                                     Text(
                                       '${i + 1}.',
-                                      style: const TextStyle(
-                                        color: Colors.white70,
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.surface70,
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -1798,16 +1802,16 @@ class _CustomerSelectionDialogState extends State<_CustomerSelectionDialog> {
                                     const SizedBox(width: 4),
                                     Text(
                                       _selectedCustomers[i]['name'] as String? ?? '',
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.surface,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                    const SizedBox(width: 4),
+                                    SizedBox(width: 4),
                                     InkWell(
                                       onTap: () => _toggleCustomer(_selectedCustomers[i]),
-                                      child: const Icon(Icons.close, size: 14, color: Colors.white70),
+                                      child: Icon(Icons.close, size: 14, color: Theme.of(context).colorScheme.surface70),
                                     ),
                                   ],
                                 ),
@@ -1847,14 +1851,14 @@ class _CustomerSelectionDialogState extends State<_CustomerSelectionDialog> {
                       if (hasActiveFilters) ...[  
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.green.shade600,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             '${_customers.length} KH',
-                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -1896,8 +1900,8 @@ class _CustomerSelectionDialogState extends State<_CustomerSelectionDialog> {
                 // District chips
                 if (_districts.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-                    color: Colors.white,
+                    padding: EdgeInsets.fromLTRB(12, 4, 12, 4),
+                    color: Theme.of(context).colorScheme.surface,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1918,19 +1922,19 @@ class _CustomerSelectionDialogState extends State<_CustomerSelectionDialog> {
                               final count = d['count'] as int;
                               final isActive = _selectedDistrict == name;
                               return Padding(
-                                padding: const EdgeInsets.only(right: 6),
+                                padding: EdgeInsets.only(right: 6),
                                 child: FilterChip(
                                   label: Text(
                                     '${_formatDistrictLabel(name)} ($count)',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: isActive ? Colors.white : Colors.grey.shade800,
+                                      color: isActive ? Theme.of(context).colorScheme.surface : Colors.grey.shade800,
                                     ),
                                   ),
                                   selected: isActive,
                                   selectedColor: Colors.teal.shade600,
                                   backgroundColor: Colors.grey.shade100,
-                                  checkmarkColor: Colors.white,
+                                  checkmarkColor: Theme.of(context).colorScheme.surface,
                                   visualDensity: VisualDensity.compact,
                                   padding: EdgeInsets.zero,
                                   onSelected: (selected) {
@@ -1949,8 +1953,8 @@ class _CustomerSelectionDialogState extends State<_CustomerSelectionDialog> {
                 // Route chips
                 if (_routes.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
-                    color: Colors.white,
+                    padding: EdgeInsets.fromLTRB(12, 2, 12, 6),
+                    color: Theme.of(context).colorScheme.surface,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1971,19 +1975,19 @@ class _CustomerSelectionDialogState extends State<_CustomerSelectionDialog> {
                               final count = r['count'] as int;
                               final isActive = _selectedRoute == name;
                               return Padding(
-                                padding: const EdgeInsets.only(right: 6),
+                                padding: EdgeInsets.only(right: 6),
                                 child: FilterChip(
                                   label: Text(
                                     '$name ($count)',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: isActive ? Colors.white : Colors.grey.shade800,
+                                      color: isActive ? Theme.of(context).colorScheme.surface : Colors.grey.shade800,
                                     ),
                                   ),
                                   selected: isActive,
                                   selectedColor: Colors.indigo.shade600,
                                   backgroundColor: Colors.grey.shade100,
-                                  checkmarkColor: Colors.white,
+                                  checkmarkColor: Theme.of(context).colorScheme.surface,
                                   visualDensity: VisualDensity.compact,
                                   padding: EdgeInsets.zero,
                                   onSelected: (selected) {
@@ -2088,8 +2092,8 @@ class _CustomerSelectionDialogState extends State<_CustomerSelectionDialog> {
                                 child: isSelected
                                     ? Text(
                                         '$orderNum',
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.surface,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       )

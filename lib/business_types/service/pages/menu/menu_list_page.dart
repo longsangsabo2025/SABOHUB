@@ -33,7 +33,7 @@ class _MenuListPageState extends ConsumerState<MenuListPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thực đơn'),
+        title: Text('Thực đơn'),
         backgroundColor: Colors.green.shade50,
         foregroundColor: Colors.green.shade900,
         elevation: 0,
@@ -64,7 +64,7 @@ class _MenuListPageState extends ConsumerState<MenuListPage>
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToMenuForm(),
         backgroundColor: Colors.green.shade600,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Theme.of(context).colorScheme.surface),
       ),
     );
   }
@@ -285,14 +285,14 @@ class _MenuListPageState extends ConsumerState<MenuListPage>
               color: Colors.grey.shade500,
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () => _navigateToMenuForm(null, category),
             icon: Icon(category.icon),
             label: Text('Thêm ${category.label}'),
             style: ElevatedButton.styleFrom(
               backgroundColor: category.color,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.surface,
             ),
           ),
         ],

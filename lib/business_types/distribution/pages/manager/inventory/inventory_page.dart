@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../models/odori_product.dart';
+import '../../../providers/inventory_provider.dart';
 import '../../../../../providers/auth_provider.dart';
 import '../../../../../widgets/sabo_refresh_button.dart';
+import '../../../../../utils/app_logger.dart';
 import 'inventory_constants.dart';
 import 'product_sheets.dart';
 import 'category_management.dart';
@@ -15,6 +17,7 @@ import 'warehouse_detail_page.dart';
 import 'warehouse_dialogs.dart';
 import 'sample_management_page.dart';
 import 'add_sample_sheet.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 // ==================== INVENTORY PAGE ====================
 class InventoryPage extends ConsumerStatefulWidget {
@@ -25,55 +28,16 @@ class InventoryPage extends ConsumerStatefulWidget {
 }
 
 class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTickerProviderStateMixin {
-  String _searchQuery = '';
-  String? _selectedCategory; // Stores category ID, not name
-  final List<String> _categories = [];
-  List<Map<String, dynamic>> _categoryData = [];
-  final bool _showLowStock = false;
-  final List<OdoriProduct> _allProducts = [];
-  int _currentOffset = 0;
-  static const int _pageSize = 50;
-  bool _hasMore = true;
-  bool _isLoadingMore = false;
-  bool _isInitialLoading = true;
-  final ScrollController _scrollController = ScrollController();
-  
-  // Stats
-  int _totalProducts = 0;
-  int _lowStockCount = 0;
-  int _outOfStockCount = 0;
-  
-  // Tab controller
+  // Keep controllers local (need dispose lifecycle)
   late TabController _tabController;
-  
-  // Inventory & Warehouses data
-  List<Map<String, dynamic>> _warehouses = [];
-  bool _isRefreshing = false;
-  
-  // Product stock from inventory table (product_id -> {total, warehouseCount, warehouses})
-  Map<String, Map<String, dynamic>> _productStockMap = {};
-  
-  // Sample Products data
-  List<Map<String, dynamic>> _samples = [];
-  bool _isLoadingSamples = true;
-  String _sampleSearchQuery = '';
-  String? _selectedSampleStatus;
-  int _totalSamples = 0;
-  int _pendingSamples = 0;
-  int _convertedSamples = 0;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _scrollController.addListener(_onScroll);
-    _loadCategories();
-    _loadStats();
-    _loadInitial();
-    _loadInventoryData();
-    _loadMovements();
-    _loadWarehouses();
-    _loadSamples();
+    // Provider's build() kicks off all initial loading
   }
 
   @override
@@ -84,143 +48,16 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
     super.dispose();
   }
   
-  Future<void> _loadInventoryData() async {
-    try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
-      if (companyId.isEmpty) return;
+  // ---- Thin wrappers delegating to InventoryNotifier ----
 
-      final data = await supabase
-          .from('inventory')
-          .select('*, products(id, name, sku, unit), warehouses(id, name, code, type)')
-          .eq('company_id', companyId)
-          .order('products(name)')
-          .limit(1000);
+  Future<void> _loadInventoryData() =>
+      ref.read(inventoryProvider.notifier).loadInventoryData();
 
-      // Build product stock map from inventory
-      final stockMap = <String, Map<String, dynamic>>{};
-      for (var inv in data) {
-        final productId = inv['product_id'] as String?;
-        final qty = (inv['quantity'] as num?)?.toInt() ?? 0;
-        final warehouse = inv['warehouses'] as Map<String, dynamic>?;
-        
-        if (productId != null && qty > 0) {
-          if (!stockMap.containsKey(productId)) {
-            stockMap[productId] = {
-              'total': 0,
-              'warehouseCount': 0,
-              'warehouses': <Map<String, dynamic>>[],
-            };
-          }
-          stockMap[productId]!['total'] = (stockMap[productId]!['total'] as int) + qty;
-          stockMap[productId]!['warehouseCount'] = (stockMap[productId]!['warehouseCount'] as int) + 1;
-          (stockMap[productId]!['warehouses'] as List).add({
-            'name': warehouse?['name'] ?? 'Unknown',
-            'code': warehouse?['code'] ?? '',
-            'type': warehouse?['type'] ?? 'main',
-            'quantity': qty,
-          });
-        }
-      }
+  Future<void> _loadWarehouses() =>
+      ref.read(inventoryProvider.notifier).loadWarehouses();
 
-      if (mounted) {
-        setState(() {
-          _productStockMap = stockMap;
-        });
-      }
-    } catch (e) {
-      debugPrint('❌ Error loading inventory: $e');
-    }
-  }
-
-  Future<void> _loadMovements() async {
-    try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
-      if (companyId.isEmpty) return;
-
-      await supabase
-          .from('inventory_movements')
-          .select('*, products(id, name, sku, unit)')
-          .eq('company_id', companyId)
-          .order('created_at', ascending: false)
-          .limit(50);
-
-      if (mounted) {
-        setState(() {});
-      }
-    } catch (e) {
-      debugPrint('❌ Error loading movements: $e');
-    }
-  }
-
-  Future<void> _loadWarehouses() async {
-    try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
-      if (companyId.isEmpty) return;
-
-      final data = await supabase
-          .from('warehouses')
-          .select('*')
-          .eq('company_id', companyId)
-          .order('name');
-
-      if (mounted) {
-        setState(() {
-          _warehouses = List<Map<String, dynamic>>.from(data);
-        });
-      }
-    } catch (e) {
-      debugPrint('❌ Error loading warehouses: $e');
-    }
-  }
-  
-  Future<void> _loadSamples() async {
-    setState(() => _isLoadingSamples = true);
-    try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
-      if (companyId.isEmpty) return;
-
-      var query = supabase
-          .from('product_samples')
-          .select('*, products(id, name, sku, unit, image_url), customers(id, name, phone)')
-          .eq('company_id', companyId);
-      
-      if (_selectedSampleStatus != null) {
-        query = query.eq('status', _selectedSampleStatus!);
-      }
-      
-      if (_sampleSearchQuery.isNotEmpty) {
-        query = query.or('product_name.ilike.%$_sampleSearchQuery%,product_sku.ilike.%$_sampleSearchQuery%');
-      }
-      
-      final data = await query.order('sent_date', ascending: false).limit(100);
-      
-      // Calculate stats
-      final allData = await supabase
-          .from('product_samples')
-          .select('status, converted_to_order')
-          .eq('company_id', companyId);
-      
-      int pending = 0;
-      int converted = 0;
-      for (var s in (allData as List)) {
-        if (s['status'] == 'pending' || s['status'] == 'delivered') pending++;
-        if (s['converted_to_order'] == true) converted++;
-      }
-
-      if (mounted) {
-        setState(() {
-          _samples = List<Map<String, dynamic>>.from(data);
-          _totalSamples = (allData).length;
-          _pendingSamples = pending;
-          _convertedSamples = converted;
-          _isLoadingSamples = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('❌ Error loading samples: $e');
-      if (mounted) setState(() => _isLoadingSamples = false);
-    }
-  }
+  Future<void> _loadSamples() =>
+      ref.read(inventoryProvider.notifier).loadSamples();
 
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
@@ -228,196 +65,31 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
     }
   }
 
-  Future<void> _loadCategories() async {
-    try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
-      if (companyId.isEmpty) return;
+  Future<void> _loadCategories() =>
+      ref.read(inventoryProvider.notifier).loadCategories();
 
-      final response = await supabase
-          .from('product_categories')
-          .select('id, name, description')
-          .eq('company_id', companyId)
-          .order('name');
+  Future<void> _loadStats() =>
+      ref.read(inventoryProvider.notifier).loadStats();
 
-      if (mounted) {
-        setState(() {
-          _categories.clear();
-          _categoryData = List<Map<String, dynamic>>.from(response);
-          for (var cat in _categoryData) {
-            _categories.add(cat['name'] as String);
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint('❌ Error loading categories: $e');
-    }
-  }
+  Future<void> _loadInitial() =>
+      ref.read(inventoryProvider.notifier).loadProducts();
 
-  Future<void> _loadStats() async {
-    try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
-      if (companyId.isEmpty) return;
-
-      // Count total products
-      final totalResponse = await supabase
-          .from('products')
-          .select('id')
-          .eq('company_id', companyId)
-          .neq('status', 'inactive');
-
-      if (mounted) {
-        setState(() {
-          _totalProducts = (totalResponse as List).length;
-        });
-      }
-    } catch (e) {
-      debugPrint('❌ Error loading stats: $e');
-    }
-  }
-  
-  // Update low/out of stock counts based on actual inventory data
-  void _updateStockCounts() {
-    if (_allProducts.isEmpty) return;
-    
-    int lowStock = 0;
-    int outOfStock = 0;
-    
-    for (var product in _allProducts) {
-      final stock = _getProductTotalStock(product);
-      final reorderPoint = product.reorderPoint ?? 10;
-      if (stock == 0) {
-        outOfStock++;
-      } else if (stock < reorderPoint) {
-        lowStock++;
-      }
-    }
-    
-    setState(() {
-      _lowStockCount = lowStock;
-      _outOfStockCount = outOfStock;
-    });
-  }
-
-  Future<void> _loadInitial() async {
-    setState(() {
-      _isInitialLoading = true;
-      _allProducts.clear();
-      _currentOffset = 0;
-      _hasMore = true;
-    });
-
-    try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
-      if (companyId.isEmpty) {
-        setState(() => _isInitialLoading = false);
-        return;
-      }
-
-      var query = supabase
-          .from('products')
-          .select('*')
-          .eq('company_id', companyId)
-          .neq('status', 'inactive');
-
-      if (_selectedCategory != null) {
-        query = query.eq('category_id', _selectedCategory!);
-      }
-      if (_searchQuery.isNotEmpty) {
-        query = query.or('name.ilike.%$_searchQuery%,sku.ilike.%$_searchQuery%');
-      }
-
-      final response = await query.order('name').range(0, _pageSize - 1);
-
-      var products = (response as List).map((json) => OdoriProduct.fromJson(json)).toList();
-
-      if (_showLowStock) {
-        products = products.where((p) {
-          final stock = p.minStock ?? 0;
-          final reorderPoint = p.reorderPoint ?? 10;
-          return stock == 0 || stock < reorderPoint;
-        }).toList();
-      }
-
-      setState(() {
-        _allProducts.addAll(products);
-        _hasMore = products.length >= _pageSize;
-        _isInitialLoading = false;
-      });
-      
-      // Update stock counts based on actual inventory
-      _updateStockCounts();
-    } catch (e) {
-      debugPrint('❌ Error loading products: $e');
-      setState(() => _isInitialLoading = false);
-    }
-  }
-
-  Future<void> _loadMore() async {
-    if (_isLoadingMore || !_hasMore || _isInitialLoading) return;
-
-    setState(() => _isLoadingMore = true);
-
-    try {
-      final newOffset = _currentOffset + _pageSize;
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
-
-      var query = supabase
-          .from('products')
-          .select('*')
-          .eq('company_id', companyId)
-          .neq('status', 'inactive');
-
-      if (_selectedCategory != null) {
-        query = query.eq('category_id', _selectedCategory!);
-      }
-      if (_searchQuery.isNotEmpty) {
-        query = query.or('name.ilike.%$_searchQuery%,sku.ilike.%$_searchQuery%');
-      }
-
-      final response = await query.order('name').range(newOffset, newOffset + _pageSize - 1);
-
-      var newProducts = (response as List).map((json) => OdoriProduct.fromJson(json)).toList();
-
-      if (_showLowStock) {
-        newProducts = newProducts.where((p) {
-          final stock = p.minStock ?? 0;
-          final reorderPoint = p.reorderPoint ?? 10;
-          return stock == 0 || stock < reorderPoint;
-        }).toList();
-      }
-
-      setState(() {
-        _allProducts.addAll(newProducts);
-        _currentOffset = newOffset;
-        _hasMore = newProducts.length >= _pageSize;
-        _isLoadingMore = false;
-      });
-      
-      // Update stock counts
-      _updateStockCounts();
-    } catch (e) {
-      setState(() => _isLoadingMore = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi tải thêm: $e')),
-        );
-      }
-    }
-  }
+  Future<void> _loadMore() =>
+      ref.read(inventoryProvider.notifier).loadMore();
 
   // Get actual stock from inventory table (not from product.minStock)
   int _getProductTotalStock(OdoriProduct product) {
-    final stockInfo = _productStockMap[product.id];
+    final stockInfo = ref.read(inventoryProvider).productStockMap[product.id];
     return stockInfo?['total'] as int? ?? 0;
   }
   
   int _getProductWarehouseCount(OdoriProduct product) {
-    final stockInfo = _productStockMap[product.id];
+    final stockInfo = ref.read(inventoryProvider).productStockMap[product.id];
     return stockInfo?['warehouseCount'] as int? ?? 0;
   }
   
   List<Map<String, dynamic>> _getProductWarehouseBreakdown(OdoriProduct product) {
-    final stockInfo = _productStockMap[product.id];
+    final stockInfo = ref.read(inventoryProvider).productStockMap[product.id];
     return List<Map<String, dynamic>>.from(stockInfo?['warehouses'] ?? []);
   }
 
@@ -438,33 +110,21 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
   }
 
   void _onSearchChanged(String value) {
-    setState(() => _searchQuery = value);
-    _loadInitial();
+    ref.read(inventoryProvider.notifier).setSearchQuery(value);
   }
 
-  Future<void> _refreshAll() async {
-    if (_isRefreshing) return;
-    setState(() => _isRefreshing = true);
-    try {
-      await Future.wait<void>([
-        _loadStats(),
-        _loadCategories(),
-        _loadInitial(),
-        _loadInventoryData(),
-        _loadWarehouses(),
-      ]);
-    } finally {
-      if (mounted) setState(() => _isRefreshing = false);
-    }
-  }
+  Future<void> _refreshAll() =>
+      ref.read(inventoryProvider.notifier).refreshAll();
 
   @override
   Widget build(BuildContext context) {
+    // Watch provider to trigger rebuilds on state changes
+    ref.watch(inventoryProvider);
     return Column(
       children: [
         // Tab Bar Header
         Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: TabBar(
             controller: _tabController,
             labelColor: Colors.teal.shade700,
@@ -497,7 +157,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
   
   // Tab 1: Warehouse List
   Widget _buildWarehouseListTab() {
-    if (_warehouses.isEmpty) {
+    if (ref.watch(inventoryProvider).warehouses.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -519,10 +179,10 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
             ElevatedButton.icon(
               onPressed: () => _showAddWarehouseDialog(),
               icon: const Icon(Icons.add),
-              label: const Text('Thêm kho mới'),
+              label: Text('Thêm kho mới'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.surface,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -537,10 +197,10 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
         RefreshIndicator(
           onRefresh: _loadWarehouses,
           child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-            itemCount: _warehouses.length,
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 100),
+            itemCount: ref.watch(inventoryProvider).warehouses.length,
             itemBuilder: (context, index) {
-              final warehouse = _warehouses[index];
+              final warehouse = ref.watch(inventoryProvider).warehouses[index];
               return _buildWarehouseCard(warehouse);
             },
           ),
@@ -552,8 +212,8 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
             heroTag: 'addWarehouse',
             onPressed: () => _showAddWarehouseDialog(),
             backgroundColor: Colors.teal,
-            icon: const Icon(Icons.add, color: Colors.white),
-            label: const Text('Thêm kho', style: TextStyle(color: Colors.white)),
+            icon: Icon(Icons.add, color: Theme.of(context).colorScheme.surface),
+            label: Text('Thêm kho', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ),
       ],
@@ -570,14 +230,14 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
     final config = WarehouseTypeConfig.fromType(type);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: !isActive ? Border.all(color: Colors.red.shade200) : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -619,7 +279,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
-                                    color: isActive ? Colors.black87 : Colors.grey,
+                                    color: isActive ? Theme.of(context).colorScheme.onSurface87 : Colors.grey,
                                   ),
                                 ),
                               ),
@@ -750,7 +410,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -758,7 +418,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
               await _deleteWarehouse(warehouse);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+            child: Text('Xóa', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),
@@ -767,7 +427,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
   
   Future<void> _deleteWarehouse(Map<String, dynamic> warehouse) async {
     try {
-      await supabase.from('warehouses').delete().eq('id', warehouse['id']);
+      await supabase.from('warehouses').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', warehouse['id']);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -802,7 +462,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
           onStockOut: () => _showStockOutDialog(warehouse),
           onTransfer: () => _showTransferStockDialog(warehouse),
           onEdit: () => _showEditWarehouseSheet(warehouse),
-          allWarehouses: _warehouses,
+          allWarehouses: ref.read(inventoryProvider).warehouses,
           onRefresh: () {
             _loadWarehouses();
             _loadInventoryData();
@@ -976,7 +636,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
   
   Future<List<Map<String, dynamic>>> _getWarehouseStock(String warehouseId) async {
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       final data = await supabase
           .from('inventory')
           .select('*, products(id, name, sku, unit)')
@@ -986,7 +646,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
           .order('products(name)');
       return List<Map<String, dynamic>>.from(data);
     } catch (e) {
-      debugPrint('❌ Error loading warehouse stock: $e');
+      AppLogger.error('Error loading warehouse stock: $e');
       return [];
     }
   }
@@ -1013,10 +673,9 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
       context: context,
       ref: ref,
       warehouse: warehouse,
-      products: _allProducts,
+      products: ref.read(inventoryProvider).allProducts,
       onSuccess: () {
         _loadInventoryData();
-        _loadMovements();
       },
     );
   }
@@ -1029,7 +688,6 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
       getWarehouseStock: _getWarehouseStock,
       onSuccess: () {
         _loadInventoryData();
-        _loadMovements();
       },
     );
   }
@@ -1039,11 +697,10 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
       context: context,
       ref: ref,
       fromWarehouse: warehouse,
-      allWarehouses: _warehouses,
+      allWarehouses: ref.read(inventoryProvider).warehouses,
       getWarehouseStock: _getWarehouseStock,
       onSuccess: () {
         _loadInventoryData();
-        _loadMovements();
       },
     );
   }
@@ -1060,17 +717,17 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
               color: Colors.blue.shade50,
               child: Row(
                 children: [
-                  _buildCompactStatItem('Tổng SP', '$_totalProducts', Colors.blue, Icons.inventory),
-                  _buildCompactStatItem('Sắp hết', '$_lowStockCount', Colors.orange, Icons.warning),
-                  _buildCompactStatItem('Hết hàng', '$_outOfStockCount', Colors.red, Icons.error),
+                  _buildCompactStatItem('Tổng SP', '${ref.watch(inventoryProvider).totalProducts}', Colors.blue, Icons.inventory),
+                  _buildCompactStatItem('Sắp hết', '${ref.watch(inventoryProvider).lowStockCount}', Colors.orange, Icons.warning),
+                  _buildCompactStatItem('Hết hàng', '${ref.watch(inventoryProvider).outOfStockCount}', Colors.red, Icons.error),
                 ],
               ),
             ),
 
             // Search Bar
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              color: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              color: Theme.of(context).colorScheme.surface,
               child: Row(
                 children: [
                   Expanded(
@@ -1101,7 +758,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
                   const SizedBox(width: 6),
                   SaboRefreshButton(
                     onPressed: _refreshAll,
-                    isLoading: _isRefreshing,
+                    isLoading: ref.watch(inventoryProvider).isRefreshing,
                     tooltip: 'Làm mới',
                   ),
                 ],
@@ -1111,16 +768,16 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
             // Category Chips
             Container(
               height: 38,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 children: [
-                  _buildCategoryChip('Tất cả', null, _selectedCategory == null),
-                  ..._categoryData.map((cat) => _buildCategoryChip(
+                  _buildCategoryChip('Tất cả', null, ref.watch(inventoryProvider).selectedCategory == null),
+                  ...ref.watch(inventoryProvider).categoryData.map((cat) => _buildCategoryChip(
                     cat['name'] as String,
                     cat['id'] as String,
-                    _selectedCategory == cat['id'],
+                    ref.watch(inventoryProvider).selectedCategory == cat['id'],
                   )),
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
@@ -1156,9 +813,9 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
 
         // Product List
         Expanded(
-          child: _isInitialLoading
+          child: ref.watch(inventoryProvider).isInitialLoading
               ? const Center(child: CircularProgressIndicator())
-              : _allProducts.isEmpty
+              : ref.watch(inventoryProvider).allProducts.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -1177,15 +834,15 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
                       child: ListView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.all(12),
-                        itemCount: _allProducts.length + (_isLoadingMore ? 1 : 0),
+                        itemCount: ref.watch(inventoryProvider).allProducts.length + (ref.watch(inventoryProvider).isLoadingMore ? 1 : 0),
                         itemBuilder: (context, index) {
-                          if (index >= _allProducts.length) {
+                          if (index >= ref.watch(inventoryProvider).allProducts.length) {
                             return const Padding(
                               padding: EdgeInsets.symmetric(vertical: 16),
                               child: Center(child: CircularProgressIndicator()),
                             );
                           }
-                          return _buildProductCard(_allProducts[index]);
+                          return _buildProductCard(ref.watch(inventoryProvider).allProducts[index]);
                         },
                       ),
                     ),
@@ -1200,7 +857,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
         heroTag: 'addProduct',
         backgroundColor: Colors.teal,
         onPressed: _showAddProductSheet,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: Icon(Icons.add, color: Theme.of(context).colorScheme.surface),
       ),
     ),
       ],
@@ -1233,8 +890,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
       padding: const EdgeInsets.only(right: 8),
       child: GestureDetector(
         onTap: () {
-          setState(() => _selectedCategory = isSelected ? null : categoryId);
-          _loadInitial();
+          ref.read(inventoryProvider.notifier).setSelectedCategory(isSelected ? null : categoryId);
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1261,7 +917,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => CategoryManagementSheet(
-        categories: _categories,
+        categories: ref.read(inventoryProvider).categories,
         onCategoryUpdated: () {
           _loadCategories();
           _loadInitial();
@@ -1276,13 +932,13 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
     final hasImage = product.imageUrl != null && product.imageUrl!.isNotEmpty;
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -1542,7 +1198,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
     try {
       await Supabase.instance.client
           .from('products')
-          .delete()
+          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
           .eq('id', product.id);
       
       if (mounted) {
@@ -1577,7 +1233,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => AddProductSheet(
-        categories: _categories,
+        categories: ref.read(inventoryProvider).categories,
         onSaved: (product) {
           _loadStats();
           _loadInitial();
@@ -1598,17 +1254,17 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
               color: Colors.purple.shade50,
               child: Row(
                 children: [
-                  Expanded(child: _buildCompactStatItem('Tổng mẫu', '$_totalSamples', Colors.purple, Icons.content_copy)),
-                  Expanded(child: _buildCompactStatItem('Chờ phản hồi', '$_pendingSamples', Colors.orange, Icons.schedule)),
-                  Expanded(child: _buildCompactStatItem('Đã chuyển đơn', '$_convertedSamples', Colors.green, Icons.shopping_cart)),
+                  Expanded(child: _buildCompactStatItem('Tổng mẫu', '${ref.watch(inventoryProvider).totalSamples}', Colors.purple, Icons.content_copy)),
+                  Expanded(child: _buildCompactStatItem('Chờ phản hồi', '${ref.watch(inventoryProvider).pendingSamples}', Colors.orange, Icons.schedule)),
+                  Expanded(child: _buildCompactStatItem('Đã chuyển đơn', '${ref.watch(inventoryProvider).convertedSamples}', Colors.green, Icons.shopping_cart)),
                 ],
               ),
             ),
         
         // Search & Filter
         Container(
-          padding: const EdgeInsets.all(12),
-          color: Colors.white,
+          padding: EdgeInsets.all(12),
+          color: Theme.of(context).colorScheme.surface,
           child: Row(
             children: [
               Expanded(
@@ -1632,8 +1288,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
                   ),
                   style: const TextStyle(fontSize: 13),
                   onChanged: (value) {
-                    setState(() => _sampleSearchQuery = value);
-                    _loadSamples();
+                    ref.read(inventoryProvider.notifier).setSampleSearchQuery(value);
                   },
                 ),
               ),
@@ -1642,11 +1297,10 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
                 icon: Icon(Icons.filter_list, color: Colors.grey.shade700),
                 tooltip: 'Lọc theo trạng thái',
                 onSelected: (value) {
-                  setState(() => _selectedSampleStatus = value == 'all' ? null : value);
-                  _loadSamples();
+                  ref.read(inventoryProvider.notifier).setSelectedSampleStatus(value == 'all' ? null : value);
                 },
                 itemBuilder: (context) => [
-                  PopupMenuItem(value: 'all', child: Text('Tất cả', style: TextStyle(color: _selectedSampleStatus == null ? Colors.teal : null))),
+                  PopupMenuItem(value: 'all', child: Text('Tất cả', style: TextStyle(color: ref.watch(inventoryProvider).selectedSampleStatus == null ? Colors.teal : null))),
                   const PopupMenuItem(value: 'pending', child: Text('Đang chờ')),
                   const PopupMenuItem(value: 'delivered', child: Text('Đã giao')),
                   const PopupMenuItem(value: 'received', child: Text('Đã nhận')),
@@ -1660,9 +1314,9 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
         
         // Sample List
         Expanded(
-          child: _isLoadingSamples
+          child: ref.watch(inventoryProvider).isLoadingSamples
               ? const Center(child: CircularProgressIndicator())
-              : _samples.isEmpty
+              : ref.watch(inventoryProvider).samples.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -1685,8 +1339,8 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
                       onRefresh: _loadSamples,
                       child: ListView.builder(
                         padding: const EdgeInsets.all(12),
-                        itemCount: _samples.length,
-                        itemBuilder: (context, index) => _buildSampleCard(_samples[index]),
+                        itemCount: ref.watch(inventoryProvider).samples.length,
+                        itemBuilder: (context, index) => _buildSampleCard(ref.watch(inventoryProvider).samples[index]),
                       ),
                     ),
         ),
@@ -1919,7 +1573,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
       backgroundColor: Colors.transparent,
       builder: (context) => EditProductSheet(
         product: product,
-        categoryData: _categoryData,
+        categoryData: ref.read(inventoryProvider).categoryData,
         onSaved: () {
           _loadStats();
           _loadInitial();
@@ -1934,7 +1588,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> with SingleTicker
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddSampleSheet(
-        products: _allProducts,
+        products: ref.read(inventoryProvider).allProducts,
         onSaved: () {
           _loadSamples();
         },

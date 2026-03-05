@@ -63,26 +63,49 @@ class AppNotification {
   }
 
   /// Get icon based on notification type
+  /// Valid DB types: task_assigned, task_status_changed, task_completed, task_overdue,
+  /// shift_reminder, attendance_issue, system, approval_request, approval_update
   IconData get icon {
     switch (type) {
+      // Task types
+      case 'task':
+      case 'task_assigned':
+      case 'task_status_changed':
+        return Icons.task_alt;
+      case 'task_completed':
+        return Icons.check_circle;
+      case 'task_overdue':
+        return Icons.warning_amber;
+      
+      // Attendance types
+      case 'attendance':
+      case 'attendance_issue':
+      case 'shift_reminder':
+        return Icons.access_time;
+      
+      // Approval types
+      case 'approval_request':
+        return Icons.approval;
+      case 'approval_update':
+        return Icons.verified;
+      
+      // System & legacy types
+      case 'system':
+      case 'announcement':
+        return Icons.campaign;
       case 'success':
         return Icons.check_circle;
       case 'warning':
         return Icons.warning;
       case 'error':
         return Icons.error;
-      case 'task':
-        return Icons.task_alt;
-      case 'attendance':
-        return Icons.access_time;
-      case 'announcement':
-        return Icons.campaign;
+      case 'info':
+        return Icons.info;
       case 'overdue_payment':
         return Icons.money_off;
       case 'overdue_digest':
         return Icons.summarize;
-      case 'approval_request':
-        return Icons.approval;
+      
       default:
         return Icons.notifications;
     }
@@ -91,24 +114,48 @@ class AppNotification {
   /// Get color based on notification type
   Color get color {
     switch (type) {
+      // Task types
+      case 'task':
+      case 'task_assigned':
+        return Colors.blue;
+      case 'task_status_changed':
+        return Colors.indigo;
+      case 'task_completed':
+        return Colors.green;
+      case 'task_overdue':
+        return Colors.red;
+      
+      // Attendance types
+      case 'attendance':
+      case 'attendance_issue':
+        return Colors.purple;
+      case 'shift_reminder':
+        return Colors.deepPurple;
+      
+      // Approval types
+      case 'approval_request':
+        return Colors.amber;
+      case 'approval_update':
+        return Colors.green;
+      
+      // System & legacy types
+      case 'system':
+        return Colors.blueGrey;
+      case 'announcement':
+        return Colors.teal;
       case 'success':
         return Colors.green;
       case 'warning':
         return Colors.orange;
       case 'error':
         return Colors.red;
-      case 'task':
-        return Colors.blue;
-      case 'attendance':
-        return Colors.purple;
-      case 'announcement':
-        return Colors.teal;
+      case 'info':
+        return Colors.lightBlue;
       case 'overdue_payment':
         return Colors.red;
       case 'overdue_digest':
         return Colors.deepOrange;
-      case 'approval_request':
-        return Colors.amber;
+      
       default:
         return Colors.grey;
     }
@@ -120,14 +167,18 @@ class AppNotification {
 class RealtimeNotificationService {
   static final RealtimeNotificationService _instance = RealtimeNotificationService._internal();
   factory RealtimeNotificationService() => _instance;
-  RealtimeNotificationService._internal();
+  RealtimeNotificationService._internal() {
+    _notificationsController = StreamController<List<AppNotification>>.broadcast();
+    _newNotificationController = StreamController<AppNotification>.broadcast();
+    _unreadCountController = StreamController<int>.broadcast();
+  }
 
   final _supabase = Supabase.instance.client;
   
   // Stream controllers - use broadcast for multiple listeners
-  final _notificationsController = StreamController<List<AppNotification>>.broadcast();
-  final _newNotificationController = StreamController<AppNotification>.broadcast();
-  final _unreadCountController = StreamController<int>.broadcast();
+  late StreamController<List<AppNotification>> _notificationsController;
+  late StreamController<AppNotification> _newNotificationController;
+  late StreamController<int> _unreadCountController;
   
   // State
   List<AppNotification> _notifications = [];
@@ -158,43 +209,69 @@ class RealtimeNotificationService {
   int get unreadCount => _unreadCount;
 
   /// Initialize service and subscribe to realtime updates
-  /// [authUserId] is the Supabase auth user ID, we need to lookup the employee ID
-  Future<void> initialize(String authUserId) async {
-    AppLogger.info('🔔 [NOTIF] initialize called with authUserId: $authUserId');
+  /// [userId] can be either:
+  /// - employee.id (for Employee Login users)
+  /// - auth.uid() (for Supabase Auth users)
+  /// Notifications table stores user_id as employee.id
+  Future<void> initialize(String userId) async {
+    AppLogger.info('🔔 [NOTIF] initialize called with userId: $userId');
     
-    // Skip if already initialized for this auth user
-    if (_lastAuthUserId == authUserId && _currentUserId != null) {
+    // Skip if already initialized for this user
+    if (_lastAuthUserId == userId && _currentUserId != null) {
       AppLogger.info('🔔 [NOTIF] Already initialized, skipping. currentUserId: $_currentUserId');
       return;
     }
     
     // Clean up previous subscription
     await dispose();
-    _lastAuthUserId = authUserId;
+    _lastAuthUserId = userId;
+
+    // Recreate stream controllers after dispose
+    _notificationsController = StreamController<List<AppNotification>>.broadcast();
+    _newNotificationController = StreamController<AppNotification>.broadcast();
+    _unreadCountController = StreamController<int>.broadcast();
     
-    // Lookup employee ID from auth_user_id
-    // Notifications are stored with employee.id, not auth user id
+    // Lookup employee ID
+    // The userId could be:
+    // 1. Already an employee.id (Employee Login users)
+    // 2. An auth_user_id (Supabase Auth users)
+    // We need to find the employee.id to query notifications
     try {
-      final employeeResponse = await _supabase
+      // First, check if userId is already an employee.id
+      final employeeByIdResponse = await _supabase
           .from('employees')
           .select('id')
-          .eq('auth_user_id', authUserId)
+          .eq('id', userId)
           .maybeSingle();
       
-      if (employeeResponse != null) {
-        _currentUserId = employeeResponse['id'] as String;
-        AppLogger.auth('📬 Notification service: using employee ID $_currentUserId');
+      if (employeeByIdResponse != null) {
+        // userId is already an employee.id - use it directly
+        _currentUserId = userId;
+        AppLogger.auth('📬 Notification service: userId is employee.id, using directly: $_currentUserId');
       } else {
-        // Fallback: try using auth_user_id directly (for users table)
-        _currentUserId = authUserId;
-        AppLogger.auth('📬 Notification service: using auth user ID $authUserId (no employee found)');
+        // userId might be an auth_user_id, lookup employee by auth_user_id
+        final employeeByAuthResponse = await _supabase
+            .from('employees')
+            .select('id')
+            .eq('auth_user_id', userId)
+            .maybeSingle();
+        
+        if (employeeByAuthResponse != null) {
+          _currentUserId = employeeByAuthResponse['id'] as String;
+          AppLogger.auth('📬 Notification service: found employee by auth_user_id: $_currentUserId');
+        } else {
+          // No employee found, use userId as-is (might be legacy or demo user)
+          _currentUserId = userId;
+          AppLogger.warn('📬 Notification service: no employee found, using userId as-is: $_currentUserId');
+        }
       }
     } catch (e) {
-      // Fallback to auth user ID
-      _currentUserId = authUserId;
-      AppLogger.warn('📬 Notification service: fallback to auth user ID due to error', e);
+      // Fallback to userId as-is
+      _currentUserId = userId;
+      AppLogger.warn('📬 Notification service: error during lookup, using userId as-is', e);
     }
     
+    AppLogger.info('🔔 [NOTIF] Final currentUserId: $_currentUserId');
     if (_currentUserId == null) return;
 
     // Load initial notifications

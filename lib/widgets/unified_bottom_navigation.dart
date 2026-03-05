@@ -12,7 +12,7 @@ class UnifiedBottomNavigation extends ConsumerStatefulWidget {
   final Function(int) onTap;
   final Function(String)? onRouteSelected;
 
-  const UnifiedBottomNavigation({
+  UnifiedBottomNavigation({
     super.key,
     required this.userRole,
     required this.currentIndex,

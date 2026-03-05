@@ -8,6 +8,7 @@ import '../../models/company.dart';
 import '../../models/business_type.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/employee_service.dart';
+import '../../utils/app_logger.dart';
 import 'company/create_employee_dialog.dart';
 import 'edit_employee_dialog.dart';
 
@@ -24,6 +25,7 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
   List<User> _employees = [];
   Map<String, String> _companyNames = {}; // company_id -> company_name
   bool _isLoading = true;
+  String? _error;
   final _searchController = TextEditingController();
   String _searchQuery = '';
   UserRole? _filterRole;
@@ -40,13 +42,40 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
     super.dispose();
   }
 
+  /// Determine if the current context should show ALL employees (CEO corporation)
+  /// or only the current company's employees (Manager / CEO viewing subsidiary)
+  bool get _isCorporationCEO {
+    final user = ref.read(currentUserProvider);
+    if (user == null) return false;
+    final isCeo = user.role.toString().toUpperCase().contains('CEO');
+    final isCorp = user.businessType?.isCorporation ?? false;
+    return isCeo && isCorp;
+  }
+
   Future<void> _loadEmployees() async {
     try {
-      setState(() => _isLoading = true);
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
 
       final service = ref.read(employeeServiceProvider);
-      // CEO sees ALL employees across all companies
-      final employees = await service.getAllEmployees();
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+
+      // Only CEO of corporation type sees ALL employees
+      // Everyone else (Manager, CEO viewing subsidiary) sees only their company
+      late final List<User> employees;
+      if (_isCorporationCEO) {
+        AppLogger.info('CEOEmployeesPage', 'Loading ALL employees (CEO corporation)');
+        employees = await service.getAllEmployees();
+      } else if (companyId != null) {
+        AppLogger.info('CEOEmployeesPage', 'Loading employees for company: $companyId');
+        employees = await service.getCompanyEmployees(companyId);
+      } else {
+        AppLogger.warn('CEOEmployeesPage', 'No companyId available, showing empty list');
+        employees = [];
+      }
       
       // Load company names
       final companyIds = employees
@@ -74,12 +103,17 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = e.toString();
+        });
+      }
     }
   }
 
   void _openCreateEmployee() {
-    final user = ref.read(authProvider).user;
+    final user = ref.read(currentUserProvider);
     if (user == null || user.companyId == null) return;
 
     showDialog(
@@ -124,11 +158,37 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
       backgroundColor: Colors.grey[50],
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red, size: 48),
+                      SizedBox(height: 16),
+                      Text('Đã xảy ra lỗi', style: Theme.of(context).textTheme.titleMedium),
+                      SizedBox(height: 8),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 32),
+                        child: Text(
+                          '$_error',
+                          style: Theme.of(context).textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: _loadEmployees,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
               children: [
                 // === Compact stats + search + filters ===
                 Container(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                   child: Column(
                     children: [
@@ -273,9 +333,9 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
         label: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: selected ? Colors.white : color),
-            const SizedBox(width: 4),
-            Text(label, style: TextStyle(fontSize: 12, color: selected ? Colors.white : Colors.grey[700])),
+            Icon(icon, size: 14, color: selected ? Theme.of(context).colorScheme.surface : color),
+            SizedBox(width: 4),
+            Text(label, style: TextStyle(fontSize: 12, color: selected ? Theme.of(context).colorScheme.surface : Colors.grey[700])),
           ],
         ),
         selected: selected,
@@ -456,6 +516,10 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
         return {'title': 'Tài xế', 'icon': Icons.local_shipping, 'color': Colors.teal};
       case UserRole.warehouse:
         return {'title': 'Kho', 'icon': Icons.warehouse, 'color': Colors.brown};
+      case UserRole.finance:
+        return {'title': 'Kế toán', 'icon': Icons.account_balance, 'color': Colors.green.shade700};
+      case UserRole.shareholder:
+        return {'title': 'Cổ đông', 'icon': Icons.trending_up, 'color': Colors.cyan};
     }
   }
 
@@ -480,7 +544,7 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
   }
 
   Future<void> _showEditEmployeeDialog(User employee) async {
-    final user = ref.read(authProvider).user;
+    final user = ref.read(currentUserProvider);
     final companyId = user?.companyId;
     if (companyId == null) return;
 
@@ -554,7 +618,7 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
               backgroundColor: Colors.green,
               action: SnackBarAction(
                 label: 'Copy mật khẩu',
-                textColor: Colors.white,
+                textColor: Theme.of(context).colorScheme.surface,
                 onPressed: () => Clipboard.setData(ClipboardData(text: confirmed)),
               ),
             ),
@@ -580,7 +644,7 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
       return;
     }
 
-    final user = ref.read(authProvider).user;
+    final user = ref.read(currentUserProvider);
     final companyId = user?.companyId;
     if (companyId == null) return;
 
@@ -593,7 +657,9 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
           .eq('is_active', true)
           .order('name');
       companies = (response as List).map((e) => Company.fromJson(e)).toList();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('CEOEmployeesPage._showPermissionsDialog loadCompanies error: $e');
+    }
 
     // Load currently assigned companies from manager_companies table
     Set<String> selectedCompanyIds = {};
@@ -609,7 +675,9 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
           primaryCompanyId = row['company_id'] as String;
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('CEOEmployeesPage._showPermissionsDialog loadManagerCompanies error: $e');
+    }
 
     // Load current permissions
     Map<String, dynamic>? currentPerms;
@@ -621,7 +689,9 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
           .eq('company_id', companyId)
           .maybeSingle();
       currentPerms = response;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('CEOEmployeesPage._showPermissionsDialog loadPermissions error: $e');
+    }
 
     // Permission definitions
     final permGroups = [
@@ -664,6 +734,7 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
       }
     }
 
+    if (!context.mounted) return;
     final saved = await showDialog<bool>(
       context: context,
       builder: (_) => StatefulBuilder(
@@ -671,7 +742,7 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
           title: Row(children: [
             const Icon(Icons.security, color: Colors.blue, size: 22),
             const SizedBox(width: 8),
-            Expanded(child: Text('Phân quyền - ${employee.name ?? ""}', style: const TextStyle(fontSize: 16))),
+            Expanded(child: Text('Phân quyền - ${employee.name ?? ""}', style: TextStyle(fontSize: 16))),
           ]),
           content: SizedBox(
             width: 400,
@@ -700,11 +771,11 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
                         ]),
                         const SizedBox(height: 4),
                         Text('Chọn một hoặc nhiều công ty', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Container(
-                          constraints: const BoxConstraints(maxHeight: 150),
+                          constraints: BoxConstraints(maxHeight: 150),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
@@ -818,11 +889,11 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Hủy')),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-              child: const Text('Lưu quyền', style: TextStyle(color: Colors.white)),
+              child: Text('Lưu quyền', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
             ),
           ],
         ),
@@ -834,8 +905,9 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
     try {
       final sb = Supabase.instance.client;
       
-      // 1. Update manager_companies table (delete all then re-insert)
-      await sb.from('manager_companies').delete().eq('manager_id', employee.id);
+      // 1. Update manager_companies table (soft-delete all then re-insert)
+      // Soft delete - sets is_active=false
+      await sb.from('manager_companies').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('manager_id', employee.id);
       
       if (selectedCompanyIds.isNotEmpty) {
         final insertRows = selectedCompanyIds.map((cid) => {
@@ -871,13 +943,13 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
       // Reload employees to reflect changes
       await _loadEmployees();
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('✅ Đã cập nhật quyền cho ${employee.name ?? ""} (${selectedCompanyIds.length} công ty)'), backgroundColor: Colors.green),
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red),
         );
@@ -949,7 +1021,7 @@ class _ResetPasswordDialogState extends State<_ResetPasswordDialog> {
     return AlertDialog(
       title: Row(children: [
         const Icon(Icons.lock_reset, color: Colors.deepPurple, size: 22),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         Expanded(
           child: Text('Đặt lại mật khẩu - ${widget.employeeName}',
               style: const TextStyle(fontSize: 16)),
@@ -997,7 +1069,7 @@ class _ResetPasswordDialogState extends State<_ResetPasswordDialog> {
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy')),
+            child: Text('Hủy')),
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
@@ -1006,7 +1078,7 @@ class _ResetPasswordDialogState extends State<_ResetPasswordDialog> {
           },
           style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
           child:
-              const Text('Đặt lại', style: TextStyle(color: Colors.white)),
+              Text('Đặt lại', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
         ),
       ],
     );

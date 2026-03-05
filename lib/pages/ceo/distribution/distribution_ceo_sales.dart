@@ -34,7 +34,7 @@ class DistributionCEOSales extends ConsumerWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             chartAsync.when(
-              data: (data) => _buildRevenueChart(data, fmt),
+              data: (data) => _buildRevenueChart(context, data, fmt),
               loading: () => const SizedBox(
                   height: 200,
                   child: Center(child: CircularProgressIndicator())),
@@ -72,7 +72,7 @@ class DistributionCEOSales extends ConsumerWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             customerAsync.when(
-              data: (insights) => _buildCustomerInsights(insights, fmt),
+              data: (insights) => _buildCustomerInsights(context, insights, fmt),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => const Text('Lỗi tải KH'),
             ),
@@ -82,7 +82,7 @@ class DistributionCEOSales extends ConsumerWidget {
     );
   }
 
-  Widget _buildRevenueChart(List<DailyRevenue> data, NumberFormat fmt) {
+  Widget _buildRevenueChart(BuildContext context, List<DailyRevenue> data, NumberFormat fmt) {
     if (data.isEmpty) {
       return const SizedBox(
         height: 200,
@@ -96,13 +96,13 @@ class DistributionCEOSales extends ConsumerWidget {
 
     return Container(
       height: 220,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: LineChart(
@@ -182,7 +182,7 @@ class DistributionCEOSales extends ConsumerWidget {
     );
   }
 
-  Widget _buildCustomerInsights(CustomerInsights insights, NumberFormat fmt) {
+  Widget _buildCustomerInsights(BuildContext context, CustomerInsights insights, NumberFormat fmt) {
     return Column(
       children: [
         Row(
@@ -200,13 +200,13 @@ class DistributionCEOSales extends ConsumerWidget {
         const SizedBox(height: 12),
         // Tier distribution
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05), blurRadius: 8),
             ],
           ),
           child: Column(
@@ -246,13 +246,13 @@ class DistributionCEOSales extends ConsumerWidget {
         // Top 10 customers
         if (insights.top10Customers.isNotEmpty)
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                     blurRadius: 8),
               ],
             ),

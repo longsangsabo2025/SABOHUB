@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// App theme configuration matching SABOHUB brand (purple/cyan) from web
@@ -48,6 +48,14 @@ class AppTheme {
     );
   }
 
+  // Dark theme colors
+  static const Color _darkSurface = Color(0xFF1E1E2E);
+  static const Color _darkCard = Color(0xFF2D2D44);
+  static const Color _darkBackground = Color(0xFF0F0F1A);
+  static const Color _darkOnSurface = Color(0xFFE2E8F0);
+  static const Color _darkOnSurfaceVariant = Color(0xFF94A3B8);
+  static const Color _darkBorder = Color(0xFF374151);
+
   /// Dark theme configuration
   static ThemeData get darkTheme {
     final colorScheme = ColorScheme.fromSeed(
@@ -56,20 +64,157 @@ class AppTheme {
       primary: primaryPurple,
       secondary: secondaryCyan,
       error: errorRed,
+      surface: _darkSurface,
+      onSurface: _darkOnSurface,
+      onSurfaceVariant: _darkOnSurfaceVariant,
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      scaffoldBackgroundColor: _darkBackground,
+      canvasColor: _darkBackground,
+      cardColor: _darkCard,
+      dividerColor: _darkBorder,
       textTheme: _buildTextTheme(colorScheme),
       elevatedButtonTheme: _buildElevatedButtonTheme(colorScheme),
       outlinedButtonTheme: _buildOutlinedButtonTheme(colorScheme),
       textButtonTheme: _buildTextButtonTheme(colorScheme),
-      inputDecorationTheme: _buildInputDecorationTheme(colorScheme),
-      cardTheme: _buildCardTheme(colorScheme),
-      appBarTheme: _buildAppBarTheme(colorScheme),
-      bottomNavigationBarTheme: _buildBottomNavTheme(colorScheme),
+      inputDecorationTheme: _buildDarkInputDecorationTheme(colorScheme),
+      cardTheme: _buildDarkCardTheme(),
+      appBarTheme: _buildDarkAppBarTheme(colorScheme),
+      bottomNavigationBarTheme: _buildDarkBottomNavTheme(colorScheme),
       floatingActionButtonTheme: _buildFABTheme(colorScheme),
+      dividerTheme: const DividerThemeData(
+        color: _darkBorder,
+        thickness: 1,
+        space: 1,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: _darkCard,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: _darkCard,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: _darkBorder),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: _darkSurface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+      ),
+      drawerTheme: const DrawerThemeData(
+        backgroundColor: _darkSurface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: _darkCard,
+        selectedColor: primaryPurple.withValues(alpha: 0.3),
+        side: const BorderSide(color: _darkBorder),
+        labelStyle: GoogleFonts.inter(color: _darkOnSurface),
+      ),
+    );
+  }
+
+  // ── Dark-specific component themes ──────────────────────────────────────
+
+  /// Dark input decoration theme
+  static InputDecorationTheme _buildDarkInputDecorationTheme(
+    ColorScheme colorScheme,
+  ) {
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: _darkCard,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: _darkBorder),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: _darkBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: colorScheme.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: colorScheme.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: colorScheme.error, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      hintStyle: GoogleFonts.inter(color: _darkOnSurfaceVariant, fontSize: 14),
+      labelStyle: GoogleFonts.inter(
+        color: _darkOnSurface,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
+
+  /// Dark card theme
+  static CardThemeData _buildDarkCardTheme() {
+    return const CardThemeData(
+      elevation: 2,
+      color: _darkCard,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        side: BorderSide(color: _darkBorder),
+      ),
+      margin: EdgeInsets.all(0),
+    );
+  }
+
+  /// Dark AppBar theme
+  static AppBarTheme _buildDarkAppBarTheme(ColorScheme colorScheme) {
+    return AppBarTheme(
+      backgroundColor: _darkSurface,
+      foregroundColor: _darkOnSurface,
+      elevation: 0,
+      scrolledUnderElevation: 1,
+      centerTitle: true,
+      surfaceTintColor: Colors.transparent,
+      titleTextStyle: GoogleFonts.inter(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: _darkOnSurface,
+      ),
+      iconTheme: const IconThemeData(color: _darkOnSurface),
+    );
+  }
+
+  /// Dark bottom navigation theme
+  static BottomNavigationBarThemeData _buildDarkBottomNavTheme(
+    ColorScheme colorScheme,
+  ) {
+    return BottomNavigationBarThemeData(
+      backgroundColor: _darkSurface,
+      selectedItemColor: colorScheme.primary,
+      unselectedItemColor: _darkOnSurfaceVariant,
+      type: BottomNavigationBarType.fixed,
+      elevation: 8,
+      selectedLabelStyle: GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+      ),
+      unselectedLabelStyle: GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+      ),
     );
   }
 

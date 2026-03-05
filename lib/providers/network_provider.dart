@@ -77,15 +77,15 @@ class NetworkStatusBanner extends ConsumerWidget {
               ? Container(
                   color: Colors.red.shade600,
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: const Row(
+                  padding: EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                      Icon(Icons.wifi_off, color: Theme.of(context).colorScheme.surface, size: 16),
                       SizedBox(width: 8),
                       Text(
                         'Không có kết nối mạng',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 12),
                       ),
                     ],
                   ),
@@ -199,10 +199,10 @@ class _NetworkStatusListenerState extends ConsumerState<NetworkStatusListener> {
       if (_previousStatus != null && previous != next) {
         if (next == NetworkStatus.disconnected) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Row(
                 children: [
-                  Icon(Icons.wifi_off, color: Colors.white),
+                  Icon(Icons.wifi_off, color: Theme.of(context).colorScheme.surface),
                   SizedBox(width: 12),
                   Text('Mất kết nối mạng'),
                 ],
@@ -213,10 +213,10 @@ class _NetworkStatusListenerState extends ConsumerState<NetworkStatusListener> {
           );
         } else if (next == NetworkStatus.connected && _previousStatus == NetworkStatus.disconnected) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Row(
                 children: [
-                  Icon(Icons.wifi, color: Colors.white),
+                  Icon(Icons.wifi, color: Theme.of(context).colorScheme.surface),
                   SizedBox(width: 12),
                   Text('Đã kết nối lại'),
                 ],

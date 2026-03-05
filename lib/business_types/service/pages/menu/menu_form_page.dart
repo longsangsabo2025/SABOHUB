@@ -189,16 +189,16 @@ class _MenuFormPageState extends ConsumerState<MenuFormPage> {
                       Icon(
                         category.icon,
                         size: 18,
-                        color: isSelected ? Colors.white : category.color,
+                        color: isSelected ? Theme.of(context).colorScheme.surface : category.color,
                       ),
                       const SizedBox(width: 8),
                       Text(category.label),
                     ],
                   ),
                   selectedColor: category.color,
-                  checkmarkColor: Colors.white,
+                  checkmarkColor: Theme.of(context).colorScheme.surface,
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : category.color,
+                    color: isSelected ? Theme.of(context).colorScheme.surface : category.color,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                   onSelected: (selected) {
@@ -375,16 +375,16 @@ class _MenuFormPageState extends ConsumerState<MenuFormPage> {
       child: ElevatedButton.icon(
         onPressed: _isLoading ? null : _saveMenuItem,
         icon: _isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
               )
-            : const Icon(Icons.save),
+            : Icon(Icons.save),
         label: Text(widget.menuItem != null ? 'Cập nhật món' : 'Thêm món mới'),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.green.shade600,
-          foregroundColor: Colors.white,
+          foregroundColor: Theme.of(context).colorScheme.surface,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),

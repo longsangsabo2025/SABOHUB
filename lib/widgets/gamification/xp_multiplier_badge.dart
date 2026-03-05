@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/gamification_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class XpMultiplierBadge extends ConsumerWidget {
   final bool compact;
@@ -19,15 +20,15 @@ class XpMultiplierBadge extends ConsumerWidget {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [Color(0xFFFF6D00), Color(0xFFFF9100)],
               ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               '⚡ x${mult.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white,
+              style: TextStyle(
+                fontSize: 11, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.surface,
               ),
             ),
           );
@@ -44,34 +45,34 @@ class XpMultiplierBadge extends ConsumerWidget {
           child: Row(
             children: [
               const Text('⚡', style: TextStyle(fontSize: 24)),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'XP Multiplier Active!',
                       style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white,
+                        fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).colorScheme.surface,
                       ),
                     ),
                     Text(
                       _getMultiplierDescription(mult),
-                      style: const TextStyle(fontSize: 12, color: Colors.white70),
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.surface70),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   'x${mult.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).colorScheme.surface,
                   ),
                 ),
               ),

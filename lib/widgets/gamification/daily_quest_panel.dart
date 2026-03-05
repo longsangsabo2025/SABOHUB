@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/gamification/gamification_models.dart';
 import '../../providers/gamification_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class DailyQuestPanel extends ConsumerWidget {
   const DailyQuestPanel({super.key});
@@ -22,10 +23,10 @@ class DailyQuestPanel extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildComboHeader(completedCount, isCombo, totalXp),
+            _buildComboHeader(context, completedCount, isCombo, totalXp),
             const SizedBox(height: 12),
-            ...results.map((r) => _buildDailyQuestTile(r)),
-            if (isCombo) _buildComboBonus(),
+            ...results.map((r) => _buildDailyQuestTile(context, r)),
+            if (isCombo) _buildComboBonus(context),
             const SizedBox(height: 16),
             todayLog.when(
               data: (log) => log != null ? _buildDailyCalendar(log, ref) : const SizedBox(),
@@ -40,7 +41,7 @@ class DailyQuestPanel extends ConsumerWidget {
     );
   }
 
-  Widget _buildComboHeader(int completed, bool isCombo, int totalXp) {
+  Widget _buildComboHeader(BuildContext context, int completed, bool isCombo, int totalXp) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -55,7 +56,7 @@ class DailyQuestPanel extends ConsumerWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: isCombo ? Colors.white.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.1),
+              color: isCombo ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -75,14 +76,14 @@ class DailyQuestPanel extends ConsumerWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: isCombo ? Colors.white : AppColors.textPrimary,
+                    color: isCombo ? Theme.of(context).colorScheme.surface : AppColors.textPrimary,
                   ),
                 ),
                 Text(
                   '$completed/5 hoàn thành • +$totalXp XP',
                   style: TextStyle(
                     fontSize: 13,
-                    color: isCombo ? Colors.white70 : AppColors.textSecondary,
+                    color: isCombo ? Theme.of(context).colorScheme.surface70 : AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -97,9 +98,9 @@ class DailyQuestPanel extends ConsumerWidget {
               children: [
                 CircularProgressIndicator(
                   value: completed / 5,
-                  backgroundColor: isCombo ? Colors.white24 : Colors.grey.shade200,
+                  backgroundColor: isCombo ? Theme.of(context).colorScheme.surface24 : Colors.grey.shade200,
                   valueColor: AlwaysStoppedAnimation(
-                    isCombo ? Colors.white : AppColors.primary,
+                    isCombo ? Theme.of(context).colorScheme.surface : AppColors.primary,
                   ),
                   strokeWidth: 4,
                 ),
@@ -109,7 +110,7 @@ class DailyQuestPanel extends ConsumerWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: isCombo ? Colors.white : AppColors.textPrimary,
+                      color: isCombo ? Theme.of(context).colorScheme.surface : AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -121,12 +122,12 @@ class DailyQuestPanel extends ConsumerWidget {
     );
   }
 
-  Widget _buildDailyQuestTile(DailyQuestResult result) {
+  Widget _buildDailyQuestTile(BuildContext context, DailyQuestResult result) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: result.isCompleted ? AppColors.success.withValues(alpha: 0.06) : Colors.white,
+        color: result.isCompleted ? AppColors.success.withValues(alpha: 0.06) : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: result.isCompleted ? AppColors.success.withValues(alpha: 0.3) : Colors.grey.shade200,
@@ -178,7 +179,7 @@ class DailyQuestPanel extends ConsumerWidget {
     );
   }
 
-  Widget _buildComboBonus() {
+  Widget _buildComboBonus(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.all(14),
@@ -188,22 +189,22 @@ class DailyQuestPanel extends ConsumerWidget {
         ),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('💥', style: TextStyle(fontSize: 20)),
-          SizedBox(width: 8),
+          const Text('💥', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
           Text(
             'COMBO BONUS +50 XP',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               letterSpacing: 1,
             ),
           ),
-          SizedBox(width: 8),
-          Text('💥', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
+          const Text('💥', style: TextStyle(fontSize: 20)),
         ],
       ),
     );

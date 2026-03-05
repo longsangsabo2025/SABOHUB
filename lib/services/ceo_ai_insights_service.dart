@@ -25,60 +25,73 @@ class CEOAIInsightsService {
         _sb.from('tasks').select('id, title, due_date, priority, assigned_to, status')
             .eq('company_id', companyId)
             .neq('status', 'completed')
-            .lt('due_date', '${today}T00:00:00'),
+            .lt('due_date', '${today}T00:00:00')
+            .limit(1000),
         // 1: Tasks due today
         _sb.from('tasks').select('id, title, due_date, priority, assigned_to, status')
             .eq('company_id', companyId)
             .neq('status', 'completed')
             .gte('due_date', '${today}T00:00:00')
-            .lt('due_date', '${today}T23:59:59'),
+            .lt('due_date', '${today}T23:59:59')
+            .limit(1000),
         // 2: Pending approval tasks
         _sb.from('tasks').select('id, title, priority, created_at')
             .eq('company_id', companyId)
-            .eq('status', 'pending_approval'),
+            .eq('status', 'pending_approval')
+            .limit(500),
         // 3: Employees
         _sb.from('employees').select('id, full_name, role, is_active, last_active_at')
             .eq('company_id', companyId)
-            .eq('is_active', true),
+            .eq('is_active', true)
+            .limit(1000),
         // 4: Today revenue
         _sb.from('daily_revenue').select('total_revenue')
             .eq('company_id', companyId)
-            .eq('date', today),
+            .eq('date', today)
+            .limit(100),
         // 5: Yesterday revenue
         _sb.from('daily_revenue').select('total_revenue')
             .eq('company_id', companyId)
-            .eq('date', yesterday),
+            .eq('date', yesterday)
+            .limit(100),
         // 6: Last 7 days revenue
         _sb.from('daily_revenue').select('date, total_revenue')
             .eq('company_id', companyId)
             .gte('date', weekAgo)
-            .order('date'),
+            .order('date')
+            .limit(100),
         // 7: This month revenue
         _sb.from('daily_revenue').select('total_revenue')
             .eq('company_id', companyId)
-            .gte('date', monthStart),
+            .gte('date', monthStart)
+            .limit(100),
         // 8: Last month revenue
         _sb.from('daily_revenue').select('total_revenue')
             .eq('company_id', companyId)
             .gte('date', lastMonthStart)
-            .lt('date', monthStart),
+            .lt('date', monthStart)
+            .limit(100),
         // 9: Today sessions
         _sb.from('table_sessions').select('id, start_time, end_time, total_amount')
             .eq('company_id', companyId)
-            .gte('start_time', '${today}T00:00:00'),
+            .gte('start_time', '${today}T00:00:00')
+            .limit(1000),
         // 10: Active tables right now
         _sb.from('tables').select('id, name')
             .eq('company_id', companyId)
-            .eq('status', 'occupied'),
+            .eq('status', 'occupied')
+            .limit(500),
         // 11: Recent task completions (last 7 days)
         _sb.from('tasks').select('id, completed_at, assigned_to')
             .eq('company_id', companyId)
             .eq('status', 'completed')
-            .gte('completed_at', '${weekAgo}T00:00:00'),
+            .gte('completed_at', '${weekAgo}T00:00:00')
+            .limit(1000),
         // 12: All tasks (for stats)
         _sb.from('tasks').select('id, status, priority')
             .eq('company_id', companyId)
-            .neq('status', 'completed'),
+            .neq('status', 'completed')
+            .limit(1000),
       ]);
 
       final overdueTasks = _toList(results[0]);

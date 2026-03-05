@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../../providers/auth_provider.dart';
+import '../../../../../utils/app_logger.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class SampleManagementPage extends ConsumerStatefulWidget {
   const SampleManagementPage({super.key});
@@ -42,7 +44,7 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
   Future<void> _loadAllSamples() async {
     setState(() => _isLoading = true);
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       if (companyId.isEmpty) return;
 
       final data = await supabase
@@ -66,14 +68,14 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('❌ Error loading samples: $e');
+      AppLogger.error('Error loading samples: $e');
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _updateSampleStatus(Map<String, dynamic> sample, String newStatus, {String? notes, int? rating}) async {
     try {
-      final userId = ref.read(authProvider).user?.id ?? '';
+      final userId = ref.read(currentUserProvider)?.id ?? '';
       
       final updateData = <String, dynamic>{
         'status': newStatus,
@@ -300,8 +302,8 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: DraggableScrollableSheet(
@@ -512,7 +514,7 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87)),
+        Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface87)),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.all(12),
@@ -537,10 +539,10 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
         child: ElevatedButton.icon(
           onPressed: () => _showMarkShippedDialog(sample),
           icon: const Icon(Icons.local_shipping),
-          label: const Text('Đánh dấu đã giao'),
+          label: Text('Đánh dấu đã giao'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
+            foregroundColor: Theme.of(context).colorScheme.surface,
             padding: const EdgeInsets.symmetric(vertical: 12),
           ),
         ),
@@ -551,10 +553,10 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
         child: ElevatedButton.icon(
           onPressed: () => _showRequestFeedbackDialog(sample),
           icon: const Icon(Icons.check_circle),
-          label: const Text('Xác nhận đã nhận'),
+          label: Text('Xác nhận đã nhận'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
+            foregroundColor: Theme.of(context).colorScheme.surface,
             padding: const EdgeInsets.symmetric(vertical: 12),
           ),
         ),
@@ -565,10 +567,10 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
         child: ElevatedButton.icon(
           onPressed: () => _showConvertToOrderDialog(sample),
           icon: const Icon(Icons.shopping_cart),
-          label: const Text('Chuyển thành đơn hàng'),
+          label: Text('Chuyển thành đơn hàng'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.teal,
-            foregroundColor: Colors.white,
+            foregroundColor: Theme.of(context).colorScheme.surface,
             padding: const EdgeInsets.symmetric(vertical: 12),
           ),
         ),
@@ -667,15 +669,15 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quản lý mẫu sản phẩm'),
+        title: Text('Quản lý mẫu sản phẩm'),
         backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
+          labelColor: Theme.of(context).colorScheme.surface,
+          unselectedLabelColor: Theme.of(context).colorScheme.surface70,
+          indicatorColor: Theme.of(context).colorScheme.surface,
           tabs: [
             Tab(text: 'Chờ gửi (${_pendingSamples.length})'),
             Tab(text: 'Đã giao (${_shippedSamples.length})'),
@@ -686,7 +688,7 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : TabBarView(
               controller: _tabController,
               children: [
@@ -700,7 +702,7 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.teal,
         onPressed: _loadAllSamples,
-        child: const Icon(Icons.refresh, color: Colors.white),
+        child: Icon(Icons.refresh, color: Theme.of(context).colorScheme.surface),
       ),
     );
   }

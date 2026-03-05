@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,6 +9,7 @@ import '../../providers/manager_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/staff_provider.dart';
 import '../../providers/task_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Shift Leader Reports Page
 /// Reporting and documentation for shift leaders
@@ -40,7 +41,7 @@ class _ShiftLeaderReportsPageState
           _showCreateReportDialog();
         },
         backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add_chart, color: Colors.white),
+        child: Icon(Icons.add_chart, color: Theme.of(context).colorScheme.surface),
       ),
     );
   }
@@ -48,13 +49,13 @@ class _ShiftLeaderReportsPageState
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       elevation: 0,
-      backgroundColor: Colors.white,
-      title: const Text(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      title: Text(
         'Báo cáo ca làm',
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: Theme.of(context).colorScheme.onSurface87,
         ),
       ),
       actions: [
@@ -62,13 +63,13 @@ class _ShiftLeaderReportsPageState
           onPressed: () {
             _copyReportToClipboard();
           },
-          icon: const Icon(Icons.download, color: Colors.black54),
+          icon: Icon(Icons.download, color: Theme.of(context).colorScheme.onSurface54),
         ),
         IconButton(
           onPressed: () {
             _copyReportToClipboard();
           },
-          icon: const Icon(Icons.share, color: Colors.black54),
+          icon: Icon(Icons.share, color: Theme.of(context).colorScheme.onSurface54),
         ),
       ],
     );
@@ -78,13 +79,13 @@ class _ShiftLeaderReportsPageState
     const tabs = ['Hôm nay', 'Tuần này', 'Tháng này'];
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -100,7 +101,7 @@ class _ShiftLeaderReportsPageState
             child: GestureDetector(
               onTap: () => setState(() => _selectedTab = index),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color:
                       isSelected ? AppColors.primary : Colors.transparent,
@@ -112,7 +113,7 @@ class _ShiftLeaderReportsPageState
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : Colors.grey.shade600,
+                    color: isSelected ? Theme.of(context).colorScheme.surface : Colors.grey.shade600,
                   ),
                 ),
               ),
@@ -181,7 +182,7 @@ class _ShiftLeaderReportsPageState
                         size: 48,
                         color: Colors.grey.shade400,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Text(
                         'Không thể tải dữ liệu',
                         style: TextStyle(
@@ -189,7 +190,7 @@ class _ShiftLeaderReportsPageState
                           color: Colors.grey.shade600,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       ElevatedButton(
                         onPressed: () {
                           ref.invalidate(managerDashboardKPIsProvider);
@@ -198,7 +199,7 @@ class _ShiftLeaderReportsPageState
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(context).colorScheme.surface,
                         ),
                         child: const Text('Thử lại'),
                       ),
@@ -226,7 +227,7 @@ class _ShiftLeaderReportsPageState
                       size: 48,
                       color: Colors.grey.shade400,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'Không thể tải dữ liệu',
                       style: TextStyle(
@@ -234,7 +235,7 @@ class _ShiftLeaderReportsPageState
                         color: Colors.grey.shade600,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () {
                         ref.invalidate(managerDashboardKPIsProvider);
@@ -243,7 +244,7 @@ class _ShiftLeaderReportsPageState
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                       ),
                       child: const Text('Thử lại'),
                     ),
@@ -271,7 +272,7 @@ class _ShiftLeaderReportsPageState
                     size: 48,
                     color: Colors.grey.shade400,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'Không thể tải dữ liệu',
                     style: TextStyle(
@@ -279,7 +280,7 @@ class _ShiftLeaderReportsPageState
                       color: Colors.grey.shade600,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: () {
                       ref.invalidate(managerDashboardKPIsProvider);
@@ -288,7 +289,7 @@ class _ShiftLeaderReportsPageState
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                     ),
                     child: const Text('Thử lại'),
                   ),
@@ -335,13 +336,13 @@ class _ShiftLeaderReportsPageState
     ).format(totalRevenue);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -463,13 +464,13 @@ class _ShiftLeaderReportsPageState
     final inProgressTasks = taskStats['inProgress'] ?? 0;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -585,13 +586,13 @@ class _ShiftLeaderReportsPageState
 
   Widget _buildIssuesAndNotes() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -609,17 +610,17 @@ class _ShiftLeaderReportsPageState
           ),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.green, size: 20),
                 SizedBox(width: 12),
                 Text('Không có sự cố trong ca hôm nay',
-                  style: TextStyle(fontSize: 14, color: Colors.black54)),
+                  style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface54)),
               ],
             ),
           ),
@@ -628,6 +629,7 @@ class _ShiftLeaderReportsPageState
     );
   }
 
+  // ignore: unused_element
   Widget _buildIssueItem(String title, String time, String description,
       IconData icon, Color color) {
     return Container(
@@ -727,13 +729,13 @@ class _ShiftLeaderReportsPageState
         : '—';
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -815,13 +817,13 @@ class _ShiftLeaderReportsPageState
     final maxVal = dayStats.values.fold<int>(1, (a, b) => a > b ? a : b);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -935,13 +937,13 @@ class _ShiftLeaderReportsPageState
         : '—';
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1021,13 +1023,13 @@ class _ShiftLeaderReportsPageState
         : '—';
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1164,7 +1166,9 @@ class _ShiftLeaderReportsPageState
             dayStats[dayNames[dayIndex]] =
                 (dayStats[dayNames[dayIndex]] ?? 0) + 1;
           }
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('ShiftLeaderReportsPage._loadWeeklyStats date parse error: $e');
+        }
       }
 
       return {
@@ -1273,7 +1277,7 @@ class _ShiftLeaderReportsPageState
   void _copyReportToClipboard() {
     final now = DateFormat('dd/MM/yyyy').format(DateTime.now());
     final report = 'Báo cáo ca làm - $now\n'
-        'Trưởng ca: ${ref.read(authProvider).user?.displayName ?? "N/A"}\n'
+        'Trưởng ca: ${ref.read(currentUserProvider)?.displayName ?? "N/A"}\n'
         '---\nBáo cáo chi tiết xem tại SABOHUB App';
     Clipboard.setData(ClipboardData(text: report));
     ScaffoldMessenger.of(context).showSnackBar(

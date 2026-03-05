@@ -6,6 +6,7 @@ import 'package:dvhcvn/dvhcvn.dart' as dvhcvn;
 
 import '../../business_types/distribution/providers/odori_providers.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/token_provider.dart';
 import '../../services/geocoding_service.dart';
 
 final supabase = Supabase.instance.client;
@@ -359,8 +360,8 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) throw Exception('Không tìm thấy thông tin công ty');
 
@@ -448,6 +449,17 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
         'status': 'active',
         'created_at': DateTime.now().toIso8601String(),
       });
+
+      // 🪙 SABO Token: Thưởng token khi thêm khách hàng mới
+      try {
+        await ref.read(tokenWalletProvider.notifier).earnTokens(
+          10,
+          sourceType: 'customer',
+          description: 'Thêm khách hàng: ${_nameController.text.trim()}',
+        );
+      } catch (_) {
+        // Token reward is non-critical
+      }
 
       if (mounted) {
         Navigator.pop(context);

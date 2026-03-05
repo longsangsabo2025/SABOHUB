@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/user.dart';
 import '../../services/invitation_service.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// CEO tạo link mời nhân viên
 class CreateInvitationPage extends ConsumerStatefulWidget {
@@ -44,17 +45,17 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface87),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
+        title: Text(
           'Tạo link mời nhân viên',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
       ),
@@ -98,19 +99,19 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.link,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               size: 28,
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -119,7 +120,7 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                 ),
                 SizedBox(height: 4),
@@ -127,7 +128,7 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
                   'Tạo link để nhân viên tự đăng ký tài khoản',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white70,
+                    color: Theme.of(context).colorScheme.surface70,
                   ),
                 ),
               ],
@@ -181,12 +182,12 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Chức danh',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
         const SizedBox(height: 8),
@@ -280,12 +281,12 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Số lượng có thể sử dụng',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: Theme.of(context).colorScheme.onSurface87,
           ),
         ),
         const SizedBox(height: 8),
@@ -353,13 +354,13 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               // Link display
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey.shade300),
                 ),
@@ -391,11 +392,11 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: _shareViaEmail,
-                      icon: const Icon(Icons.email, size: 18),
-                      label: const Text('Gửi Email'),
+                      icon: Icon(Icons.email, size: 18),
+                      label: Text('Gửi Email'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue.shade600,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                       ),
                     ),
                   ),
@@ -403,11 +404,11 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: _shareViaMessage,
-                      icon: const Icon(Icons.message, size: 18),
-                      label: const Text('Tin nhắn'),
+                      icon: Icon(Icons.message, size: 18),
+                      label: Text('Tin nhắn'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green.shade600,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                       ),
                     ),
                   ),
@@ -428,19 +429,19 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
         onPressed: _isLoading ? null : _handleCreateInvitation,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.green.shade600,
-          foregroundColor: Colors.white,
+          foregroundColor: Theme.of(context).colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 2,
         ),
         child: _isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                 ),
               )
             : const Text(
@@ -459,13 +460,13 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
     required List<Widget> children,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -476,10 +477,10 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface87,
             ),
           ),
           const SizedBox(height: 16),
@@ -571,6 +572,20 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
           'icon': Icons.warehouse,
           'color': Colors.brown,
         };
+      case UserRole.finance:
+        return {
+          'title': 'Kế toán',
+          'description': 'Quản lý tài chính và sổ sách',
+          'icon': Icons.account_balance,
+          'color': Colors.green.shade700,
+        };
+      case UserRole.shareholder:
+        return {
+          'title': 'Cổ đông',
+          'description': 'Xem thông tin tài chính và cổ đông',
+          'icon': Icons.trending_up,
+          'color': Colors.cyan,
+        };
     }
   }
 
@@ -600,11 +615,11 @@ class _CreateInvitationPageState extends ConsumerState<CreateInvitationPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('✅ Đã tạo link mời thành công!'),
+            content: Text('✅ Đã tạo link mời thành công!'),
             backgroundColor: Colors.green,
             action: SnackBarAction(
               label: 'Sao chép',
-              textColor: Colors.white,
+              textColor: Theme.of(context).colorScheme.surface,
               onPressed: _copyLink,
             ),
           ),

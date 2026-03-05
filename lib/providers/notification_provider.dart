@@ -11,14 +11,14 @@ final realtimeNotificationServiceProvider = Provider<RealtimeNotificationService
 /// Provider for notifications list
 final notificationsProvider = StreamProvider.autoDispose<List<AppNotification>>((ref) {
   final service = ref.watch(realtimeNotificationServiceProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  AppLogger.state('notificationsProvider rebuild - isAuth: ${authState.isAuthenticated}, user: ${authState.user?.id}');
+  AppLogger.state('notificationsProvider rebuild - isAuth: ${user != null}, user: ${user?.id}');
   
   // Initialize service when user is authenticated
-  if (authState.isAuthenticated && authState.user != null) {
-    AppLogger.state('Calling service.initialize with userId: ${authState.user!.id}');
-    service.initialize(authState.user!.id);
+  if (user != null) {
+    AppLogger.state('Calling service.initialize with userId: ${user.id}');
+    service.initialize(user.id);
   } else {
     AppLogger.state('Not authenticated or user is null, skipping initialize');
   }
@@ -30,11 +30,11 @@ final notificationsProvider = StreamProvider.autoDispose<List<AppNotification>>(
 /// Provider for unread notification count
 final unreadNotificationCountProvider = StreamProvider.autoDispose<int>((ref) {
   final service = ref.watch(realtimeNotificationServiceProvider);
-  final authState = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
   // Initialize service when user is authenticated
-  if (authState.isAuthenticated && authState.user != null) {
-    service.initialize(authState.user!.id);
+  if (user != null) {
+    service.initialize(user.id);
   }
   
   return service.unreadCountStream;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/management_task.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 
 // =============================================================================
 // UNIFIED TASK CREATE/EDIT DIALOG — ONE dialog replacing 6 duplicate dialogs
@@ -55,7 +56,7 @@ final List<_TemplateGroup> _templateGroups = [
   _TemplateGroup(
     name: 'Media & Content',
     icon: '🎬',
-    color: const Color(0xFF7C3AED), // purple
+    color: AppColors.primary, // purple
     templates: [
       const _TaskTemplate(
         name: 'Video TikTok',
@@ -154,7 +155,7 @@ final List<_TemplateGroup> _templateGroups = [
   _TemplateGroup(
     name: 'MXH & Phân phối',
     icon: '📲',
-    color: const Color(0xFF3B82F6), // blue
+    color: AppColors.info, // blue
     templates: [
       const _TaskTemplate(
         name: 'Upload MXH tuần',
@@ -200,7 +201,7 @@ final List<_TemplateGroup> _templateGroups = [
   _TemplateGroup(
     name: 'Marketing',
     icon: '📢',
-    color: const Color(0xFFF59E0B), // amber
+    color: AppColors.warning, // amber
     templates: [
       const _TaskTemplate(
         name: 'Chiến dịch Marketing',
@@ -242,7 +243,7 @@ final List<_TemplateGroup> _templateGroups = [
   _TemplateGroup(
     name: 'Vận hành',
     icon: '⚙️',
-    color: const Color(0xFF10B981), // green
+    color: AppColors.success, // green
     templates: [
       const _TaskTemplate(
         name: 'Vận hành ngày',
@@ -299,7 +300,7 @@ final List<_TemplateGroup> _templateGroups = [
   _TemplateGroup(
     name: 'Nhân sự',
     icon: '👥',
-    color: const Color(0xFFEF4444), // red
+    color: AppColors.error, // red
     templates: [
       const _TaskTemplate(
         name: 'Tuyển dụng',
@@ -322,6 +323,7 @@ final List<_TemplateGroup> _templateGroups = [
 ];
 
 /// Flatten all templates for quick lookup
+// ignore: unused_element
 List<_TaskTemplate> get _allTemplates =>
     _templateGroups.expand((g) => g.templates).toList();
 
@@ -517,13 +519,13 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
 
   Color _platformColor(String? platform) {
     switch (platform) {
-      case 'youtube': return const Color(0xFFFF0000);
-      case 'tiktok': return const Color(0xFF000000);
-      case 'facebook': return const Color(0xFF1877F2);
-      case 'instagram': return const Color(0xFFE4405F);
-      case 'twitter': return const Color(0xFF1DA1F2);
-      case 'linkedin': return const Color(0xFF0A66C2);
-      default: return Colors.grey;
+      case 'youtube': return Color(0xFFFF0000);
+      case 'tiktok': return Color(0xFF000000);
+      case 'facebook': return Color(0xFF1877F2);
+      case 'instagram': return Color(0xFFE4405F);
+      case 'twitter': return Color(0xFF1DA1F2);
+      case 'linkedin': return Color(0xFF0A66C2);
+      default: return AppColors.textTertiary;
     }
   }
 
@@ -548,7 +550,7 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
             child: Row(
               children: [
                 Icon(Icons.auto_awesome, size: 16, color: AppColors.primary),
-                const SizedBox(width: 8),
+                AppSpacing.hGapSM,
                 Expanded(
                   child: Text(
                     _appliedTemplate != null
@@ -568,13 +570,13 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(4),
-                        color: Colors.red.withOpacity(0.1),
+                        color: AppColors.error.withOpacity(0.1),
                       ),
                       child: Text('Xóa mẫu',
-                          style: TextStyle(fontSize: 10, color: Colors.red[600], fontWeight: FontWeight.w500)),
+                          style: TextStyle(fontSize: 10, color: AppColors.error, fontWeight: FontWeight.w500)),
                     ),
                   ),
-                const SizedBox(width: 4),
+                AppSpacing.hGapXXS,
                 Icon(
                   _showTemplates ? Icons.expand_less : Icons.expand_more,
                   size: 18,
@@ -587,36 +589,36 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
 
         // Grouped template list — collapsible
         if (_showTemplates) ...[
-          const SizedBox(height: 8),
+          AppSpacing.gapSM,
 
           // ── MEDIA CHANNEL PICKER (shown when templates visible & channels exist) ──
           if (hasChannels) ...[
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F4FF),
+                color: AppColors.infoLight,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
+                border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.tv, size: 14, color: Color(0xFF3B82F6)),
-                      const SizedBox(width: 6),
+                      const Icon(Icons.tv, size: 14, color: AppColors.info),
+                      AppSpacing.hGapXS,
                       Text('Chọn kênh Media',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.blue[700])),
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.infoDark)),
                       if (_selectedChannel != null) ...[
                         const Spacer(),
                         GestureDetector(
                           onTap: () => setState(() => _selectedChannel = null),
-                          child: Text('Bỏ chọn', style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+                          child: Text('Bỏ chọn', style: TextStyle(fontSize: 10, color: AppColors.neutral500)),
                         ),
                       ],
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  AppSpacing.gapXS,
                   Wrap(
                     spacing: 6,
                     runSpacing: 4,
@@ -630,12 +632,12 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                           if (!isSelected) _reapplyWithChannel();
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isSelected ? _platformColor(platform).withOpacity(0.12) : Colors.white,
+                            color: isSelected ? _platformColor(platform).withOpacity(0.12) : AppColors.surface,
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: isSelected ? _platformColor(platform) : const Color(0xFFD1D5DB),
+                              color: isSelected ? _platformColor(platform) : AppColors.border,
                               width: isSelected ? 1.5 : 1,
                             ),
                           ),
@@ -643,13 +645,13 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(_platformIcon(platform), size: 13, color: _platformColor(platform)),
-                              const SizedBox(width: 4),
+                              AppSpacing.hGapXXS,
                               Text(
                                 ch['name'] as String? ?? '',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                  color: isSelected ? _platformColor(platform) : const Color(0xFF374151),
+                                  color: isSelected ? _platformColor(platform) : AppColors.neutral600,
                                 ),
                               ),
                               if (isSelected) ...[
@@ -665,7 +667,7 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            AppSpacing.gapSM,
           ],
 
           // ── TEMPLATE GROUPS ──
@@ -687,28 +689,28 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                     decoration: BoxDecoration(
                       color: hasSelectedInGroup
                           ? group.color.withOpacity(0.08)
-                          : Colors.grey.withOpacity(0.05),
+                          : AppColors.textTertiary.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
                       children: [
                         Text(group.icon, style: const TextStyle(fontSize: 13)),
-                        const SizedBox(width: 6),
+                        AppSpacing.hGapXS,
                         Expanded(
                           child: Text(group.name,
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: hasSelectedInGroup ? group.color : const Color(0xFF374151),
+                                color: hasSelectedInGroup ? group.color : AppColors.neutral600,
                               )),
                         ),
                         Text('${group.templates.length}',
-                            style: TextStyle(fontSize: 10, color: Colors.grey[400])),
-                        const SizedBox(width: 4),
+                            style: TextStyle(fontSize: 10, color: AppColors.neutral400)),
+                        AppSpacing.hGapXXS,
                         Icon(
                           isExpanded ? Icons.expand_less : Icons.expand_more,
                           size: 16,
-                          color: Colors.grey[400],
+                          color: AppColors.neutral400,
                         ),
                       ],
                     ),
@@ -729,12 +731,12 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                         return GestureDetector(
                           onTap: () => _applyTemplate(t),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                             decoration: BoxDecoration(
-                              color: isSelected ? group.color.withOpacity(0.12) : Colors.white,
+                              color: isSelected ? group.color.withOpacity(0.12) : AppColors.surface,
                               borderRadius: BorderRadius.circular(7),
                               border: Border.all(
-                                color: isSelected ? group.color : const Color(0xFFD1D5DB),
+                                color: isSelected ? group.color : AppColors.border,
                                 width: isSelected ? 1.5 : 1,
                               ),
                             ),
@@ -742,16 +744,16 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(t.icon, style: const TextStyle(fontSize: 12)),
-                                const SizedBox(width: 4),
+                                AppSpacing.hGapXXS,
                                 Text(t.name,
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                      color: isSelected ? group.color : const Color(0xFF374151),
+                                      color: isSelected ? group.color : AppColors.neutral600,
                                     )),
                                 if (t.isMediaRelated) ...[
                                   const SizedBox(width: 3),
-                                  Icon(Icons.tv, size: 10, color: Colors.grey[400]),
+                                  Icon(Icons.tv, size: 10, color: AppColors.neutral400),
                                 ],
                                 if (isSelected) ...[
                                   const SizedBox(width: 3),
@@ -765,7 +767,7 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                     ),
                   ),
 
-                const SizedBox(height: 2),
+                AppSpacing.gapXXXS,
               ],
             );
           }),
@@ -793,7 +795,7 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
               decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
+                border: Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
@@ -809,7 +811,7 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1F2937),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -868,7 +870,7 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          AppSpacing.hGapMD,
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -903,7 +905,7 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
 
                       // Checklist section
                       _buildChecklistSection(),
-                      const SizedBox(height: 8),
+                      AppSpacing.gapSM,
                     ],
                   ),
                 ),
@@ -914,7 +916,7 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
               decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
+                border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
@@ -929,19 +931,19 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                       child: const Text('Hủy'),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   Expanded(
                     flex: 2,
                     child: FilledButton(
                       onPressed: _saving ? null : _handleSave,
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8)),
                       ),
                       child: _saving
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
@@ -969,10 +971,10 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
       padding: const EdgeInsets.only(bottom: 5),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF374151),
+          color: AppColors.neutral600,
         ),
       ),
     );
@@ -981,16 +983,16 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
   InputDecoration _inputDeco(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+      hintStyle: const TextStyle(fontSize: 13, color: AppColors.neutral400),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       isDense: true,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+        borderSide: const BorderSide(color: AppColors.grey300),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+        borderSide: const BorderSide(color: AppColors.grey300),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -1083,27 +1085,27 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFD1D5DB)),
+          border: Border.all(color: AppColors.grey300),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
-            Icon(Icons.event_rounded, size: 18, color: _dueDate != null ? AppColors.primary : const Color(0xFF9CA3AF)),
-            const SizedBox(width: 8),
+            Icon(Icons.event_rounded, size: 18, color: _dueDate != null ? AppColors.primary : AppColors.neutral400),
+            AppSpacing.hGapSM,
             Text(
               _dueDate != null
                   ? DateFormat('dd/MM/yyyy').format(_dueDate!)
                   : 'Chọn ngày...',
               style: TextStyle(
                 fontSize: 13,
-                color: _dueDate != null ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
+                color: _dueDate != null ? AppColors.textPrimary : AppColors.neutral400,
               ),
             ),
             const Spacer(),
             if (_dueDate != null)
               GestureDetector(
                 onTap: () => setState(() => _dueDate = null),
-                child: const Icon(Icons.clear_rounded, size: 16, color: Color(0xFF9CA3AF)),
+                child: const Icon(Icons.clear_rounded, size: 16, color: AppColors.neutral400),
               ),
           ],
         ),
@@ -1135,7 +1137,7 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Row(children: [
             Text(cat.icon, style: const TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
+            AppSpacing.hGapSM,
             Expanded(
               child: Text('Thêm checklist "${cat.label}"?',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
@@ -1146,8 +1148,8 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Tự động thêm ${template.length} bước công việc:',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-              const SizedBox(height: 8),
+                  style: TextStyle(fontSize: 12, color: AppColors.neutral600)),
+              AppSpacing.gapSM,
               ...template.asMap().entries.map((e) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
                     child: Row(children: [
@@ -1155,22 +1157,22 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                         width: 18, height: 18,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: const Color(0xFFD1D5DB)),
+                          border: Border.all(color: AppColors.grey300),
                         ),
                         child: Center(
                           child: Text('${e.key + 1}',
                               style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600)),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      AppSpacing.hGapSM,
                       Expanded(
                         child: Text(e.value, style: const TextStyle(fontSize: 12)),
                       ),
                     ]),
                   )),
-              const SizedBox(height: 8),
+              AppSpacing.gapSM,
               Text('Bạn có thể chỉnh sửa sau khi thêm.',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500], fontStyle: FontStyle.italic)),
+                  style: TextStyle(fontSize: 11, color: AppColors.neutral500, fontStyle: FontStyle.italic)),
             ],
           ),
           actions: [
@@ -1218,19 +1220,19 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
             if (_checklistItems.isNotEmpty)
               GestureDetector(
                 onTap: () => setState(() => _checklistItems.clear()),
-                child: Text('Xóa hết', style: TextStyle(fontSize: 11, color: Colors.red[400])),
+                child: Text('Xóa hết', style: TextStyle(fontSize: 11, color: AppColors.error)),
               ),
           ],
         ),
-        const SizedBox(height: 4),
+        AppSpacing.gapXXS,
 
         // Items list
         if (_checklistItems.isNotEmpty)
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFF9FAFB),
+              color: AppColors.grey50,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              border: Border.all(color: AppColors.grey200),
             ),
             child: ReorderableListView.builder(
               shrinkWrap: true,
@@ -1248,33 +1250,33 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
                 key: ValueKey('cl_$i'),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: i < _checklistItems.length - 1
-                    ? const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB), width: 0.5)))
+                    ? const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.grey200, width: 0.5)))
                     : null,
                 child: Row(
                   children: [
                     ReorderableDragStartListener(
                       index: i,
-                      child: const Icon(Icons.drag_indicator_rounded, size: 16, color: Color(0xFF9CA3AF)),
+                      child: const Icon(Icons.drag_indicator_rounded, size: 16, color: AppColors.neutral400),
                     ),
                     Container(
                       width: 18, height: 18,
                       margin: const EdgeInsets.symmetric(horizontal: 6),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: const Color(0xFFD1D5DB)),
+                        border: Border.all(color: AppColors.grey300),
                       ),
                       child: Center(
                         child: Text('${i + 1}',
-                            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.neutral500)),
                       ),
                     ),
                     Expanded(
                       child: Text(_checklistItems[i],
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF374151))),
+                          style: const TextStyle(fontSize: 12, color: AppColors.grey700)),
                     ),
                     GestureDetector(
                       onTap: () => setState(() => _checklistItems.removeAt(i)),
-                      child: const Icon(Icons.close_rounded, size: 14, color: Color(0xFF9CA3AF)),
+                      child: const Icon(Icons.close_rounded, size: 14, color: AppColors.neutral400),
                     ),
                   ],
                 ),
@@ -1283,19 +1285,19 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
           ),
 
         // Add item button
-        const SizedBox(height: 6),
+        AppSpacing.gapXS,
         GestureDetector(
           onTap: _addChecklistItem,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFD1D5DB), style: BorderStyle.solid),
+              border: Border.all(color: AppColors.grey300, style: BorderStyle.solid),
             ),
             child: Row(
               children: [
                 Icon(Icons.add_rounded, size: 16, color: AppColors.primary),
-                const SizedBox(width: 6),
+                AppSpacing.hGapXS,
                 Text('Thêm bước', style: TextStyle(fontSize: 12, color: AppColors.primary)),
               ],
             ),
@@ -1382,7 +1384,7 @@ class _TaskCreateEditDialogState extends State<TaskCreateEditDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lỗi: $e'),
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: AppColors.error,
           ),
         );
       }

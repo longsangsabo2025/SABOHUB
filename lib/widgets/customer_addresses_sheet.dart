@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/customer_address.dart';
 import '../business_types/distribution/models/odori_customer.dart';
 import '../../providers/auth_provider.dart';
+import '../core/theme/app_spacing.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -65,7 +67,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
   }
 
   Future<void> _createDefaultFromCustomer() async {
-    final companyId = ref.read(authProvider).user?.companyId;
+    final companyId = ref.read(currentUserProvider)?.companyId;
     if (companyId == null) return;
 
     try {
@@ -115,7 +117,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
       context: context,
       builder: (context) => AddressFormDialog(
         customerId: widget.customer.id,
-        companyId: ref.read(authProvider).user?.companyId ?? '',
+        companyId: ref.read(currentUserProvider)?.companyId ?? '',
         address: address,
         onSaved: () {
           _loadAddresses();
@@ -168,13 +170,13 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.surface,
             ),
             child: const Text('Xóa'),
           ),
@@ -216,7 +218,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.8,
       ),
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,7 +234,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
                 ),
                 child: Icon(Icons.location_on, color: Colors.blue.shade600, size: 24),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMD,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,7 +256,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
 
           // Content
           Flexible(
@@ -266,9 +268,9 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
-                            const SizedBox(height: 8),
+                            AppSpacing.gapSM,
                             Text('Lỗi: $_error'),
-                            const SizedBox(height: 16),
+                            AppSpacing.gapLG,
                             ElevatedButton(
                               onPressed: _loadAddresses,
                               child: const Text('Thử lại'),
@@ -281,7 +283,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
                         : _buildAddressList(),
           ),
 
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
 
           // Add new address button
           SizedBox(
@@ -309,14 +311,14 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: AppSpacing.paddingXXL,
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.location_off, size: 48, color: Colors.grey.shade400),
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           Text(
             'Chưa có địa chỉ giao hàng',
             style: TextStyle(
@@ -325,12 +327,12 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
               color: Colors.grey.shade600,
             ),
           ),
-          const SizedBox(height: 8),
+          AppSpacing.gapSM,
           Text(
             'Thêm địa chỉ giao hàng để tạo đơn nhanh hơn',
             style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           if (widget.customer.address != null && widget.customer.address!.isNotEmpty)
             OutlinedButton.icon(
               onPressed: _createDefaultFromCustomer,
@@ -346,7 +348,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
     return ListView.separated(
       shrinkWrap: true,
       itemCount: _addresses.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => AppSpacing.gapMD,
       itemBuilder: (context, index) {
         final addr = _addresses[index];
         return _buildAddressCard(addr);
@@ -368,14 +370,14 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
         onTap: () => _showAddEditAddressDialog(address: addr),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: AppSpacing.paddingMD,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: AppSpacing.paddingSM,
                     decoration: BoxDecoration(
                       color: addr.isDefault ? Colors.blue.shade100 : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
@@ -386,7 +388,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
                       color: addr.isDefault ? Colors.blue.shade700 : Colors.grey.shade600,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,22 +400,22 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
-                                color: addr.isDefault ? Colors.blue.shade700 : Colors.black87,
+                                color: addr.isDefault ? Colors.blue.shade700 : Theme.of(context).colorScheme.onSurface87,
                               ),
                             ),
                             if (addr.isDefault) ...[
-                              const SizedBox(width: 8),
+                              AppSpacing.hGapSM,
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Colors.blue.shade600,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Mặc định',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.surface,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -421,7 +423,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
                             ],
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        AppSpacing.gapXXS,
                         Text(
                           addr.fullAddress,
                           style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
@@ -452,7 +454,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
                         child: Row(
                           children: [
                             Icon(Icons.edit, size: 18),
-                            SizedBox(width: 8),
+                            AppSpacing.hGapSM,
                             Text('Sửa'),
                           ],
                         ),
@@ -463,7 +465,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
                           child: Row(
                             children: [
                               Icon(Icons.star, size: 18),
-                              SizedBox(width: 8),
+                              AppSpacing.hGapSM,
                               Text('Đặt mặc định'),
                             ],
                           ),
@@ -473,7 +475,7 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
                         child: Row(
                           children: [
                             Icon(Icons.delete, size: 18, color: Colors.red),
-                            SizedBox(width: 8),
+                            AppSpacing.hGapSM,
                             Text('Xóa', style: TextStyle(color: Colors.red)),
                           ],
                         ),
@@ -488,16 +490,16 @@ class _CustomerAddressesSheetState extends ConsumerState<CustomerAddressesSheet>
                   children: [
                     if (addr.contactPerson != null) ...[
                       Icon(Icons.person_outline, size: 16, color: Colors.grey.shade500),
-                      const SizedBox(width: 4),
+                      AppSpacing.hGapXXS,
                       Text(
                         addr.contactPerson!,
                         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                       ),
-                      const SizedBox(width: 16),
+                      AppSpacing.hGapLG,
                     ],
                     if (addr.phone != null) ...[
                       Icon(Icons.phone_outlined, size: 16, color: Colors.grey.shade500),
-                      const SizedBox(width: 4),
+                      AppSpacing.hGapXXS,
                       Text(
                         addr.phone!,
                         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
@@ -671,7 +673,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.paddingLG,
               decoration: BoxDecoration(
                 color: Colors.blue.shade50,
                 borderRadius: const BorderRadius.only(
@@ -685,7 +687,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                     widget.address != null ? Icons.edit_location : Icons.add_location,
                     color: Colors.blue.shade700,
                   ),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   Text(
                     widget.address != null ? 'Sửa địa chỉ' : 'Thêm địa chỉ mới',
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -702,7 +704,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
             // Form
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: AppSpacing.paddingLG,
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -717,7 +719,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                         ),
                         validator: (v) => v == null || v.isEmpty ? 'Vui lòng nhập tên' : null,
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       Row(
                         children: [
@@ -731,7 +733,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          AppSpacing.hGapMD,
                           Expanded(
                             flex: 4,
                             child: TextFormField(
@@ -744,7 +746,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       TextFormField(
                         controller: _wardController,
@@ -753,7 +755,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                           prefixIcon: Icon(Icons.location_city),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       Row(
                         children: [
@@ -766,7 +768,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          AppSpacing.hGapMD,
                           Expanded(
                             child: TextFormField(
                               controller: _cityController,
@@ -778,7 +780,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       TextFormField(
                         controller: _addressController,
@@ -789,10 +791,10 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                         ),
                         maxLines: 2,
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       const Divider(),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       Row(
                         children: [
@@ -805,7 +807,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          AppSpacing.hGapMD,
                           Expanded(
                             child: TextFormField(
                               controller: _phoneController,
@@ -818,7 +820,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       TextFormField(
                         controller: _notesController,
@@ -829,7 +831,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                         ),
                         maxLines: 2,
                       ),
-                      const SizedBox(height: 16),
+                      AppSpacing.gapLG,
 
                       CheckboxListTile(
                         value: _isDefault,
@@ -847,7 +849,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
 
             // Actions
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.paddingLG,
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 borderRadius: const BorderRadius.only(
@@ -862,7 +864,7 @@ class _AddressFormDialogState extends State<AddressFormDialog> {
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Hủy'),
                   ),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                   ElevatedButton(
                     onPressed: _isLoading ? null : _save,
                     child: _isLoading

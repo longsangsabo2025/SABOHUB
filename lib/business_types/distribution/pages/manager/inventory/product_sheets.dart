@@ -46,9 +46,9 @@ class ProductDetailSheet extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.all(8),
+      margin: EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -165,9 +165,9 @@ class ProductDetailSheet extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            padding: EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(Icons.inventory, color: stockColor, size: 24),
@@ -215,9 +215,9 @@ class ProductDetailSheet extends StatelessWidget {
                       if (warehouseBreakdown.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(
@@ -303,10 +303,10 @@ class ProductDetailSheet extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: onEdit,
                     icon: const Icon(Icons.edit),
-                    label: const Text('Chỉnh sửa'),
+                    label: Text('Chỉnh sửa'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.teal,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -416,7 +416,7 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
     setState(() => _isLoading = true);
 
     try {
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null || user.companyId == null) {
         throw Exception('Vui lòng đăng nhập lại');
       }
@@ -472,9 +472,9 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(8),
+      margin: EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Padding(
@@ -638,15 +638,15 @@ class _AddProductSheetState extends ConsumerState<AddProductSheet> {
                           onPressed: _isLoading ? null : _save,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.teal,
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).colorScheme.surface,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: _isLoading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
                                 )
                               : const Text('Thêm sản phẩm', style: TextStyle(fontSize: 16)),
                         ),
@@ -726,8 +726,8 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       
       String? imageUrl = _currentImageUrl;
       
@@ -783,9 +783,9 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(8),
+      margin: EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Padding(
@@ -998,15 +998,15 @@ class _EditProductSheetState extends ConsumerState<EditProductSheet> {
                           onPressed: _isLoading ? null : _save,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).colorScheme.surface,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: _isLoading
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
                                 )
                               : const Text('Lưu thay đổi', style: TextStyle(fontSize: 16)),
                         ),
@@ -1110,7 +1110,7 @@ class _AdjustStockSheetState extends ConsumerState<AdjustStockSheet> {
     setState(() => _isLoading = true);
 
     try {
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null) throw Exception('Vui lòng đăng nhập lại');
 
       String reason;
@@ -1187,9 +1187,9 @@ class _AdjustStockSheetState extends ConsumerState<AdjustStockSheet> {
     final currentStock = _stockLoaded ? _currentStock : (widget.product.minStock ?? 0);
     
     return Container(
-      margin: const EdgeInsets.all(8),
+      margin: EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Padding(
@@ -1317,15 +1317,15 @@ class _AdjustStockSheetState extends ConsumerState<AdjustStockSheet> {
                         onPressed: _isLoading ? null : _save,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.teal,
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(context).colorScheme.surface,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: _isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
                               )
                             : const Text('Xác nhận', style: TextStyle(fontSize: 16)),
                       ),

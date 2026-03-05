@@ -5,16 +5,16 @@ import '../../../providers/auth_provider.dart';
 
 // Session service provider — passes companyId from auth
 final sessionServiceProvider = Provider<SessionService>((ref) {
-  final auth = ref.watch(authProvider);
-  return SessionService(companyId: auth.user?.companyId);
+  final user = ref.watch(currentUserProvider);
+  return SessionService(companyId: user?.companyId);
 });
 
 // All sessions provider
 final allSessionsProvider = FutureProvider.autoDispose<List<TableSession>>((ref) async {
   final sessionService = ref.read(sessionServiceProvider);
-  final auth = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!auth.isAuthenticated) {
+  if (user == null) {
     return [];
   }
   
@@ -24,9 +24,9 @@ final allSessionsProvider = FutureProvider.autoDispose<List<TableSession>>((ref)
 // Sessions by status provider (family)
 final sessionsByStatusProvider = FutureProvider.autoDispose.family<List<TableSession>, SessionStatus>((ref, status) async {
   final sessionService = ref.read(sessionServiceProvider);
-  final auth = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!auth.isAuthenticated) {
+  if (user == null) {
     return [];
   }
   
@@ -36,9 +36,9 @@ final sessionsByStatusProvider = FutureProvider.autoDispose.family<List<TableSes
 // Active sessions provider (for real-time monitoring)
 final activeSessionsProvider = FutureProvider.autoDispose<List<TableSession>>((ref) async {
   final sessionService = ref.read(sessionServiceProvider);
-  final auth = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!auth.isAuthenticated) {
+  if (user == null) {
     return [];
   }
   
@@ -48,9 +48,9 @@ final activeSessionsProvider = FutureProvider.autoDispose<List<TableSession>>((r
 // Session stats provider
 final sessionStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final sessionService = ref.read(sessionServiceProvider);
-  final auth = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!auth.isAuthenticated) {
+  if (user == null) {
     return {
       'activeSessions': 0,
       'pausedSessions': 0,
@@ -65,9 +65,9 @@ final sessionStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((r
 // Individual session provider (family)
 final sessionProvider = FutureProvider.autoDispose.family<TableSession?, String>((ref, sessionId) async {
   final sessionService = ref.read(sessionServiceProvider);
-  final auth = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!auth.isAuthenticated) {
+  if (user == null) {
     return null;
   }
   
@@ -87,7 +87,7 @@ class SessionActions {
 
   // Start a new session
   Future<TableSession> startSession({
-    required String tableId,
+    String? tableId,
     required double hourlyRate,
     String? customerName,
     String? notes,

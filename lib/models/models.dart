@@ -8,6 +8,5 @@ export '../business_types/service/models/menu_item.dart';
 export 'order.dart';
 export 'payment.dart';
 export '../business_types/service/models/session.dart';
-export '../business_types/service/models/table.dart';
 export 'task.dart';
 export 'user.dart';

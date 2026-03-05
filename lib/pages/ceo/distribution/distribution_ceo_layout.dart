@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/router/app_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/realtime_notification_widgets.dart';
-import '../ceo_profile_page.dart';
 import '../ceo_notifications_page.dart';
 import '../shared/ceo_more_page.dart';
 
@@ -15,6 +17,7 @@ import 'distribution_ceo_sales.dart';
 import 'distribution_ceo_operations.dart';
 import 'distribution_ceo_finance.dart';
 import 'distribution_ceo_team.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Distribution CEO Layout — 5 tabs focused on distribution business
 /// Dashboard | Kinh doanh | Vận hành | Tài chính | Nhiệm vụ
@@ -51,17 +54,17 @@ class _DistributionCEOLayoutState
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Theme.of(context).colorScheme.surface,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               companyName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Theme.of(context).colorScheme.onSurface87,
               ),
             ),
             const Text(
@@ -71,14 +74,13 @@ class _DistributionCEOLayoutState
           ],
         ),
         actions: [
-          const RealtimeNotificationBell(),
+          RealtimeNotificationBell(),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.black54),
+            icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onSurface54),
             onSelected: (value) {
               switch (value) {
                 case 'profile':
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const CEOProfilePage()));
+                  context.push(AppRoutes.profile);
                   break;
                 case 'notifications':
                   Navigator.push(

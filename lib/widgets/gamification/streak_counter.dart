@@ -18,17 +18,17 @@ class StreakCounter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (compact) return _buildCompact();
-    return _buildFull();
+    if (compact) return _buildCompact(context);
+    return _buildFull(context);
   }
 
-  Widget _buildCompact() {
+  Widget _buildCompact(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: streakDays > 0
-              ? [const Color(0xFFFF6D00), const Color(0xFFFF9100)]
+              ? [Color(0xFFFF6D00), Color(0xFFFF9100)]
               : [Colors.grey.shade300, Colors.grey.shade400],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -40,11 +40,11 @@ class StreakCounter extends StatelessWidget {
             streakDays > 0 ? '🔥' : '❄️',
             style: const TextStyle(fontSize: 14),
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: 4),
           Text(
             '$streakDays',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.surface,
               fontWeight: FontWeight.bold,
               fontSize: 13,
             ),
@@ -54,11 +54,11 @@ class StreakCounter extends StatelessWidget {
     );
   }
 
-  Widget _buildFull() {
+  Widget _buildFull(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -119,13 +119,13 @@ class StreakCounter extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _buildWeekDots(),
+          _buildWeekDots(context),
         ],
       ),
     );
   }
 
-  Widget _buildWeekDots() {
+  Widget _buildWeekDots(BuildContext context) {
     final days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
     final todayIndex = DateTime.now().weekday - 1;
 
@@ -143,19 +143,19 @@ class StreakCounter extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isActive
-                    ? const Color(0xFFFF6D00)
+                    ? Color(0xFFFF6D00)
                     : isToday
-                        ? const Color(0xFFFF6D00).withValues(alpha: 0.2)
+                        ? Color(0xFFFF6D00).withValues(alpha: 0.2)
                         : Colors.grey.shade100,
                 border: isToday
-                    ? Border.all(color: const Color(0xFFFF6D00), width: 2)
+                    ? Border.all(color: Color(0xFFFF6D00), width: 2)
                     : null,
               ),
               child: Center(
                 child: isActive
-                    ? const Text('✓',
+                    ? Text('✓',
                         style: TextStyle(
-                            color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))
+                            color: Theme.of(context).colorScheme.surface, fontSize: 12, fontWeight: FontWeight.bold))
                     : null,
               ),
             ),
@@ -164,7 +164,7 @@ class StreakCounter extends StatelessWidget {
               days[i],
               style: TextStyle(
                 fontSize: 10,
-                color: isActive ? const Color(0xFFFF6D00) : AppColors.textSecondary,
+                color: isActive ? Color(0xFFFF6D00) : AppColors.textSecondary,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),
             ),

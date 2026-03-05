@@ -31,7 +31,7 @@ class ManagerKPIService {
       // Manager sees all staff in their company (not just branch)
       staffQuery.eq('company_id', companyId);
 
-      final staffData = await staffQuery;
+      final staffData = await staffQuery.limit(500);
       final totalStaff = (staffData as List).length;
       final activeStaff =
           staffData.where((s) => s['is_active'] == true).length;
@@ -42,7 +42,7 @@ class ManagerKPIService {
       // Manager sees all tables in their company
       tablesQuery.eq('company_id', companyId);
 
-      final tablesData = await tablesQuery;
+      final tablesData = await tablesQuery.limit(500);
       final totalTables = (tablesData as List).length;
       final activeTables = tablesData
           .where((t) => t['status'] == 'OCCUPIED' || t['status'] == 'RESERVED')

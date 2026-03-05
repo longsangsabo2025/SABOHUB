@@ -7,7 +7,7 @@ import '../providers/auth_provider.dart';
 final ceoDashboardKPIProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final supabaseClient = supabase.client;
-  final userId = ref.read(authProvider).user?.id;
+  final userId = ref.read(currentUserProvider)?.id;
 
   if (userId == null) {
     return _getEmptyKPIs();
@@ -16,7 +16,7 @@ final ceoDashboardKPIProvider =
   try {
     // Get all companies (CEO can see all companies in the system)
     final companiesResponse =
-        await supabaseClient.from('companies').select('id');
+        await supabaseClient.from('companies').select('id').limit(500);
 
     final companies = companiesResponse as List;
     final totalCompanies = companies.length;
@@ -27,17 +27,17 @@ final ceoDashboardKPIProvider =
 
     // Get total employees across all companies
     final employeesResponse =
-        await supabaseClient.from('profiles').select('id');
+        await supabaseClient.from('profiles').select('id').limit(1000);
 
     final totalEmployees = (employeesResponse as List).length;
 
     // Get total branches across all companies
-    final branchesResponse = await supabaseClient.from('branches').select('id');
+    final branchesResponse = await supabaseClient.from('branches').select('id').limit(500);
 
     final totalBranches = (branchesResponse as List).length;
 
     // Get total tables across all branches
-    final tablesResponse = await supabaseClient.from('tables').select('id');
+    final tablesResponse = await supabaseClient.from('tables').select('id').limit(1000);
 
     final totalTables = (tablesResponse as List).length;
 
@@ -86,7 +86,7 @@ final ceoDashboardKPIProvider =
 final ceoDashboardActivitiesProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final supabaseClient = supabase.client;
-  final userId = ref.read(authProvider).user?.id;
+  final userId = ref.read(currentUserProvider)?.id;
 
   if (userId == null) {
     return [];
@@ -95,7 +95,7 @@ final ceoDashboardActivitiesProvider =
   try {
     // Get all companies (CEO can see all companies)
     final companiesResponse =
-        await supabaseClient.from('companies').select('id');
+        await supabaseClient.from('companies').select('id').limit(500);
 
     final companies = companiesResponse as List;
 

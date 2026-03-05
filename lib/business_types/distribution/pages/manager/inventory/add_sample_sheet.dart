@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../models/odori_product.dart';
 import '../../../../../providers/auth_provider.dart';
+import '../../../../../utils/app_logger.dart';
 import 'inventory_constants.dart';
 
 /// An item in the sample list: product + quantity
@@ -10,7 +11,7 @@ class _SampleItem {
   OdoriProduct? product;
   final TextEditingController quantityController;
 
-  _SampleItem({this.product, String quantity = '1'})
+  _SampleItem({String quantity = '1'})
       : quantityController = TextEditingController(text: quantity);
 
   void dispose() => quantityController.dispose();
@@ -101,7 +102,7 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
 
   Future<void> _loadCustomers() async {
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       if (companyId.isEmpty) return;
 
       final data = await supabase
@@ -119,7 +120,7 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Error loading customers: $e');
+      AppLogger.error('Error loading customers: $e');
       if (mounted) setState(() => _isLoadingCustomers = false);
     }
   }
@@ -191,14 +192,14 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
                           final isSelected = customer['id'] == _selectedCustomerId;
 
                           return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
+                            margin: EdgeInsets.only(bottom: 8),
                             decoration: BoxDecoration(
                               border: Border.all(
                                 color: isSelected ? Colors.purple : Colors.grey.shade300,
                                 width: isSelected ? 2 : 1,
                               ),
                               borderRadius: BorderRadius.circular(12),
-                              color: isSelected ? Colors.purple.shade50 : Colors.white,
+                              color: isSelected ? Colors.purple.shade50 : Theme.of(context).colorScheme.surface,
                             ),
                             child: ListTile(
                               onTap: () {
@@ -333,9 +334,9 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
     setState(() => _isLoading = true);
 
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
-      final userId = ref.read(authProvider).user?.id ?? '';
-      final userName = ref.read(authProvider).user?.displayName ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
+      final userId = ref.read(currentUserProvider)?.id ?? '';
+      final userName = ref.read(currentUserProvider)?.displayName ?? '';
 
       // Calculate totals
       double subtotal = 0;
@@ -423,9 +424,9 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(8),
+      margin: EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -493,7 +494,7 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
-                                    color: _selectedCustomerName != null ? Colors.black : Colors.grey.shade600,
+                                    color: _selectedCustomerName != null ? Theme.of(context).colorScheme.onSurface : Colors.grey.shade600,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -584,16 +585,16 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
                       child: ElevatedButton.icon(
                         onPressed: _isLoading ? null : _saveSample,
                         icon: _isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 height: 16,
                                 width: 16,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                child: CircularProgressIndicator(color: Theme.of(context).colorScheme.surface, strokeWidth: 2),
                               )
-                            : const Icon(Icons.send, size: 18),
+                            : Icon(Icons.send, size: 18),
                         label: Text('Gửi ${_sampleItems.where((i) => i.product != null).length} mẫu'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.deepOrange,
-                          foregroundColor: Colors.white,
+                          foregroundColor: Theme.of(context).colorScheme.surface,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),

@@ -40,8 +40,8 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 
@@ -130,8 +130,8 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
-              color: Colors.white,
+              padding: EdgeInsets.all(20),
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 children: [
                   Row(
@@ -274,26 +274,26 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                           children: [
                             Text('Tổng đã thu',
                                 style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
                                     fontSize: 13)),
                             const SizedBox(height: 4),
                             Text(currencyFormat.format(_totalAmount),
-                                style: const TextStyle(
-                                    color: Colors.white,
+                                style: TextStyle(
+                                    color: Theme.of(context).colorScheme.surface,
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold)),
                           ],
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text('${_filteredPayments.length} giao dịch',
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 13)),
+                              style: TextStyle(
+                                  color: Theme.of(context).colorScheme.surface, fontSize: 13)),
                         ),
                       ],
                     ),
@@ -426,13 +426,13 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
       } : null,
       child: Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

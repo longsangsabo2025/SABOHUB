@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../utils/app_logger.dart';
 
 /// User Profile Page
 /// Display and edit user information, settings, and preferences
@@ -142,6 +145,7 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
   }
 
   Future<void> _changePassword() async {
+    final currentPasswordController = TextEditingController();
     final passwordController = TextEditingController();
     final confirmController = TextEditingController();
 
@@ -152,11 +156,23 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // SECURITY: Require current password verification
+            TextField(
+              controller: currentPasswordController,
+              decoration: const InputDecoration(
+                labelText: 'Mật khẩu hiện tại',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock_clock),
+              ),
+              obscureText: true,
+            ),
+            const SizedBox(height: 16),
             TextField(
               controller: passwordController,
               decoration: const InputDecoration(
                 labelText: 'Mật khẩu mới',
                 border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock),
               ),
               obscureText: true,
             ),
@@ -166,6 +182,7 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
               decoration: const InputDecoration(
                 labelText: 'Xác nhận mật khẩu',
                 border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock_outline),
               ),
               obscureText: true,
             ),
@@ -178,6 +195,19 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
           ),
           ElevatedButton(
             onPressed: () async {
+              // SECURITY: Require current password
+              if (currentPasswordController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Vui lòng nhập mật khẩu hiện tại')),
+                );
+                return;
+              }
+              if (passwordController.text.length < 8) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Mật khẩu mới phải có ít nhất 8 ký tự')),
+                );
+                return;
+              }
               if (passwordController.text != confirmController.text) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Mật khẩu không khớp!')),
@@ -193,12 +223,27 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
                 final appUser = ref.read(authProvider).user;
                 if (appUser == null) throw Exception('Chưa đăng nhập');
                 
+                // SECURITY: Verify current password before allowing change
+                final currentHash = await _supabase.rpc('hash_password', params: {
+                  'p_password': currentPasswordController.text,
+                });
+                final employee = await _supabase
+                    .from('employees')
+                    .select('password_hash')
+                    .eq('id', appUser.id)
+                    .single();
+                final storedHash = employee['password_hash'] as String?;
+                if (storedHash == null || storedHash != currentHash) {
+                  throw Exception('Mật khẩu hiện tại không đúng');
+                }
+                
+                // Current password verified, proceed with change
                 final result = await _supabase.rpc('change_employee_password', params: {
                   'p_employee_id': appUser.id,
                   'p_new_password': passwordController.text,
                 });
                 
-                if (result['success'] != true) {
+                if (result is Map && result['success'] != true) {
                   throw Exception(result['error'] ?? 'Không thể đổi mật khẩu');
                 }
 
@@ -250,7 +295,7 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       // Clear auth state (works for both CEO and Employee)
       await ref.read(authProvider.notifier).logout();
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
+        context.go('/login');
       }
     }
   }
@@ -429,8 +474,8 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
       final filePath = 'avatars/$fileName';
 
       // Debug: Log Supabase URL
-      debugPrint('🔍 Supabase URL: ${_supabase.rest.url}');
-      debugPrint('🔍 Uploading to bucket: avatars, path: $filePath');
+      AppLogger.data('Upload', {'url': _supabase.rest.url});
+      AppLogger.data('Upload', {'bucket': 'avatars', 'path': filePath});
 
       // Upload to Supabase Storage (bucket: avatars - dedicated for profile images)
       await _supabase.storage.from('avatars').uploadBinary(
@@ -444,7 +489,7 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
 
       // Get public URL
       final publicUrl = _supabase.storage.from('avatars').getPublicUrl(filePath);
-      debugPrint('✅ Upload success! URL: $publicUrl');
+      AppLogger.info('Upload success! URL: $publicUrl');
 
       // All users in employees table
       await _supabase.from('employees').update({
@@ -547,8 +592,8 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Hồ sơ cá nhân'),
-        backgroundColor: Colors.white,
+        title: Text('Hồ sơ cá nhân'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         actions: [
           if (!_isEditing && !_isLoading)
@@ -632,10 +677,10 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
                       child: _avatarUrl == null
                           ? Text(
                               initials.toUpperCase(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                               ),
                             )
                           : null,
@@ -644,15 +689,15 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
                 bottom: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.blue,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.camera_alt,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     size: 18,
                   ),
                 ),
@@ -816,8 +861,26 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
             ),
           ),
           const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.language),
+            Consumer(
+              builder: (context, ref, child) {
+                final isDarkMode = ref.watch(themeProvider).value == ThemeMode.dark;
+                return ListTile(
+                  leading: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
+                  title: const Text('Giao diện tối'),
+                  trailing: Switch(
+                    value: isDarkMode,
+                    onChanged: (value) {
+                      ref.read(themeProvider.notifier).setTheme(
+                        value ? ThemeMode.dark : ThemeMode.light
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.language),
             title: const Text('Ngôn ngữ'),
             trailing: const Row(
               mainAxisSize: MainAxisSize.min,
@@ -945,3 +1008,4 @@ class _UserProfilePageState extends ConsumerState<UserProfilePage> {
     }
   }
 }
+

@@ -109,8 +109,8 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
 
   Future<void> _generateCustomerCode() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId == null) return;
 
       final supabase = Supabase.instance.client;
@@ -159,8 +159,8 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       
       if (companyId == null || companyId.isEmpty) {
         throw Exception('Không tìm thấy company_id. Vui lòng đăng nhập lại.');
@@ -401,9 +401,9 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
                             decoration: InputDecoration(
                               labelText: 'Số',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: Theme.of(context).colorScheme.surface,
                             ),
                           ),
                         ),
@@ -415,9 +415,9 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
                               labelText: 'Tên đường',
                               hintText: 'VD: Dương Đình Hội',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: Theme.of(context).colorScheme.surface,
                             ),
                           ),
                         ),
@@ -430,9 +430,9 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
                         labelText: 'Quận/Huyện *',
                         prefixIcon: const Icon(Icons.location_city, size: 20),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                       isExpanded: true,
                       items: _districts.map((d) => DropdownMenuItem(
@@ -455,9 +455,9 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
                         labelText: 'Phường/Xã',
                         prefixIcon: const Icon(Icons.house, size: 20),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                       isExpanded: true,
                       items: _wards.map((w) => DropdownMenuItem(
@@ -653,15 +653,15 @@ class _SalesCustomerFormSheetState extends ConsumerState<SalesCustomerFormSheet>
                       onPressed: _isLoading ? null : _saveCustomer,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.indigo,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: _isLoading 
-                          ? const SizedBox(
+                          ? SizedBox(
                               height: 20, 
                               width: 20, 
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
                             )
                           : Row(
                               mainAxisAlignment: MainAxisAlignment.center,

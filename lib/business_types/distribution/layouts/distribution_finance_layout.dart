@@ -45,7 +45,7 @@ class _DistributionFinanceLayoutState
           decoration: BoxDecoration(
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                 blurRadius: 20,
                 offset: const Offset(0, -5),
               ),
@@ -55,7 +55,7 @@ class _DistributionFinanceLayoutState
             selectedIndex: _currentIndex,
             onDestinationSelected: (index) =>
                 setState(() => _currentIndex = index),
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             elevation: 0,
             height: 65,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,

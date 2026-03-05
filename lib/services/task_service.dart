@@ -1,25 +1,32 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/interfaces/i_task_service.dart';
 import '../models/task.dart';
 import '../utils/app_logger.dart';
 // import 'notification_service.dart'; // Commented out for now
 
 /// Task Service
 /// Handles all task-related database operations
-class TaskService {
+class TaskService implements ITaskService {
   final SupabaseClient _supabase = Supabase.instance.client;
   // final _notificationService = NotificationService(); // Commented out for now
 
   /// Get all tasks
-  Future<List<Task>> getAllTasks({String? branchId}) async {
+  /// [companyId] — when provided, scopes tasks to a single company (data isolation)
+  @override
+
+  Future<List<Task>> getAllTasks({String? branchId, String? companyId}) async {
     try {
-      final query = _supabase
+      var query = _supabase
           .from('tasks')
           .select('*')
           .isFilter('deleted_at', null); // Filter out soft deleted
 
+      if (companyId != null) {
+        query = query.eq('company_id', companyId);
+      }
       if (branchId != null) {
-        query.eq('branch_id', branchId);
+        query = query.eq('branch_id', branchId);
       }
 
       final response = await query.order('created_at', ascending: false);
@@ -31,17 +38,22 @@ class TaskService {
   }
 
   /// Get tasks by status
+  @override
+
   Future<List<Task>> getTasksByStatus(TaskStatus status,
-      {String? branchId}) async {
+      {String? branchId, String? companyId}) async {
     try {
-      final query = _supabase
+      var query = _supabase
           .from('tasks')
           .select('*')
-          .eq('status', status.name)
+          .eq('status', status.toDbValue()) // Fix: use toDbValue() not .name
           .isFilter('deleted_at', null); // ✅ Filter out soft deleted tasks
 
+      if (companyId != null) {
+        query = query.eq('company_id', companyId);
+      }
       if (branchId != null) {
-        query.eq('branch_id', branchId);
+        query = query.eq('branch_id', branchId);
       }
 
       final response = await query.order('due_date', ascending: true);
@@ -53,17 +65,22 @@ class TaskService {
   }
 
   /// Get tasks assigned to a user
+  @override
+
   Future<List<Task>> getTasksByAssignee(String userId,
-      {String? branchId}) async {
+      {String? branchId, String? companyId}) async {
     try {
-      final query = _supabase
+      var query = _supabase
           .from('tasks')
           .select('*')
           .eq('assigned_to', userId)
           .isFilter('deleted_at', null); // ✅ Filter out soft deleted tasks
 
+      if (companyId != null) {
+        query = query.eq('company_id', companyId);
+      }
       if (branchId != null) {
-        query.eq('branch_id', branchId);
+        query = query.eq('branch_id', branchId);
       }
 
       final response = await query.order('due_date', ascending: true);
@@ -75,6 +92,8 @@ class TaskService {
   }
 
   /// Create a new task
+  @override
+
   Future<Task> createTask(Task task) async {
     AppLogger.api('🔍 DEBUG: Starting task creation...');
     AppLogger.data('🔍 Task title: ${task.title}');
@@ -143,6 +162,8 @@ class TaskService {
   }
 
   /// Update a task
+  @override
+
   Future<Task> updateTask(String taskId, Map<String, dynamic> updates) async {
     try {
       final response = await _supabase
@@ -159,6 +180,8 @@ class TaskService {
   }
 
   /// Update task status
+  @override
+
   Future<Task> updateTaskStatus(String taskId, TaskStatus status) async {
     try {
       final updates = <String, dynamic>{
@@ -183,6 +206,8 @@ class TaskService {
   }
 
   /// Delete a task (soft delete)
+  @override
+
   Future<void> deleteTask(String taskId) async {
     try {
       await _supabase.from('tasks').update({
@@ -194,6 +219,8 @@ class TaskService {
   }
 
   /// Restore a soft deleted task
+  @override
+
   Future<void> restoreTask(String taskId) async {
     try {
       await _supabase.from('tasks').update({
@@ -204,16 +231,21 @@ class TaskService {
     }
   }
 
-  /// Permanently delete a task (admin only)
+  /// Permanently delete a task (admin only) — Converted to soft delete
+  // Soft delete - sets deleted_at timestamp
   Future<void> permanentlyDeleteTask(String taskId) async {
     try {
-      await _supabase.from('tasks').delete().eq('id', taskId);
+      await _supabase.from('tasks').update({
+        'deleted_at': DateTime.now().toIso8601String(),
+      }).eq('id', taskId);
     } catch (e) {
       throw Exception('Failed to permanently delete task: $e');
     }
   }
 
   /// Get task statistics
+  @override
+
   Future<Map<String, int>> getTaskStats({String? branchId}) async {
     try {
       final query = _supabase
@@ -244,6 +276,8 @@ class TaskService {
   }
 
   /// Get all tasks for a company
+  @override
+
   Future<List<Task>> getTasksByCompany(String companyId) async {
     try {
       AppLogger.api('🔍 [TaskService] Fetching tasks for company: $companyId');
@@ -279,6 +313,8 @@ class TaskService {
   }
 
   /// Get task statistics for a company
+  @override
+
   Future<Map<String, int>> getCompanyTaskStats(String companyId) async {
     try {
       final response = await _supabase
@@ -307,6 +343,8 @@ class TaskService {
   }
 
   /// Subscribe to task changes
+  @override
+
   Stream<List<Task>> subscribeToTasks({String? branchId}) {
     final query = _supabase.from('tasks').stream(primaryKey: ['id']);
 

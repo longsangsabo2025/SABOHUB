@@ -37,8 +37,8 @@ class _WarehouseMainLayoutState extends ConsumerState<WarehouseMainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final userName = authState.user?.name ?? 'Nhân viên kho';
+    final user = ref.watch(currentUserProvider);
+    final userName = user?.name ?? 'Nhân viên kho';
 
     return Scaffold(
       appBar: AppBar(

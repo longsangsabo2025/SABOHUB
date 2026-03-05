@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/ceo_business_provider.dart' show CEOKPIs, realCEOKPIsProvider;
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Distribution CEO Finance — Receivables, debt aging, payments
 class DistributionCEOFinance extends ConsumerStatefulWidget {
@@ -32,7 +33,7 @@ class _DistributionCEOFinanceState
   Future<void> _loadFinanceData() async {
     setState(() => _loading = true);
     try {
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       if (user == null) return;
 
       final client = Supabase.instance.client;
@@ -210,13 +211,13 @@ class _DistributionCEOFinanceState
 
   Widget _buildPaymentStats() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -305,18 +306,18 @@ class _DistributionCEOFinanceState
     final total = current + days30 + days60 + days90 + over90;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
         children: [
-          _buildAgingRow('Tổng công nợ', total, Colors.black87, isBold: true),
+          _buildAgingRow('Tổng công nợ', total, Theme.of(context).colorScheme.onSurface87, isBold: true),
           const Divider(),
           _buildAgingRow('Trong hạn', current, AppColors.success),
           _buildAgingRow('1-30 ngày', days30, AppColors.info),

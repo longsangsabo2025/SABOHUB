@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import '../../core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,14 +7,12 @@ import 'package:go_router/go_router.dart';
 import '../../core/navigation/navigation_models.dart';
 import '../../widgets/grouped_navigation_drawer.dart';
 import '../../widgets/error_boundary.dart';
-import '../../widgets/realtime_notification_widgets.dart';
-import 'ai_management/ai_management_dashboard.dart';
-import 'ceo_analytics_page.dart';
-import 'ceo_companies_page.dart';
 import 'ceo_dashboard_page.dart';
-import 'ceo_reports_settings_page.dart';
-import 'ceo_tasks_page.dart';
-import 'ceo_documents_page.dart';
+import 'ceo_management_page.dart';
+import 'ceo_finance_page.dart';
+import 'ceo_utilities_page.dart';
+
+import '../../core/keys/ceo_keys.dart';
 
 /// Global key for CEO Main Layout to access navigation from anywhere
 final ceoMainLayoutKey = GlobalKey<_CEOMainLayoutState>();
@@ -31,14 +29,13 @@ class _CEOMainLayoutState extends ConsumerState<CEOMainLayout> {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
 
+  // ── SIMPLIFIED: 4 tabs instead of 7 ──
+  // Tổng quan | Quản lý | Tài chính | Tiện ích
   final List<Widget> _pages = const [
-    CEODashboardPage(),
-    CEOTasksPage(),
-    CEOCompaniesPage(),
-    CEODocumentsPage(),
-    CEOAnalyticsPage(),
-    CEOReportsPage(),
-    AIManagementDashboard(),
+    CEODashboardPage(),    // Tổng quan: KPIs, Pulse, Quick Actions
+    CEOManagementPage(),   // Quản lý: Công ty + Công việc
+    CEOFinancePage(),      // Tài chính: Phân tích + Báo cáo
+    CEOUtilitiesPage(),    // Tiện ích: Tài liệu + AI Center
   ];
 
   @override
@@ -70,26 +67,7 @@ class _CEOMainLayoutState extends ConsumerState<CEOMainLayout> {
     
     return ErrorBoundary(
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('SABOHUB CEO'),
-          actions: [
-            const RealtimeNotificationBell(),
-            IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              tooltip: 'Cài đặt',
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const CEOSettingsPage()));
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.person_outline),
-              onPressed: () {
-                // TODO: Show profile
-              },
-            ),
-          ],
-        ),
+        key: ceoScaffoldKey,
         drawer: GroupedNavigationDrawer(
           userRole: UserRole.ceo,
           currentRoute: currentRoute,
@@ -123,32 +101,20 @@ class _CEOMainLayoutState extends ConsumerState<CEOMainLayout> {
       unselectedFontSize: 12,
       items: const [
         BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'Dashboard',
+          icon: Icon(Icons.dashboard_rounded),
+          label: 'Tổng quan',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.assignment),
-          label: 'Công việc',
+          icon: Icon(Icons.business_center_rounded),
+          label: 'Quản lý',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.business),
-          label: 'Công ty',
+          icon: Icon(Icons.account_balance_rounded),
+          label: 'Tài chính',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.folder),
-          label: 'Tài liệu',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.analytics),
-          label: 'Phân tích',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.assessment),
-          label: 'Báo cáo',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.psychology),
-          label: 'AI Center',
+          icon: Icon(Icons.apps_rounded),
+          label: 'Tiện ích',
         ),
       ],
     );

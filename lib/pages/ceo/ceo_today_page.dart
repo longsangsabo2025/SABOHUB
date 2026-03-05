@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../services/auto_task_generator.dart';
 import 'task_detail_page.dart';
 import '../../models/management_task.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 final _todayStatsProvider = FutureProvider<TodayTaskStats>((ref) {
   return ref.read(autoTaskGeneratorProvider).getTodayStats();
@@ -35,9 +36,9 @@ class _CEOTodayPageState extends ConsumerState<CEOTodayPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Hôm nay'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        title: Text('Hôm nay'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface87,
         elevation: 0,
         actions: [
           IconButton(
@@ -71,7 +72,24 @@ class _CEOTodayPageState extends ConsumerState<CEOTodayPage> {
                 data: (stats) => _buildStatsAndTasks(stats),
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Lỗi: $e')),
+                error: (e, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red, size: 48),
+                      SizedBox(height: 16),
+                      Text('Đã xảy ra lỗi', style: Theme.of(context).textTheme.titleMedium),
+                      SizedBox(height: 8),
+                      Text('$e', style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: _refresh,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Thử lại'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -112,27 +130,27 @@ class _CEOTodayPageState extends ConsumerState<CEOTodayPage> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.rocket_launch,
-                    color: Colors.white, size: 24),
+                child: Icon(Icons.rocket_launch,
+                    color: Theme.of(context).colorScheme.surface, size: 24),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Giao việc hôm nay',
+                    Text('Giao việc hôm nay',
                         style: TextStyle(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             fontWeight: FontWeight.bold,
                             fontSize: 16)),
                     Text('$count template lặp lại đang hoạt động',
                         style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.8),
+                            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                             fontSize: 12)),
                   ],
                 ),
@@ -146,10 +164,10 @@ class _CEOTodayPageState extends ConsumerState<CEOTodayPage> {
               onPressed:
                   _isGenerating || count == 0 ? null : _generateTasks,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 foregroundColor: Colors.blue.shade700,
                 disabledBackgroundColor:
-                    Colors.white.withValues(alpha: 0.5),
+                    Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
@@ -256,9 +274,9 @@ class _CEOTodayPageState extends ConsumerState<CEOTodayPage> {
   Widget _buildEmptyState() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(40),
+      padding: EdgeInsets.all(40),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -283,13 +301,13 @@ class _CEOTodayPageState extends ConsumerState<CEOTodayPage> {
     final pct = (stats.completionRate * 100).toInt();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)
         ],
       ),
       child: Column(
@@ -345,13 +363,13 @@ class _CEOTodayPageState extends ConsumerState<CEOTodayPage> {
   Widget _miniCard(String label, String value, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
                 blurRadius: 8)
           ],
         ),
@@ -371,16 +389,16 @@ class _CEOTodayPageState extends ConsumerState<CEOTodayPage> {
   }
 
   Widget _buildAssigneeBreakdown(TodayTaskStats stats) {
-    if (stats.byAssignee.isEmpty) return const SizedBox.shrink();
+    if (stats.byAssignee.isEmpty) return SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)
         ],
       ),
       child: Column(
@@ -514,18 +532,20 @@ class _CEOTodayPageState extends ConsumerState<CEOTodayPage> {
             MaterialPageRoute(
                 builder: (_) => TaskDetailPage(task: mgTask)),
           );
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('CEOTodayPage._buildTaskRow navigation error: $e');
+        }
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
+        margin: EdgeInsets.only(bottom: 8),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border(left: BorderSide(color: priorityColor, width: 3)),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.03),
                 blurRadius: 4)
           ],
         ),
@@ -555,7 +575,7 @@ class _CEOTodayPageState extends ConsumerState<CEOTodayPage> {
                                   : null,
                               color: status == 'completed'
                                   ? Colors.grey
-                                  : Colors.black87,
+                                  : Theme.of(context).colorScheme.onSurface87,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis),

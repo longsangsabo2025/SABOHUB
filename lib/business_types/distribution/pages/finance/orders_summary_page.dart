@@ -8,6 +8,7 @@ import '../../../../utils/app_logger.dart';
 import '../../../../utils/quick_date_range_picker.dart';
 import '../../../../services/image_upload_service.dart';
 import '../../../../widgets/customer_avatar.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 // ============================================================================
 // ORDERS SUMMARY PAGE - Tổng hợp đơn hàng cho Kế toán
@@ -43,8 +44,8 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
   Future<void> _loadAllOrders() async {
     setState(() => _isLoading = true);
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId == null) {
         setState(() => _isLoading = false);
         return;
@@ -203,8 +204,8 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.white,
+              padding: EdgeInsets.all(16),
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 children: [
                   Row(
@@ -509,13 +510,13 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
         borderRadius: BorderRadius.circular(16),
         onTap: () => _showOrderDetailSheet(order),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
+          margin: EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -591,8 +592,8 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
                                         ? child
                                         : const SizedBox(height: 200, width: 200, child: Center(child: CircularProgressIndicator())),
                                       errorBuilder: (_, __, ___) => Container(
-                                        padding: const EdgeInsets.all(24),
-                                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                                        padding: EdgeInsets.all(24),
+                                        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12)),
                                         child: const Column(mainAxisSize: MainAxisSize.min, children: [
                                           Icon(Icons.broken_image, size: 48, color: Colors.grey),
                                           SizedBox(height: 8),
@@ -607,9 +608,9 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
                                   child: GestureDetector(
                                     onTap: () => Navigator.pop(context),
                                     child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                                      child: const Icon(Icons.close, color: Colors.white, size: 20),
+                                      padding: EdgeInsets.all(4),
+                                      decoration: BoxDecoration(color: Theme.of(context).colorScheme.onSurface54, shape: BoxShape.circle),
+                                      child: Icon(Icons.close, color: Theme.of(context).colorScheme.surface, size: 20),
                                     ),
                                   ),
                                 ),
@@ -895,8 +896,8 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
                                     }
                                     setSheetState(() => isUploadingInvoice = true);
                                     try {
-                                      final authState = ref.read(authProvider);
-                                      final companyId = authState.user?.companyId ?? '';
+                                      final user = ref.read(currentUserProvider);
+                                      final companyId = user?.companyId ?? '';
                                       final url = await uploadService.uploadInvoiceImage(
                                         imageFile: file, companyId: companyId, orderId: order['id']);
                                       if (url != null) {
@@ -947,8 +948,8 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
                                         }
                                         setSheetState(() => isUploadingInvoice = true);
                                         try {
-                                          final authState = ref.read(authProvider);
-                                          final companyId = authState.user?.companyId ?? '';
+                                          final user = ref.read(currentUserProvider);
+                                          final companyId = user?.companyId ?? '';
                                           final url = await uploadService.uploadInvoiceImage(
                                             imageFile: file, companyId: companyId, orderId: order['id']);
                                           if (url != null) {
@@ -994,8 +995,8 @@ class _OrdersSummaryPageState extends ConsumerState<OrdersSummaryPage> {
                                         }
                                         setSheetState(() => isUploadingInvoice = true);
                                         try {
-                                          final authState = ref.read(authProvider);
-                                          final companyId = authState.user?.companyId ?? '';
+                                          final user = ref.read(currentUserProvider);
+                                          final companyId = user?.companyId ?? '';
                                           final url = await uploadService.uploadInvoiceImage(
                                             imageFile: file, companyId: companyId, orderId: order['id']);
                                           if (url != null) {

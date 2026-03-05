@@ -8,11 +8,11 @@ import '../providers/auth_provider.dart';
 import '../utils/performance_monitor.dart';
 import '../widgets/error_boundary.dart';
 import '../widgets/unified_bottom_navigation.dart';
+import '../widgets/realtime_notification_widgets.dart';
 import 'common/company_info_page.dart';
 import 'staff/staff_checkin_page.dart';
-import 'staff/staff_messages_page.dart';
-import 'staff/staff_tables_page.dart';
 import 'staff/staff_tasks_page.dart';
+import 'staff/staff_messages_page.dart';
 
 /// Staff Main Layout
 /// Combines all staff pages with bottom navigation
@@ -70,7 +70,13 @@ class _StaffMainLayoutState extends ConsumerState<StaffMainLayout>
 
     return ErrorBoundary(
       child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: AppColors.grey50,
+        appBar: AppBar(
+          title: Text(currentUser?.companyName ?? 'SABOHUB'),
+          actions: const [
+            RealtimeNotificationBell(),
+          ],
+        ),
         body: Stack(
           children: [
             SafeArea(
@@ -86,10 +92,9 @@ class _StaffMainLayoutState extends ConsumerState<StaffMainLayout>
                       });
                     },
                     children: [
-                      const StaffTablesPage(),
                       const StaffCheckinPage(),
-                      const StaffTasksPage(),
-                      const StaffMessagesPage(),
+                      StaffTasksPage(),
+                      StaffMessagesPage(),
                       // Company Info Page (new)
                       if (companyId != null)
                         CompanyInfoPage(companyId: companyId)
@@ -132,7 +137,7 @@ class StaffDashboardHeader extends ConsumerWidget {
           end: Alignment.bottomRight,
           colors: [
             AppColors.success,
-            Color(0xFF059669),
+            AppColors.successDark,
           ],
         ),
         boxShadow: [
@@ -157,7 +162,7 @@ class StaffDashboardHeader extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppColors.textOnPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -165,7 +170,7 @@ class StaffDashboardHeader extends ConsumerWidget {
                       'Chưa có lịch ca',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: AppColors.textOnPrimary.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -174,12 +179,12 @@ class StaffDashboardHeader extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: AppColors.textOnPrimary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.access_time,
-                  color: Colors.white,
+                  color: AppColors.textOnPrimary,
                   size: 24,
                 ),
               ),
@@ -216,10 +221,10 @@ class StaffDashboardHeader extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
+            color: AppColors.textOnPrimary.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: Colors.white, size: 20),
+          child: Icon(icon, color: AppColors.textOnPrimary, size: 20),
         ),
         const SizedBox(height: 8),
         Text(
@@ -227,7 +232,7 @@ class StaffDashboardHeader extends ConsumerWidget {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppColors.textOnPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -235,7 +240,7 @@ class StaffDashboardHeader extends ConsumerWidget {
           title,
           style: TextStyle(
             fontSize: 10,
-            color: Colors.white.withValues(alpha: 0.9),
+            color: AppColors.textOnPrimary.withValues(alpha: 0.9),
           ),
         ),
       ],
@@ -254,11 +259,11 @@ class StaffQuickActions extends ConsumerWidget {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -381,11 +386,11 @@ class StaffPerformanceWidget extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -457,7 +462,7 @@ class StaffPerformanceWidget extends ConsumerWidget {
           title,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.grey.shade600,
+            color: AppColors.textSecondary,
           ),
         ),
         const SizedBox(height: 4),
@@ -474,7 +479,7 @@ class StaffPerformanceWidget extends ConsumerWidget {
           'Mục tiêu: $target',
           style: TextStyle(
             fontSize: 10,
-            color: Colors.grey.shade500,
+            color: AppColors.textTertiary,
           ),
         ),
         const SizedBox(height: 8),

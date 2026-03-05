@@ -4,7 +4,7 @@ import '../../models/gamification/gamification_models.dart';
 import '../../providers/gamification_provider.dart';
 
 class CompanyRankingPage extends ConsumerWidget {
-  const CompanyRankingPage({super.key});
+  CompanyRankingPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -125,8 +125,8 @@ class _TopThreePodium extends StatelessWidget {
                   child: Center(
                     child: Text(
                       '#$rank',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.surface,
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),

@@ -31,9 +31,16 @@ import '../errors/error_handler.dart';
 /// }
 /// ```
 abstract class BaseService {
+  /// Optional mock client for unit testing
+  SupabaseClient? _mockClient;
+
+  /// Inject mock client for testing
+  @visibleForTesting
+  set mockClient(SupabaseClient client) => _mockClient = client;
+
   /// Supabase client — single access point for all services
   @protected
-  SupabaseClient get client => Supabase.instance.client;
+  SupabaseClient get client => _mockClient ?? Supabase.instance.client;
 
   /// Error handler singleton
   @protected

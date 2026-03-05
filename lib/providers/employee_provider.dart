@@ -112,28 +112,35 @@ final employeesByRoleProvider = FutureProvider.autoDispose.family<List<app_user.
   final supabase = ref.watch(supabaseProvider);
 
   try {
+    // Use lowercase role strings to match DB CHECK constraint
     String roleString;
     switch (params.role) {
       case app_user.UserRole.superAdmin:
-        roleString = 'SUPER_ADMIN';
+        roleString = 'super_admin';
         break;
       case app_user.UserRole.manager:
-        roleString = 'MANAGER';
+        roleString = 'manager';
         break;
       case app_user.UserRole.shiftLeader:
-        roleString = 'SHIFT_LEADER';
+        roleString = 'shift_leader';
         break;
       case app_user.UserRole.staff:
-        roleString = 'STAFF';
+        roleString = 'staff';
         break;
       case app_user.UserRole.ceo:
-        roleString = 'CEO';
+        roleString = 'ceo';
         break;
       case app_user.UserRole.driver:
-        roleString = 'DRIVER';
+        roleString = 'driver';
         break;
       case app_user.UserRole.warehouse:
-        roleString = 'WAREHOUSE';
+        roleString = 'warehouse';
+        break;
+      case app_user.UserRole.finance:
+        roleString = 'finance';
+        break;
+      case app_user.UserRole.shareholder:
+        roleString = 'shareholder';
         break;
     }
 

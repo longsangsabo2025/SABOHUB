@@ -80,11 +80,11 @@ class XpProgressBar extends StatelessWidget {
   }
 
   List<Color> _gradientForLevel(int level) {
-    if (level >= 76) return [const Color(0xFFFFD700), const Color(0xFFFFA500)];
-    if (level >= 51) return [const Color(0xFFE040FB), const Color(0xFF7C4DFF)];
-    if (level >= 31) return [const Color(0xFF00BCD4), const Color(0xFF2196F3)];
-    if (level >= 16) return [const Color(0xFF4CAF50), const Color(0xFF8BC34A)];
-    if (level >= 6) return [const Color(0xFF42A5F5), const Color(0xFF1E88E5)];
+    if (level >= 76) return [Color(0xFFFFD700), Color(0xFFFFA500)];
+    if (level >= 51) return [Color(0xFFE040FB), Color(0xFF7C4DFF)];
+    if (level >= 31) return [Color(0xFF00BCD4), AppColors.info];
+    if (level >= 16) return [AppColors.success, Color(0xFF8BC34A)];
+    if (level >= 6) return [Color(0xFF42A5F5), Color(0xFF1E88E5)];
     return [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)];
   }
 }

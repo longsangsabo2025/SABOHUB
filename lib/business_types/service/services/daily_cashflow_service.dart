@@ -282,7 +282,206 @@ class DailyCashflowService {
 
   /// Delete a cashflow record
   Future<void> deleteCashflow(String id) async {
-    await _supabase.from('daily_cashflow').delete().eq('id', id);
+    // Soft delete - sets is_active=false
+    await _supabase.from('daily_cashflow').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', id);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // WORKFLOW METHODS — Draft → Pending → Approved/Rejected
+  // ═══════════════════════════════════════════════════════════════
+
+  /// Staff creates draft report
+  Future<DailyCashflow> createDraftReport({
+    required String companyId,
+    required String userId,
+    required DateTime reportDate,
+    required double cashAmount,
+    required double transferAmount,
+    required double cardAmount,
+    required double ewalletAmount,
+    required double totalRevenue,
+    required int totalOrders,
+    String? branchId,
+    String? branchName,
+    String? notes,
+  }) async {
+    final data = {
+      'company_id': companyId,
+      'branch_id': branchId,
+      'report_date': reportDate.toIso8601String().substring(0, 10),
+      'branch_name': branchName,
+      'cash_amount': cashAmount,
+      'transfer_amount': transferAmount,
+      'card_amount': cardAmount,
+      'ewallet_amount': ewalletAmount,
+      'points_amount': 0.0,
+      'total_revenue': totalRevenue,
+      'total_orders': totalOrders,
+      'cash_orders': 0,
+      'transfer_orders': 0,
+      'card_orders': 0,
+      'ewallet_orders': 0,
+      'points_orders': 0,
+      'unique_items': 0,
+      'total_quantity': 0,
+      'imported_by': userId,
+      'notes': notes,
+      'status': 'draft',
+      'submitted_by': userId,
+    };
+
+    final response = await _supabase
+        .from('daily_cashflow')
+        .insert(data)
+        .select()
+        .single();
+
+    return DailyCashflow.fromJson(response);
+  }
+
+  /// Staff submits report for review
+  Future<DailyCashflow> submitReport({
+    required String reportId,
+    required String userId,
+  }) async {
+    final response = await _supabase
+        .from('daily_cashflow')
+        .update({
+          'status': 'pending',
+          'submitted_by': userId,
+          'submitted_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', reportId)
+        .select()
+        .single();
+
+    return DailyCashflow.fromJson(response);
+  }
+
+  /// Shift Leader reviews (can edit values if needed)
+  Future<DailyCashflow> reviewReport({
+    required String reportId,
+    required String reviewerId,
+    double? cashAmount,
+    double? transferAmount,
+    double? cardAmount,
+    double? ewalletAmount,
+    double? totalRevenue,
+    int? totalOrders,
+    String? notes,
+  }) async {
+    final updates = <String, dynamic>{
+      'reviewed_by': reviewerId,
+      'reviewed_at': DateTime.now().toIso8601String(),
+    };
+
+    // Allow adjustments
+    if (cashAmount != null) updates['cash_amount'] = cashAmount;
+    if (transferAmount != null) updates['transfer_amount'] = transferAmount;
+    if (cardAmount != null) updates['card_amount'] = cardAmount;
+    if (ewalletAmount != null) updates['ewallet_amount'] = ewalletAmount;
+    if (totalRevenue != null) updates['total_revenue'] = totalRevenue;
+    if (totalOrders != null) updates['total_orders'] = totalOrders;
+    if (notes != null) updates['notes'] = notes;
+
+    final response = await _supabase
+        .from('daily_cashflow')
+        .update(updates)
+        .eq('id', reportId)
+        .select()
+        .single();
+
+    return DailyCashflow.fromJson(response);
+  }
+
+  /// Manager approves report
+  Future<DailyCashflow> approveReport({
+    required String reportId,
+    required String approverId,
+  }) async {
+    final response = await _supabase
+        .from('daily_cashflow')
+        .update({
+          'status': 'approved',
+          'approved_by': approverId,
+          'approved_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', reportId)
+        .select()
+        .single();
+
+    return DailyCashflow.fromJson(response);
+  }
+
+  /// Manager rejects report
+  Future<DailyCashflow> rejectReport({
+    required String reportId,
+    required String approverId,
+    required String reason,
+  }) async {
+    final response = await _supabase
+        .from('daily_cashflow')
+        .update({
+          'status': 'rejected',
+          'approved_by': approverId,
+          'approved_at': DateTime.now().toIso8601String(),
+          'rejection_reason': reason,
+        })
+        .eq('id', reportId)
+        .select()
+        .single();
+
+    return DailyCashflow.fromJson(response);
+  }
+
+  /// Get reports by status
+  Future<List<DailyCashflow>> getReportsByStatus({
+    required String companyId,
+    required ReportStatus status,
+    String? branchId,
+    int limit = 50,
+  }) async {
+    var query = _supabase
+        .from('daily_cashflow')
+        .select()
+        .eq('company_id', companyId)
+        .eq('status', status.value);
+
+    if (branchId != null) {
+      query = query.eq('branch_id', branchId);
+    }
+
+    final data = await query
+        .order('report_date', ascending: false)
+        .limit(limit);
+
+    return (data as List).map((e) => DailyCashflow.fromJson(e)).toList();
+  }
+
+  /// Get pending reports for shift leader review
+  Future<List<DailyCashflow>> getPendingReports({
+    required String companyId,
+    String? branchId,
+  }) async {
+    return getReportsByStatus(
+      companyId: companyId,
+      status: ReportStatus.pending,
+      branchId: branchId,
+    );
+  }
+
+  /// Get approved reports (for manager view)
+  Future<List<DailyCashflow>> getApprovedReports({
+    required String companyId,
+    String? branchId,
+    int limit = 30,
+  }) async {
+    return getReportsByStatus(
+      companyId: companyId,
+      status: ReportStatus.approved,
+      branchId: branchId,
+      limit: limit,
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════

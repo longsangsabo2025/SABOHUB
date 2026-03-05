@@ -1,10 +1,11 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/services/supabase_service.dart';
 import '../models/branch.dart';
 
 /// Branch Service
 /// Handles all branch-related database operations
 class BranchService {
-  final _supabase = supabase.client;
+  SupabaseClient get _supabase => supabase.client;
 
   /// Get all branches
   Future<List<Branch>> getAllBranches({String? companyId}) async {
@@ -16,7 +17,7 @@ class BranchService {
         query = query.eq('company_id', companyId);
       }
 
-      final response = await query.order('created_at', ascending: false);
+      final response = await query.order('created_at', ascending: false).limit(100);
       return (response as List).map((json) => Branch.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch branches: $e');
@@ -36,7 +37,7 @@ class BranchService {
         query = query.eq('company_id', companyId);
       }
 
-      final response = await query.order('created_at', ascending: false);
+      final response = await query.order('created_at', ascending: false).limit(100);
       return (response as List).map((json) => Branch.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch active branches: $e');
@@ -122,10 +123,11 @@ class BranchService {
     }
   }
 
-  /// Delete branch (hard delete)
+  /// Delete branch (soft delete)
   Future<void> deleteBranch(String id) async {
     try {
-      await _supabase.from('branches').delete().eq('id', id);
+      // Soft delete - sets is_active=false
+      await _supabase.from('branches').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', id);
     } catch (e) {
       throw Exception('Failed to delete branch: $e');
     }
@@ -136,11 +138,11 @@ class BranchService {
     try {
       // Get employee count for this branch
       final employeesResponse =
-          await _supabase.from('employees').select('id').eq('branch_id', branchId);
+          await _supabase.from('employees').select('id').eq('branch_id', branchId).limit(500);
 
       // Get table count for this branch
       final tablesResponse =
-          await _supabase.from('tables').select('id').eq('branch_id', branchId);
+          await _supabase.from('tables').select('id').eq('branch_id', branchId).limit(500);
 
       // Get monthly revenue from daily_revenue
       final now = DateTime.now();

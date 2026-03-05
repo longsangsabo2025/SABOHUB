@@ -205,7 +205,7 @@ class _DailyCashflowImportPageState
   Future<void> _save() async {
     if (_parsed == null) return;
 
-    final user = ref.read(authProvider).user;
+    final user = ref.read(currentUserProvider);
     if (user == null) {
       setState(() => _error = 'Chưa đăng nhập.');
       return;
@@ -254,26 +254,31 @@ class _DailyCashflowImportPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
+        scrolledUnderElevation: 1,
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
+        shape: const Border(
+          bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Báo Cáo Cuối Ngày',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            Text('Báo Cáo Cuối Ngày',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
             Text(widget.companyName,
-                style: const TextStyle(fontSize: 11, color: Colors.white54)),
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
           ],
         ),
         bottom: TabBar(
           controller: _tabC,
-          indicatorColor: Colors.white,
+          indicatorColor: AppColors.primary,
           indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
           labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           tabs: const [
             Tab(icon: Icon(Icons.upload_file, size: 18), text: 'Import File'),
@@ -513,13 +518,13 @@ class _DailyCashflowImportPageState
     required Widget child,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -584,9 +589,9 @@ class _DailyCashflowImportPageState
     return GestureDetector(
       onTap: _loading ? null : _pickFile,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: _parsed != null ? AppColors.success : Colors.grey.shade300,
@@ -595,7 +600,7 @@ class _DailyCashflowImportPageState
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -663,13 +668,13 @@ class _DailyCashflowImportPageState
     final fmt = NumberFormat('#,###', 'vi');
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -826,9 +831,9 @@ class _DailyCashflowImportPageState
 
   Widget _buildNotesField() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
@@ -850,11 +855,11 @@ class _DailyCashflowImportPageState
       child: FilledButton.icon(
         onPressed: _saving ? null : _save,
         icon: _saving
-            ? const SizedBox(
+            ? SizedBox(
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white))
+                    strokeWidth: 2, color: Theme.of(context).colorScheme.surface))
             : const Icon(Icons.cloud_upload),
         label: Text(_saving ? 'Đang lưu...' : 'Xác nhận & Lưu dữ liệu'),
         style: FilledButton.styleFrom(
@@ -878,7 +883,7 @@ class _DailyCashflowImportPageState
         gradient: LinearGradient(
           colors: [
             AppColors.success.withValues(alpha: 0.08),
-            Colors.white,
+            Theme.of(context).colorScheme.surface,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -968,9 +973,9 @@ class _DailyCashflowImportPageState
                   child: CircularProgressIndicator(strokeWidth: 2)))
         else if (_history == null || _history!.isEmpty)
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -995,9 +1000,9 @@ class _DailyCashflowImportPageState
   Widget _buildHistoryCard(DailyCashflow cf, NumberFormat fmt) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),

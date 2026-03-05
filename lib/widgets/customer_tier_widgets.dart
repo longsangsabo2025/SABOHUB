@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/customer_tier.dart';
+import '../core/theme/app_spacing.dart';
 
 /// Badge hiển thị tier khách hàng
 class CustomerTierBadge extends StatelessWidget {
@@ -46,7 +47,7 @@ class CustomerTierBadge extends StatelessWidget {
             style: TextStyle(fontSize: size * 0.8),
           ),
           if (showLabel) ...[
-            const SizedBox(width: 4),
+            AppSpacing.hGapXXS,
             Text(
               tier.displayName,
               style: TextStyle(
@@ -100,7 +101,7 @@ class CustomerTierFilterChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(emoji, style: const TextStyle(fontSize: 14)),
-              const SizedBox(width: 4),
+              AppSpacing.hGapXXS,
               Text(
                 label,
                 style: TextStyle(
@@ -135,9 +136,9 @@ class CustomerTierStatsCard extends StatelessWidget {
     final total = stats.values.fold(0, (a, b) => a + b);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: AppSpacing.paddingMD,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -163,7 +164,7 @@ class CustomerTierStatsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          AppSpacing.gapMD,
           Row(
             children: [
               for (final tier in [CustomerTier.diamond, CustomerTier.gold, CustomerTier.silver, CustomerTier.bronze])
@@ -199,7 +200,7 @@ class CustomerTierStatsCard extends StatelessWidget {
         child: Column(
           children: [
             Text(tier.emoji, style: const TextStyle(fontSize: 20)),
-            const SizedBox(height: 4),
+            AppSpacing.gapXXS,
             Text(
               count.toString(),
               style: TextStyle(
@@ -242,7 +243,7 @@ class CustomerRevenueInfo extends StatelessWidget {
       children: [
         if (showTier) ...[
           CustomerTierBadge(tier: revenue.tier, showLabel: false),
-          const SizedBox(width: 8),
+          AppSpacing.hGapSM,
         ],
         Expanded(
           child: Column(

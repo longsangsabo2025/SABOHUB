@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'app_logger.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Performance Monitoring Utility for SABOHUB
 /// Tracks key metrics like navigation time, load time, memory usage
@@ -296,26 +297,26 @@ class _PerformanceOverlayState extends State<PerformanceOverlay> {
             right: 16,
             child: Container(
               width: 250,
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.black87,
+                color: Theme.of(context).colorScheme.onSurface87,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Performance Monitor',
                     style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+                        color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   ...PerformanceMonitor().getRecentMetrics(limit: 5).map(
                         (metric) => Text(
                           '${metric.name}: ${metric.duration.inMilliseconds}ms',
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12),
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.surface70, fontSize: 12),
                         ),
                       ),
                 ],

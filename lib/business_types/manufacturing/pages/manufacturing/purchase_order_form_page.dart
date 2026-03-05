@@ -31,7 +31,7 @@ class _PurchaseOrderFormPageState extends ConsumerState<PurchaseOrderFormPage> {
   @override
   void initState() {
     super.initState();
-    _service = ManufacturingService(companyId: ref.read(authProvider).user?.companyId);
+    _service = ManufacturingService(companyId: ref.read(currentUserProvider)?.companyId);
     _loadData();
   }
 
@@ -40,8 +40,8 @@ class _PurchaseOrderFormPageState extends ConsumerState<PurchaseOrderFormPage> {
       final suppliers = await _service.getSuppliers();
       final db = Supabase.instance.client;
       // Load materials (raw materials for manufacturing)
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       
       final materials = await db
           .from('manufacturing_materials')
@@ -148,9 +148,9 @@ class _PurchaseOrderFormPageState extends ConsumerState<PurchaseOrderFormPage> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
       if (companyId == null) throw Exception('User context not found');
 
       final db = Supabase.instance.client;

@@ -41,7 +41,7 @@ class RecommendationsListWidget extends ConsumerWidget {
               size: 80,
               color: Colors.grey[400],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Text(
               'Chưa có đề xuất',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -49,7 +49,7 @@ class RecommendationsListWidget extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'AI sẽ tự động tạo đề xuất dựa trên các phân tích',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -399,7 +399,7 @@ class RecommendationsListWidget extends ConsumerWidget {
               size: 64,
               color: Colors.red[400],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Lỗi tải đề xuất',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -407,7 +407,7 @@ class RecommendationsListWidget extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               error.toString(),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -436,8 +436,8 @@ class RecommendationsListWidget extends ConsumerWidget {
         maxChildSize: 0.95,
         builder: (context, scrollController) {
           return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
@@ -513,11 +513,11 @@ class RecommendationsListWidget extends ConsumerWidget {
                       // Description
                       Text(
                         recommendation.description,
-                        style: const TextStyle(fontSize: 15, height: 1.6),
+                        style: TextStyle(fontSize: 15, height: 1.6),
                       ),
 
                       if (recommendation.reasoning != null) ...[
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20),
                         Text(
                           'Lý do',
                           style: Theme.of(context)
@@ -527,7 +527,7 @@ class RecommendationsListWidget extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.blue[50],
                             borderRadius: BorderRadius.circular(8),
@@ -540,7 +540,7 @@ class RecommendationsListWidget extends ConsumerWidget {
                       ],
 
                       if (recommendation.implementationPlan != null) ...[
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20),
                         Text(
                           'Kế hoạch triển khai',
                           style: Theme.of(context)
@@ -550,7 +550,7 @@ class RecommendationsListWidget extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.green[50],
                             borderRadius: BorderRadius.circular(8),
@@ -563,7 +563,7 @@ class RecommendationsListWidget extends ConsumerWidget {
                       ],
 
                       if (recommendation.expectedImpact != null) ...[
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20),
                         Text(
                           'Tác động dự kiến',
                           style: Theme.of(context)
@@ -598,11 +598,11 @@ class RecommendationsListWidget extends ConsumerWidget {
                                   _acceptRecommendation(
                                       context, ref, recommendation);
                                 },
-                                icon: const Icon(Icons.check),
-                                label: const Text('Chấp nhận'),
+                                icon: Icon(Icons.check),
+                                label: Text('Chấp nhận'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: Theme.of(context).colorScheme.surface,
                                 ),
                               ),
                             ),

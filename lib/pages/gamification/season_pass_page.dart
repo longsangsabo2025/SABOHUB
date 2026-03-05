@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/gamification/gamification_models.dart';
 import '../../providers/gamification_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class SeasonPassPage extends ConsumerWidget {
-  const SeasonPassPage({super.key});
+  SeasonPassPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -113,14 +114,14 @@ class _SeasonPassContent extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        leading: const Text('👑', style: TextStyle(fontSize: 28)),
-        title: const Text(
+        leading: Text('👑', style: TextStyle(fontSize: 28)),
+        title: Text(
           'Premium Pass',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold),
         ),
-        subtitle: const Text(
+        subtitle: Text(
           'Mở khóa rewards đặc biệt! 200 Uy Tín',
-          style: TextStyle(color: Colors.white70, fontSize: 12),
+          style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 12),
         ),
         trailing: FilledButton(
           onPressed: () async {
@@ -136,7 +137,7 @@ class _SeasonPassContent extends ConsumerWidget {
             }
           },
           style: FilledButton.styleFrom(
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             foregroundColor: Colors.orange.shade800,
           ),
           child: const Text('Mua'),
@@ -165,8 +166,8 @@ class _SeasonPassContent extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome, color: Colors.white, size: 28),
-              const SizedBox(width: 12),
+              Icon(Icons.auto_awesome, color: Theme.of(context).colorScheme.surface, size: 28),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,29 +175,29 @@ class _SeasonPassContent extends ConsumerWidget {
                     Text(
                       info.seasonName,
                       style: theme.textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       'Season ${info.seasonNumber}',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.white70,
+                        color: Theme.of(context).colorScheme.surface70,
                       ),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(51),
+                  color: Theme.of(context).colorScheme.surface.withAlpha(51),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   'x${info.bonusMultiplier}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.surface,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -259,15 +260,15 @@ class _StatBadge extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.surface,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
         Text(
           label,
-          style: const TextStyle(color: Colors.white60, fontSize: 12),
+          style: TextStyle(color: Theme.of(context).colorScheme.surface60, fontSize: 12),
         ),
       ],
     );

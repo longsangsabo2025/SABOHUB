@@ -75,19 +75,19 @@ class SaboRefreshButtonWithLabel extends StatelessWidget {
     return ElevatedButton.icon(
       onPressed: isLoading ? null : onPressed,
       icon: isLoading
-          ? const SizedBox(
+          ? SizedBox(
               width: 18,
               height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
               ),
             )
-          : const Icon(Icons.refresh),
+          : Icon(Icons.refresh),
       label: Text(label),
       style: ElevatedButton.styleFrom(
         backgroundColor: SaboRefreshButton.refreshColor,
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.surface,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../core/theme/app_colors.dart';
+import '../core/theme/app_colors.dart';
 
 /// Enum định nghĩa các loại thông báo
 enum NotificationType {
@@ -40,7 +40,7 @@ class NotificationBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -106,46 +106,46 @@ class NotificationBanner extends StatelessWidget {
         return _NotificationConfig(
           title: '✅ Thành công',
           icon: Icons.check_circle_outline,
-          backgroundColor: const Color(0xFFF0F9FF),
+          backgroundColor: Color(0xFFF0F9FF),
           borderColor: AppColors.success,
           iconColor: AppColors.success,
-          textColor: const Color(0xFF064E3B),
+          textColor: Color(0xFF064E3B),
         );
       case NotificationType.error:
         return _NotificationConfig(
           title: '❌ Lỗi',
           icon: Icons.error_outline,
-          backgroundColor: const Color(0xFFFEF2F2),
+          backgroundColor: Color(0xFFFEF2F2),
           borderColor: AppColors.error,
           iconColor: AppColors.error,
-          textColor: const Color(0xFF7F1D1D),
+          textColor: Color(0xFF7F1D1D),
         );
       case NotificationType.warning:
         return _NotificationConfig(
           title: '⚠️ Cảnh báo',
           icon: Icons.warning_outlined,
-          backgroundColor: const Color(0xFFFFFBEB),
+          backgroundColor: Color(0xFFFFFBEB),
           borderColor: AppColors.warning,
           iconColor: AppColors.warning,
-          textColor: const Color(0xFF78350F),
+          textColor: Color(0xFF78350F),
         );
       case NotificationType.info:
         return _NotificationConfig(
           title: 'ℹ️ Thông tin',
           icon: Icons.info_outline,
-          backgroundColor: const Color(0xFFEFF6FF),
+          backgroundColor: Color(0xFFEFF6FF),
           borderColor: AppColors.info,
           iconColor: AppColors.info,
-          textColor: const Color(0xFF1E3A8A),
+          textColor: Color(0xFF1E3A8A),
         );
       case NotificationType.loading:
         return _NotificationConfig(
           title: '⏳ Đang xử lý',
           icon: Icons.refresh,
-          backgroundColor: const Color(0xFFF8FAFC),
-          borderColor: const Color(0xFF64748B),
-          iconColor: const Color(0xFF64748B),
-          textColor: const Color(0xFF334155),
+          backgroundColor: AppColors.surface,
+          borderColor: AppColors.textSecondary,
+          iconColor: AppColors.textSecondary,
+          textColor: Color(0xFF334155),
         );
     }
   }
@@ -175,7 +175,7 @@ class LoadingOverlay extends StatelessWidget {
   final String? message;
   final bool isVisible;
 
-  const LoadingOverlay({
+  LoadingOverlay({
     super.key,
     this.message,
     required this.isVisible,
@@ -183,19 +183,19 @@ class LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!isVisible) return const SizedBox.shrink();
+    if (!isVisible) return SizedBox.shrink();
 
     return Container(
-      color: Colors.black.withValues(alpha: 0.3),
+      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
       child: Center(
         child: Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.background,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),
@@ -258,7 +258,7 @@ class NotificationFloatingButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(50),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -297,46 +297,46 @@ class NotificationFloatingButton extends StatelessWidget {
         return _NotificationConfig(
           title: 'Thành công',
           icon: Icons.check_circle,
-          backgroundColor: const Color(0xFFD1FAE5),
+          backgroundColor: AppColors.successLight,
           borderColor: AppColors.success,
-          iconColor: const Color(0xFF059669),
-          textColor: const Color(0xFF065F46),
+          iconColor: AppColors.successDark,
+          textColor: Color(0xFF065F46),
         );
       case NotificationType.error:
         return _NotificationConfig(
           title: 'Lỗi',
           icon: Icons.error,
-          backgroundColor: const Color(0xFFFECDD3),
+          backgroundColor: Color(0xFFFECDD3),
           borderColor: AppColors.error,
-          iconColor: const Color(0xFFDC2626),
-          textColor: const Color(0xFF991B1B),
+          iconColor: AppColors.errorDark,
+          textColor: Color(0xFF991B1B),
         );
       case NotificationType.warning:
         return _NotificationConfig(
           title: 'Cảnh báo',
           icon: Icons.warning,
-          backgroundColor: const Color(0xFFFEF3C7),
+          backgroundColor: AppColors.warningLight,
           borderColor: AppColors.warning,
-          iconColor: const Color(0xFFD97706),
-          textColor: const Color(0xFF92400E),
+          iconColor: AppColors.warningDark,
+          textColor: Color(0xFF92400E),
         );
       case NotificationType.info:
         return _NotificationConfig(
           title: 'Thông tin',
           icon: Icons.info,
-          backgroundColor: const Color(0xFFDBEAFE),
+          backgroundColor: AppColors.infoLight,
           borderColor: AppColors.info,
-          iconColor: const Color(0xFF2563EB),
-          textColor: const Color(0xFF1D4ED8),
+          iconColor: AppColors.infoDark,
+          textColor: Color(0xFF1D4ED8),
         );
       case NotificationType.loading:
         return _NotificationConfig(
           title: 'Đang xử lý',
           icon: Icons.hourglass_empty,
-          backgroundColor: const Color(0xFFF1F5F9),
-          borderColor: const Color(0xFF64748B),
-          iconColor: const Color(0xFF475569),
-          textColor: const Color(0xFF334155),
+          backgroundColor: AppColors.surfaceVariant,
+          borderColor: AppColors.textSecondary,
+          iconColor: Color(0xFF475569),
+          textColor: Color(0xFF334155),
         );
     }
   }

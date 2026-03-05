@@ -210,7 +210,7 @@ class PerformanceMetricsService {
         query = query.eq('metric_date', dateStr);
       }
 
-      final response = await query.order('metric_date', ascending: false);
+      final response = await query.order('metric_date', ascending: false).limit(1000);
       return (response as List)
           .map((json) => PerformanceMetrics.fromJson(json))
           .toList();
@@ -356,7 +356,7 @@ class PerformanceMetricsService {
       final dateStr = date.toIso8601String().split('T')[0];
       await _supabase
           .from('performance_metrics')
-          .delete()
+          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
           .eq('user_id', userId)
           .eq('metric_date', dateStr);
     } catch (e) {

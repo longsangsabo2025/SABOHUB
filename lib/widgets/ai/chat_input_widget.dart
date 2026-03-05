@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/ai_provider.dart';
-import '../../utils/logger_service.dart';
+import '../../utils/app_logger.dart';
 
 /// Chat input widget with file attachment support
 class ChatInputWidget extends ConsumerStatefulWidget {
@@ -80,12 +80,12 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
               // Automatically trigger file processing in background
               unawaited(
                 fileUploadService.processFile(uploadedFile.id).catchError((e) {
-                  logger.error('Failed to process file ${uploadedFile.fileName}', e);
+                  AppLogger.error('Failed to process file ${uploadedFile.fileName}', e);
                   return uploadedFile; // Return the original file on error
                 }),
               );
             } catch (e) {
-              logger.error('Failed to upload file ${file.name}', e);
+              AppLogger.error('Failed to upload file ${file.name}', e);
             }
           }
         }
@@ -183,10 +183,10 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -258,7 +258,7 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
                   ),
                 ),
 
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
 
                 // Send button
                 CircleAvatar(
@@ -269,17 +269,17 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
                     onPressed:
                         _isComposing && !isLoading ? _handleSubmit : null,
                     icon: isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                                  AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                             ),
                           )
-                        : const Icon(Icons.send),
-                    color: Colors.white,
+                        : Icon(Icons.send),
+                    color: Theme.of(context).colorScheme.surface,
                     iconSize: 20,
                     tooltip: 'Gửi tin nhắn',
                   ),
@@ -294,7 +294,7 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
 
   Widget _buildAttachedFiles() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.grey[50],
         border: Border(
@@ -346,9 +346,9 @@ class _ChatInputWidgetState extends ConsumerState<ChatInputWidget> {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      deleteIcon: const Icon(Icons.close, size: 16),
+      deleteIcon: Icon(Icons.close, size: 16),
       onDeleted: () => _removeAttachment(index),
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(color: Colors.grey[300]!),

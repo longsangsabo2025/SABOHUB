@@ -8,7 +8,7 @@ class QuestCard extends StatelessWidget {
   final QuestProgress progress;
   final VoidCallback? onTap;
 
-  const QuestCard({
+  QuestCard({
     super.key,
     required this.progress,
     this.onTap,
@@ -21,7 +21,7 @@ class QuestCard extends StatelessWidget {
     final statusInfo = _statusInfo(progress.status);
 
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,

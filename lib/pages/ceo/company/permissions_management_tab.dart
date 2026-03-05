@@ -5,6 +5,7 @@ import '../../../core/services/supabase_service.dart';
 import '../../../models/company.dart';
 import '../../../models/manager_permissions.dart';
 import '../../../providers/manager_permissions_provider.dart';
+import '../../../utils/app_logger.dart';
 
 /// Permissions Management Tab for CEO
 /// Allows CEO to grant/revoke permissions for each Manager
@@ -31,7 +32,7 @@ class _PermissionsManagementTabState
 
   @override
   Widget build(BuildContext context) {
-    print('🎨 [PERMISSIONS TAB] Building with companyId: ${widget.companyId}');
+    AppLogger.info('[PERMISSIONS TAB] Building with companyId: ${widget.companyId}');
     
     final allManagersAsync =
         ref.watch(allManagerPermissionsProvider(widget.companyId));
@@ -58,7 +59,7 @@ class _PermissionsManagementTabState
           WidgetsBinding.instance.addPostFrameCallback((_) {
             setState(() {
               _selectedManagerId = managers[0]['manager_id'] as String;
-              print('🎯 [AUTO-SELECT] Selected first manager: $_selectedManagerId');
+              AppLogger.info('[AUTO-SELECT] Selected first manager: $_selectedManagerId');
             });
           });
         }
@@ -111,13 +112,13 @@ class _PermissionsManagementTabState
     return Container(
       width: 300,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         border: Border(
           right: BorderSide(color: Colors.grey[300]!),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(2, 0),
           ),
@@ -282,14 +283,14 @@ class _PermissionsManagementTabState
     );
     final managerName = manager['manager_name'] as String;
     
-    print('🔧 [EDITOR] Building for manager: $managerName');
-    print('🔧 [EDITOR] Manager data: $manager');
+    AppLogger.info('[EDITOR] Building for manager: $managerName');
+    AppLogger.data('[EDITOR] Manager data', manager);
 
     // Convert manager data to ManagerPermissions model
     // The manager data already contains all permission fields
     final permissions = ManagerPermissions.fromJson(manager);
     
-    print('✅ [EDITOR] Permissions loaded: ${permissions.toJson()}');
+    AppLogger.data('[EDITOR] Permissions loaded', permissions.toJson());
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
@@ -417,12 +418,12 @@ class _PermissionsManagementTabState
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[300]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -531,20 +532,20 @@ class _PermissionsManagementTabState
               ),
             ),
             child: _isSaving
-                ? const SizedBox(
+                ? SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                     ),
                   )
                 : Text(
                     hasChanges ? 'Lưu thay đổi' : 'Không có thay đổi',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                   ),
           ),
@@ -616,7 +617,7 @@ class _PermissionsManagementTabState
     });
 
     try {
-      print('🔧 [AUTO-CREATE] Starting auto-create permissions...');
+      AppLogger.info('[AUTO-CREATE] Starting auto-create permissions...');
       
       final supabaseClient = supabase.client;
       
@@ -628,7 +629,7 @@ class _PermissionsManagementTabState
           .eq('role', 'MANAGER');
 
       final managers = employeesResponse as List;
-      print('📊 [AUTO-CREATE] Found ${managers.length} managers in employees table');
+      AppLogger.info('[AUTO-CREATE] Found ${managers.length} managers in employees table');
 
       if (managers.isEmpty) {
         if (mounted) {
@@ -647,7 +648,7 @@ class _PermissionsManagementTabState
       int skipped = 0;
 
       for (var manager in managers) {
-        print('👤 [AUTO-CREATE] Processing ${manager['full_name']}...');
+        AppLogger.info('[AUTO-CREATE] Processing ${manager['full_name']}...');
         
         // Check if permission already exists
         final existing = await supabaseClient
@@ -657,7 +658,7 @@ class _PermissionsManagementTabState
             .eq('company_id', widget.companyId);
 
         if ((existing as List).isNotEmpty) {
-          print('   ⏭️ Already has permissions, skipping');
+          AppLogger.info('  Already has permissions, skipping');
           skipped++;
           continue;
         }
@@ -670,11 +671,11 @@ class _PermissionsManagementTabState
               companyId: widget.companyId,
             );
         
-        print('   ✅ Created default permissions');
+        AppLogger.info('  Created default permissions');
         created++;
       }
 
-      print('🎉 [AUTO-CREATE] Done! Created: $created, Skipped: $skipped');
+      AppLogger.info('[AUTO-CREATE] Done! Created: $created, Skipped: $skipped');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -688,7 +689,7 @@ class _PermissionsManagementTabState
         ref.invalidate(allManagerPermissionsProvider(widget.companyId));
       }
     } catch (e) {
-      print('❌ [AUTO-CREATE] Error: $e');
+      AppLogger.error('[AUTO-CREATE] Error', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

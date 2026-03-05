@@ -2,6 +2,9 @@
 /// For CEO and Manager task management system
 /// Separate from operational tasks used by staff
 library;
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
+
+import 'package:flutter/material.dart';
 
 /// Checklist item within a task
 class ChecklistItem {
@@ -99,6 +102,7 @@ class ManagementTask {
   final String? assignedToRole;
   final String? companyName;
   final String? branchName;
+  final int commentCount; // populated from task_comments count
 
   const ManagementTask({
     required this.id,
@@ -124,6 +128,7 @@ class ManagementTask {
     this.assignedToRole,
     this.companyName,
     this.branchName,
+    this.commentCount = 0,
   });
 
   factory ManagementTask.fromJson(Map<String, dynamic> json) {
@@ -159,6 +164,7 @@ class ManagementTask {
       assignedToRole: json['assigned_to_role'] as String?,
       companyName: json['company_name'] as String?,
       branchName: json['branch_name'] as String?,
+      commentCount: (json['comment_count'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -243,6 +249,24 @@ enum TaskPriority {
       orElse: () => TaskPriority.medium,
     );
   }
+
+  Color get color {
+    switch (this) {
+      case TaskPriority.critical: return AppColors.error;
+      case TaskPriority.high: return AppColors.warning;
+      case TaskPriority.medium: return AppColors.info;
+      case TaskPriority.low: return AppColors.neutral500;
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case TaskPriority.critical: return Icons.warning_rounded;
+      case TaskPriority.high: return Icons.priority_high_rounded;
+      case TaskPriority.medium: return Icons.remove_circle_outline;
+      case TaskPriority.low: return Icons.arrow_downward_rounded;
+    }
+  }
 }
 
 /// Task Status Enum
@@ -263,6 +287,16 @@ enum TaskStatus {
       (e) => e.value == value,
       orElse: () => TaskStatus.pending,
     );
+  }
+
+  Color get color {
+    switch (this) {
+      case TaskStatus.pending: return AppColors.neutral500;
+      case TaskStatus.inProgress: return AppColors.info;
+      case TaskStatus.completed: return AppColors.success;
+      case TaskStatus.overdue: return AppColors.error;
+      case TaskStatus.cancelled: return AppColors.neutral400;
+    }
   }
 }
 

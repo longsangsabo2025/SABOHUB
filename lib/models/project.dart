@@ -1,3 +1,4 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 /// Project Status
@@ -15,10 +16,10 @@ enum ProjectStatus {
   };
 
   Color get color => switch (this) {
-    ProjectStatus.active => const Color(0xFF10B981),
-    ProjectStatus.onHold => const Color(0xFFF59E0B),
-    ProjectStatus.completed => const Color(0xFF6366F1),
-    ProjectStatus.cancelled => const Color(0xFF6B7280),
+    ProjectStatus.active => AppColors.success,
+    ProjectStatus.onHold => AppColors.warning,
+    ProjectStatus.completed => Color(0xFF6366F1),
+    ProjectStatus.cancelled => AppColors.neutral500,
   };
 
   IconData get icon => switch (this) {
@@ -59,10 +60,10 @@ enum ProjectPriority {
   };
 
   Color get color => switch (this) {
-    ProjectPriority.low => const Color(0xFF6B7280),
-    ProjectPriority.medium => const Color(0xFF3B82F6),
-    ProjectPriority.high => const Color(0xFFF59E0B),
-    ProjectPriority.urgent => const Color(0xFFEF4444),
+    ProjectPriority.low => AppColors.neutral500,
+    ProjectPriority.medium => AppColors.info,
+    ProjectPriority.high => AppColors.warning,
+    ProjectPriority.urgent => AppColors.error,
   };
 
   static ProjectPriority fromString(String? value) => switch (value) {

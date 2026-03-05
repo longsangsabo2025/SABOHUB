@@ -196,7 +196,8 @@ enum EmployeeRole {
   shiftLeader('SHIFT_LEADER'),
   staff('STAFF'),
   driver('DRIVER'),
-  warehouse('WAREHOUSE');
+  warehouse('WAREHOUSE'),
+  finance('FINANCE');
 
   const EmployeeRole(this.value);
   final String value;
@@ -224,6 +225,8 @@ enum EmployeeRole {
         return 'Tài xế';
       case EmployeeRole.warehouse:
         return 'Kho';
+      case EmployeeRole.finance:
+        return 'Kế toán';
     }
   }
 }

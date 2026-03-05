@@ -94,22 +94,22 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
               ),
             );
           }
-          return _buildContent(company, currentUser);
+          return _buildContent(context, company, currentUser);
         },
       ),
     );
   }
 
-  Widget _buildContent(Company company, User? currentUser) {
+  Widget _buildContent(BuildContext context, Company company, User? currentUser) {
     final userRole = currentUser?.role ?? UserRole.staff;
 
     return Scaffold(
       body: Column(
         children: [
           if (_currentIndex == 0)
-            _buildHeader(company)
+            _buildHeader(context, company)
           else
-            _buildCompactAppBar(company, userRole),
+            _buildCompactAppBar(context, company, userRole),
           Expanded(
             child: _buildCurrentTab(company, userRole),
           ),
@@ -197,6 +197,26 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
             description: 'Quản lý tồn kho',
           ),
         ];
+
+      case UserRole.finance:
+        return [
+          ...baseTabs,
+          _TabConfig(
+            icon: Icons.account_balance,
+            label: 'Tài chính',
+            description: 'Quản lý tài chính',
+          ),
+        ];
+
+      case UserRole.shareholder:
+        return [
+          ...baseTabs,
+          _TabConfig(
+            icon: Icons.trending_up,
+            label: 'Cổ đông',
+            description: 'Thông tin cổ đông',
+          ),
+        ];
     }
   }
 
@@ -220,7 +240,7 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
     }
   }
 
-  Widget _buildCompactAppBar(Company company, UserRole role) {
+  Widget _buildCompactAppBar(BuildContext context, Company company, UserRole role) {
     final allowedTabs = _getAllowedTabs(role);
     final currentTab = allowedTabs[_currentIndex];
 
@@ -229,7 +249,7 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
         color: company.type.color,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -241,7 +261,7 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.surface),
                 tooltip: 'Quay lại',
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -253,8 +273,8 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
                   children: [
                     Text(
                       company.name,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.surface,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -263,7 +283,7 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
                     Text(
                       currentTab.label,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
                         fontSize: 12,
                       ),
                     ),
@@ -277,7 +297,7 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
     );
   }
 
-  Widget _buildHeader(Company company) {
+  Widget _buildHeader(BuildContext context, Company company) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -290,7 +310,7 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -305,7 +325,7 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.surface),
                     tooltip: 'Quay lại',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
@@ -323,11 +343,11 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                           blurRadius: 10,
                         ),
                       ],
@@ -338,30 +358,30 @@ class _CompanyInfoPageState extends ConsumerState<CompanyInfoPage> {
                       color: company.type.color,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   // Company Name
                   Text(
                     company.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   // Business Type Badge
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       company.type.label,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.surface,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

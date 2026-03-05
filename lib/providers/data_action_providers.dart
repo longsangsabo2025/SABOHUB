@@ -25,7 +25,7 @@ class CompanyActions {
     String? email,
     String? businessType,
   }) async {
-    final userId = ref.read(authProvider).user?.id ?? '';
+    final userId = ref.read(currentUserProvider)?.id ?? '';
     final company = await _service.createCompany(
       name: name,
       userId: userId,

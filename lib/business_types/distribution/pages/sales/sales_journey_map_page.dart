@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/sales_route_service.dart';
 import '../../../../utils/route_optimizer.dart';
 import '../../../../widgets/map/sabo_map_widget.dart';
+import '../../../../utils/app_logger.dart';
 
 /// Bản đồ hành trình sales — hiển thị tất cả điểm dừng trên bản đồ
 /// GPS tracking real-time + route line + stop info
@@ -89,7 +90,7 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
         }
       });
     } catch (e) {
-      debugPrint('Location error: $e');
+      AppLogger.error('Location error: $e');
     }
   }
 
@@ -240,7 +241,9 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
           padding: const EdgeInsets.all(60),
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('SalesJourneyMapPage._fitAllMarkers error: $e');
+    }
   }
 
   List<SaboMapMarker> _buildMarkers() {
@@ -285,7 +288,7 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
                   color: bgColor,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected ? Colors.white : Colors.transparent,
+                    color: isSelected ? Theme.of(context).colorScheme.surface : Colors.transparent,
                     width: isSelected ? 3 : 0,
                   ),
                   boxShadow: [
@@ -298,13 +301,13 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
                 ),
                 child: Center(
                   child: isCompleted
-                      ? const Icon(Icons.check, color: Colors.white, size: 16)
+                      ? Icon(Icons.check, color: Theme.of(context).colorScheme.surface, size: 16)
                       : isSkipped
-                          ? const Icon(Icons.close, color: Colors.white, size: 14)
+                          ? Icon(Icons.close, color: Theme.of(context).colorScheme.surface, size: 14)
                           : Text(
                               '${stop.stopOrder}',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.surface,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),
@@ -314,13 +317,13 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
               if (isSelected && stop.customerName != null)
                 Container(
                   margin: const EdgeInsets.only(top: 2),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(4),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.15),
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.15),
                         blurRadius: 4,
                       ),
                     ],
@@ -482,15 +485,15 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.white.withOpacity(0.95),
-            Colors.white.withOpacity(0.0),
+            Theme.of(context).colorScheme.surface.withOpacity(0.95),
+            Theme.of(context).colorScheme.surface.withOpacity(0.0),
           ],
         ),
       ),
       child: Row(
         children: [
           Material(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
             elevation: 2,
             child: InkWell(
@@ -502,10 +505,10 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Material(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(20),
               elevation: 2,
               child: Padding(
@@ -543,7 +546,7 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
 
   Widget _buildRouteEstimateChip() {
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(16),
       elevation: 3,
       child: Padding(
@@ -590,8 +593,8 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
                 ? Container(
                     width: 42,
                     height: 42,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
                       shape: BoxShape.circle,
                     ),
                     child: const Padding(
@@ -652,7 +655,7 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
 
   Widget _buildMapButton(IconData icon, String tooltip, VoidCallback onPressed) {
     return Material(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       shape: const CircleBorder(),
       elevation: 3,
       child: InkWell(
@@ -674,9 +677,9 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.white.withOpacity(0.0),
-            Colors.white.withOpacity(0.95),
-            Colors.white,
+            Theme.of(context).colorScheme.surface.withOpacity(0.0),
+            Theme.of(context).colorScheme.surface.withOpacity(0.95),
+            Theme.of(context).colorScheme.surface,
           ],
           stops: const [0.0, 0.3, 1.0],
         ),
@@ -715,9 +718,9 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
             child: Container(
               width: 140,
               margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? statusColor.withOpacity(0.15) : Colors.white,
+                color: isSelected ? statusColor.withOpacity(0.15) : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected ? statusColor : Colors.grey.shade300,
@@ -738,11 +741,11 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
                     ),
                     child: Center(
                       child: stop.status == 'completed'
-                          ? const Icon(Icons.check, color: Colors.white, size: 14)
+                          ? Icon(Icons.check, color: Theme.of(context).colorScheme.surface, size: 14)
                           : Text(
                               '${stop.stopOrder}',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.surface,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 11,
                               ),
@@ -809,9 +812,9 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
       borderRadius: BorderRadius.circular(16),
       elevation: 4,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -830,8 +833,8 @@ class _SalesJourneyMapPageState extends State<SalesJourneyMapPage> {
                   child: Center(
                     child: Text(
                       '${stop.stopOrder}',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.surface,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),

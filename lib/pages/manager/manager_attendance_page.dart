@@ -19,7 +19,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
   @override
   Widget build(BuildContext context) {
     // Get userId from authProvider
-    final currentUser = ref.watch(authProvider).user;
+    final currentUser = ref.watch(currentUserProvider);
     
     if (currentUser == null) {
       return Scaffold(
@@ -179,7 +179,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
                             backgroundColor: _getColorForStatus(attendance.status),
                             child: Icon(
                               _getIconForStatus(attendance.status),
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               size: 20,
                             ),
                           ),
@@ -255,7 +255,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
 
 
   Future<void> _checkIn() async {
-    final currentUser = ref.read(authProvider).user;
+    final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) return;
     final userId = currentUser.id;
     
@@ -286,7 +286,7 @@ class _ManagerAttendancePageState extends ConsumerState<ManagerAttendancePage> {
   }
 
   Future<void> _checkOut() async {
-    final currentUser = ref.read(authProvider).user;
+    final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) return;
     final userId = currentUser.id;
     

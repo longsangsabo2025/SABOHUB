@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../providers/auth_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -41,7 +42,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.timer_outlined, color: Colors.white),
+                  Icon(Icons.timer_outlined, color: Theme.of(context).colorScheme.surface),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -85,7 +86,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
+                Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text('✉️ Email đặt lại mật khẩu đã được gửi!'),
@@ -105,7 +106,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error_outline, color: Colors.white),
+                Icon(Icons.error_outline, color: Theme.of(context).colorScheme.surface),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text('Lỗi: ${e.toString()}'),
@@ -128,7 +129,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface87),
           onPressed: () => context.go('/login'),
         ),
       ),
@@ -140,7 +141,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 40),
+                SizedBox(height: 40),
 
                 // Icon
                 Container(
@@ -156,18 +157,18 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                     color: AppConstants.primaryColor,
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 32),
 
                 // Title
                 Text(
                   _emailSent ? 'Email đã được gửi!' : 'Quên mật khẩu?',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: Theme.of(context).colorScheme.onSurface87,
                       ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
 
                 // Subtitle
                 Text(
@@ -186,7 +187,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email_outlined),
                       border: OutlineInputBorder(),
@@ -203,7 +204,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Send Reset Email button
                   SizedBox(
@@ -212,13 +213,13 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                       onPressed: _isLoading ? null : _sendResetEmail,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppConstants.primaryColor,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? CircularProgressIndicator(color: Theme.of(context).colorScheme.surface)
                           : const Text(
                               'Gửi email đặt lại',
                               style: TextStyle(

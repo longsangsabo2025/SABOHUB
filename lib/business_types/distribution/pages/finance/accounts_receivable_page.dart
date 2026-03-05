@@ -1,9 +1,11 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../../../utils/app_logger.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -53,8 +55,8 @@ class _AccountsReceivablePageState
 
   Future<void> _loadCustomers() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 
@@ -153,13 +155,13 @@ class _AccountsReceivablePageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.grey50,
       body: SafeArea(
         child: Column(
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: AppSpacing.paddingXL,
               color: Colors.white,
               child: Column(
                 children: [
@@ -172,7 +174,7 @@ class _AccountsReceivablePageState
                       // Nhập công nợ đầu kỳ
                       Container(
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [Colors.blue.shade400, Colors.blue.shade600]),
+                          gradient: LinearGradient(colors: [AppColors.info, AppColors.infoDark]),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Material(
@@ -186,7 +188,7 @@ class _AccountsReceivablePageState
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(Icons.add_circle_outline, size: 16, color: Colors.white),
-                                  SizedBox(width: 4),
+                                  AppSpacing.hGapXXS,
                                   Text('Nhập nợ', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600)),
                                 ],
                               ),
@@ -194,7 +196,7 @@ class _AccountsReceivablePageState
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      AppSpacing.hGapXXS,
                       IconButton(
                         icon: const Icon(Icons.picture_as_pdf_outlined),
                         tooltip: 'Xuất báo cáo công nợ',
@@ -209,12 +211,12 @@ class _AccountsReceivablePageState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
 
                   // Search bar
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: AppColors.grey100,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: TextField(
@@ -222,13 +224,13 @@ class _AccountsReceivablePageState
                       onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
                         hintText: 'Tìm khách hàng...',
-                        hintStyle: TextStyle(color: Colors.grey.shade500),
+                        hintStyle: TextStyle(color: AppColors.grey500),
                         prefixIcon:
-                            Icon(Icons.search, color: Colors.grey.shade600),
+                            Icon(Icons.search, color: AppColors.grey600),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
                                 icon: Icon(Icons.clear,
-                                    color: Colors.grey.shade600),
+                                    color: AppColors.grey600),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() {});
@@ -241,7 +243,7 @@ class _AccountsReceivablePageState
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
 
                   // Sort & filter row
                   Row(
@@ -249,9 +251,9 @@ class _AccountsReceivablePageState
                       // Sort dropdown
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: AppSpacing.paddingHMD,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
+                            color: AppColors.grey100,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: DropdownButtonHideUnderline(
@@ -259,8 +261,8 @@ class _AccountsReceivablePageState
                               value: _sortBy,
                               isDense: true,
                               isExpanded: true,
-                              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                              icon: Icon(Icons.sort, size: 18, color: Colors.grey.shade600),
+                              style: TextStyle(fontSize: 13, color: AppColors.grey700),
+                              icon: Icon(Icons.sort, size: 18, color: AppColors.grey600),
                               items: const [
                                 DropdownMenuItem(value: 'debt_desc', child: Text('Nợ cao nhất')),
                                 DropdownMenuItem(value: 'debt_asc', child: Text('Nợ thấp nhất')),
@@ -271,21 +273,21 @@ class _AccountsReceivablePageState
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      AppSpacing.hGapSM,
                       // Min debt filter  
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: AppSpacing.paddingHMD,
                         decoration: BoxDecoration(
-                          color: _minDebtFilter != null ? Colors.orange.shade50 : Colors.grey.shade100,
+                          color: _minDebtFilter != null ? AppColors.warningLight : AppColors.grey100,
                           borderRadius: BorderRadius.circular(10),
-                          border: _minDebtFilter != null ? Border.all(color: Colors.orange.shade300) : null,
+                          border: _minDebtFilter != null ? Border.all(color: AppColors.warning) : null,
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<double?>(
                             value: _minDebtFilter,
                             isDense: true,
-                            hint: Text('Mức nợ', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-                            style: TextStyle(fontSize: 13, color: Colors.orange.shade700),
+                            hint: Text('Mức nợ', style: TextStyle(fontSize: 13, color: AppColors.grey600)),
+                            style: TextStyle(fontSize: 13, color: AppColors.warningDark),
                             items: const [
                               DropdownMenuItem<double?>(value: null, child: Text('Tất cả')),
                               DropdownMenuItem<double?>(value: 1000000, child: Text('> 1 triệu')),
@@ -302,11 +304,11 @@ class _AccountsReceivablePageState
 
                   // Summary card
                   if (_filteredCustomers.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    AppSpacing.gapMD,
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: AppSpacing.paddingMD,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [Colors.orange.shade400, Colors.orange.shade600]),
+                        gradient: LinearGradient(colors: [AppColors.warning, AppColors.warningDark]),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -341,17 +343,17 @@ class _AccountsReceivablePageState
 
                     // Aging summary bar
                     if (_agingData.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      AppSpacing.gapSM,
                       _buildAgingBar(),
                     ],
                   ],
 
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
 
                   // Tab bar
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: AppColors.grey100,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: TabBar(
@@ -367,8 +369,8 @@ class _AccountsReceivablePageState
                         ],
                       ),
                       indicatorPadding: const EdgeInsets.all(4),
-                      labelColor: Colors.orange.shade700,
-                      unselectedLabelColor: Colors.grey.shade600,
+                      labelColor: AppColors.warningDark,
+                      unselectedLabelColor: AppColors.grey600,
                       labelStyle: const TextStyle(fontWeight: FontWeight.w600),
                       tabs: [
                         Tab(
@@ -376,18 +378,18 @@ class _AccountsReceivablePageState
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text('Tất cả'),
-                            const SizedBox(width: 6),
+                            AppSpacing.hGapXS,
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.orange.shade100,
+                                color: AppColors.warningLight,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text('${_filteredCustomers.length}',
                                   style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.orange.shade700)),
+                                      color: AppColors.warningDark)),
                             ),
                           ],
                         )),
@@ -396,17 +398,17 @@ class _AccountsReceivablePageState
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text('Quá hạn'),
-                            const SizedBox(width: 6),
+                            AppSpacing.hGapXS,
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.red.shade100,
+                                color: AppColors.errorLight,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text('${_overdueCustomers.length}',
                                   style: TextStyle(
-                                      fontSize: 12, color: Colors.red.shade700)),
+                                      fontSize: 12, color: AppColors.errorDark)),
                             ),
                           ],
                         )),
@@ -442,16 +444,16 @@ class _AccountsReceivablePageState
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: AppSpacing.paddingXXL,
               decoration: BoxDecoration(
-                  color: Colors.grey.shade100, shape: BoxShape.circle),
+                  color: AppColors.grey100, shape: BoxShape.circle),
               child:
-                  Icon(Icons.check_circle, size: 48, color: Colors.grey.shade400),
+                  Icon(Icons.check_circle, size: 48, color: AppColors.grey400),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             Text('Không có khách hàng nào',
                 style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: AppColors.grey600,
                     fontSize: 16,
                     fontWeight: FontWeight.w500)),
           ],
@@ -462,7 +464,7 @@ class _AccountsReceivablePageState
     return RefreshIndicator(
       onRefresh: _loadCustomers,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.paddingLG,
         itemCount: customers.length,
         itemBuilder: (context, index) => _buildDebtCard(customers[index]),
       ),
@@ -473,8 +475,8 @@ class _AccountsReceivablePageState
   // NHẬP CÔNG NỢ ĐẦU KỲ - Manual Receivable Entry
   // ==========================================================
   void _showAddManualReceivableDialog() async {
-    final authState = ref.read(authProvider);
-    final companyId = authState.user?.companyId;
+    final user = ref.read(currentUserProvider);
+    final companyId = user?.companyId;
     if (companyId == null) return;
 
     final supabase = Supabase.instance.client;
@@ -491,7 +493,7 @@ class _AccountsReceivablePageState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi tải danh sách khách hàng: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Lỗi tải danh sách khách hàng: $e'), backgroundColor: AppColors.error),
         );
       }
       return;
@@ -500,7 +502,7 @@ class _AccountsReceivablePageState
     if (allCustomers.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Chưa có khách hàng nào trong hệ thống'), backgroundColor: Colors.orange),
+          const SnackBar(content: Text('Chưa có khách hàng nào trong hệ thống'), backgroundColor: AppColors.warning),
         );
       }
       return;
@@ -548,32 +550,32 @@ class _AccountsReceivablePageState
                   child: Center(
                     child: Container(
                       width: 40, height: 4,
-                      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                      decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
                     ),
                   ),
                 ),
                 
                 // Header
                 Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: AppSpacing.paddingXL,
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
+                          color: AppColors.infoLight,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(Icons.history_edu, color: Colors.blue.shade600, size: 24),
+                        child: Icon(Icons.history_edu, color: AppColors.infoDark, size: 24),
                       ),
-                      const SizedBox(width: 12),
+                      AppSpacing.hGapMD,
                       const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Nhập công nợ đầu kỳ', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                             Text('Ghi nhận công nợ từ trước khi sử dụng hệ thống',
-                                style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                style: TextStyle(fontSize: 12, color: AppColors.grey500)),
                           ],
                         ),
                       ),
@@ -590,22 +592,22 @@ class _AccountsReceivablePageState
                 // Content
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
+                    padding: AppSpacing.paddingXL,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // ---- Customer Selection ----
                         const Text('Chọn khách hàng *', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                        const SizedBox(height: 8),
+                        AppSpacing.gapSM,
                         
                         if (selectedCustomer != null) ...[
                           // Selected customer card
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: AppSpacing.paddingMD,
                             decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
+                              color: AppColors.infoLight,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.blue.shade200),
+                              border: Border.all(color: AppColors.infoLight),
                             ),
                             child: Row(
                               children: [
@@ -621,12 +623,12 @@ class _AccountsReceivablePageState
                                       Text(selectedCustomer!['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
                                       Text(
                                         '${selectedCustomer!['code'] ?? ''} • ${selectedCustomer!['phone'] ?? ''}',
-                                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                        style: TextStyle(fontSize: 12, color: AppColors.grey600),
                                       ),
                                       if ((selectedCustomer!['total_debt'] ?? 0).toDouble() > 0)
                                         Text(
                                           'Nợ hiện tại: ${currencyFormat.format((selectedCustomer!['total_debt'] ?? 0).toDouble())}',
-                                          style: TextStyle(fontSize: 11, color: Colors.orange.shade700),
+                                          style: TextStyle(fontSize: 11, color: AppColors.warningDark),
                                         ),
                                     ],
                                   ),
@@ -643,7 +645,7 @@ class _AccountsReceivablePageState
                           // Customer search
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
+                              color: AppColors.grey100,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: TextField(
@@ -651,26 +653,26 @@ class _AccountsReceivablePageState
                               onChanged: (_) => setDialogState(() {}),
                               decoration: InputDecoration(
                                 hintText: 'Tìm theo tên, mã, SĐT...',
-                                hintStyle: TextStyle(color: Colors.grey.shade500),
-                                prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                                hintStyle: TextStyle(color: AppColors.grey500),
+                                prefixIcon: Icon(Icons.search, color: AppColors.grey600),
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          AppSpacing.gapSM,
                           // Customer list
                           Container(
                             constraints: const BoxConstraints(maxHeight: 180),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
+                              color: AppColors.grey50,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey.shade200),
+                              border: Border.all(color: AppColors.grey200),
                             ),
                             child: ListView.separated(
                               shrinkWrap: true,
                               itemCount: filtered.length.clamp(0, 50),
-                              separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade200),
+                              separatorBuilder: (_, __) => Divider(height: 1, color: AppColors.grey200),
                               itemBuilder: (context, index) {
                                 final c = filtered[index];
                                 return ListTile(
@@ -681,10 +683,10 @@ class _AccountsReceivablePageState
                                   ),
                                   title: Text(c['name'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                                   subtitle: Text('${c['code'] ?? ''} • ${c['phone'] ?? ''}',
-                                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                                      style: TextStyle(fontSize: 11, color: AppColors.grey500)),
                                   trailing: (c['total_debt'] ?? 0).toDouble() > 0
                                       ? Text(currencyFormat.format((c['total_debt'] ?? 0).toDouble()),
-                                          style: TextStyle(fontSize: 11, color: Colors.orange.shade600))
+                                          style: TextStyle(fontSize: 11, color: AppColors.warningDark))
                                       : null,
                                   onTap: () {
                                     setDialogState(() {
@@ -698,7 +700,7 @@ class _AccountsReceivablePageState
                           ),
                         ],
 
-                        const SizedBox(height: 20),
+                        AppSpacing.gapXL,
 
                         // ---- Amount ----
                         TextField(
@@ -713,7 +715,7 @@ class _AccountsReceivablePageState
                           ),
                         ),
 
-                        const SizedBox(height: 16),
+                        AppSpacing.gapLG,
 
                         // ---- Dates row ----
                         Row(
@@ -747,18 +749,18 @@ class _AccountsReceivablePageState
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey.shade400),
+                                    border: Border.all(color: AppColors.grey400),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.calendar_today, size: 18, color: Colors.grey.shade600),
-                                      const SizedBox(width: 8),
+                                      Icon(Icons.calendar_today, size: 18, color: AppColors.grey600),
+                                      AppSpacing.hGapSM,
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text('Ngày phát sinh', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                                            Text('Ngày phát sinh', style: TextStyle(fontSize: 11, color: AppColors.grey600)),
                                             Text(DateFormat('dd/MM/yyyy').format(invoiceDate),
                                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                                           ],
@@ -800,23 +802,23 @@ class _AccountsReceivablePageState
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                                   decoration: BoxDecoration(
                                     border: Border.all(color: dueDate != null && dueDate!.isBefore(DateTime.now())
-                                        ? Colors.red.shade300
-                                        : Colors.grey.shade400),
+                                        ? AppColors.error
+                                        : AppColors.grey400),
                                     borderRadius: BorderRadius.circular(12),
                                     color: dueDate != null && dueDate!.isBefore(DateTime.now())
-                                        ? Colors.red.shade50 : null,
+                                        ? AppColors.errorLight : null,
                                   ),
                                   child: Row(
                                     children: [
                                       Icon(Icons.event, size: 18,
                                           color: dueDate != null && dueDate!.isBefore(DateTime.now())
-                                              ? Colors.red.shade600 : Colors.grey.shade600),
-                                      const SizedBox(width: 8),
+                                              ? AppColors.errorDark : AppColors.grey600),
+                                      AppSpacing.hGapSM,
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text('Hạn thanh toán', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                                            Text('Hạn thanh toán', style: TextStyle(fontSize: 11, color: AppColors.grey600)),
                                             Text(
                                               dueDate != null
                                                   ? DateFormat('dd/MM/yyyy').format(dueDate!)
@@ -825,7 +827,7 @@ class _AccountsReceivablePageState
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w500,
                                                 color: dueDate != null && dueDate!.isBefore(DateTime.now())
-                                                    ? Colors.red.shade700 : null,
+                                                    ? AppColors.errorDark : null,
                                               ),
                                             ),
                                           ],
@@ -843,15 +845,15 @@ class _AccountsReceivablePageState
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              Icon(Icons.info_outline, size: 14, color: Colors.red.shade400),
-                              const SizedBox(width: 4),
+                              Icon(Icons.info_outline, size: 14, color: AppColors.error),
+                              AppSpacing.hGapXXS,
                               Text('Hạn thanh toán đã qua → sẽ ghi nhận là "quá hạn"',
-                                  style: TextStyle(fontSize: 11, color: Colors.red.shade400)),
+                                  style: TextStyle(fontSize: 11, color: AppColors.error)),
                             ],
                           ),
                         ],
 
-                        const SizedBox(height: 16),
+                        AppSpacing.gapLG,
 
                         // ---- Reference number ----
                         TextField(
@@ -864,7 +866,7 @@ class _AccountsReceivablePageState
                           ),
                         ),
 
-                        const SizedBox(height: 16),
+                        AppSpacing.gapLG,
 
                         // ---- Notes ----
                         TextField(
@@ -877,27 +879,27 @@ class _AccountsReceivablePageState
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        AppSpacing.gapXXL,
 
                         // ---- Info box ----
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: AppSpacing.paddingMD,
                           decoration: BoxDecoration(
-                            color: Colors.amber.shade50,
+                            color: AppColors.warningLight,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.amber.shade200),
+                            border: Border.all(color: AppColors.warningLight),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.lightbulb_outline, size: 18, color: Colors.amber.shade700),
-                              const SizedBox(width: 8),
+                              Icon(Icons.lightbulb_outline, size: 18, color: AppColors.warningDark),
+                              AppSpacing.hGapSM,
                               const Expanded(
                                 child: Text(
                                   'Công nợ đầu kỳ là khoản nợ phát sinh trước khi sử dụng hệ thống. '
                                   'Sau khi nhập, khoản nợ sẽ xuất hiện trong danh sách công nợ và '
                                   'có thể thu tiền bình thường.',
-                                  style: TextStyle(fontSize: 12, color: Colors.black87),
+                                  style: TextStyle(fontSize: 12, color: AppColors.textPrimary),
                                 ),
                               ),
                             ],
@@ -912,7 +914,7 @@ class _AccountsReceivablePageState
 
                 // ---- Submit button ----
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: AppSpacing.paddingXL,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4))],
@@ -925,14 +927,14 @@ class _AccountsReceivablePageState
                         // Validate
                         if (selectedCustomer == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Vui lòng chọn khách hàng'), backgroundColor: Colors.orange),
+                            const SnackBar(content: Text('Vui lòng chọn khách hàng'), backgroundColor: AppColors.warning),
                           );
                           return;
                         }
                         final amount = double.tryParse(amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''));
                         if (amount == null || amount <= 0) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Vui lòng nhập số tiền hợp lệ'), backgroundColor: Colors.orange),
+                            const SnackBar(content: Text('Vui lòng nhập số tiền hợp lệ'), backgroundColor: AppColors.warning),
                           );
                           return;
                         }
@@ -959,7 +961,7 @@ class _AccountsReceivablePageState
                                   content: Text(
                                     '✅ Đã ghi nhận công nợ ${currencyFormat.format(amount)} cho ${res['customer_name']}',
                                   ),
-                                  backgroundColor: Colors.green,
+                                  backgroundColor: AppColors.success,
                                 ),
                               );
                             }
@@ -970,7 +972,7 @@ class _AccountsReceivablePageState
                             setDialogState(() => isSubmitting = false);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Lỗi: ${res['error']}'), backgroundColor: Colors.red),
+                                SnackBar(content: Text('Lỗi: ${res['error']}'), backgroundColor: AppColors.error),
                               );
                             }
                           }
@@ -978,7 +980,7 @@ class _AccountsReceivablePageState
                           setDialogState(() => isSubmitting = false);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+                              SnackBar(content: Text('Lỗi: $e'), backgroundColor: AppColors.error),
                             );
                           }
                         }
@@ -988,7 +990,7 @@ class _AccountsReceivablePageState
                           : const Icon(Icons.save),
                       label: Text(isSubmitting ? 'Đang lưu...' : 'Ghi nhận công nợ'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade600,
+                        backgroundColor: AppColors.infoDark,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         elevation: 0,
@@ -1152,7 +1154,7 @@ class _AccountsReceivablePageState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi xuất báo cáo: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Lỗi xuất báo cáo: $e'), backgroundColor: AppColors.error),
         );
       }
     }
@@ -1172,11 +1174,11 @@ class _AccountsReceivablePageState
 
     final cf = NumberFormat.compact(locale: 'vi_VN');
     final buckets = [
-      {'key': 'current', 'label': 'Chưa đến hạn', 'color': Colors.green},
-      {'key': '1-30', 'label': '1-30 ngày', 'color': Colors.orange},
+      {'key': 'current', 'label': 'Chưa đến hạn', 'color': AppColors.success},
+      {'key': '1-30', 'label': '1-30 ngày', 'color': AppColors.warning},
       {'key': '31-60', 'label': '31-60', 'color': Colors.deepOrange},
-      {'key': '61-90', 'label': '61-90', 'color': Colors.red.shade600},
-      {'key': '90+', 'label': '>90', 'color': Colors.red.shade900},
+      {'key': '61-90', 'label': '61-90', 'color': AppColors.errorDark},
+      {'key': '90+', 'label': '>90', 'color': AppColors.errorDark},
     ];
 
     return Container(
@@ -1184,7 +1186,7 @@ class _AccountsReceivablePageState
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.grey200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1220,8 +1222,8 @@ class _AccountsReceivablePageState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(width: 8, height: 8, decoration: BoxDecoration(color: b['color'] as Color, borderRadius: BorderRadius.circular(2))),
-                  const SizedBox(width: 4),
-                  Text('${b['label']}: ${cf.format(val)}', style: TextStyle(fontSize: 10, color: Colors.grey.shade700)),
+                  AppSpacing.hGapXXS,
+                  Text('${b['label']}: ${cf.format(val)}', style: TextStyle(fontSize: 10, color: AppColors.grey700)),
                 ],
               );
             }).toList(),
@@ -1250,7 +1252,7 @@ class _AccountsReceivablePageState
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: isOverdue ? Border.all(color: Colors.red.shade200, width: 2) : null,
+        border: isOverdue ? Border.all(color: AppColors.errorLight, width: 2) : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -1260,7 +1262,7 @@ class _AccountsReceivablePageState
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.paddingLG,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1270,7 +1272,7 @@ class _AccountsReceivablePageState
                   seed: customer['name'] ?? 'K',
                   radius: 22,
                 ),
-                const SizedBox(width: 12),
+                AppSpacing.hGapMD,
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1279,7 +1281,7 @@ class _AccountsReceivablePageState
                           style: const TextStyle(fontWeight: FontWeight.w600)),
                       Text('${customer['phone'] ?? ''} • ${customer['code'] ?? ''}',
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade600)),
+                              fontSize: 12, color: AppColors.grey600)),
                     ],
                   ),
                 ),
@@ -1288,26 +1290,26 @@ class _AccountsReceivablePageState
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: maxOverdueDays > 60 ? Colors.red.shade100 : Colors.red.shade50,
+                      color: maxOverdueDays > 60 ? AppColors.errorLight : AppColors.errorLight,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       children: [
                         Icon(Icons.warning_amber,
-                            size: 14, color: Colors.red.shade700),
-                        const SizedBox(width: 4),
+                            size: 14, color: AppColors.errorDark),
+                        AppSpacing.hGapXXS,
                         Text('Quá hạn ${maxOverdueDays}d',
                             style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.red.shade700,
+                                color: AppColors.errorDark,
                                 fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
-                Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                Icon(Icons.chevron_right, color: AppColors.grey400),
               ],
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1316,14 +1318,14 @@ class _AccountsReceivablePageState
                   children: [
                     Text('Công nợ',
                         style:
-                            TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                            TextStyle(fontSize: 12, color: AppColors.grey600)),
                     Text(currencyFormat.format(debt),
                         style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: isOverdue
-                                ? Colors.red.shade700
-                                : Colors.orange.shade700)),
+                                ? AppColors.errorDark
+                                : AppColors.warningDark)),
                   ],
                 ),
                 if (creditLimit > 0)
@@ -1331,9 +1333,9 @@ class _AccountsReceivablePageState
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text('Hạn mức',
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                          style: TextStyle(fontSize: 11, color: AppColors.grey500)),
                       Text(currencyFormat.format(creditLimit),
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                          style: TextStyle(fontSize: 13, color: AppColors.grey600)),
                     ],
                   ),
                 ElevatedButton.icon(
@@ -1341,7 +1343,7 @@ class _AccountsReceivablePageState
                   icon: const Icon(Icons.add_card, size: 18),
                   label: const Text('Thu tiền'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -1410,7 +1412,7 @@ class _AccountsReceivablePageState
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: AppSpacing.paddingXL,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1420,21 +1422,21 @@ class _AccountsReceivablePageState
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: AppColors.grey300,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              AppSpacing.gapXL,
               const Text('Ghi nhận thanh toán',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
+              AppSpacing.gapXL,
 
               // Customer info
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: AppSpacing.paddingLG,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: AppColors.grey50,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -1443,7 +1445,7 @@ class _AccountsReceivablePageState
                       seed: customer['name'] ?? 'K',
                       radius: 20,
                     ),
-                    const SizedBox(width: 12),
+                    AppSpacing.hGapMD,
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1452,7 +1454,7 @@ class _AccountsReceivablePageState
                               style: const TextStyle(fontWeight: FontWeight.w600)),
                           Text('Công nợ: ${currencyFormat.format(debt)}',
                               style: TextStyle(
-                                  fontSize: 12, color: Colors.red.shade600)),
+                                  fontSize: 12, color: AppColors.errorDark)),
                         ],
                       ),
                     ),
@@ -1460,25 +1462,25 @@ class _AccountsReceivablePageState
                 ),
               ),
 
-              const SizedBox(height: 20),
+              AppSpacing.gapXL,
 
               // Payment method selection
               const Text('Hình thức thanh toán', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-              const SizedBox(height: 8),
+              AppSpacing.gapSM,
               Row(
                 children: [
-                  _buildMethodChip('Tiền mặt', 'cash', selectedMethod, Icons.money, Colors.green,
+                  _buildMethodChip('Tiền mặt', 'cash', selectedMethod, Icons.money, AppColors.success,
                       (v) => setDialogState(() => selectedMethod = v)),
-                  const SizedBox(width: 8),
-                  _buildMethodChip('Chuyển khoản', 'transfer', selectedMethod, Icons.account_balance, Colors.blue,
+                  AppSpacing.hGapSM,
+                  _buildMethodChip('Chuyển khoản', 'transfer', selectedMethod, Icons.account_balance, AppColors.info,
                       (v) => setDialogState(() => selectedMethod = v)),
-                  const SizedBox(width: 8),
-                  _buildMethodChip('Khác', 'other', selectedMethod, Icons.more_horiz, Colors.grey,
+                  AppSpacing.hGapSM,
+                  _buildMethodChip('Khác', 'other', selectedMethod, Icons.more_horiz, AppColors.grey500,
                       (v) => setDialogState(() => selectedMethod = v)),
                 ],
               ),
 
-              const SizedBox(height: 20),
+              AppSpacing.gapXL,
               TextField(
                 controller: amountController,
                 keyboardType: TextInputType.number,
@@ -1492,7 +1494,7 @@ class _AccountsReceivablePageState
                 ),
               ),
 
-              const SizedBox(height: 16),
+              AppSpacing.gapLG,
 
               // Quick amount buttons
               Wrap(
@@ -1504,7 +1506,7 @@ class _AccountsReceivablePageState
                 ],
               ),
 
-              const SizedBox(height: 16),
+              AppSpacing.gapLG,
 
               // Reference (for transfers)
               if (selectedMethod == 'transfer') ...[
@@ -1526,19 +1528,19 @@ class _AccountsReceivablePageState
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: AppColors.infoLight,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.blue.shade200),
+                    border: Border.all(color: AppColors.infoLight),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.camera_alt, color: Colors.blue.shade700, size: 18),
-                          const SizedBox(width: 8),
+                          Icon(Icons.camera_alt, color: AppColors.infoDark, size: 18),
+                          AppSpacing.hGapSM,
                           Text('Ảnh chứng minh chuyển khoản',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.blue.shade700)),
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.infoDark)),
                         ],
                       ),
                       const SizedBox(height: 10),
@@ -1558,7 +1560,7 @@ class _AccountsReceivablePageState
                                 }),
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                  decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
                                   child: const Icon(Icons.close, color: Colors.white, size: 16),
                                 ),
                               ),
@@ -1584,13 +1586,13 @@ class _AccountsReceivablePageState
                                 icon: const Icon(Icons.photo_library, size: 18),
                                 label: const Text('Thư viện', style: TextStyle(fontSize: 12)),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.blue.shade700,
-                                  side: BorderSide(color: Colors.blue.shade300),
+                                  foregroundColor: AppColors.infoDark,
+                                  side: BorderSide(color: AppColors.info),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            AppSpacing.hGapSM,
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () async {
@@ -1607,8 +1609,8 @@ class _AccountsReceivablePageState
                                 icon: const Icon(Icons.camera_alt, size: 18),
                                 label: const Text('Chụp ảnh', style: TextStyle(fontSize: 12)),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.blue.shade700,
-                                  side: BorderSide(color: Colors.blue.shade300),
+                                  foregroundColor: AppColors.infoDark,
+                                  side: BorderSide(color: AppColors.info),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
                               ),
@@ -1629,7 +1631,7 @@ class _AccountsReceivablePageState
                       OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gapXXL,
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -1644,9 +1646,9 @@ class _AccountsReceivablePageState
 
                     try {
                       setDialogState(() => isUploading = true);
-                      final authState = ref.read(authProvider);
-                      final companyId = authState.user?.companyId;
-                      final userId = authState.user?.id;
+                      final user = ref.read(currentUserProvider);
+                      final companyId = user?.companyId;
+                      final userId = user?.id;
                       if (companyId == null) return;
 
                       // Upload proof image if provided
@@ -1714,10 +1716,10 @@ class _AccountsReceivablePageState
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                           content: Row(children: [
                             const Icon(Icons.check_circle, color: Colors.white),
-                            const SizedBox(width: 12),
+                            AppSpacing.hGapMD,
                             Text('Đã ghi nhận ${currencyFormat.format(amount)}'),
                           ]),
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppColors.success,
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
@@ -1728,7 +1730,7 @@ class _AccountsReceivablePageState
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text('Lỗi: ${e.toString()}'),
-                            backgroundColor: Colors.red));
+                            backgroundColor: AppColors.error));
                       }
                     }
                   },
@@ -1737,16 +1739,16 @@ class _AccountsReceivablePageState
                       : const Icon(Icons.check),
                   label: Text(isUploading ? 'ĐANG XỬ LÝ...' : 'XÁC NHẬN THANH TOÁN'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: AppSpacing.paddingVLG,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                     elevation: 0,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              AppSpacing.gapLG,
             ],
           ),
         ),
@@ -1763,15 +1765,15 @@ class _AccountsReceivablePageState
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? color.withValues(alpha: 0.1) : Colors.grey.shade100,
+            color: isSelected ? color.withValues(alpha: 0.1) : AppColors.grey100,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: isSelected ? color : Colors.grey.shade300),
+            border: Border.all(color: isSelected ? color : AppColors.grey300),
           ),
           child: Column(
             children: [
-              Icon(icon, size: 20, color: isSelected ? color : Colors.grey.shade500),
-              const SizedBox(height: 4),
-              Text(label, style: TextStyle(fontSize: 11, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal, color: isSelected ? color : Colors.grey.shade600)),
+              Icon(icon, size: 20, color: isSelected ? color : AppColors.grey500),
+              AppSpacing.gapXXS,
+              Text(label, style: TextStyle(fontSize: 11, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal, color: isSelected ? color : AppColors.grey600)),
             ],
           ),
         ),
@@ -1786,8 +1788,8 @@ class _AccountsReceivablePageState
         controller.text = amount.toStringAsFixed(0);
         onTap();
       },
-      backgroundColor: Colors.blue.shade50,
-      side: BorderSide(color: Colors.blue.shade200),
+      backgroundColor: AppColors.infoLight,
+      side: BorderSide(color: AppColors.infoLight),
     );
   }
 }

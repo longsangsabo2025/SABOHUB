@@ -2,25 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_router.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../utils/app_logger.dart';
 import '../../../widgets/error_boundary.dart';
 import '../../../widgets/bug_report_dialog.dart';
+import '../../../widgets/realtime_notification_widgets.dart';
 
 // Manufacturing services & models
 import '../services/manufacturing_service.dart';
 import '../models/manufacturing_models.dart';
 
 // Manufacturing standalone pages (for navigation)
-import '../pages/manufacturing/suppliers_page.dart';
 import '../pages/manufacturing/materials_page.dart';
-import '../pages/manufacturing/bom_page.dart';
 import '../pages/manufacturing/production_order_form_page.dart';
 import '../pages/manufacturing/purchase_order_form_page.dart';
+import '../pages/manufacturing/quality_dashboard_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Manufacturing Manager Layout
 /// Layout cho Manager của công ty sản xuất
-/// Tabs: Dashboard, Sản xuất, Nguyên liệu, Mua hàng, Công nợ
+/// Tabs: Dashboard, Sản xuất, Nguyên liệu, Mua hàng, Công nợ, Chất lượng
 class ManufacturingManagerLayout extends ConsumerStatefulWidget {
   const ManufacturingManagerLayout({super.key});
 
@@ -35,9 +37,9 @@ class _ManufacturingManagerLayoutState
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final userName = authState.user?.name ?? 'Quản lý';
-    final companyName = authState.user?.companyName ?? 'Sản xuất';
+    final currentUser = ref.watch(currentUserProvider);
+    final userName = currentUser?.name ?? 'Quản lý';
+    final companyName = currentUser?.companyName ?? 'Sản xuất';
 
     final pages = <Widget>[
       _MfgManagerDashboard(),
@@ -45,6 +47,7 @@ class _ManufacturingManagerLayoutState
       _MfgManagerMaterials(),
       _MfgManagerPurchasing(),
       _MfgManagerPayables(),
+      const QualityDashboardPage(),
     ];
 
     final destinations = const [
@@ -72,6 +75,11 @@ class _ManufacturingManagerLayoutState
         icon: Icon(Icons.account_balance_wallet_outlined),
         selectedIcon: Icon(Icons.account_balance_wallet),
         label: 'Công nợ',
+      ),
+      NavigationDestination(
+        icon: Icon(Icons.verified_outlined),
+        selectedIcon: Icon(Icons.verified),
+        label: 'Chất lượng',
       ),
     ];
 
@@ -129,6 +137,7 @@ class _ManufacturingManagerLayoutState
                 );
               },
             ),
+            const RealtimeNotificationBell(),
             IconButton(
               icon: const Icon(Icons.more_vert),
               onPressed: () => _showProfileMenu(context, ref),
@@ -210,23 +219,23 @@ class _ManufacturingManagerLayoutState
                 end: Alignment.bottomRight,
               ),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Icon(Icons.factory, color: Colors.white, size: 40),
+                Icon(Icons.factory, color: Theme.of(context).colorScheme.surface, size: 40),
                 SizedBox(height: 8),
                 Text(
                   'Sản Xuất',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   'Quản lý sản xuất',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  style: TextStyle(color: Theme.of(context).colorScheme.surface70, fontSize: 14),
                 ),
               ],
             ),
@@ -237,9 +246,7 @@ class _ManufacturingManagerLayoutState
             title: 'Nhà cung cấp',
             onTap: () {
               Navigator.pop(context);
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SuppliersPage()),
-              );
+              context.push(AppRoutes.manufacturingSuppliers);
             },
           ),
           _buildDrawerItem(
@@ -247,9 +254,15 @@ class _ManufacturingManagerLayoutState
             title: 'Định mức BOM',
             onTap: () {
               Navigator.pop(context);
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const BOMPage()),
-              );
+              context.push(AppRoutes.manufacturingBOM);
+            },
+          ),
+          _buildDrawerItem(
+            icon: Icons.verified_outlined,
+            title: 'Kiểm tra chất lượng',
+            onTap: () {
+              Navigator.pop(context);
+              setState(() => _currentIndex = 5);
             },
           ),
           const Divider(),
@@ -308,7 +321,7 @@ class _MfgManagerDashboardState extends ConsumerState<_MfgManagerDashboard> {
   void initState() {
     super.initState();
     _service = ManufacturingService(
-        companyId: ref.read(authProvider).user?.companyId);
+        companyId: ref.read(currentUserProvider)?.companyId);
     _load();
   }
 
@@ -409,7 +422,7 @@ class _MfgManagerProductionState extends ConsumerState<_MfgManagerProduction> {
   void initState() {
     super.initState();
     _service = ManufacturingService(
-        companyId: ref.read(authProvider).user?.companyId);
+        companyId: ref.read(currentUserProvider)?.companyId);
     _load();
   }
 
@@ -472,8 +485,8 @@ class _MfgManagerProductionState extends ConsumerState<_MfgManagerProduction> {
                                 : o.status == 'in_progress'
                                     ? Colors.orange
                                     : Colors.blue,
-                            child: const Icon(Icons.factory,
-                                color: Colors.white, size: 18),
+                            child: Icon(Icons.factory,
+                                color: Theme.of(context).colorScheme.surface, size: 18),
                           ),
                           title: Text('MO-${o.orderNumber}'),
                           subtitle: Text(
@@ -511,7 +524,7 @@ class _MfgManagerMaterialsState extends ConsumerState<_MfgManagerMaterials> {
   void initState() {
     super.initState();
     _service = ManufacturingService(
-        companyId: ref.read(authProvider).user?.companyId);
+        companyId: ref.read(currentUserProvider)?.companyId);
     _load();
   }
 
@@ -603,7 +616,7 @@ class _MfgManagerPurchasingState extends ConsumerState<_MfgManagerPurchasing> {
   void initState() {
     super.initState();
     _service = ManufacturingService(
-        companyId: ref.read(authProvider).user?.companyId);
+        companyId: ref.read(currentUserProvider)?.companyId);
     _load();
   }
 
@@ -666,8 +679,8 @@ class _MfgManagerPurchasingState extends ConsumerState<_MfgManagerPurchasing> {
                                 : o.status == 'cancelled'
                                     ? Colors.red
                                     : Colors.orange,
-                            child: const Icon(Icons.receipt,
-                                color: Colors.white, size: 18),
+                            child: Icon(Icons.receipt,
+                                color: Theme.of(context).colorScheme.surface, size: 18),
                           ),
                           title: Text('PO-${o.poNumber}'),
                           subtitle: Text(o.status),
@@ -702,7 +715,7 @@ class _MfgManagerPayablesState extends ConsumerState<_MfgManagerPayables> {
   void initState() {
     super.initState();
     _service = ManufacturingService(
-        companyId: ref.read(authProvider).user?.companyId);
+        companyId: ref.read(currentUserProvider)?.companyId);
     _load();
   }
 
@@ -757,8 +770,8 @@ class _MfgManagerPayablesState extends ConsumerState<_MfgManagerPayables> {
                                 : p.status == 'overdue'
                                     ? Colors.red
                                     : Colors.orange,
-                            child: const Icon(Icons.payment,
-                                color: Colors.white, size: 18),
+                            child: Icon(Icons.payment,
+                                color: Theme.of(context).colorScheme.surface, size: 18),
                           ),
                           title:
                               Text('${p.totalAmount.toStringAsFixed(0)}đ'),

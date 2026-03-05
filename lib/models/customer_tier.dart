@@ -1,5 +1,6 @@
 // Customer Tier Classification - Phân loại khách hàng theo doanh số
 // Dựa trên view v_sales_by_customer từ database
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 /// Tier phân loại khách hàng theo doanh số
@@ -48,13 +49,13 @@ extension CustomerTierExtension on CustomerTier {
   Color get color {
     switch (this) {
       case CustomerTier.diamond:
-        return const Color(0xFF00BCD4); // Cyan/Diamond blue
+        return Color(0xFF00BCD4); // Cyan/Diamond blue
       case CustomerTier.gold:
-        return const Color(0xFFFFD700); // Gold
+        return Color(0xFFFFD700); // Gold
       case CustomerTier.silver:
-        return const Color(0xFFC0C0C0); // Silver
+        return Color(0xFFC0C0C0); // Silver
       case CustomerTier.bronze:
-        return const Color(0xFFCD7F32); // Bronze
+        return AppColors.tierBronze; // Bronze
       case CustomerTier.none:
         return Colors.grey;
     }
@@ -66,9 +67,9 @@ extension CustomerTierExtension on CustomerTier {
       case CustomerTier.diamond:
         return Colors.white;
       case CustomerTier.gold:
-        return Colors.black87;
+        return const Color(0xDD000000);
       case CustomerTier.silver:
-        return Colors.black87;
+        return const Color(0xDD000000);
       case CustomerTier.bronze:
         return Colors.white;
       case CustomerTier.none:

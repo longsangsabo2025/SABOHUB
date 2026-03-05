@@ -1,3 +1,4 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 /// App-wide constants for SABOHUB Flutter application
@@ -8,13 +9,13 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // Colors
-  static const Color primaryColor = Color(0xFF2E7D32); // Green
-  static const Color secondaryColor = Color(0xFF4CAF50);
-  static const Color accentColor = Color(0xFFFF9800); // Orange
+  static const Color primaryColor = AppColors.primary;
+  static const Color secondaryColor = AppColors.success;
+  static const Color accentColor = AppColors.warning; // Orange
   static const Color errorColor = Color(0xFFE53935);
-  static const Color warningColor = Color(0xFFFF9800);
-  static const Color successColor = Color(0xFF4CAF50);
-  static const Color backgroundColor = Color(0xFFF5F5F5);
+  static const Color warningColor = AppColors.warning;
+  static const Color successColor = AppColors.success;
+  static const Color backgroundColor = AppColors.grey100;
 
   // API Configuration
   static const String supabaseUrl = 'https://your-project.supabase.co';

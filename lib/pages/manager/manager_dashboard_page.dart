@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_spacing.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../providers/cached_data_providers.dart'; // PHASE 3B: Manager cache
 import '../../providers/auth_provider.dart';
+import '../../widgets/company_quick_access_cards.dart';
 import '../../widgets/multi_account_switcher.dart';
 
 /// Manager Dashboard Page
@@ -25,8 +27,8 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final branchId = authState.user?.branchId;
+    final currentUser = ref.watch(currentUserProvider);
+    final branchId = currentUser?.branchId;
 
     // PHASE 3B: Use CACHED providers for instant loads (5min TTL)
     final kpisAsync = ref.watch(cachedManagerDashboardKPIsProvider(branchId));
@@ -34,39 +36,49 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
         cachedManagerRecentActivitiesProvider((branchId: branchId, limit: 10)));
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: _buildAppBar(),
+      backgroundColor: AppColors.grey50,
       body: RefreshIndicator(
         onRefresh: () async {
           // Invalidate cache to force fresh data
           ref.invalidateManagerDashboard(branchId);
         },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: AppSpacing.paddingLG,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               kpisAsync.when(
                 data: (cachedKpis) => _buildWelcomeSection(cachedKpis),
                 loading: () => _buildLoadingWelcome(),
-                error: (_, __) => _buildWelcomeSection({}),
+                error: (e, _) => _buildErrorCard(
+                  'Lỗi tải dữ liệu tổng quan',
+                  '$e',
+                  () => ref.invalidateManagerDashboard(branchId),
+                ),
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gapXXL,
               kpisAsync.when(
                 data: (cachedKpis) => _buildQuickStats(cachedKpis),
                 loading: () => _buildLoadingStats(),
-                error: (_, __) => _buildQuickStats({}),
+                error: (_, __) => const SizedBox.shrink(),
               ),
-              const SizedBox(height: 24),
+              AppSpacing.gapXXL,
+              // Quick Access Cards for corporation managers
+              const CompanyQuickAccessCards(),
+              AppSpacing.gapXXL,
               _buildCongNoSection(),
-              const SizedBox(height: 24),
+              AppSpacing.gapXXL,
               _buildOperationsSection(),
-              const SizedBox(height: 24),
+              AppSpacing.gapXXL,
               activitiesAsync.when(
                 data: (cachedActivities) => _buildRecentActivities(
                     List<Map<String, dynamic>>.from(cachedActivities)),
                 loading: () => _buildLoadingActivities(),
-                error: (_, __) => _buildRecentActivities([]),
+                error: (e, _) => _buildErrorCard(
+                  'Lỗi tải hoạt động gần đây',
+                  '$e',
+                  () => ref.invalidateManagerDashboard(branchId),
+                ),
               ),
             ],
           ),
@@ -75,6 +87,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
     );
   }
 
+  // ignore: unused_element
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       elevation: 0,
@@ -84,13 +97,13 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: AppColors.textPrimary,
         ),
       ),
       actions: [
         // View Reports button
         IconButton(
-          icon: const Icon(Icons.assignment, color: Colors.black87),
+          icon: const Icon(Icons.assignment, color: AppColors.textPrimary),
           onPressed: () {
             context.push('/manager-reports');
           },
@@ -108,13 +121,13 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
               ),
             );
           },
-          icon: const Icon(Icons.notifications_outlined, color: Colors.black54),
+          icon: const Icon(Icons.notifications_outlined, color: AppColors.textSecondary),
         ),
         IconButton(
           onPressed: () {
             context.push('/profile');
           },
-          icon: const Icon(Icons.person_outline, color: Colors.black54),
+          icon: const Icon(Icons.person_outline, color: AppColors.textSecondary),
           tooltip: 'Hồ sơ cá nhân',
         ),
       ],
@@ -137,7 +150,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: AppSpacing.paddingXL,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF34D399), AppColors.success],
@@ -157,7 +170,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 8),
+          AppSpacing.gapSM,
           const Text(
             'Tổng quan hoạt động hôm nay',
             style: TextStyle(
@@ -165,7 +178,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
               color: Colors.white70,
             ),
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           Row(
             children: [
               Expanded(
@@ -176,7 +189,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                   Colors.white,
                 ),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMD,
               Expanded(
                 child: _buildMetricCard(
                   'Bàn hoạt động',
@@ -196,7 +209,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
     return Container(
       width: double.infinity,
       height: 200,
-      padding: const EdgeInsets.all(20),
+      padding: AppSpacing.paddingXL,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF34D399), AppColors.success],
@@ -214,7 +227,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
   Widget _buildMetricCard(
       String title, String value, IconData icon, Color textColor) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: AppSpacing.paddingMD,
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
@@ -222,7 +235,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
       child: Column(
         children: [
           Icon(icon, size: 24, color: textColor),
-          const SizedBox(height: 8),
+          AppSpacing.gapSM,
           Text(
             value,
             style: TextStyle(
@@ -263,7 +276,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        AppSpacing.gapLG,
         Row(
           children: [
             Expanded(
@@ -275,7 +288,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 '${revenueChange >= 0 ? '+' : ''}${revenueChange.toStringAsFixed(0)}%',
               ),
             ),
-            const SizedBox(width: 12),
+            AppSpacing.hGapMD,
             Expanded(
               child: _buildStatCard(
                 'Khách hàng',
@@ -287,7 +300,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        AppSpacing.gapMD,
         Row(
           children: [
             Expanded(
@@ -299,7 +312,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 '${orderChange >= 0 ? '+' : ''}${orderChange.toStringAsFixed(0)}%',
               ),
             ),
-            const SizedBox(width: 12),
+            AppSpacing.hGapMD,
             Expanded(
               child: _buildStatCard(
                 'Hiệu suất',
@@ -326,7 +339,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        AppSpacing.gapLG,
         Container(
           height: 200,
           decoration: BoxDecoration(
@@ -344,7 +357,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
   Widget _buildStatCard(
       String title, String value, IconData icon, Color color, String change) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppSpacing.paddingLG,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -380,20 +393,20 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          AppSpacing.gapMD,
           Text(
             value,
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
             ),
           ),
           Text(
             title,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade600,
+              color: AppColors.grey600,
             ),
           ),
         ],
@@ -428,18 +441,9 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        AppSpacing.gapLG,
         Row(
           children: [
-            Expanded(
-              child: _buildActionCard(
-                'Quản lý bàn',
-                'Theo dõi bàn',
-                Icons.table_restaurant,
-                AppColors.info,
-              ),
-            ),
-            const SizedBox(width: 12),
             Expanded(
               child: _buildActionCard(
                 'Đơn hàng',
@@ -448,11 +452,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 AppColors.success,
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
+            AppSpacing.hGapMD,
             Expanded(
               child: _buildActionCard(
                 'Kho hàng',
@@ -461,7 +461,11 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 AppColors.warning,
               ),
             ),
-            const SizedBox(width: 12),
+          ],
+        ),
+        AppSpacing.gapMD,
+        Row(
+          children: [
             Expanded(
               child: _buildActionCard(
                 'Báo cáo',
@@ -489,7 +493,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.paddingLG,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -505,27 +509,27 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: AppSpacing.paddingMD,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 12),
+            AppSpacing.gapMD,
             Text(
               title,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: AppColors.textPrimary,
               ),
             ),
             Text(
               subtitle,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade600,
+                color: AppColors.grey600,
               ),
             ),
           ],
@@ -546,9 +550,9 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        AppSpacing.gapLG,
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: AppSpacing.paddingLG,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -563,10 +567,10 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
           child: team.isEmpty
               ? const Center(
                   child: Padding(
-                    padding: EdgeInsets.all(20),
+                    padding: AppSpacing.paddingXL,
                     child: Text(
                       'Chưa có nhân viên',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: AppColors.grey500),
                     ),
                   ),
                 )
@@ -591,13 +595,13 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
   Color _getStatusColor(String colorName) {
     switch (colorName) {
       case 'green':
-        return Colors.green;
+        return AppColors.success;
       case 'orange':
-        return Colors.orange;
+        return AppColors.warning;
       case 'grey':
-        return Colors.grey;
+        return AppColors.grey500;
       default:
-        return Colors.grey;
+        return AppColors.grey500;
     }
   }
 
@@ -607,13 +611,13 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
       children: [
         CircleAvatar(
           radius: 20,
-          backgroundColor: Colors.grey.shade200,
+          backgroundColor: AppColors.grey200,
           child: Text(
             name[0],
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
-        const SizedBox(width: 12),
+        AppSpacing.hGapMD,
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -629,7 +633,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 shift,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade600,
+                  color: AppColors.grey600,
                 ),
               ),
             ],
@@ -665,9 +669,9 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        AppSpacing.gapLG,
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: AppSpacing.paddingLG,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -682,10 +686,10 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
           child: activities.isEmpty
               ? const Center(
                   child: Padding(
-                    padding: EdgeInsets.all(20),
+                    padding: AppSpacing.paddingXL,
                     child: Text(
                       'Chưa có hoạt động',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: AppColors.grey500),
                     ),
                   ),
                 )
@@ -717,7 +721,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        AppSpacing.gapLG,
         Container(
           height: 150,
           decoration: BoxDecoration(
@@ -749,14 +753,14 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: AppSpacing.paddingSM,
           decoration: BoxDecoration(
             color: Colors.blue.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: Colors.blue, size: 16),
+          child: Icon(icon, color: AppColors.info, size: 16),
         ),
-        const SizedBox(width: 12),
+        AppSpacing.hGapMD,
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -772,7 +776,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                 time,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade600,
+                  color: AppColors.grey600,
                 ),
               ),
             ],
@@ -786,8 +790,8 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
   // CÔNG NỢ OVERVIEW SECTION
   // =============================================
   Widget _buildCongNoSection() {
-    final authState = ref.watch(authProvider);
-    final companyId = authState.user?.companyId;
+    final user = ref.watch(currentUserProvider);
+    final companyId = user?.companyId;
     if (companyId == null) return const SizedBox.shrink();
 
     return FutureBuilder<Map<String, dynamic>>(
@@ -795,7 +799,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
-            padding: EdgeInsets.all(24),
+            padding: AppSpacing.paddingXXL,
             child: Center(child: CircularProgressIndicator()),
           );
         }
@@ -813,7 +817,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
             ? (totalOverdue / totalOutstanding * 100) : 0.0;
 
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: AppSpacing.paddingLG,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
@@ -831,19 +835,19 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
               Row(
                 children: [
                   Icon(Icons.account_balance_wallet,
-                      color: Colors.orange.shade700, size: 22),
-                  const SizedBox(width: 8),
+                      color: AppColors.warningDark, size: 22),
+                  AppSpacing.hGapSM,
                   Text('Công nợ phải thu',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade800,
+                        color: AppColors.grey800,
                       )),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: overdueCount > 0 ? Colors.red.shade50 : Colors.green.shade50,
+                      color: overdueCount > 0 ? AppColors.errorLight : AppColors.successLight,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -851,34 +855,34 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: overdueCount > 0 ? Colors.red.shade700 : Colors.green.shade700,
+                        color: overdueCount > 0 ? AppColors.errorDark : AppColors.successDark,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              AppSpacing.gapMD,
               // Overdue alert banner
               if (overdueCount > 0)
                 Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: AppColors.errorLight,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.red.shade200),
+                    border: Border.all(color: AppColors.errorLight),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.money_off, color: Colors.red.shade700, size: 18),
-                      const SizedBox(width: 8),
+                      Icon(Icons.money_off, color: AppColors.errorDark, size: 18),
+                      AppSpacing.hGapSM,
                       Expanded(
                         child: Text(
                           '⚠️ $overdueCount khoản quá hạn · ${cf.format(totalOverdue)}₫',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: Colors.red.shade700,
+                            color: AppColors.errorDark,
                           ),
                         ),
                       ),
@@ -893,7 +897,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                       'Tổng công nợ',
                       '${cf.format(totalOutstanding)}₫',
                       Icons.monetization_on,
-                      Colors.orange,
+                      AppColors.warning,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -902,7 +906,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                       'Quá hạn',
                       '${cf.format(totalOverdue)}₫',
                       Icons.warning_amber_rounded,
-                      Colors.red,
+                      AppColors.error,
                       subtitle: '${overduePercent.toStringAsFixed(1)}%',
                     ),
                   ),
@@ -916,7 +920,7 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                       'Khách hàng nợ',
                       '$customerCount',
                       Icons.people,
-                      Colors.blue,
+                      AppColors.info,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -986,11 +990,11 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
   }
 
   Widget _buildCongNoStatCard(String title, String value, IconData icon,
-      MaterialColor color, {String? subtitle}) {
+      Color color, {String? subtitle}) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: AppSpacing.paddingMD,
       decoration: BoxDecoration(
-        color: color.shade50.withOpacity(0.5),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -998,22 +1002,22 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color.shade100,
+              color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: color.shade700, size: 18),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(width: 8),
+          AppSpacing.hGapSM,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                Text(title, style: TextStyle(fontSize: 10, color: AppColors.grey600)),
                 const SizedBox(height: 1),
                 Text(value, style: TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.bold, color: color.shade700)),
+                  fontSize: 13, fontWeight: FontWeight.bold, color: color)),
                 if (subtitle != null)
-                  Text(subtitle, style: TextStyle(fontSize: 9, color: color.shade400)),
+                  Text(subtitle, style: TextStyle(fontSize: 9, color: color.withValues(alpha: 0.5))),
               ],
             ),
           ),
@@ -1024,11 +1028,11 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
 
   Widget _buildAgingBar(Map<String, double> aging, double total) {
     final buckets = [
-      ('Chưa hạn', aging['current'] ?? 0, Colors.green),
+      ('Chưa hạn', aging['current'] ?? 0, AppColors.success),
       ('1-30d', aging['1-30'] ?? 0, Colors.yellow.shade700),
-      ('31-60d', aging['31-60'] ?? 0, Colors.orange),
+      ('31-60d', aging['31-60'] ?? 0, AppColors.warning),
       ('61-90d', aging['61-90'] ?? 0, Colors.deepOrange),
-      ('>90d', aging['90+'] ?? 0, Colors.red),
+      ('>90d', aging['90+'] ?? 0, AppColors.error),
     ];
 
     return Column(
@@ -1062,12 +1066,55 @@ class _ManagerDashboardPageState extends ConsumerState<ManagerDashboardPage> {
                   decoration: BoxDecoration(color: b.$3, shape: BoxShape.circle)),
                 const SizedBox(width: 3),
                 Text('${b.$1}: ${cf.format(b.$2)}₫',
-                    style: TextStyle(fontSize: 9, color: Colors.grey.shade600)),
+                    style: TextStyle(fontSize: 9, color: AppColors.grey600)),
               ],
             );
           }).toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildErrorCard(String title, String detail, VoidCallback onRetry) {
+    return Container(
+      width: double.infinity,
+      padding: AppSpacing.paddingXXL,
+      decoration: BoxDecoration(
+        color: AppColors.errorLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.errorLight),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.error, size: 48),
+          AppSpacing.gapLG,
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.error,
+            ),
+          ),
+          AppSpacing.gapSM,
+          Text(
+            detail,
+            style: TextStyle(fontSize: 12, color: AppColors.grey600),
+            textAlign: TextAlign.center,
+          ),
+          AppSpacing.gapLG,
+          ElevatedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('Thử lại'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

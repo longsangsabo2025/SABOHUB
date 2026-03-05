@@ -10,6 +10,7 @@ import '../../../providers/company_provider.dart';
 import '../../../providers/manager_permissions_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/company_service.dart';
+import '../../../services/gemini_service.dart';
 import '../company_details_page.dart' show companyDetailsProvider;
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
@@ -29,7 +30,7 @@ class SettingsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Get current user info from authProvider
-    final authUser = ref.read(authProvider).user;
+    final authUser = ref.read(currentUserProvider);
     final isUserCEO = authUser?.role.toString().toLowerCase().contains('ceo') ?? false;
     final currentUserId = authUser?.id;
     
@@ -53,7 +54,7 @@ class SettingsTab extends ConsumerWidget {
           const SizedBox(height: 16),
 
           // Employee Management Section
-          _buildSettingSection(
+          _buildSettingSection(context,
             title: 'Quản lý nhân viên',
             items: [
               _SettingItem(
@@ -73,7 +74,7 @@ class SettingsTab extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          _buildSettingSection(
+          _buildSettingSection(context,
             title: 'Thông tin chung',
             items: [
               _SettingItem(
@@ -93,7 +94,7 @@ class SettingsTab extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          _buildSettingSection(
+          _buildSettingSection(context,
             title: 'Vị trí Check-in',
             items: [
               _SettingItem(
@@ -118,7 +119,29 @@ class SettingsTab extends ConsumerWidget {
               const SizedBox(height: 24),
             ],
           
-          _buildSettingSection(
+          // AI Settings Section - Only for CEO
+          if (isUserCEO)
+            ...[
+              _buildSettingSection(context,
+                title: 'AI & Trí tuệ nhân tạo',
+                items: [
+                  _SettingItem(
+                    icon: Icons.smart_toy_outlined,
+                    title: 'Cấu hình Gemini AI',
+                    subtitle: company.aiApiKey?.isNotEmpty == true
+                        ? '✅ Đã cấu hình API Key'
+                        : '⚠️ Chưa cấu hình - AI sẽ dùng key mặc định',
+                    onTap: () => _showAISettingsDialog(context, ref, company),
+                    color: company.aiApiKey?.isNotEmpty == true
+                        ? Colors.green
+                        : Colors.purple,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          
+          _buildSettingSection(context,
             title: 'Trạng thái',
             items: [
               _SettingItem(
@@ -138,7 +161,7 @@ class SettingsTab extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-          _buildSettingSection(
+          _buildSettingSection(context,
             title: 'Nguy hiểm',
             items: [
               _SettingItem(
@@ -155,7 +178,7 @@ class SettingsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingSection({
+  Widget _buildSettingSection(BuildContext context, {
     required String title,
     required List<_SettingItem> items,
   }) {
@@ -170,10 +193,10 @@ class SettingsTab extends ConsumerWidget {
             color: Colors.grey[700],
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Card(
           elevation: 0,
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(color: Colors.grey[200]!),
@@ -423,10 +446,10 @@ class SettingsTab extends ConsumerWidget {
             color: Colors.grey[700],
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Card(
           elevation: 0,
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(color: Colors.grey[200]!),
@@ -555,8 +578,8 @@ class SettingsTab extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
-              children: const [
-                Icon(Icons.swap_horiz, color: Colors.white),
+              children: [
+                Icon(Icons.swap_horiz, color: Theme.of(context).colorScheme.surface),
                 SizedBox(width: 8),
                 Text('Đã chuyển sang tài khoản nhận tiền khác'),
               ],
@@ -782,8 +805,8 @@ class SettingsTab extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
-              children: const [
-                Icon(Icons.check_circle, color: Colors.white),
+              children: [
+                Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface),
                 SizedBox(width: 8),
                 Text('Đã lưu tài khoản ngân hàng'),
               ],
@@ -794,6 +817,216 @@ class SettingsTab extends ConsumerWidget {
       }
     } catch (e) {
       AppLogger.error('Error saving bank account', e);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  /// Show AI Settings dialog for configuring Gemini API key
+  void _showAISettingsDialog(BuildContext context, WidgetRef ref, Company company) {
+    final apiKeyController = TextEditingController(text: company.aiApiKey ?? '');
+    bool obscureKey = true;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.smart_toy_outlined, color: Colors.purple),
+              const SizedBox(width: 8),
+              const Text('Cài đặt AI'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Info box
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue[700], size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Gemini AI - FREE Tier',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[800],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '• 15 requests/phút\n'
+                        '• 1 triệu tokens/ngày\n'
+                        '• Hỗ trợ phân tích báo cáo, tài chính',
+                        style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // API Key input
+                Text(
+                  'Gemini API Key',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: apiKeyController,
+                  obscureText: obscureKey,
+                  decoration: InputDecoration(
+                    hintText: 'AIza... (để trống để dùng key mặc định)',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureKey ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () => setState(() => obscureKey = !obscureKey),
+                    ),
+                    prefixIcon: const Icon(Icons.key),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                
+                // Get API key link
+                InkWell(
+                  onTap: () {
+                    // In web, this opens in new tab
+                    // For now just show info
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Truy cập: aistudio.google.com/app/apikey'),
+                        duration: Duration(seconds: 5),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Icon(Icons.open_in_new, size: 14, color: Colors.blue[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Lấy API Key miễn phí từ Google AI Studio',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue[600],
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Warning for existing key
+                if (company.aiApiKey?.isNotEmpty == true)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber, size: 16, color: Colors.orange[700]),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Thay đổi key sẽ áp dụng ngay cho tất cả tính năng AI',
+                            style: TextStyle(fontSize: 11, color: Colors.orange[800]),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+            if (company.aiApiKey?.isNotEmpty == true)
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _saveAIApiKey(context, ref, company, '');
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.orange),
+                child: const Text('Xóa Key'),
+              ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _saveAIApiKey(
+                  context, ref, company, 
+                  apiKeyController.text.trim(),
+                );
+              },
+              icon: const Icon(Icons.save, size: 18),
+              label: Text('Lưu'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                foregroundColor: Theme.of(context).colorScheme.surface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Save AI API key to database
+  Future<void> _saveAIApiKey(
+    BuildContext context, 
+    WidgetRef ref, 
+    Company company,
+    String apiKey,
+  ) async {
+    try {
+      final service = CompanyService();
+      await service.updateCompany(company.id, {
+        'ai_api_key': apiKey.isEmpty ? null : apiKey,
+      });
+
+      // Update runtime API key in GeminiService
+      GeminiService.setApiKey(apiKey.isEmpty ? null : apiKey);
+      
+      // Refresh company data
+      ref.invalidate(companyDetailsProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              apiKey.isEmpty 
+                ? '🗑️ Đã xóa API Key - sẽ dùng key mặc định'
+                : '✅ Đã lưu API Key thành công',
+            ),
+            backgroundColor: apiKey.isEmpty ? Colors.orange : Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),

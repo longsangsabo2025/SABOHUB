@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../core/theme/app_colors.dart';
+import '../core/theme/app_colors.dart';
 
 enum AttendanceType {
-  checkIn('Check-in', Icons.login, Color(0xFF4CAF50)),
+  checkIn('Check-in', Icons.login, AppColors.success),
   checkOut('Check-out', Icons.logout, AppColors.error),
   breakStart('Bắt đầu nghỉ', Icons.pause, AppColors.warning),
   breakEnd('Kết thúc nghỉ', Icons.play_arrow, AppColors.success);
@@ -18,8 +18,8 @@ enum AttendanceStatus {
   absent('Vắng mặt', AppColors.error),
   late('Muộn giờ', AppColors.warning),
   leftEarly('Về sớm', AppColors.primary),
-  onBreak('Đang nghỉ', Color(0xFF06B6D4)),
-  onLeave('Nghỉ phép', Color(0xFF9CA3AF));
+  onBreak('Đang nghỉ', AppColors.secondary),
+  onLeave('Nghỉ phép', AppColors.neutral400);
 
   final String label;
   final Color color;

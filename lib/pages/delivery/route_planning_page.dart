@@ -13,8 +13,8 @@ extension AsyncValueX<T> on AsyncValue<T> {
 
 // Provider for deliveries ready for route planning
 final routeDeliveriesProvider = FutureProvider.autoDispose<List<RouteDelivery>>((ref) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   final response = await supabase
@@ -33,8 +33,8 @@ final routeDeliveriesProvider = FutureProvider.autoDispose<List<RouteDelivery>>(
 
 // Provider for drivers
 final routeDriversProvider = FutureProvider.autoDispose<List<RouteDriver>>((ref) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   final response = await supabase
@@ -164,7 +164,7 @@ class _RoutePlanningPageState extends ConsumerState<RoutePlanningPage>
               label: Text('${_selectedDeliveryIds.length}'),
               child: IconButton(
                 icon: const Icon(Icons.local_shipping),
-                onPressed: () => _showAssignDriverDialog(driversAsync.valueOrNull ?? []),
+                onPressed: () => _showAssignDriverDialog(context, driversAsync.valueOrNull ?? []),
                 tooltip: 'Phân tài xế',
               ),
             ),
@@ -199,18 +199,18 @@ class _RoutePlanningPageState extends ConsumerState<RoutePlanningPage>
             controller: _tabController,
             children: [
               // Pending tab - deliveries without driver
-              _buildPendingDeliveriesList(pendingDeliveries),
+              _buildPendingDeliveriesList(context, pendingDeliveries),
               // Active tab - in_progress deliveries
-              _buildActiveDeliveriesList(activeDeliveries),
+              _buildActiveDeliveriesList(context, activeDeliveries),
               // By driver tab
-              _buildByDriverList(deliveries, drivers),
+              _buildByDriverList(context, deliveries, drivers),
             ],
           );
         },
       ),
       floatingActionButton: _selectedDeliveryIds.isNotEmpty
           ? FloatingActionButton.extended(
-              onPressed: () => _showAssignDriverDialog(driversAsync.valueOrNull ?? []),
+              onPressed: () => _showAssignDriverDialog(context, driversAsync.valueOrNull ?? []),
               icon: const Icon(Icons.person_add),
               label: Text('Phân ${_selectedDeliveryIds.length} đơn'),
               backgroundColor: Colors.green,
@@ -219,7 +219,7 @@ class _RoutePlanningPageState extends ConsumerState<RoutePlanningPage>
     );
   }
 
-  Widget _buildPendingDeliveriesList(List<RouteDelivery> deliveries) {
+  Widget _buildPendingDeliveriesList(BuildContext context, List<RouteDelivery> deliveries) {
     if (deliveries.isEmpty) {
       return Center(
         child: Column(
@@ -264,7 +264,7 @@ class _RoutePlanningPageState extends ConsumerState<RoutePlanningPage>
     );
   }
 
-  Widget _buildActiveDeliveriesList(List<RouteDelivery> deliveries) {
+  Widget _buildActiveDeliveriesList(BuildContext context, List<RouteDelivery> deliveries) {
     if (deliveries.isEmpty) {
       return Center(
         child: Column(
@@ -298,7 +298,7 @@ class _RoutePlanningPageState extends ConsumerState<RoutePlanningPage>
     );
   }
 
-  Widget _buildByDriverList(List<RouteDelivery> deliveries, List<RouteDriver> drivers) {
+  Widget _buildByDriverList(BuildContext context, List<RouteDelivery> deliveries, List<RouteDriver> drivers) {
     // Group deliveries by driver
     final Map<String, List<RouteDelivery>> byDriver = {};
     
@@ -345,7 +345,7 @@ class _RoutePlanningPageState extends ConsumerState<RoutePlanningPage>
     );
   }
 
-  void _showAssignDriverDialog(List<RouteDriver> drivers) {
+  void _showAssignDriverDialog(BuildContext context, List<RouteDriver> drivers) {
     String? selectedDriverId;
 
     showDialog(
@@ -643,7 +643,7 @@ class _DriverRouteCard extends StatelessWidget {
                   backgroundColor: Colors.blue,
                   child: Text(
                     driver.fullName[0].toUpperCase(),
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: Theme.of(context).colorScheme.surface),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -668,28 +668,28 @@ class _DriverRouteCard extends StatelessWidget {
                 if (!inProgress)
                   ElevatedButton.icon(
                     onPressed: onStartRoute,
-                    icon: const Icon(Icons.play_arrow, size: 18),
-                    label: const Text('Bắt đầu'),
+                    icon: Icon(Icons.play_arrow, size: 18),
+                    label: Text('Bắt đầu'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                     ),
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.green,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.directions_car, size: 16, color: Colors.white),
+                        Icon(Icons.directions_car, size: 16, color: Theme.of(context).colorScheme.surface),
                         SizedBox(width: 4),
                         Text(
                           'Đang giao',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
+                          style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 12),
                         ),
                       ],
                     ),

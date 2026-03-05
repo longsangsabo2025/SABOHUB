@@ -5,8 +5,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../../../models/referrer.dart';
 import '../../providers/odori_providers.dart';
+import '../../providers/referrers_provider.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../widgets/customer_avatar.dart';
+import '../../../../utils/app_logger.dart';
 
 /// ReferrersPage - Quản lý Người giới thiệu và Hoa hồng
 /// Có 2 tabs: Danh sách người giới thiệu và Quản lý hoa hồng
@@ -36,7 +38,7 @@ class _ReferrersPageState extends ConsumerState<ReferrersPage> with SingleTicker
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('👥 Người giới thiệu'),
+        title: Text('👥 Người giới thiệu'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -119,15 +121,14 @@ class _ReferrerListTab extends ConsumerStatefulWidget {
 }
 
 class _ReferrerListTabState extends ConsumerState<_ReferrerListTab> {
-  String _selectedStatus = 'active';
-  String _searchQuery = '';
   final _currencyFormat = NumberFormat('#,###', 'vi_VN');
 
   @override
   Widget build(BuildContext context) {
+    final filter = ref.watch(referrerListFilterProvider);
     final referrersAsync = ref.watch(referrersProvider(ReferrerFilters(
-      status: _selectedStatus == 'all' ? null : _selectedStatus,
-      search: _searchQuery.isEmpty ? null : _searchQuery,
+      status: filter.selectedStatus == 'all' ? null : filter.selectedStatus,
+      search: filter.searchQuery.isEmpty ? null : filter.searchQuery,
     )));
 
     return Column(
@@ -142,13 +143,14 @@ class _ReferrerListTabState extends ConsumerState<_ReferrerListTab> {
               TextField(
                 decoration: InputDecoration(
                   hintText: 'Tìm theo tên, SĐT...',
-                  prefixIcon: const Icon(Icons.search),
+                  prefixIcon: Icon(Icons.search),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).colorScheme.surface,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
-                onChanged: (value) => setState(() => _searchQuery = value),
+                onChanged: (value) =>
+                    ref.read(referrerListFilterProvider.notifier).setSearchQuery(value),
               ),
               const SizedBox(height: 12),
               // Status filter chips
@@ -204,11 +206,12 @@ class _ReferrerListTabState extends ConsumerState<_ReferrerListTab> {
   }
 
   Widget _buildFilterChip(String label, String value) {
-    final isSelected = _selectedStatus == value;
+    final isSelected = ref.watch(referrerListFilterProvider).selectedStatus == value;
     return FilterChip(
       label: Text(label),
       selected: isSelected,
-      onSelected: (_) => setState(() => _selectedStatus = value),
+      onSelected: (_) =>
+          ref.read(referrerListFilterProvider.notifier).setStatusFilter(value),
       selectedColor: Colors.indigo.shade100,
       checkmarkColor: Colors.indigo,
     );
@@ -401,8 +404,8 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
 
   Future<void> _loadCustomers() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId == null) return;
 
       final data = await Supabase.instance.client
@@ -483,8 +486,8 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -628,14 +631,14 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
                             if (_showCustomerDropdown && _filteredCustomers.isNotEmpty)
                               Container(
                                 margin: const EdgeInsets.only(top: 4),
-                                constraints: const BoxConstraints(maxHeight: 200),
+                                constraints: BoxConstraints(maxHeight: 200),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.grey.shade300),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.08),
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),
@@ -853,9 +856,9 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
           ),
           // Save button
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               boxShadow: [
                 BoxShadow(
                   color: Colors.grey.shade200,
@@ -871,15 +874,15 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
                   onPressed: _isLoading ? null : _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.indigo,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface),
                         )
                       : Text(isEditing ? 'Cập nhật' : 'Thêm mới'),
                 ),
@@ -897,8 +900,8 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId == null) throw Exception('Không tìm thấy company_id');
 
       final data = {
@@ -958,7 +961,7 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -966,7 +969,7 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
               await _delete();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+            child: Text('Xóa', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),
@@ -978,7 +981,7 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
     try {
       await Supabase.instance.client
           .from('referrers')
-          .delete()
+          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
           .eq('id', widget.referrer!.id);
 
       if (mounted) {
@@ -1012,15 +1015,14 @@ class _CommissionsTab extends ConsumerStatefulWidget {
 }
 
 class _CommissionsTabState extends ConsumerState<_CommissionsTab> {
-  String _selectedStatus = 'pending';
-  String? _selectedReferrerId;
   final _currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
 
   @override
   Widget build(BuildContext context) {
+    final filter = ref.watch(commissionFilterProvider);
     final commissionsAsync = ref.watch(commissionsProvider(CommissionFilters(
-      status: _selectedStatus == 'all' ? null : _selectedStatus,
-      referrerId: _selectedReferrerId,
+      status: filter.selectedStatus == 'all' ? null : filter.selectedStatus,
+      referrerId: filter.selectedReferrerId,
     )));
     final referrersAsync = ref.watch(activeReferrersProvider);
 
@@ -1035,13 +1037,13 @@ class _CommissionsTabState extends ConsumerState<_CommissionsTab> {
               // Referrer dropdown
               referrersAsync.when(
                 data: (referrers) => DropdownButtonFormField<String?>(
-                  value: _selectedReferrerId,
+                  value: ref.watch(commissionFilterProvider).selectedReferrerId,
                   decoration: InputDecoration(
                     labelText: 'Người giới thiệu',
-                    prefixIcon: const Icon(Icons.person),
+                    prefixIcon: Icon(Icons.person),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   items: [
@@ -1051,7 +1053,8 @@ class _CommissionsTabState extends ConsumerState<_CommissionsTab> {
                       child: Text(r.name),
                     )),
                   ],
-                  onChanged: (v) => setState(() => _selectedReferrerId = v),
+                  onChanged: (v) =>
+                      ref.read(commissionFilterProvider.notifier).setSelectedReferrerId(v),
                 ),
                 loading: () => const LinearProgressIndicator(),
                 error: (_, __) => const SizedBox.shrink(),
@@ -1103,10 +1106,10 @@ class _CommissionsTabState extends ConsumerState<_CommissionsTab> {
               }
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: commissions.length + (_selectedStatus == 'pending' && commissions.isNotEmpty ? 1 : 0),
+                itemCount: commissions.length + (filter.selectedStatus == 'pending' && commissions.isNotEmpty ? 1 : 0),
                 itemBuilder: (context, index) {
                   // Batch approve button at the end for pending list
-                  if (_selectedStatus == 'pending' && index == commissions.length) {
+                  if (filter.selectedStatus == 'pending' && index == commissions.length) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: OutlinedButton.icon(
@@ -1138,11 +1141,11 @@ class _CommissionsTabState extends ConsumerState<_CommissionsTab> {
         title: const Text('Duyệt tất cả'),
         content: Text('Duyệt ${commissions.length} hoa hồng đang chờ?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Hủy')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-            child: const Text('Duyệt tất cả', style: TextStyle(color: Colors.white)),
+            child: Text('Duyệt tất cả', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),
@@ -1150,7 +1153,7 @@ class _CommissionsTabState extends ConsumerState<_CommissionsTab> {
     if (confirmed != true) return;
 
     try {
-      final authState = ref.read(authProvider);
+      final user = ref.read(currentUserProvider);
       final supabase = Supabase.instance.client;
       final now = DateTime.now().toIso8601String();
 
@@ -1158,7 +1161,7 @@ class _CommissionsTabState extends ConsumerState<_CommissionsTab> {
         await supabase.from('commissions').update({
           'status': 'approved',
           'approved_at': now,
-          'approved_by': authState.user?.id,
+          'approved_by': user?.id,
           'updated_at': now,
         }).eq('id', c.id);
       }
@@ -1247,11 +1250,12 @@ class _CommissionsTabState extends ConsumerState<_CommissionsTab> {
   }
 
   Widget _buildFilterChip(String label, String value) {
-    final isSelected = _selectedStatus == value;
+    final isSelected = ref.watch(commissionFilterProvider).selectedStatus == value;
     return FilterChip(
       label: Text(label),
       selected: isSelected,
-      onSelected: (_) => setState(() => _selectedStatus = value),
+      onSelected: (_) =>
+          ref.read(commissionFilterProvider.notifier).setStatusFilter(value),
       selectedColor: Colors.indigo.shade100,
       checkmarkColor: Colors.indigo,
     );
@@ -1456,7 +1460,7 @@ class _ReferrerDetailSheetState extends ConsumerState<_ReferrerDetailSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        debugPrint('Error loading referrer detail: $e');
+        AppLogger.error('Error loading referrer detail: $e');
       }
     }
   }
@@ -1470,8 +1474,8 @@ class _ReferrerDetailSheetState extends ConsumerState<_ReferrerDetailSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.92,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -1950,8 +1954,8 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -2051,9 +2055,9 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
           // Actions
           if (commission.status == 'pending' || commission.status == 'approved')
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.grey.shade200,
@@ -2078,19 +2082,19 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
                           child: const Text('Từ chối'),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         flex: 2,
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : () => _updateStatus('approved'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).colorScheme.surface,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: _isLoading
-                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface))
                               : const Text('Duyệt hoa hồng'),
                         ),
                       ),
@@ -2100,10 +2104,10 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
                         child: ElevatedButton.icon(
                           onPressed: _isLoading ? null : _showPaymentDialog,
                           icon: const Icon(Icons.payment),
-                          label: const Text('Xác nhận đã trả'),
+                          label: Text('Xác nhận đã trả'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).colorScheme.surface,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
@@ -2162,7 +2166,7 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
   Future<void> _updateStatus(String newStatus) async {
     setState(() => _isLoading = true);
     try {
-      final authState = ref.read(authProvider);
+      final user = ref.read(currentUserProvider);
       final updates = <String, dynamic>{
         'status': newStatus,
         'updated_at': DateTime.now().toIso8601String(),
@@ -2170,7 +2174,7 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
 
       if (newStatus == 'approved') {
         updates['approved_at'] = DateTime.now().toIso8601String();
-        updates['approved_by'] = authState.user?.id;
+        updates['approved_by'] = user?.id;
       }
 
       await Supabase.instance.client
@@ -2228,7 +2232,7 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
           .update({'total_earned': totalEarned, 'total_paid': totalPaid})
           .eq('id', referrerId);
     } catch (e) {
-      debugPrint('Error syncing referrer totals: $e');
+      AppLogger.error('Error syncing referrer totals: $e');
     }
   }
 
@@ -2257,7 +2261,7 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -2265,7 +2269,7 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
               _markAsPaid();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Xác nhận đã trả', style: TextStyle(color: Colors.white)),
+            child: Text('Xác nhận đã trả', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),
@@ -2275,14 +2279,14 @@ class _CommissionDetailSheetState extends ConsumerState<_CommissionDetailSheet> 
   Future<void> _markAsPaid() async {
     setState(() => _isLoading = true);
     try {
-      final authState = ref.read(authProvider);
+      final user = ref.read(currentUserProvider);
       
       await Supabase.instance.client
           .from('commissions')
           .update({
             'status': 'paid',
             'paid_at': DateTime.now().toIso8601String(),
-            'paid_by': authState.user?.id,
+            'paid_by': user?.id,
             'payment_note': _paymentNoteController.text.trim().isEmpty 
                 ? null 
                 : _paymentNoteController.text.trim(),

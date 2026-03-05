@@ -1,3 +1,4 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -6,6 +7,7 @@ import '../../../business_types/service/models/content.dart';
 import '../../../business_types/service/providers/content_provider.dart';
 import '../../../business_types/service/providers/media_channel_provider.dart';
 import '../../../providers/auth_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Content Calendar Create/Edit Form — SABO Media Production
 class ContentFormPage extends ConsumerStatefulWidget {
@@ -190,8 +192,8 @@ class _ContentFormPageState extends ConsumerState<ContentFormPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEdit ? 'Sửa content' : 'Tạo content mới'),
-        backgroundColor: const Color(0xFF0F172A),
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.backgroundDark,
+        foregroundColor: Theme.of(context).colorScheme.surface,
         actions: [
           if (_isEdit)
             IconButton(
@@ -379,7 +381,7 @@ class _ContentFormPageState extends ConsumerState<ContentFormPage> {
         style: const TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF0F172A),
+          color: AppColors.backgroundDark,
         ),
       ),
     );
@@ -404,7 +406,7 @@ class _ContentFormPageState extends ConsumerState<ContentFormPage> {
         child: Text(
           value != null ? fmt.format(value) : 'Chọn ngày',
           style: TextStyle(
-            color: value != null ? Colors.black87 : Colors.grey,
+            color: value != null ? Theme.of(context).colorScheme.onSurface87 : Colors.grey,
           ),
         ),
       ),

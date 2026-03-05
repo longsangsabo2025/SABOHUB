@@ -11,7 +11,7 @@ class MediaChannelService {
 
   Future<List<MediaChannel>> getChannels() async {
     try {
-      final user = _ref.read(authProvider).user;
+      final user = _ref.read(currentUserProvider);
       final companyId = user?.companyId;
 
       var query = _supabase.from('media_channels').select('*');
@@ -19,7 +19,7 @@ class MediaChannelService {
         query = query.eq('company_id', companyId);
       }
 
-      final response = await query.order('created_at', ascending: false);
+      final response = await query.order('created_at', ascending: false).limit(100);
       return (response as List)
           .map((json) => MediaChannel.fromJson(json))
           .toList();
@@ -37,7 +37,7 @@ class MediaChannelService {
     String? notes,
   }) async {
     try {
-      final user = _ref.read(authProvider).user;
+      final user = _ref.read(currentUserProvider);
       final companyId = user?.companyId;
 
       final data = {
@@ -92,7 +92,8 @@ class MediaChannelService {
 
   Future<void> deleteChannel(String id) async {
     try {
-      await _supabase.from('media_channels').delete().eq('id', id);
+      // Soft delete - sets is_active=false
+      await _supabase.from('media_channels').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', id);
     } catch (e) {
       throw Exception('Failed to delete media channel: $e');
     }

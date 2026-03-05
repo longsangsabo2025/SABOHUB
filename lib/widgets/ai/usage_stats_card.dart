@@ -37,26 +37,26 @@ class UsageStatsCard extends StatelessWidget {
           // Header
           Row(
             children: [
-              const Icon(Icons.analytics, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
+              Icon(Icons.analytics, color: Theme.of(context).colorScheme.surface, size: 20),
+              SizedBox(width: 8),
               Text(
                 'Thống kê sử dụng AI',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       fontWeight: FontWeight.bold,
                     ),
               ),
-              const Spacer(),
+              Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   usage.periodLabel,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.surface,
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
@@ -135,28 +135,28 @@ class UsageStatsCard extends StatelessWidget {
     required String value,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         children: [
-          Icon(icon, color: Colors.white, size: 20),
-          const SizedBox(height: 4),
+          Icon(icon, color: Theme.of(context).colorScheme.surface, size: 20),
+          SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.surface,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
               fontSize: 11,
             ),
           ),
@@ -172,15 +172,15 @@ class UsageStatsCard extends StatelessWidget {
     required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: Colors.white, size: 16),
+          Icon(icon, color: Theme.of(context).colorScheme.surface, size: 16),
           const SizedBox(width: 6),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,14 +188,14 @@ class UsageStatsCard extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
                   fontSize: 10,
                 ),
               ),
               Text(
                 value,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.surface,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),

@@ -34,14 +34,14 @@ class _DistributionWarehouseLayoutState
           const WarehouseDashboardPage(),
           WarehousePickingPage(onPickingCompleted: _goToPackingTab),
           const WarehousePackingPage(),
-          const WarehouseInventoryPage(),
+          WarehouseInventoryPage(),
         ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -51,7 +51,7 @@ class _DistributionWarehouseLayoutState
           selectedIndex: _selectedIndex,
           onDestinationSelected: (index) =>
               setState(() => _selectedIndex = index),
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           height: 65,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,

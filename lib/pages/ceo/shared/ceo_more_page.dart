@@ -1,10 +1,10 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../ceo_companies_page.dart';
+import '../../../core/router/app_router.dart';
 import '../ceo_documents_page.dart';
-import '../ceo_analytics_page.dart';
 import '../ceo_reports_settings_page.dart' show CEOReportsPage;
 import '../ai_management/ai_assistants_page.dart';
 import '../ceo_today_page.dart';
@@ -15,6 +15,7 @@ import '../task_templates_page.dart';
 import '../performance_scorecard_page.dart';
 import '../ceo_schedule_overview_page.dart';
 import '../pdf_report_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// CEO More Page — Contains all shared features accessible via AppBar menu
 class CEOMorePage extends ConsumerWidget {
@@ -24,10 +25,10 @@ class CEOMorePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tính năng khác'),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        foregroundColor: Colors.black87,
+        title: Text('Tính năng khác'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface87,
         elevation: 0,
       ),
       body: ListView(
@@ -45,7 +46,7 @@ class CEOMorePage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _buildSectionTitle('Quản lý nghiệp vụ'),
+          _buildSectionTitle(context, 'Quản lý nghiệp vụ'),
           _buildMenuItem(
             context,
             icon: Icons.campaign,
@@ -91,7 +92,7 @@ class CEOMorePage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _buildSectionTitle('Nhân sự & Vận hành'),
+          _buildSectionTitle(context, 'Nhân sự & Vận hành'),
           _buildMenuItem(
             context,
             icon: Icons.emoji_events,
@@ -117,16 +118,16 @@ class CEOMorePage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _buildSectionTitle('Công cụ'),
+          _buildSectionTitle(context, 'Công cụ'),
           _buildMenuItem(
             context,
             icon: Icons.smart_toy,
-            color: const Color(0xFF8B5CF6),
+            color: AppColors.paymentRefunded,
             title: 'Trợ lý AI',
             subtitle: 'Hỏi doanh thu, đơn hàng, xuất báo cáo',
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const AIAssistantsPage()),
+              MaterialPageRoute(builder: (_) => AIAssistantsPage()),
             ),
           ),
           _buildMenuItem(
@@ -146,10 +147,7 @@ class CEOMorePage extends ConsumerWidget {
             color: AppColors.primary,
             title: 'Quản lý công ty',
             subtitle: 'Xem danh sách, thông tin công ty',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CEOCompaniesPage()),
-            ),
+            onTap: () => context.push(AppRoutes.ceoCompanies),
           ),
           _buildMenuItem(
             context,
@@ -168,10 +166,7 @@ class CEOMorePage extends ConsumerWidget {
             color: Colors.purple,
             title: 'Phân tích nâng cao',
             subtitle: 'Biểu đồ, xu hướng, so sánh',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CEOAnalyticsPage()),
-            ),
+            onTap: () => context.push(AppRoutes.ceoAnalytics),
           ),
           _buildMenuItem(
             context,
@@ -189,14 +184,14 @@ class CEOMorePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8),
       child: Text(title,
-          style: const TextStyle(
+          style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 13,
-              color: Colors.black54)),
+              color: Theme.of(context).colorScheme.onSurface54)),
     );
   }
 
@@ -209,13 +204,13 @@ class CEOMorePage extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04),
             blurRadius: 8,
           ),
         ],

@@ -20,7 +20,7 @@ class _PurchaseOrdersPageState extends ConsumerState<PurchaseOrdersPage> {
   @override
   void initState() {
     super.initState();
-    _service = ManufacturingService(companyId: ref.read(authProvider).user?.companyId);
+    _service = ManufacturingService(companyId: ref.read(currentUserProvider)?.companyId);
     _loadOrders();
   }
 
@@ -106,11 +106,11 @@ class _PurchaseOrdersPageState extends ConsumerState<PurchaseOrdersPage> {
                   itemBuilder: (context, index) {
                     final order = _orders[index];
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: _getStatusColor(order.status),
-                          child: const Icon(Icons.receipt, color: Colors.white),
+                          child: Icon(Icons.receipt, color: Theme.of(context).colorScheme.surface),
                         ),
                         title: Text('PO-${order.poNumber}'),
                         subtitle: Text(

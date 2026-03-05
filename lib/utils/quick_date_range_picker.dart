@@ -49,8 +49,8 @@ Future<DateTimeRange?> showQuickDateRangePicker(BuildContext context, {DateTimeR
     context: context,
     backgroundColor: Colors.transparent,
     builder: (ctx) => Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(

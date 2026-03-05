@@ -171,7 +171,7 @@ class _CurrentLocationMarker extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.blue,
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 3),
+            border: Border.all(color: Theme.of(context).colorScheme.surface, width: 3),
             boxShadow: [
               BoxShadow(
                 color: Colors.blue.withOpacity(0.4),
@@ -204,7 +204,7 @@ class _DefaultMarker extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.all(4),
+          padding: EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
@@ -218,20 +218,20 @@ class _DefaultMarker extends StatelessWidget {
           ),
           child: Icon(
             icon,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             size: 20,
           ),
         ),
         if (label != null)
           Container(
-            margin: const EdgeInsets.only(top: 2),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            margin: EdgeInsets.only(top: 2),
+            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(4),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                   blurRadius: 4,
                 ),
               ],

@@ -6,6 +6,7 @@ import '../../models/management_task.dart';
 import '../../models/task_comment.dart';
 import '../../models/task_attachment.dart';
 import '../../providers/management_task_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Full-featured Task Detail Page
 /// Shows: info, checklist, comments, attachments
@@ -83,7 +84,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage>
           _task.category.displayName,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         actions: [
           if (_task.isRecurring)
@@ -101,8 +102,8 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage>
         children: [
           // Task header
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(20),
+            color: Theme.of(context).colorScheme.surface,
+            padding: EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -194,7 +195,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage>
 
           // Tabs
           Container(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             child: TabBar(
               controller: _tabController,
               labelColor: Colors.blue.shade700,
@@ -251,8 +252,8 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage>
       children: [
         // Add item bar
         Container(
-          padding: const EdgeInsets.all(12),
-          color: Colors.white,
+          padding: EdgeInsets.all(12),
+          color: Theme.of(context).colorScheme.surface,
           child: Row(
             children: [
               Expanded(
@@ -335,7 +336,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage>
             item.title,
             style: TextStyle(
               decoration: item.isDone ? TextDecoration.lineThrough : null,
-              color: item.isDone ? Colors.grey : Colors.black87,
+              color: item.isDone ? Colors.grey : Theme.of(context).colorScheme.onSurface87,
             ),
           ),
           controlAffinity: ListTileControlAffinity.leading,
@@ -460,7 +461,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage>
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(12),
                       itemCount: _comments.length,
                       itemBuilder: (context, index) {
                         final comment = _comments[index];
@@ -470,12 +471,12 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage>
         ),
         // Send message bar
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, -2),
               ),

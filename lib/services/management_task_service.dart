@@ -42,13 +42,14 @@ class ManagementTaskService {
   /// Used in CEO Tasks Page - Strategic Tasks tab
   Future<List<ManagementTask>> getCEOStrategicTasks() async {
     try {
-      final userId = _ref.read(authProvider).user?.id;
+      final userId = _ref.read(currentUserProvider)?.id;
       if (userId == null) {
         return [];
       }
 
       final response = await _supabase.from('tasks').select('*')
-          .eq('created_by', userId).order('created_at', ascending: false);
+          .eq('created_by', userId).order('created_at', ascending: false)
+          .limit(100);
 
       return (response as List).map((json) {
         // Use the cached fields already in the task record
@@ -65,7 +66,7 @@ class ManagementTaskService {
   Future<List<ManagementTask>> getTasksAssignedToMe() async {
     try {
       // Get employee ID from auth provider (for managers/staff who login via employee system)
-      final currentUser = _ref.read(authProvider).user;
+      final currentUser = _ref.read(currentUserProvider);
       final employeeId = currentUser?.id;
       
       AppLogger.api('🔍 [ManagementTaskService] getTasksAssignedToMe - Current employeeId: $employeeId');
@@ -78,7 +79,8 @@ class ManagementTaskService {
 
       AppLogger.api('📡 [ManagementTaskService] getTasksAssignedToMe - Fetching tasks assigned_to: $employeeId');
       final response = await _supabase.from('tasks').select('*')
-          .eq('assigned_to', employeeId).order('created_at', ascending: false);
+          .eq('assigned_to', employeeId).order('created_at', ascending: false)
+          .limit(100);
 
       AppLogger.data('📦 [ManagementTaskService] getTasksAssignedToMe - Raw response: $response');
       AppLogger.data('📊 [ManagementTaskService] getTasksAssignedToMe - Response length: ${(response as List).length}');
@@ -105,7 +107,8 @@ class ManagementTaskService {
           .from('tasks')
           .select('*')
           .eq('company_id', companyId)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .limit(200);
 
       return (response as List).map((json) {
         final flatJson = Map<String, dynamic>.from(json);
@@ -121,7 +124,7 @@ class ManagementTaskService {
   Future<List<ManagementTask>> getTasksCreatedByMe() async {
     try {
       // Get employee ID from auth provider (for managers/staff who login via employee system)
-      final currentUser = _ref.read(authProvider).user;
+      final currentUser = _ref.read(currentUserProvider);
       final employeeId = currentUser?.id;
       
       if (employeeId == null) {
@@ -129,7 +132,8 @@ class ManagementTaskService {
       }
 
       final response = await _supabase.from('tasks').select('*')
-          .eq('created_by', employeeId).order('created_at', ascending: false);
+          .eq('created_by', employeeId).order('created_at', ascending: false)
+          .limit(100);
 
       return (response as List).map((json) {
         // Use the cached fields already in the task record
@@ -146,7 +150,7 @@ class ManagementTaskService {
   Future<List<TaskApproval>> getPendingApprovals() async {
     try {
       // Get current user's company_id from authProvider
-      final currentUser = _ref.read(authProvider).user;
+      final currentUser = _ref.read(currentUserProvider);
       final companyId = currentUser?.companyId;
       
       var query = _supabase.from('task_approvals').select('*')
@@ -157,7 +161,8 @@ class ManagementTaskService {
         query = query.eq('company_id', companyId);
       }
       
-      final response = await query.order('submitted_at', ascending: false);
+      final response = await query.order('submitted_at', ascending: false)
+          .limit(100);
 
       return (response as List).map((json) {
         // Use the cached fields already in the task_approvals record
@@ -185,7 +190,7 @@ class ManagementTaskService {
     List<Map<String, dynamic>>? checklist,
   }) async {
     try {
-      final currentUser = _ref.read(authProvider).user;
+      final currentUser = _ref.read(currentUserProvider);
       final userId = currentUser?.id;
       if (userId == null) throw Exception('User not authenticated');
 
@@ -287,6 +292,7 @@ class ManagementTaskService {
     String? companyId,
     int? progress,
     DateTime? dueDate,
+    bool clearDueDate = false, // explicitly set due_date to null
     String? recurrence,
     List<Map<String, dynamic>>? checklist,
   }) async {
@@ -300,7 +306,11 @@ class ManagementTaskService {
       if (assignedTo != null) updateData['assigned_to'] = assignedTo;
       if (companyId != null) updateData['company_id'] = companyId;
       if (progress != null) updateData['progress'] = progress;
-      if (dueDate != null) updateData['due_date'] = dueDate.toIso8601String();
+      if (clearDueDate) {
+        updateData['due_date'] = null;
+      } else if (dueDate != null) {
+        updateData['due_date'] = dueDate.toIso8601String();
+      }
       if (recurrence != null) updateData['recurrence'] = recurrence;
       if (checklist != null) updateData['checklist'] = checklist;
 
@@ -320,7 +330,10 @@ class ManagementTaskService {
   /// Delete task
   Future<void> deleteTask(String taskId) async {
     try {
-      await _supabase.from('tasks').delete().eq('id', taskId);
+      // Soft delete - sets deleted_at timestamp
+      await _supabase.from('tasks').update({
+        'deleted_at': DateTime.now().toIso8601String(),
+      }).eq('id', taskId);
     } catch (e) {
       throw Exception('Failed to delete task: $e');
     }
@@ -338,7 +351,7 @@ class ManagementTaskService {
       
       // Nếu không truyền userId, thử lấy từ authProvider (Manager/Employee)
       if (approverId == null) {
-        final currentUser = _ref.read(authProvider).user;
+        final currentUser = _ref.read(currentUserProvider);
         approverId = currentUser?.id;
       }
       
@@ -372,7 +385,7 @@ class ManagementTaskService {
       
       // Nếu không truyền userId, thử lấy từ authProvider (Manager/Employee)
       if (approverId == null) {
-        final currentUser = _ref.read(authProvider).user;
+        final currentUser = _ref.read(currentUserProvider);
         approverId = currentUser?.id;
       }
       
@@ -393,7 +406,7 @@ class ManagementTaskService {
   /// Get task statistics for CEO dashboard
   Future<Map<String, int>> getTaskStatistics() async {
     try {
-      final userId = _ref.read(authProvider).user?.id;
+      final userId = _ref.read(currentUserProvider)?.id;
       if (userId == null) {
         return {
           'total': 0,
@@ -444,7 +457,7 @@ class ManagementTaskService {
   Future<List<Map<String, dynamic>>> getCompanyTaskStatistics() async {
     try {
       // Get current user's company_id from authProvider
-      final currentUser = _ref.read(authProvider).user;
+      final currentUser = _ref.read(currentUserProvider);
       final companyId = currentUser?.companyId;
       
       if (companyId == null) {
@@ -579,7 +592,7 @@ class ManagementTaskService {
   /// Used in Manager Tasks Page - From CEO tab
   Stream<List<ManagementTask>> streamTasksAssignedToMe() {
     // Get employee ID from auth provider
-    final currentUser = _ref.read(authProvider).user;
+    final currentUser = _ref.read(currentUserProvider);
     final employeeId = currentUser?.id;
     
     AppLogger.api('🔴 [ManagementTaskService] streamTasksAssignedToMe - Starting stream for employeeId: $employeeId');
@@ -612,7 +625,7 @@ class ManagementTaskService {
   /// Used in Manager Tasks Page - Assign Tasks tab
   Stream<List<ManagementTask>> streamTasksCreatedByMe() {
     // Get employee ID from auth provider
-    final currentUser = _ref.read(authProvider).user;
+    final currentUser = _ref.read(currentUserProvider);
     final employeeId = currentUser?.id;
     
     if (employeeId == null) {
@@ -637,7 +650,7 @@ class ManagementTaskService {
   /// Stream CEO strategic tasks - REALTIME
   /// Used in CEO Tasks Page - Strategic Tasks tab
   Stream<List<ManagementTask>> streamCEOStrategicTasks() {
-    final userId = _ref.read(authProvider).user?.id;
+    final userId = _ref.read(currentUserProvider)?.id;
     
     if (userId == null) {
       return Stream.value([]);
@@ -688,7 +701,7 @@ class ManagementTaskService {
   }) async {
     try {
       // Get current user (employee ID)
-      final currentUser = _ref.read(authProvider).user;
+      final currentUser = _ref.read(currentUserProvider);
       final employeeId = currentUser?.id;
       
       if (employeeId == null) {
@@ -805,10 +818,10 @@ class ManagementTaskService {
       // Delete from storage
       await _supabase.storage.from('documents').remove([storagePath]);
 
-      // Delete from database
+      // Soft-delete from database
       await _supabase
           .from('task_attachments')
-          .delete()
+          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
           .eq('id', attachmentId);
     } catch (e) {
       throw Exception('Failed to delete attachment: $e');
@@ -848,7 +861,7 @@ class ManagementTaskService {
       if (createdBy == null) return; // No creator to notify
 
       // Get current user (Manager who is updating)
-      final currentUser = _ref.read(authProvider).user;
+      final currentUser = _ref.read(currentUserProvider);
       final managerName = currentUser?.name ?? 'Manager';
 
       // Build notification message
@@ -904,7 +917,7 @@ class ManagementTaskService {
       if (createdBy == null) return; // No creator to notify
 
       // Get current user (Manager who uploaded)
-      final currentUser = _ref.read(authProvider).user;
+      final currentUser = _ref.read(currentUserProvider);
       final managerName = currentUser?.name ?? 'Manager';
 
       // Create notification
@@ -962,7 +975,7 @@ class ManagementTaskService {
     required String comment,
   }) async {
     try {
-      final userId = _ref.read(authProvider).user?.id;
+      final userId = _ref.read(currentUserProvider)?.id;
       if (userId == null) throw Exception('User not authenticated');
 
       // Insert the comment
@@ -996,7 +1009,8 @@ class ManagementTaskService {
 
   Future<void> deleteComment(String commentId) async {
     try {
-      await _supabase.from('task_comments').delete().eq('id', commentId);
+      // Soft delete - sets is_active=false
+      await _supabase.from('task_comments').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', commentId);
     } catch (e) {
       throw Exception('Failed to delete comment: $e');
     }
@@ -1065,7 +1079,7 @@ class ManagementTaskService {
 
   Future<List<Map<String, dynamic>>> getUnreadNotifications() async {
     try {
-      final userId = _ref.read(authProvider).user?.id;
+      final userId = _ref.read(currentUserProvider)?.id;
       if (userId == null) return [];
 
       final response = await _supabase
@@ -1095,7 +1109,7 @@ class ManagementTaskService {
 
   Future<void> markAllNotificationsRead() async {
     try {
-      final userId = _ref.read(authProvider).user?.id;
+      final userId = _ref.read(currentUserProvider)?.id;
       if (userId == null) return;
 
       await _supabase.from('notifications').update({
@@ -1118,7 +1132,7 @@ class ManagementTaskService {
     String? linkTitle,
   }) async {
     try {
-      final currentUser = _ref.read(authProvider).user;
+      final currentUser = _ref.read(currentUserProvider);
       final employeeId = currentUser?.id;
       
       if (employeeId == null) {
@@ -1180,7 +1194,7 @@ class ManagementTaskService {
     required DateTime proposedDate,
   }) async {
     try {
-      final currentUser = _ref.read(authProvider).user;
+      final currentUser = _ref.read(currentUserProvider);
       final userId = currentUser?.id;
       
       if (userId == null) {
@@ -1237,7 +1251,7 @@ class ManagementTaskService {
 
   Future<Map<String, int>> getCategoryStatistics() async {
     try {
-      final userId = _ref.read(authProvider).user?.id;
+      final userId = _ref.read(currentUserProvider)?.id;
       if (userId == null) return {};
 
       final response = await _supabase

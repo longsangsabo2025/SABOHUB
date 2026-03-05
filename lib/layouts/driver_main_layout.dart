@@ -37,8 +37,8 @@ class _DriverMainLayoutState extends ConsumerState<DriverMainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final userName = authState.user?.name ?? 'Tài xế';
+    final user = ref.watch(currentUserProvider);
+    final userName = user?.name ?? 'Tài xế';
 
     return Scaffold(
       appBar: AppBar(

@@ -74,8 +74,8 @@ class _DeliveryFormPageState extends ConsumerState<DeliveryFormPage> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId == null) throw Exception('User context not found');
 
       final db = Supabase.instance.client;

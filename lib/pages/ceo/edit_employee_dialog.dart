@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/branch.dart';
 import '../../models/user.dart' as app_user;
+import '../../services/branch_service.dart';
 import '../../services/employee_service.dart';
 
 /// Dialog for editing employee information
@@ -24,7 +26,10 @@ class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late app_user.UserRole _selectedRole;
+  String? _selectedBranchId;
+  List<Branch> _branches = [];
   bool _isLoading = false;
+  bool _isBranchesLoading = true;
 
   @override
   void initState() {
@@ -32,6 +37,25 @@ class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
     _nameController = TextEditingController(text: widget.employee.name ?? '');
     _phoneController = TextEditingController(text: widget.employee.phone ?? '');
     _selectedRole = widget.employee.role;
+    _selectedBranchId = widget.employee.branchId;
+    _loadBranches();
+  }
+
+  Future<void> _loadBranches() async {
+    try {
+      final service = BranchService();
+      final branches = await service.getActiveBranches(companyId: widget.companyId);
+      if (mounted) {
+        setState(() {
+          _branches = branches;
+          _isBranchesLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isBranchesLoading = false);
+      }
+    }
   }
 
   @override
@@ -55,6 +79,7 @@ class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
             ? null
             : _phoneController.text.trim(),
         role: _selectedRole,
+        branchId: _selectedBranchId,
       );
 
       if (mounted) {
@@ -103,14 +128,14 @@ class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.blue[600],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.edit,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       size: 20,
                     ),
                   ),
@@ -236,6 +261,55 @@ class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
                           return null;
                         },
                       ),
+                      const SizedBox(height: 16),
+                      // Branch Dropdown
+                      _isBranchesLoading
+                          ? const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: LinearProgressIndicator(),
+                            )
+                          : DropdownButtonFormField<String?>(
+                              value: _branches.any((b) => b.id == _selectedBranchId)
+                                  ? _selectedBranchId
+                                  : null,
+                              decoration: InputDecoration(
+                                labelText: 'Chi nhánh',
+                                prefixIcon: const Icon(Icons.store_outlined),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                              ),
+                              items: [
+                                const DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text('-- Không chọn --',
+                                      style: TextStyle(color: Colors.grey)),
+                                ),
+                                ..._branches.map((branch) {
+                                  return DropdownMenuItem<String?>(
+                                    value: branch.id,
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.location_on,
+                                            color: Colors.teal[400], size: 18),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            branch.name,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                              ],
+                              onChanged: (value) {
+                                setState(() => _selectedBranchId = value);
+                              },
+                            ),
                       const SizedBox(height: 24),
                       // Info Note
                       Container(
@@ -283,23 +357,23 @@ class _EditEmployeeDialogState extends ConsumerState<EditEmployeeDialog> {
                         _isLoading ? null : () => Navigator.of(context).pop(),
                     child: const Text('Hủy'),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   ElevatedButton.icon(
                     onPressed: _isLoading ? null : _saveChanges,
                     icon: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                             ),
                           )
-                        : const Icon(Icons.save, size: 18),
+                        : Icon(Icons.save, size: 18),
                     label: Text(_isLoading ? 'Đang lưu...' : 'Lưu thay đổi'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[600],
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 12,

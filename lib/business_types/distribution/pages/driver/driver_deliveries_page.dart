@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 
 import '../../../../providers/auth_provider.dart';
 import '../../../../utils/app_logger.dart';
@@ -63,9 +65,9 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
 
   Future<void> _loadDeliveries() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final driverId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final driverId = user?.id;
 
       if (companyId == null || driverId == null) return;
 
@@ -190,7 +192,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
 
   Widget _buildContent() {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.grey50,
       body: SafeArea(
         child: Column(
           children: [
@@ -217,23 +219,23 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                     ],
                   ),
 
-                  const SizedBox(height: 12),
+                  AppSpacing.gapMD,
 
                   // Search bar
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: AppColors.grey100,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
                         hintText: 'Tìm đơn hàng, khách hàng...',
-                        hintStyle: TextStyle(color: Colors.grey.shade500),
-                        prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                        hintStyle: TextStyle(color: AppColors.grey500),
+                        prefixIcon: Icon(Icons.search, color: AppColors.grey600),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: Icon(Icons.clear, color: Colors.grey.shade600),
+                                icon: Icon(Icons.clear, color: AppColors.grey600),
                                 onPressed: () {
                                   _searchController.clear();
                                   _onSearchChanged('');
@@ -247,12 +249,12 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  AppSpacing.gapLG,
 
                   // Tab bar
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: AppColors.grey100,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: TabBar(
@@ -269,14 +271,14 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                       ),
                       indicatorSize: TabBarIndicatorSize.tab,
                       indicatorPadding: const EdgeInsets.all(4),
-                      labelColor: Colors.orange.shade700,
-                      unselectedLabelColor: Colors.grey.shade600,
+                      labelColor: AppColors.warningDark,
+                      unselectedLabelColor: AppColors.grey600,
                       labelStyle: const TextStyle(fontSize: 12),
                       tabs: [
-                        _buildTab(Icons.pending_actions, 'Chờ nhận', _pendingDeliveries.length, Colors.orange),
+                        _buildTab(Icons.pending_actions, 'Chờ nhận', _pendingDeliveries.length, AppColors.warning),
                         _buildTab(Icons.hourglass_empty, 'Chờ kho', _awaitingDeliveries.length, Colors.purple),
-                        _buildTab(Icons.local_shipping, 'Đang giao', _inProgressDeliveries.length, Colors.blue),
-                        _buildTab(Icons.check_circle, 'Đã giao', _deliveredDeliveries.length, Colors.green),
+                        _buildTab(Icons.local_shipping, 'Đang giao', _inProgressDeliveries.length, AppColors.info),
+                        _buildTab(Icons.check_circle, 'Đã giao', _deliveredDeliveries.length, AppColors.success),
                       ],
                     ),
                   ),
@@ -310,10 +312,10 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 16),
-          const SizedBox(width: 4),
+          AppSpacing.hGapXXS,
           Text(label),
           if (count > 0) ...[
-            const SizedBox(width: 4),
+            AppSpacing.hGapXXS,
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
@@ -353,17 +355,17 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: _deliveredDateFilter != null ? Colors.green.shade50 : Colors.grey.shade100,
+            color: _deliveredDateFilter != null ? AppColors.successLight : AppColors.grey100,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _deliveredDateFilter != null ? Colors.green.shade400 : Colors.grey.shade300,
+              color: _deliveredDateFilter != null ? AppColors.success : AppColors.grey300,
             ),
           ),
           child: Row(
             children: [
               Icon(Icons.calendar_today, size: 16,
-                color: _deliveredDateFilter != null ? Colors.green.shade700 : Colors.grey.shade600),
-              const SizedBox(width: 8),
+                color: _deliveredDateFilter != null ? AppColors.successDark : AppColors.grey600),
+              AppSpacing.hGapSM,
               Expanded(
                 child: Text(
                   _deliveredDateFilter != null
@@ -372,7 +374,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: _deliveredDateFilter != null ? Colors.green.shade700 : Colors.grey.shade600,
+                    color: _deliveredDateFilter != null ? AppColors.successDark : AppColors.grey600,
                   ),
                 ),
               ),
@@ -382,10 +384,10 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                     setState(() => _deliveredDateFilter = null);
                     _loadDeliveries();
                   },
-                  child: Icon(Icons.close, size: 16, color: Colors.green.shade700),
+                  child: Icon(Icons.close, size: 16, color: AppColors.successDark),
                 )
               else
-                Icon(Icons.arrow_drop_down, size: 20, color: Colors.grey.shade600),
+                Icon(Icons.arrow_drop_down, size: 20, color: AppColors.grey600),
             ],
           ),
         ),
@@ -401,7 +403,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
           child: deliveries.isEmpty
               ? _buildEmptyState(
                   icon: Icons.check_circle_outline,
-                  color: Colors.green,
+                  color: AppColors.success,
                   title: _deliveredDateFilter != null
                       ? 'Không có đơn đã giao trong khoảng thời gian này'
                       : 'Chưa có đơn đã giao',
@@ -412,7 +414,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
               : RefreshIndicator(
                   onRefresh: _loadDeliveries,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: AppSpacing.paddingLG,
                     itemCount: deliveries.length,
                     itemBuilder: (context, index) {
                       final delivery = deliveries[index];
@@ -438,7 +440,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     return RefreshIndicator(
       onRefresh: _loadDeliveries,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.paddingLG,
         itemCount: deliveries.length,
         itemBuilder: (context, index) {
           final delivery = deliveries[index];
@@ -452,7 +454,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     if (deliveries.isEmpty) {
       return _buildEmptyState(
         icon: isPending ? Icons.inbox_outlined : Icons.local_shipping_outlined,
-        color: Colors.grey,
+        color: AppColors.grey500,
         title: isPending ? 'Không có đơn chờ nhận' : 'Không có đơn đang giao',
         subtitle: 'Kéo xuống để làm mới',
       );
@@ -461,7 +463,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     return RefreshIndicator(
       onRefresh: _loadDeliveries,
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.paddingLG,
         itemCount: deliveries.length,
         itemBuilder: (context, index) {
           final delivery = deliveries[index];
@@ -482,27 +484,27 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: AppSpacing.paddingXXL,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 48, color: color.withOpacity(0.5)),
           ),
-          const SizedBox(height: 16),
+          AppSpacing.gapLG,
           Text(
             title,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
+              color: AppColors.grey600,
             ),
           ),
-          const SizedBox(height: 8),
+          AppSpacing.gapSM,
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 13, color: AppColors.grey500),
           ),
         ],
       ),
@@ -563,7 +565,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.paddingLG,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -572,16 +574,16 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
+                    color: AppColors.successLight,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade200),
+                    border: Border.all(color: AppColors.successLight),
                   ),
                   child: Text(
                     '#$orderNumber',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green.shade700,
+                      color: AppColors.successDark,
                     ),
                   ),
                 ),
@@ -591,16 +593,16 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green.shade600,
+                    color: AppColors.successDark,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            AppSpacing.gapMD,
             Row(
               children: [
-                Icon(Icons.person_outline, size: 16, color: Colors.grey.shade500),
-                const SizedBox(width: 6),
+                Icon(Icons.person_outline, size: 16, color: AppColors.grey500),
+                AppSpacing.hGapXS,
                 Expanded(
                   child: Text(
                     customerName,
@@ -614,43 +616,43 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.location_on_outlined, size: 16, color: Colors.grey.shade500),
-                  const SizedBox(width: 6),
+                  Icon(Icons.location_on_outlined, size: 16, color: AppColors.grey500),
+                  AppSpacing.hGapXS,
                   Expanded(
                     child: Text(
                       customerAddress,
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      style: TextStyle(fontSize: 13, color: AppColors.grey600),
                     ),
                   ),
                 ],
               ),
             ],
-            const SizedBox(height: 12),
+            AppSpacing.gapMD,
             Row(
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade100,
+                    color: AppColors.successLight,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_circle, size: 14, color: Colors.green.shade700),
-                      const SizedBox(width: 4),
+                      Icon(Icons.check_circle, size: 14, color: AppColors.successDark),
+                      AppSpacing.hGapXXS,
                       Text(
                         'Đã giao',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.green.shade700),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.successDark),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                AppSpacing.hGapSM,
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: paymentStatus == 'paid' ? Colors.blue.shade100 : Colors.orange.shade100,
+                    color: paymentStatus == 'paid' ? AppColors.infoLight : AppColors.warningLight,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -659,15 +661,15 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                       Icon(
                         getPaymentIcon(),
                         size: 14,
-                        color: paymentStatus == 'paid' ? Colors.blue.shade700 : Colors.orange.shade700,
+                        color: paymentStatus == 'paid' ? AppColors.infoDark : AppColors.warningDark,
                       ),
-                      const SizedBox(width: 4),
+                      AppSpacing.hGapXXS,
                       Text(
                         getPaymentMethodText(),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: paymentStatus == 'paid' ? Colors.blue.shade700 : Colors.orange.shade700,
+                          color: paymentStatus == 'paid' ? AppColors.infoDark : AppColors.warningDark,
                         ),
                       ),
                     ],
@@ -676,7 +678,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 const Spacer(),
                 Text(
                   '${updatedAt.hour.toString().padLeft(2, '0')}:${updatedAt.minute.toString().padLeft(2, '0')} - ${updatedAt.day}/${updatedAt.month}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12, color: AppColors.grey500),
                 ),
               ],
             ),
@@ -702,7 +704,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         side: BorderSide(color: Colors.purple.shade100),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.paddingLG,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -719,7 +721,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.hourglass_empty, size: 14, color: Colors.purple.shade700),
-                      const SizedBox(width: 4),
+                      AppSpacing.hGapXXS,
                       Text(
                         'Chờ kho xác nhận',
                         style: TextStyle(
@@ -734,20 +736,20 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 const Spacer(),
                 Text(
                   orderNumber,
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.grey700),
                 ),
               ],
             ),
 
-            const SizedBox(height: 12),
+            AppSpacing.gapMD,
             const Divider(height: 1),
-            const SizedBox(height: 12),
+            AppSpacing.gapMD,
 
             // Customer info
             Row(
               children: [
-                Icon(Icons.person, size: 18, color: Colors.grey.shade600),
-                const SizedBox(width: 8),
+                Icon(Icons.person, size: 18, color: AppColors.grey600),
+                AppSpacing.hGapSM,
                 Expanded(
                   child: Text(
                     customer?['name'] ?? salesOrder?['customer_name'] ?? 'Khách hàng',
@@ -756,27 +758,27 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            AppSpacing.gapSM,
             Row(
               children: [
-                Icon(Icons.location_on, size: 18, color: Colors.grey.shade600),
-                const SizedBox(width: 8),
+                Icon(Icons.location_on, size: 18, color: AppColors.grey600),
+                AppSpacing.hGapSM,
                 Expanded(
                   child: Text(
                     salesOrder?['delivery_address'] ?? salesOrder?['customer_address'] ?? delivery['delivery_address'] ?? customer?['address'] ?? 'Chưa có địa chỉ',
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                    style: TextStyle(color: AppColors.grey700, fontSize: 13),
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 12),
+            AppSpacing.gapMD,
 
             // Total amount
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: AppSpacing.paddingMD,
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: AppColors.grey50,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -788,31 +790,31 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Colors.green.shade700,
+                      color: AppColors.successDark,
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 12),
+            AppSpacing.gapMD,
 
             // Info text
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.amber.shade50,
+                color: AppColors.warningLight,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.shade200),
+                border: Border.all(color: AppColors.warningLight),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 18, color: Colors.amber.shade700),
-                  const SizedBox(width: 8),
+                  Icon(Icons.info_outline, size: 18, color: AppColors.warningDark),
+                  AppSpacing.hGapSM,
                   Expanded(
                     child: Text(
                       'Vui lòng đến kho để nhận hàng. Kho sẽ xác nhận khi bàn giao.',
-                      style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
+                      style: TextStyle(fontSize: 12, color: AppColors.warningDark),
                     ),
                   ),
                 ],
@@ -864,7 +866,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.paddingLG,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -874,14 +876,14 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isPending ? Colors.orange.shade50 : Colors.blue.shade50,
+                    color: isPending ? AppColors.warningLight : AppColors.infoLight,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '#$orderNumber',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: isPending ? Colors.orange.shade700 : Colors.blue.shade700,
+                      color: isPending ? AppColors.warningDark : AppColors.infoDark,
                     ),
                   ),
                 ),
@@ -891,19 +893,19 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: Colors.green.shade700,
+                    color: AppColors.successDark,
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 12),
+            AppSpacing.gapMD,
 
             // Customer info
             Row(
               children: [
-                Icon(Icons.person_outline, size: 18, color: Colors.grey.shade600),
-                const SizedBox(width: 8),
+                Icon(Icons.person_outline, size: 18, color: AppColors.grey600),
+                AppSpacing.hGapSM,
                 Expanded(
                   child: Text(
                     customerName,
@@ -912,37 +914,37 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 ),
                 if (customerPhone != null)
                   IconButton(
-                    icon: Icon(Icons.phone, color: Colors.green.shade600, size: 20),
+                    icon: Icon(Icons.phone, color: AppColors.successDark, size: 20),
                     onPressed: () => _callCustomer(customerPhone),
                     constraints: const BoxConstraints(),
-                    padding: const EdgeInsets.all(8),
+                    padding: AppSpacing.paddingSM,
                   ),
               ],
             ),
 
             if (customerAddress != null && customerAddress.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              AppSpacing.gapSM,
               InkWell(
                 onTap: () => _openMaps(customerAddress),
                 child: Row(
                   children: [
-                    Icon(Icons.location_on_outlined, size: 18, color: Colors.blue.shade600),
-                    const SizedBox(width: 8),
+                    Icon(Icons.location_on_outlined, size: 18, color: AppColors.infoDark),
+                    AppSpacing.hGapSM,
                     Expanded(
                       child: Text(
                         customerAddress,
-                        style: TextStyle(color: Colors.blue.shade700, fontSize: 13),
+                        style: TextStyle(color: AppColors.infoDark, fontSize: 13),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Icon(Icons.open_in_new, size: 14, color: Colors.blue.shade400),
+                    Icon(Icons.open_in_new, size: 14, color: AppColors.info),
                   ],
                 ),
               ),
             ],
 
-            const SizedBox(height: 16),
+            AppSpacing.gapLG,
 
             // Action buttons
             Row(
@@ -954,14 +956,14 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                       icon: const Icon(Icons.directions, size: 18),
                       label: const Text('Chỉ đường'),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: AppSpacing.paddingVMD,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  AppSpacing.hGapMD,
                 ],
                 Expanded(
                   flex: isPending ? 1 : 1,
@@ -979,7 +981,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Lỗi: Đơn hàng không tồn tại hoặc đã bị xóa'),
-                                backgroundColor: Colors.red,
+                                backgroundColor: AppColors.error,
                               ),
                             );
                             return;
@@ -994,7 +996,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Lỗi: Đơn hàng không tồn tại hoặc đã bị xóa'),
-                              backgroundColor: Colors.red,
+                              backgroundColor: AppColors.error,
                             ),
                           );
                           return;
@@ -1005,9 +1007,9 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                     icon: Icon(isPending ? Icons.play_arrow : Icons.check_circle, size: 18),
                     label: Text(isPending ? 'Nhận đơn' : 'Đã giao'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isPending ? Colors.orange : Colors.green,
+                      backgroundColor: isPending ? AppColors.warning : AppColors.success,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: AppSpacing.paddingVMD,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1035,7 +1037,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Lỗi: Mã đơn hàng không hợp lệ'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -1044,9 +1046,9 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     
     try {
       final supabase = Supabase.instance.client;
-      final authState = ref.read(authProvider);
-      final driverId = authState.user?.id;
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final driverId = user?.id;
+      final companyId = user?.companyId;
       
       if (driverId == null || companyId == null) {
         throw Exception('Chưa đăng nhập hoặc thiếu thông tin công ty');
@@ -1075,7 +1077,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             content: const Row(
               children: [
                 Icon(Icons.hourglass_empty, color: Colors.white),
-                SizedBox(width: 12),
+                AppSpacing.hGapMD,
                 Text('Đã nhận đơn! Chờ kho xác nhận giao hàng.'),
               ],
             ),
@@ -1092,7 +1094,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lỗi: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -1120,11 +1122,11 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             content: const Row(
               children: [
                 Icon(Icons.local_shipping, color: Colors.white),
-                SizedBox(width: 12),
+                AppSpacing.hGapMD,
                 Text('Đã nhận đơn! Bắt đầu giao hàng.'),
               ],
             ),
-            backgroundColor: Colors.blue,
+            backgroundColor: AppColors.info,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -1137,7 +1139,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lỗi: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -1154,7 +1156,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Lỗi: Không tìm thấy mã đơn hàng'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -1223,7 +1225,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             content: Row(
               children: [
                 const Icon(Icons.celebration, color: Colors.white),
-                const SizedBox(width: 12),
+                AppSpacing.hGapMD,
                 Expanded(
                   child: Text(
                     result['updatePayment'] == true 
@@ -1233,7 +1235,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 ),
               ],
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -1246,7 +1248,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lỗi: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -1273,20 +1275,20 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
           title: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: AppSpacing.paddingSM,
                 decoration: BoxDecoration(
                   color: Colors.green.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.check_circle, color: Colors.green, size: 28),
+                child: const Icon(Icons.check_circle, color: AppColors.success, size: 28),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMD,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Xác nhận giao hàng', style: TextStyle(fontSize: 18)),
-                    Text(customerName, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                    Text(customerName, style: TextStyle(fontSize: 13, color: AppColors.grey600)),
                   ],
                 ),
               ),
@@ -1299,7 +1301,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
               children: [
                 // Order info
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: AppSpacing.paddingMD,
                   decoration: BoxDecoration(
                     color: Colors.blue.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(12),
@@ -1311,31 +1313,31 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                       const Text('Tổng tiền:', style: TextStyle(fontWeight: FontWeight.w500)),
                       Text(
                         currencyFormat.format(totalAmount),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.info),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                AppSpacing.gapLG,
                 
                 if (paymentStatus == 'paid')
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: AppSpacing.paddingMD,
                     decoration: BoxDecoration(
                       color: Colors.green.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.check_circle, color: Colors.green, size: 20),
-                        SizedBox(width: 8),
-                        Text('Đơn hàng đã thanh toán', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w500)),
+                        Icon(Icons.check_circle, color: AppColors.success, size: 20),
+                        AppSpacing.hGapSM,
+                        Text('Đơn hàng đã thanh toán', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w500)),
                       ],
                     ),
                   )
                 else ...[
                   const Text('Chọn phương thức:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
+                  AppSpacing.gapSM,
                   
                   RadioListTile<String?>(  
                     value: 'cash',
@@ -1368,8 +1370,8 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                         icon: const Icon(Icons.qr_code, size: 20),
                         label: const Text('Hiện QR cho khách quét'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.blue.shade700,
-                          side: BorderSide(color: Colors.blue.shade300),
+                          foregroundColor: AppColors.infoDark,
+                          side: BorderSide(color: AppColors.info),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         ),
                       ),
@@ -1429,7 +1431,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
               icon: const Icon(Icons.check),
               label: const Text('Xác nhận'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: AppColors.success,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -1440,21 +1442,21 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
   }
 
   Future<void> _showQRTransferDialog(double amount, String orderId, String orderNumber, String deliveryId) async {
-    debugPrint('🔷 _showQRTransferDialog called with amount: $amount, orderNumber: $orderNumber, deliveryId: $deliveryId');
+    AppLogger.data('QR Transfer', {'amount': amount, 'orderNumber': orderNumber, 'deliveryId': deliveryId});
     try {
       // Lấy companyId từ authProvider (không dùng supabase.auth.currentUser)
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       
-      debugPrint('🔷 AuthState user: ${authState.user?.name} - companyId: $companyId');
+      AppLogger.data('AuthState user', {'name': user?.name, 'companyId': companyId});
       
       if (companyId == null) {
-        debugPrint('❌ CompanyId is null');
+        AppLogger.error('CompanyId is null');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Không tìm thấy thông tin công ty'),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
           );
         }
@@ -1468,15 +1470,15 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
           .eq('id', companyId)
           .maybeSingle();
       
-      debugPrint('🔷 Company data: $companyData');
-      
+      AppLogger.data('Company data', companyData ?? {});
+
       if (companyData == null) {
-        debugPrint('❌ Company bank info incomplete');
+        AppLogger.error('Company bank info incomplete');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Công ty chưa cấu hình tài khoản ngân hàng. Liên hệ Manager/CEO để cấu hình.'),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.warning,
             ),
           );
         }
@@ -1502,12 +1504,12 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
       }
       
       if (bankBin == null || accountNumber == null) {
-        debugPrint('❌ Active bank account not configured');
+        AppLogger.error('Active bank account not configured');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Công ty chưa cấu hình tài khoản ngân hàng. Liên hệ Manager/CEO để cấu hình.'),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.warning,
             ),
           );
         }
@@ -1518,19 +1520,19 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
       final content = 'TT $orderNumber';
       final qrUrl = 'https://img.vietqr.io/image/$bankBin-$accountNumber-compact2.png?amount=$amountInt&addInfo=${Uri.encodeComponent(content)}&accountName=${Uri.encodeComponent(accountName)}';
       
-      debugPrint('✅ QR URL: $qrUrl');
-      debugPrint('🔷 mounted: $mounted');
+      AppLogger.info('QR URL: $qrUrl');
+      AppLogger.data('Dialog state', {'mounted': mounted});
       
       if (mounted) {
-        debugPrint('🔷 Showing QR dialog...');
+        AppLogger.info('Showing QR dialog...');
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Row(
               children: [
-                Icon(Icons.qr_code, color: Colors.blue.shade700),
-                const SizedBox(width: 8),
+                Icon(Icons.qr_code, color: AppColors.infoDark),
+                AppSpacing.hGapSM,
                 const Expanded(child: Text('QR Chuyển khoản', style: TextStyle(fontSize: 18))),
               ],
             ),
@@ -1539,11 +1541,11 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: AppSpacing.paddingLG,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(color: AppColors.grey300),
                     ),
                     child: Image.network(
                       qrUrl,
@@ -1560,39 +1562,39 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                       errorBuilder: (_, __, ___) => Container(
                         width: 220,
                         height: 220,
-                        color: Colors.grey.shade100,
+                        color: AppColors.grey100,
                         child: const Center(child: Text('Không thể tải QR')),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  AppSpacing.gapMD,
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: AppSpacing.paddingMD,
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: AppColors.infoLight,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
                       children: [
                         Text(
                           bankName,
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade800),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.infoDark),
                         ),
-                        const SizedBox(height: 4),
+                        AppSpacing.gapXXS,
                         Text(
                           accountNumber!,
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1),
                         ),
-                        const SizedBox(height: 4),
-                        Text(accountName, style: TextStyle(color: Colors.grey.shade700)),
+                        AppSpacing.gapXXS,
+                        Text(accountName, style: TextStyle(color: AppColors.grey700)),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  AppSpacing.gapMD,
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: AppSpacing.paddingMD,
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
+                      color: AppColors.warningLight,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -1600,18 +1602,18 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                         const Text('Số tiền:', style: TextStyle(fontSize: 12)),
                         Text(
                           currencyFormat.format(amount),
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.orange.shade800),
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.warningDark),
                         ),
-                        const SizedBox(height: 8),
+                        AppSpacing.gapSM,
                         const Text('Nội dung:', style: TextStyle(fontSize: 12)),
                         Text(content, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  AppSpacing.gapMD,
                   Text(
                     '⚠️ Sau khi khách chuyển, nhấn Xác nhận để hoàn thành',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                    style: TextStyle(fontSize: 11, color: AppColors.grey600, fontStyle: FontStyle.italic),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -1629,7 +1631,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 icon: const Icon(Icons.check),
                 label: const Text('Xác nhận đã chuyển'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: AppColors.success,
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -1639,7 +1641,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
 
         // Nếu user xác nhận đã chuyển khoản, update database
         if (confirmed == true) {
-          debugPrint('✅ User confirmed transfer, updating database...');
+          AppLogger.info('User confirmed transfer, updating database...');
           
           // Use RPC for transaction-safe update
           final result = await supabase.rpc('complete_delivery_transfer', params: {
@@ -1650,7 +1652,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             throw Exception(result['error'] ?? 'Unknown error');
           }
 
-          debugPrint('✅ Database updated successfully!');
+          AppLogger.info('Database updated successfully!');
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1658,11 +1660,11 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 content: const Row(
                   children: [
                     Icon(Icons.celebration, color: Colors.white),
-                    SizedBox(width: 12),
+                    AppSpacing.hGapMD,
                     Expanded(child: Text('🎉 Giao hàng và thanh toán thành công!')),
                   ],
                 ),
-                backgroundColor: Colors.green,
+                backgroundColor: AppColors.success,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -1672,7 +1674,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         }
       }
     } catch (e) {
-      debugPrint('❌ Error in QR dialog: $e');
+      AppLogger.error('Error in QR dialog: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi: ${e.toString()}')),
@@ -1740,22 +1742,22 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     switch (paymentStatus) {
       case 'paid':
         paymentLabel = 'Đã thanh toán';
-        paymentColor = Colors.green;
+        paymentColor = AppColors.success;
         paymentIcon = Icons.check_circle;
         break;
       case 'partial':
         paymentLabel = 'Thanh toán một phần';
-        paymentColor = Colors.orange;
+        paymentColor = AppColors.warning;
         paymentIcon = Icons.timelapse;
         break;
       case 'debt':
         paymentLabel = 'Công nợ';
-        paymentColor = Colors.red;
+        paymentColor = AppColors.error;
         paymentIcon = Icons.receipt_long;
         break;
       default:
         paymentLabel = 'Chưa thanh toán';
-        paymentColor = Colors.grey;
+        paymentColor = AppColors.grey500;
         paymentIcon = Icons.pending;
     }
 
@@ -1785,7 +1787,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: AppColors.grey300,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1798,16 +1800,16 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: AppColors.infoLight,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.blue.shade200),
+                        border: Border.all(color: AppColors.infoLight),
                       ),
                       child: Text(
                         '#$orderNumber',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade700,
+                          color: AppColors.infoDark,
                         ),
                       ),
                     ),
@@ -1817,21 +1819,21 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
+                        color: AppColors.successDark,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 12),
+              AppSpacing.gapMD,
               const Divider(height: 1),
 
               // Scrollable content
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding: const EdgeInsets.all(20),
+                  padding: AppSpacing.paddingXL,
                   children: [
                     // Customer section
                     _buildDetailSection('Khách hàng', [
@@ -1840,26 +1842,26 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                         _buildDetailRowTappable(
                           Icons.phone,
                           customerPhone,
-                          Colors.green,
+                          AppColors.success,
                           () => _callCustomer(customerPhone),
                         ),
                       if (customerAddress.isNotEmpty)
                         _buildDetailRowTappable(
                           Icons.location_on,
                           customerAddress,
-                          Colors.blue,
+                          AppColors.info,
                           () => _openMaps(customerAddress),
                         ),
                     ]),
 
-                    const SizedBox(height: 16),
+                    AppSpacing.gapLG,
 
                     // Payment section
                     _buildDetailSection('Thanh toán', [
                       Row(
                         children: [
                           Icon(paymentIcon, size: 18, color: paymentColor),
-                          const SizedBox(width: 8),
+                          AppSpacing.hGapSM,
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
@@ -1876,17 +1878,17 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                             ),
                           ),
                           if (methodLabel.isNotEmpty) ...[
-                            const SizedBox(width: 8),
+                            AppSpacing.hGapSM,
                             Text(
                               '($methodLabel)',
-                              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                              style: TextStyle(fontSize: 13, color: AppColors.grey600),
                             ),
                           ],
                         ],
                       ),
                     ]),
 
-                    const SizedBox(height: 16),
+                    AppSpacing.gapLG,
 
                     // Items section
                     _buildDetailSection(
@@ -1895,7 +1897,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                           ? [
                               Text(
                                 'Không có thông tin sản phẩm',
-                                style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                                style: TextStyle(color: AppColors.grey500, fontSize: 13),
                               ),
                             ]
                           : items.map<Widget>((item) {
@@ -1908,9 +1910,9 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.all(12),
+                                padding: AppSpacing.paddingMD,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
+                                  color: AppColors.grey50,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Column(
@@ -1920,20 +1922,20 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                                       name,
                                       style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                                     ),
-                                    const SizedBox(height: 4),
+                                    AppSpacing.gapXXS,
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
                                           '$qty $unit  ×  ${currencyFormat.format(unitPrice)}',
-                                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                          style: TextStyle(fontSize: 13, color: AppColors.grey600),
                                         ),
                                         Text(
                                           currencyFormat.format(lineTotal),
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 13,
-                                            color: Colors.green.shade700,
+                                            color: AppColors.successDark,
                                           ),
                                         ),
                                       ],
@@ -1944,14 +1946,14 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                             }).toList(),
                     ),
 
-                    const SizedBox(height: 16),
+                    AppSpacing.gapLG,
 
                     // Total row
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppSpacing.paddingLG,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.green.shade50, Colors.green.shade100],
+                          colors: [AppColors.successLight, AppColors.successLight],
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1967,7 +1969,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700,
+                              color: AppColors.successDark,
                             ),
                           ),
                         ],
@@ -1992,10 +1994,10 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: Colors.grey.shade800,
+            color: AppColors.grey800,
           ),
         ),
-        const SizedBox(height: 8),
+        AppSpacing.gapSM,
         ...children,
       ],
     );
@@ -2006,8 +2008,8 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Colors.grey.shade500),
-          const SizedBox(width: 8),
+          Icon(icon, size: 18, color: AppColors.grey500),
+          AppSpacing.hGapSM,
           Expanded(
             child: Text(text, style: const TextStyle(fontSize: 14)),
           ),
@@ -2027,7 +2029,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
           child: Row(
             children: [
               Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
+              AppSpacing.hGapSM,
               Expanded(
                 child: Text(
                   text,

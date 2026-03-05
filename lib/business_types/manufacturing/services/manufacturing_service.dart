@@ -2,6 +2,7 @@
 // Date: 2024-01-15
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_sabohub/utils/postgrest_sanitizer.dart';
 import '../models/manufacturing_models.dart';
 
 /// ⚠️⚠️⚠️ CRITICAL AUTHENTICATION ARCHITECTURE ⚠️⚠️⚠️
@@ -49,7 +50,7 @@ class ManufacturingService {
       query = query.eq('is_active', isActive);
     }
     if (search != null && search.isNotEmpty) {
-      query = query.or('name.ilike.%$search%,supplier_code.ilike.%$search%');
+      query = query.or('name.ilike.%${PostgrestSanitizer.sanitizeSearch(search)}%,supplier_code.ilike.%${PostgrestSanitizer.sanitizeSearch(search)}%');
     }
 
     final response = await query.order('name');
@@ -109,7 +110,7 @@ class ManufacturingService {
       query = query.eq('is_active', isActive);
     }
     if (search != null && search.isNotEmpty) {
-      query = query.or('name.ilike.%$search%,material_code.ilike.%$search%');
+      query = query.or('name.ilike.%${PostgrestSanitizer.sanitizeSearch(search)}%,material_code.ilike.%${PostgrestSanitizer.sanitizeSearch(search)}%');
     }
 
     final response = await query.order('name');

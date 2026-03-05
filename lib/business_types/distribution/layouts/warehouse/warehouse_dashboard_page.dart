@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../widgets/bug_report_dialog.dart';
-import '../../../../pages/staff/staff_profile_page.dart';
 import '../../../../widgets/realtime_notification_widgets.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../utils/app_logger.dart';
@@ -32,8 +31,8 @@ class _WarehouseDashboardPageState extends ConsumerState<WarehouseDashboardPage>
 
   Future<void> _loadDashboardData() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) {
         setState(() => _isLoading = false);
@@ -102,8 +101,7 @@ class _WarehouseDashboardPageState extends ConsumerState<WarehouseDashboardPage>
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final user = authState.user;
+    final user = ref.watch(currentUserProvider);
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -138,54 +136,50 @@ class _WarehouseDashboardPageState extends ConsumerState<WarehouseDashboardPage>
                                     width: 50,
                                     height: 50,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
+                                      color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Center(
                                       child: Text(
                                         (user?.name ?? 'K')[0].toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.surface,
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Xin chào, ${user?.name ?? 'Nhân viên kho'}! 📦',
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          style: TextStyle(
+                                            color: Theme.of(context).colorScheme.surface,
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        const SizedBox(height: 2),
+                                        SizedBox(height: 2),
                                         Text(
                                           user?.companyName ?? 'Công ty',
                                           style: TextStyle(
-                                            color: Colors.white.withOpacity(0.8),
+                                            color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
                                             fontSize: 13,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const RealtimeNotificationBell(iconColor: Colors.white),
+                                  RealtimeNotificationBell(iconColor: Theme.of(context).colorScheme.surface),
                                   PopupMenuButton<String>(
-                                    icon: const Icon(Icons.more_vert, color: Colors.white),
+                                    icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.surface),
                                     onSelected: (value) async {
                                       if (value == 'profile') {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (context) => const Scaffold(body: StaffProfilePage()),
-                                          ),
-                                        );
+                                        context.push('/profile');
                                       } else if (value == 'bug_report') {
                                         BugReportDialog.show(context);
                                       } else if (value == 'logout') {
@@ -233,9 +227,9 @@ class _WarehouseDashboardPageState extends ConsumerState<WarehouseDashboardPage>
                               const SizedBox(height: 24),
 
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
+                                  color: Theme.of(context).colorScheme.surface.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: GestureDetector(
@@ -252,14 +246,14 @@ class _WarehouseDashboardPageState extends ConsumerState<WarehouseDashboardPage>
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.calendar_today, color: Colors.white, size: 18),
-                                      const SizedBox(width: 8),
+                                      Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.surface, size: 18),
+                                      SizedBox(width: 8),
                                       Text(
                                         _dateFilter != null ? getDateRangeLabel(_dateFilter!) : DateFormat('EEEE, dd/MM/yyyy', 'vi').format(DateTime.now()),
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                                        style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.w500),
                                       ),
-                                      const SizedBox(width: 4),
-                                      const Icon(Icons.arrow_drop_down, color: Colors.white, size: 20),
+                                      SizedBox(width: 4),
+                                      Icon(Icons.arrow_drop_down, color: Theme.of(context).colorScheme.surface, size: 20),
                                     ],
                                   ),
                                 ),
@@ -308,12 +302,12 @@ class _WarehouseDashboardPageState extends ConsumerState<WarehouseDashboardPage>
                           child: Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(12),
+                                padding: EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: const Icon(Icons.check_circle, color: Colors.white, size: 28),
+                                child: Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface, size: 28),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
@@ -322,12 +316,12 @@ class _WarehouseDashboardPageState extends ConsumerState<WarehouseDashboardPage>
                                   children: [
                                     Text(
                                       'Hoàn thành hôm nay',
-                                      style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                                      style: TextStyle(color: Theme.of(context).colorScheme.surface.withOpacity(0.9), fontSize: 13),
                                     ),
-                                    const SizedBox(height: 4),
+                                    SizedBox(height: 4),
                                     Text(
                                       '${_stats['completedToday'] ?? 0} đơn',
-                                      style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                                      style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 24, fontWeight: FontWeight.bold),
                                     ),
                                   ],
                                 ),
@@ -397,12 +391,12 @@ class _WarehouseDashboardPageState extends ConsumerState<WarehouseDashboardPage>
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04), blurRadius: 10, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -422,8 +416,8 @@ class _WarehouseDashboardPageState extends ConsumerState<WarehouseDashboardPage>
   }
 
   void _showLowStockProducts(BuildContext context) async {
-    final authState = ref.read(authProvider);
-    final companyId = authState.user?.companyId;
+    final user = ref.read(currentUserProvider);
+    final companyId = user?.companyId;
     if (companyId == null) return;
 
     showModalBottomSheet(
@@ -437,8 +431,8 @@ class _WarehouseDashboardPageState extends ConsumerState<WarehouseDashboardPage>
   Widget _buildLowStockSheet(String companyId) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(

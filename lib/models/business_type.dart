@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../core/theme/app_colors.dart';
+import '../core/theme/app_colors.dart';
 
 enum BusinessType {
   // Corporation / Holding — parent company with multiple business units
-  corporation('Tổng Công Ty', Icons.domain, Color(0xFF0F172A)),
+  // NOTE: 'corporation' is client-only — NOT in DB CHECK constraint for business_type
+  @Deprecated('Not in DB CHECK constraint — used for UI grouping only')
+  corporation('Tổng Công Ty', Icons.domain, AppColors.backgroundDark),
 
   // Entertainment / F&B
   billiards('Quán Bida', Icons.sports_bar, AppColors.info),
@@ -14,7 +16,7 @@ enum BusinessType {
   
   // Distribution / Manufacturing (Odori)
   distribution('Phân Phối', Icons.local_shipping, Color(0xFF0EA5E9)),
-  manufacturing('Sản Xuất', Icons.factory, Color(0xFF22C55E));
+  manufacturing('Sản Xuất', Icons.factory, AppColors.success);
 
   final String label;
   final IconData icon;
@@ -22,6 +24,7 @@ enum BusinessType {
   const BusinessType(this.label, this.icon, this.color);
 
   /// Corporation — parent company managing multiple divisions
+  // ignore: deprecated_member_use_from_same_package
   bool get isCorporation => this == BusinessType.corporation;
 
   /// Check if this is a distribution/delivery business type (like Odori)

@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/gamification/gamification_models.dart';
 import '../services/gamification/gamification_service.dart';
 import 'auth_provider.dart';
+import 'token_provider.dart';
 
 // ──────────────────────────────────────────────
 // Service Provider
@@ -43,8 +45,8 @@ class CeoProfileState {
 class CeoProfileNotifier extends Notifier<CeoProfileState> {
   @override
   CeoProfileState build() {
-    final auth = ref.watch(authProvider);
-    if (auth.isAuthenticated && auth.user?.companyId != null) {
+    final user = ref.watch(currentUserProvider);
+    if (user != null && user.companyId != null) {
       Future.microtask(() => loadProfile());
     }
     return const CeoProfileState(isLoading: true);
@@ -69,6 +71,17 @@ class CeoProfileNotifier extends Notifier<CeoProfileState> {
       await _service.initializeQuestsForUser(userId, companyId);
 
       await _service.recordDailyLogin(userId, companyId);
+
+      // Award daily login tokens
+      try {
+        await ref.read(tokenWalletProvider.notifier).earnTokens(
+          5,
+          sourceType: 'attendance',
+          description: 'Đăng nhập hàng ngày',
+        );
+      } catch (e) {
+        debugPrint('CeoProfileNotifier.loadProfile earnTokens error: $e');
+      }
 
       final updatedProfile = await _service.getCeoProfile(userId, companyId);
 
@@ -274,6 +287,7 @@ class CelebrationData {
   final String? subtitle;
   final int? xpEarned;
   final int? newLevel;
+  final int? tokenEarned;
 
   const CelebrationData({
     required this.event,
@@ -281,6 +295,7 @@ class CelebrationData {
     this.subtitle,
     this.xpEarned,
     this.newLevel,
+    this.tokenEarned,
   });
 }
 
@@ -322,15 +337,40 @@ class GamificationActions {
     );
     _invalidate();
 
+    // Award quest completion tokens
+    if (newProgress >= 100) {
+      try {
+        await _ref.read(tokenWalletProvider.notifier).earnTokens(
+          20,
+          sourceType: 'quest',
+          sourceId: progressId,
+          description: 'Hoàn thành quest',
+        );
+      } catch (e) {
+        debugPrint('GamificationActions.completeQuestStep earnTokens error: $e');
+      }
+    }
+
     // Check for level up after quest completion
     await Future.delayed(const Duration(milliseconds: 500));
     final newProfile = _ref.read(ceoProfileProvider).profile;
     if (newProfile != null && newProfile.level > oldLevel) {
+      // Award level-up bonus tokens
+      try {
+        await _ref.read(tokenWalletProvider.notifier).earnTokens(
+          100,
+          sourceType: 'bonus',
+          description: 'Lên level ${newProfile.level}!',
+        );
+      } catch (e) {
+        debugPrint('GamificationActions.completeQuestStep levelUp earnTokens error: $e');
+      }
       _ref.read(celebrationProvider.notifier).celebrate(CelebrationData(
         event: CelebrationEvent.levelUp,
         title: newProfile.currentTitle,
         subtitle: 'Level ${newProfile.level}',
         newLevel: newProfile.level,
+        tokenEarned: 100,
       ));
     }
   }
@@ -338,6 +378,17 @@ class GamificationActions {
   Future<void> grantAchievement(String achievementId) async {
     if (_userId == null || _companyId == null) return;
     await _service.grantAchievement(_userId!, _companyId!, achievementId);
+    // Award achievement tokens
+    try {
+      await _ref.read(tokenWalletProvider.notifier).earnTokens(
+        50,
+        sourceType: 'achievement',
+        sourceId: achievementId,
+        description: 'Mở khóa thành tựu',
+      );
+    } catch (e) {
+      debugPrint('GamificationActions.grantAchievement earnTokens error: $e');
+    }
     _invalidate();
   }
 
@@ -370,10 +421,22 @@ class GamificationActions {
 
     for (final r in results) {
       if (r['newly_unlocked'] == true) {
+        // Award achievement tokens
+        try {
+          await _ref.read(tokenWalletProvider.notifier).earnTokens(
+            50,
+            sourceType: 'achievement',
+            sourceId: r['achievement_id'] as String?,
+            description: r['achievement_name'] as String? ?? 'Thành tựu mới',
+          );
+        } catch (e) {
+          debugPrint('GamificationActions.evaluateAchievements earnTokens error: $e');
+        }
         _ref.read(celebrationProvider.notifier).celebrate(CelebrationData(
           event: CelebrationEvent.achievementUnlock,
           title: r['achievement_name'] as String? ?? 'Thành tựu mới!',
           subtitle: r['rarity'] as String?,
+          tokenEarned: 50,
         ));
       }
     }
@@ -422,10 +485,22 @@ class GamificationActions {
     final result = await _service.claimSeasonTier(_userId!, _companyId!, tier);
     _ref.invalidate(seasonPassProvider);
     if (result.success) {
+      // Award season tier tokens
+      final tierTokens = tier * 30.0;
+      try {
+        await _ref.read(tokenWalletProvider.notifier).earnTokens(
+          tierTokens,
+          sourceType: 'season_reward',
+          description: 'Season Tier $tier: ${result.rewardName}',
+        );
+      } catch (e) {
+        debugPrint('GamificationActions.claimSeasonTier earnTokens error: $e');
+      }
       _ref.read(celebrationProvider.notifier).celebrate(CelebrationData(
         event: CelebrationEvent.questComplete,
         title: result.rewardName,
         subtitle: 'Season Reward!',
+        tokenEarned: tierTokens.toInt(),
       ));
       _invalidate();
     }
@@ -438,11 +513,23 @@ class GamificationActions {
     }
     final result = await _service.prestigeReset(_userId!, _companyId!);
     if (result.success) {
+      // Award prestige tokens
+      final prestigeTokens = result.newPrestigeLevel * 500.0;
+      try {
+        await _ref.read(tokenWalletProvider.notifier).earnTokens(
+          prestigeTokens,
+          sourceType: 'bonus',
+          description: 'Prestige ${result.newPrestigeLevel} bonus!',
+        );
+      } catch (e) {
+        debugPrint('GamificationActions.doPrestige earnTokens error: $e');
+      }
       _ref.read(celebrationProvider.notifier).celebrate(CelebrationData(
         event: CelebrationEvent.levelUp,
         title: 'Prestige ${result.newPrestigeLevel}!',
         subtitle: 'Bắt đầu lại với sức mạnh mới',
         newLevel: result.newPrestigeLevel,
+        tokenEarned: prestigeTokens.toInt(),
       ));
       _invalidate();
       _ref.invalidate(prestigeInfoProvider);
@@ -473,10 +560,21 @@ class GamificationActions {
       _ref.invalidate(hasPremiumPassProvider);
       _ref.invalidate(seasonTiersProvider);
       _ref.read(ceoProfileProvider.notifier).refresh();
+      // Award premium pass bonus tokens
+      try {
+        await _ref.read(tokenWalletProvider.notifier).earnTokens(
+          200,
+          sourceType: 'bonus',
+          description: 'Premium Pass activation bonus!',
+        );
+      } catch (e) {
+        debugPrint('GamificationActions.buyPremiumPass earnTokens error: $e');
+      }
       _ref.read(celebrationProvider.notifier).celebrate(CelebrationData(
         event: CelebrationEvent.questComplete,
         title: 'Premium Pass!',
         subtitle: 'Đã kích hoạt Premium Season Pass',
+        tokenEarned: 200,
       ));
     }
     return result;

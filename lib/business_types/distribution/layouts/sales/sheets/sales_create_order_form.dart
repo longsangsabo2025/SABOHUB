@@ -83,8 +83,8 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
 
   Future<void> _loadCustomersAndProducts() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 
@@ -173,9 +173,9 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
     setState(() => _isSubmitting = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final userId = authState.user?.id;
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final userId = user?.id;
+      final companyId = user?.companyId;
 
       if (userId == null || companyId == null) {
         throw Exception('User not authenticated');
@@ -277,8 +277,8 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
       appBar: AppBar(
         title: Text(_isEditing ? 'Sửa đơn hàng' : 'Tạo đơn hàng'),
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         actions: [
           TextButton.icon(
             onPressed: _isSubmitting ? null : _submitOrder,
@@ -494,12 +494,12 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
         ),
       ),
       bottomSheet: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -528,7 +528,7 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 icon: _isSubmitting 
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface))
                     : const Icon(Icons.check),
                 label: const Text('Tạo đơn hàng'),
               ),
@@ -562,8 +562,8 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
             minChildSize: 0.5,
             maxChildSize: 0.95,
             builder: (context, scrollController) => Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Column(

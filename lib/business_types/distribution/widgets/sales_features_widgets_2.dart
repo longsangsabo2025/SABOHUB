@@ -35,8 +35,8 @@ class _StockCheckFormState extends ConsumerState<StockCheckForm> {
 
   Future<void> _loadProducts() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId == null) return;
 
       final response = await supabase
@@ -275,9 +275,9 @@ class _SurveyFormWidgetState extends ConsumerState<SurveyFormWidget> {
     setState(() => _isSubmitting = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
-      final userId = authState.user?.id;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
 
       if (companyId == null || userId == null) return;
 
@@ -383,7 +383,7 @@ class _SurveyFormWidgetState extends ConsumerState<SurveyFormWidget> {
                   onTap: () => setState(() => _answers[questionId] = value),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
                       color: selected ? Colors.blue : Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(8),
@@ -393,7 +393,7 @@ class _SurveyFormWidgetState extends ConsumerState<SurveyFormWidget> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: selected ? Colors.white : Colors.grey.shade700,
+                        color: selected ? Theme.of(context).colorScheme.surface : Colors.grey.shade700,
                       ),
                     ),
                   ),
@@ -511,8 +511,8 @@ class _ProductRecommendationsState extends ConsumerState<ProductRecommendations>
       
       // If no history, get popular products for company
       if (products.isEmpty) {
-        final authState = ref.read(authProvider);
-        final companyId = authState.user?.companyId;
+        final user = ref.read(currentUserProvider);
+        final companyId = user?.companyId;
         if (companyId != null) {
           final response = await supabase
               .from('products')
@@ -631,8 +631,8 @@ class _SurveysListState extends ConsumerState<SurveysList> {
   }
 
   Future<void> _loadSurveys() async {
-    final authState = ref.read(authProvider);
-    final companyId = authState.user?.companyId;
+    final user = ref.read(currentUserProvider);
+    final companyId = user?.companyId;
     if (companyId == null) return;
 
     final surveys = await ref.read(surveyServiceProvider).getActiveSurveys(companyId);

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/gamification/gamification_models.dart';
 import '../../providers/gamification_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class SkillTreeWidget extends ConsumerWidget {
   const SkillTreeWidget({super.key});
@@ -19,10 +20,10 @@ class SkillTreeWidget extends ConsumerWidget {
     final isLocked = profile.level < 20;
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -122,9 +123,9 @@ class SkillTreeWidget extends ConsumerWidget {
   ) {
     final branches = ['leader', 'merchant', 'strategist'];
     final branchColors = {
-      'leader': const Color(0xFF43A047),
-      'merchant': const Color(0xFF1E88E5),
-      'strategist': const Color(0xFFFF8F00),
+      'leader': Color(0xFF43A047),
+      'merchant': Color(0xFF1E88E5),
+      'strategist': Color(0xFFFF8F00),
     };
     final branchNames = {
       'leader': '👥 Leader (Con Người)',
@@ -171,7 +172,7 @@ class SkillTreeWidget extends ConsumerWidget {
                         onTap: canAllocate
                             ? () => _onAllocate(context, ref, skill)
                             : () => _showSkillInfo(context, skill, isUnlocked),
-                        child: _buildSkillNode(skill, isUnlocked, isNext, canAllocate, color),
+                        child: _buildSkillNode(context, skill, isUnlocked, isNext, canAllocate, color),
                       ),
                     );
                   }).toList(),
@@ -185,6 +186,7 @@ class SkillTreeWidget extends ConsumerWidget {
   }
 
   Widget _buildSkillNode(
+    BuildContext context,
     SkillDefinition skill,
     bool isUnlocked,
     bool isNext,
@@ -213,9 +215,9 @@ class SkillTreeWidget extends ConsumerWidget {
           ),
           child: Center(
             child: isUnlocked
-                ? Text(skill.iconEmoji, style: const TextStyle(fontSize: 18))
+                ? Text(skill.iconEmoji, style: TextStyle(fontSize: 18))
                 : canAllocate
-                    ? const Icon(Icons.add, size: 18, color: Colors.white70)
+                    ? Icon(Icons.add, size: 18, color: Theme.of(context).colorScheme.surface70)
                     : Icon(Icons.lock_outline, size: 14, color: Colors.grey.shade400),
           ),
         ),
@@ -279,12 +281,12 @@ class SkillTreeWidget extends ConsumerWidget {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Hủy')),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.surface,
             ),
             child: const Text('Mở khóa'),
           ),

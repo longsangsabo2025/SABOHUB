@@ -1,5 +1,5 @@
-/// Media Project model — CEO-level project management
-/// Groups content, channels, and campaigns under a single project
+// Media Project model — CEO-level project management
+// Groups content, channels, and campaigns under a single project
 
 class MediaProject {
   final String id;

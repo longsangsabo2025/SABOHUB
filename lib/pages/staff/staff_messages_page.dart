@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../../core/theme/app_colors.dart';
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Staff Messages Page
 /// Team communication and announcements for staff
@@ -30,7 +31,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
           // Send quick message
         },
         backgroundColor: AppColors.success,
-        child: const Icon(Icons.send, color: Colors.white),
+        child: Icon(Icons.send, color: Theme.of(context).colorScheme.surface),
       ),
     );
   }
@@ -38,13 +39,13 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       elevation: 0,
-      backgroundColor: Colors.white,
-      title: const Text(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      title: Text(
         'Tin nhắn',
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: Theme.of(context).colorScheme.onSurface87,
         ),
       ),
       actions: [
@@ -58,7 +59,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
               ),
             );
           },
-          icon: const Icon(Icons.search, color: Colors.black54),
+          icon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface54),
         ),
         IconButton(
           onPressed: () {
@@ -70,7 +71,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
               ),
             );
           },
-          icon: const Icon(Icons.notifications_outlined, color: Colors.black54),
+          icon: Icon(Icons.notifications_outlined, color: Theme.of(context).colorScheme.onSurface54),
         ),
       ],
     );
@@ -80,13 +81,13 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
     const tabs = ['Nhóm', 'Cá nhân', 'Thông báo'];
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -102,7 +103,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
             child: GestureDetector(
               onTap: () => setState(() => _selectedTab = index),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color:
                       isSelected ? AppColors.success : Colors.transparent,
@@ -114,7 +115,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : Colors.grey.shade600,
+                    color: isSelected ? Theme.of(context).colorScheme.surface : Colors.grey.shade600,
                   ),
                 ),
               ),
@@ -153,13 +154,13 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
 
   Widget _buildQuickActions() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -271,11 +272,11 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
   Widget _buildGroupChats() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -366,14 +367,14 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                       color: AppColors.error,
                       shape: BoxShape.circle,
                     ),
-                    constraints: const BoxConstraints(
+                    constraints: BoxConstraints(
                       minWidth: 18,
                       minHeight: 18,
                     ),
                     child: Text(
                       unreadCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.surface,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -398,7 +399,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                             unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
@@ -416,13 +417,13 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   lastMessage,
                   style: TextStyle(
                     fontSize: 12,
                     color:
-                        unreadCount > 0 ? Colors.black87 : Colors.grey.shade600,
+                        unreadCount > 0 ? Theme.of(context).colorScheme.onSurface87 : Colors.grey.shade600,
                     fontWeight:
                         unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
                   ),
@@ -458,11 +459,11 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
   Widget _buildPersonalChats() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -556,9 +557,9 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                 backgroundColor: Colors.grey.shade200,
                 child: Text(
                   name[0],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Theme.of(context).colorScheme.onSurface87,
                   ),
                 ),
               ),
@@ -571,7 +572,7 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                   decoration: BoxDecoration(
                     color: statusColor,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
                   ),
                 ),
               ),
@@ -585,14 +586,14 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                       color: AppColors.error,
                       shape: BoxShape.circle,
                     ),
-                    constraints: const BoxConstraints(
+                    constraints: BoxConstraints(
                       minWidth: 18,
                       minHeight: 18,
                     ),
                     child: Text(
                       unreadCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.surface,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -615,13 +616,13 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                         unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   lastMessage,
                   style: TextStyle(
                     fontSize: 12,
                     color:
-                        unreadCount > 0 ? Colors.black87 : Colors.grey.shade600,
+                        unreadCount > 0 ? Theme.of(context).colorScheme.onSurface87 : Colors.grey.shade600,
                     fontWeight:
                         unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
                   ),
@@ -657,11 +658,11 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
   Widget _buildAnnouncementsList() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -778,18 +779,18 @@ class _StaffMessagesPageState extends ConsumerState<StaffMessagesPage> {
                     ),
                     if (isNew)
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: AppColors.error,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
+                        child: Text(
                           'MỚI',
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                       ),

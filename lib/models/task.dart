@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../../core/theme/app_colors.dart';
+import '../core/theme/app_colors.dart';
 
 enum TaskPriority {
-  low('Thấp', Color(0xFF6B7280)),
+  low('Thấp', AppColors.neutral500),
   medium('Trung bình', AppColors.info),
   high('Cao', AppColors.warning),
   urgent('Khẩn cấp', AppColors.error);
@@ -13,7 +13,7 @@ enum TaskPriority {
 }
 
 enum TaskStatus {
-  todo('Cần làm', Color(0xFF6B7280)),
+  todo('Cần làm', AppColors.neutral500),
   inProgress('Đang làm', AppColors.info),
   completed('Hoàn thành', AppColors.success),
   cancelled('Đã hủy', AppColors.error);
@@ -58,7 +58,7 @@ enum TaskCategory {
   maintenance('Bảo trì', AppColors.warning),
   inventory('Kho hàng', AppColors.primary),
   customerService('Khách hàng', AppColors.success),
-  other('Khác', Color(0xFF6B7280));
+  other('Khác', AppColors.neutral500);
 
   final String label;
   final Color color;
@@ -66,12 +66,12 @@ enum TaskCategory {
 }
 
 enum TaskRecurrence {
-  none('Không lặp lại', Icons.event_note, Color(0xFF6B7280)),
+  none('Không lặp lại', Icons.event_note, AppColors.neutral500),
   daily('Hằng ngày', Icons.today, AppColors.success),
   weekly('Hằng tuần', Icons.date_range, AppColors.info),
   monthly('Hằng tháng', Icons.calendar_month, AppColors.primary),
   adhoc('Đột xuất', Icons.flash_on, AppColors.warning),
-  project('Dự án', Icons.work, Color(0xFF06B6D4));
+  project('Dự án', Icons.work, AppColors.secondary);
 
   final String label;
   final IconData icon;

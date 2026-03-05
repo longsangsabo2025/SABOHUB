@@ -3,25 +3,46 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../providers/notification_provider.dart';
+import '../providers/action_center_provider.dart';
 import '../services/realtime_notification_service.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_spacing.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// Notification Bell Widget with Badge
-/// Use this in AppBar to show notification icon with unread count
+/// Use this in AppBar to show notification icon with action item count
 class RealtimeNotificationBell extends ConsumerWidget {
   final VoidCallback? onTap;
   final Color? iconColor;
   final double iconSize;
+  final bool showActionCount; // If true, shows tasks+approvals+notifications count
 
   const RealtimeNotificationBell({
     super.key,
     this.onTap,
     this.iconColor,
     this.iconSize = 24,
+    this.showActionCount = true,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final unreadCount = ref.watch(unreadCountProvider);
+    // Use action summary if showActionCount is true, otherwise just notifications
+    final count = showActionCount
+        ? ref.watch(actionSummaryProvider).when(
+              data: (s) => s.totalCount + s.unreadNotifications,
+              loading: () => ref.watch(unreadCountProvider),
+              error: (_, __) => ref.watch(unreadCountProvider),
+            )
+        : ref.watch(unreadCountProvider);
+
+    final hasUrgent = showActionCount
+        ? ref.watch(actionSummaryProvider).when(
+              data: (s) => s.hasUrgentItems,
+              loading: () => false,
+              error: (_, __) => false,
+            )
+        : false;
 
     return Stack(
       children: [
@@ -32,25 +53,26 @@ class RealtimeNotificationBell extends ConsumerWidget {
             size: iconSize,
           ),
           onPressed: onTap ?? () => _showNotificationsSheet(context),
+          tooltip: 'Thông báo & Công việc',
         ),
-        if (unreadCount > 0)
+        if (count > 0)
           Positioned(
             right: 4,
             top: 4,
             child: Container(
               padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(
-                color: Colors.red,
+              decoration: BoxDecoration(
+                color: hasUrgent ? Colors.red : AppColors.primary,
                 shape: BoxShape.circle,
               ),
-              constraints: const BoxConstraints(
+              constraints: BoxConstraints(
                 minWidth: 18,
                 minHeight: 18,
               ),
               child: Text(
-                unreadCount > 99 ? '99+' : unreadCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
+                count > 99 ? '99+' : count.toString(),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.surface,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -80,6 +102,7 @@ class RealtimeNotificationsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notificationsAsync = ref.watch(notificationsProvider);
     final actions = ref.watch(notificationActionsProvider);
+    final summaryAsync = ref.watch(actionSummaryProvider);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -95,7 +118,7 @@ class RealtimeNotificationsSheet extends ConsumerWidget {
             children: [
               // Handle bar
               Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
+                margin: AppSpacing.paddingVMD,
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
@@ -103,27 +126,53 @@ class RealtimeNotificationsSheet extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
+              // Action Summary Section
+              summaryAsync.when(
+                data: (summary) {
+                  if (summary.totalCount == 0) return const SizedBox.shrink();
+                  return _ActionSummaryBanner(
+                    summary: summary,
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.go('/action-center');
+                    },
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
               // Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: AppSpacing.paddingHLG,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
                       'Thông báo',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    TextButton(
-                      onPressed: () => actions.markAllAsRead(),
-                      child: const Text('Đọc tất cả'),
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => actions.markAllAsRead(),
+                          child: const Text('Đọc tất cả'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            context.go('/action-center');
+                          },
+                          child: const Text('Xem tất cả'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const Divider(),
+              const Divider(height: 1),
               // Content
               Expanded(
                 child: notificationsAsync.when(
@@ -138,7 +187,7 @@ class RealtimeNotificationsSheet extends ConsumerWidget {
                               size: 64,
                               color: Colors.grey,
                             ),
-                            SizedBox(height: 16),
+                            AppSpacing.gapLG,
                             Text(
                               'Không có thông báo',
                               style: TextStyle(
@@ -153,7 +202,7 @@ class RealtimeNotificationsSheet extends ConsumerWidget {
 
                     return ListView.separated(
                       controller: scrollController,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: AppSpacing.paddingVSM,
                       itemCount: notifications.length,
                       separatorBuilder: (_, __) => const Divider(height: 1),
                       itemBuilder: (context, index) {
@@ -185,9 +234,9 @@ class RealtimeNotificationsSheet extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                        const SizedBox(height: 16),
+                        AppSpacing.gapLG,
                         Text('Lỗi: $error'),
-                        const SizedBox(height: 16),
+                        AppSpacing.gapLG,
                         ElevatedButton(
                           onPressed: () => ref.invalidate(notificationsProvider),
                           child: const Text('Thử lại'),
@@ -227,8 +276,8 @@ class RealtimeNotificationTile extends StatelessWidget {
       background: Container(
         color: Colors.red,
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        child: const Icon(Icons.delete, color: Colors.white),
+        padding: EdgeInsets.only(right: 16),
+        child: Icon(Icons.delete, color: Theme.of(context).colorScheme.surface),
       ),
       child: ListTile(
         onTap: onTap,
@@ -259,7 +308,7 @@ class RealtimeNotificationTile extends StatelessWidget {
                   fontSize: 13,
                 ),
               ),
-              const SizedBox(height: 4),
+              AppSpacing.gapXXS,
             ],
             Text(
               _formatTime(notification.createdAt),
@@ -326,9 +375,9 @@ class RealtimeNotificationToast extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: MediaQuery.of(context).size.width - 32,
-          padding: const EdgeInsets.all(16),
+          padding: AppSpacing.paddingLG,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: notification.color.withValues(alpha: 0.3)),
           ),
@@ -342,7 +391,7 @@ class RealtimeNotificationToast extends StatelessWidget {
                   size: 20,
                 ),
               ),
-              const SizedBox(width: 12),
+              AppSpacing.hGapMD,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,7 +405,7 @@ class RealtimeNotificationToast extends StatelessWidget {
                       ),
                     ),
                     if (notification.body != null) ...[
-                      const SizedBox(height: 4),
+                      AppSpacing.gapXXS,
                       Text(
                         notification.body!,
                         maxLines: 2,
@@ -412,14 +461,14 @@ class _RealtimeNotificationListenerState extends ConsumerState<RealtimeNotificat
   Widget build(BuildContext context) {
     ref.listen<AsyncValue<AppNotification>>(newNotificationProvider, (previous, next) {
       next.whenData((notification) {
-        _showNotificationToast(notification);
+        _showNotificationToast(context, notification);
       });
     });
 
     return widget.child;
   }
 
-  void _showNotificationToast(AppNotification notification) {
+  void _showNotificationToast(BuildContext context, AppNotification notification) {
     _currentToast?.remove();
 
     _currentToast = OverlayEntry(
@@ -454,5 +503,106 @@ class _RealtimeNotificationListenerState extends ConsumerState<RealtimeNotificat
       _currentToast?.remove();
       _currentToast = null;
     });
+  }
+}
+
+/// Action Summary Banner shown in notification sheet
+class _ActionSummaryBanner extends StatelessWidget {
+  final ActionSummary summary;
+  final VoidCallback? onTap;
+
+  const _ActionSummaryBanner({
+    required this.summary,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: summary.hasUrgentItems
+              ? [Colors.red.shade400, Colors.orange.shade400]
+              : [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: AppSpacing.paddingMD,
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    summary.hasUrgentItems
+                        ? Icons.warning_amber_rounded
+                        : Icons.assignment_outlined,
+                    color: Theme.of(context).colorScheme.surface,
+                    size: 22,
+                  ),
+                ),
+                AppSpacing.hGapMD,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        summary.hasUrgentItems
+                            ? '${summary.totalCount} việc cần xử lý ngay!'
+                            : '${summary.totalCount} việc cần làm',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.surface,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      AppSpacing.gapXXXS,
+                      Text(
+                        _summaryText(),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: Theme.of(context).colorScheme.surface70,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _summaryText() {
+    final parts = <String>[];
+    if (summary.overdueTasks > 0) {
+      parts.add('${summary.overdueTasks} quá hạn');
+    }
+    if (summary.pendingTasks > 0) {
+      parts.add('${summary.pendingTasks} task');
+    }
+    if (summary.pendingApprovals > 0) {
+      parts.add('${summary.pendingApprovals} phê duyệt');
+    }
+    return parts.isEmpty ? 'Nhấn để xem chi tiết' : parts.join(' • ');
   }
 }

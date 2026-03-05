@@ -1,27 +1,61 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../models/company.dart';
-import '../../../models/task.dart';
+import '../../../models/management_task.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/task_provider.dart';
 import '../../../providers/cached_data_providers.dart';
 import '../../../providers/data_action_providers.dart';
 import '../../../providers/cache_provider.dart';
-import '../../../services/task_service.dart';
-// import '../../../widgets/task_test_widget.dart'; // Removed from production
-import '../create_task_dialog.dart';
+import '../../../providers/cached_providers.dart' show managementTaskServiceProvider;
+import '../../../services/task_service.dart'; // used for direct field updates (recurrence, assignee)
+import '../../../widgets/task/task_create_dialog.dart';
 import '../edit_task_dialog.dart';
-import '../task_details_dialog.dart';
+import '../task_detail_page.dart';
+
+// ─── Recurrence helpers ───────────────────────────────────────────────────────
+String _recurrenceLabel(String r) {
+  switch (r) {
+    case 'daily': return 'Hằng ngày';
+    case 'weekly': return 'Hằng tuần';
+    case 'monthly': return 'Hằng tháng';
+    case 'adhoc': return 'Đột xuất';
+    case 'project': return 'Dự án';
+    default: return 'Không lặp';
+  }
+}
+
+Color _recurrenceColor(String r) {
+  switch (r) {
+    case 'daily': return AppColors.success;
+    case 'weekly': return AppColors.info;
+    case 'monthly': return AppColors.paymentRefunded;
+    case 'adhoc': return AppColors.warning;
+    case 'project': return AppColors.secondary;
+    default: return AppColors.neutral500;
+  }
+}
+
+IconData _recurrenceIcon(String r) {
+  switch (r) {
+    case 'daily': return Icons.today_rounded;
+    case 'weekly': return Icons.date_range_rounded;
+    case 'monthly': return Icons.calendar_month_rounded;
+    case 'adhoc': return Icons.flash_on_rounded;
+    case 'project': return Icons.work_rounded;
+    default: return Icons.event_note_rounded;
+  }
+}
 
 /// Task Template for library
 class TaskTemplate {
   final String title;
   final String description;
-  final TaskRecurrence recurrence;
-  final TaskPriority priority;
-  final TaskCategory? category;
+  final String recurrence; // 'daily', 'weekly', 'monthly', 'adhoc', 'project', 'none'
+  final String priority;   // 'critical', 'high', 'medium', 'low'
+  final String? category;  // 'operations', 'maintenance', etc.
 
   TaskTemplate({
     required this.title,
@@ -49,7 +83,7 @@ class TasksTab extends ConsumerStatefulWidget {
 
 class _TasksTabState extends ConsumerState<TasksTab>
     with SingleTickerProviderStateMixin {
-  TaskRecurrence? _selectedRecurrence;
+  String? _selectedRecurrence;
   late TabController _tabController;
 
   @override
@@ -73,14 +107,12 @@ class _TasksTabState extends ConsumerState<TasksTab>
     return Column(
       children: [
         _buildHeader(context, statsAsync),
-        _buildFilterChips(),
         _buildMainTabs(),
         Expanded(
           child: TabBarView(
             controller: _tabController,
             children: [
-              _buildTasksList(
-                  tasksAsync.whenData((tasks) => tasks.cast<Task>())),
+              _buildChecklistView(tasksAsync),
               _buildTemplateLibrary(),
             ],
           ),
@@ -91,7 +123,7 @@ class _TasksTabState extends ConsumerState<TasksTab>
 
   Widget _buildMainTabs() {
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       child: TabBar(
         controller: _tabController,
         labelColor: Colors.blue[700],
@@ -102,9 +134,9 @@ class _TasksTabState extends ConsumerState<TasksTab>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.list_alt, size: 20),
+                Icon(Icons.checklist_rounded, size: 20),
                 SizedBox(width: 8),
-                Text('Công việc', style: TextStyle(fontSize: 15)),
+                Text('Checklist', style: TextStyle(fontSize: 15)),
               ],
             ),
           ),
@@ -126,8 +158,8 @@ class _TasksTabState extends ConsumerState<TasksTab>
   Widget _buildHeader(
       BuildContext context, AsyncValue<Map<String, int>> statsAsync) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
+      padding: EdgeInsets.all(16),
+      color: Theme.of(context).colorScheme.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -141,55 +173,103 @@ class _TasksTabState extends ConsumerState<TasksTab>
               ElevatedButton.icon(
                 onPressed: () => _showCreateTaskDialog(context),
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('Tạo công việc'),
+                label: Text('Tạo công việc'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue[600],
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
           statsAsync.when(
-            data: (stats) => Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    Icons.assignment,
-                    '${stats['total'] ?? 0}',
-                    'Tổng số',
-                    Colors.blue,
+            data: (stats) {
+              final total = stats['total'] ?? 0;
+              final completed = stats['completed'] ?? 0;
+              final progress = total > 0 ? completed / total : 0.0;
+              final isDone = total > 0 && completed == total;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          Icons.assignment,
+                          '$total',
+                          'Tổng số',
+                          Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          Icons.pending_actions,
+                          '${stats['pending'] ?? 0}',
+                          'Cần làm',
+                          Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          Icons.sync,
+                          '${stats['in_progress'] ?? 0}',
+                          'Đang làm',
+                          Colors.purple,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          Icons.check_circle,
+                          '$completed',
+                          'Hoàn thành',
+                          Colors.green,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    Icons.pending_actions,
-                    '${stats['pending'] ?? 0}',
-                    'Cần làm',
-                    Colors.orange,
+                  const SizedBox(height: 12),
+                  // Overall progress bar
+                  Row(
+                    children: [
+                      Icon(
+                        isDone ? Icons.emoji_events_rounded : Icons.track_changes_rounded,
+                        size: 14,
+                        color: isDone ? Colors.green[700] : Colors.grey[600],
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Tiến độ tổng quát',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '$completed/$total hoàn thành',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isDone ? Colors.green[700] : Colors.blue[700],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    Icons.sync,
-                    '${stats['in_progress'] ?? 0}',
-                    'Đang làm',
-                    Colors.purple,
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(5),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isDone ? Colors.green : Colors.blue,
+                      ),
+                      minHeight: 8,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    Icons.check_circle,
-                    '${stats['completed'] ?? 0}',
-                    'Hoàn thành',
-                    Colors.green,
-                  ),
-                ),
-              ],
-            ),
+                ],
+              );
+            },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (_, __) => const SizedBox.shrink(),
           ),
@@ -228,10 +308,11 @@ class _TasksTabState extends ConsumerState<TasksTab>
     );
   }
 
+  // ignore: unused_element
   Widget _buildFilterChips() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: Colors.white,
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: Theme.of(context).colorScheme.surface,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -260,9 +341,9 @@ class _TasksTabState extends ConsumerState<TasksTab>
                   Text('Hằng ngày')
                 ],
               ),
-              selected: _selectedRecurrence == TaskRecurrence.daily,
+              selected: _selectedRecurrence == 'daily',
               onSelected: (selected) => setState(() =>
-                  _selectedRecurrence = selected ? TaskRecurrence.daily : null),
+                  _selectedRecurrence = selected ? 'daily' : null),
               selectedColor: Colors.green[100],
             ),
             const SizedBox(width: 8),
@@ -275,9 +356,9 @@ class _TasksTabState extends ConsumerState<TasksTab>
                   Text('Hằng tuần')
                 ],
               ),
-              selected: _selectedRecurrence == TaskRecurrence.weekly,
+              selected: _selectedRecurrence == 'weekly',
               onSelected: (selected) => setState(() => _selectedRecurrence =
-                  selected ? TaskRecurrence.weekly : null),
+                  selected ? 'weekly' : null),
               selectedColor: Colors.blue[100],
             ),
             const SizedBox(width: 8),
@@ -290,9 +371,9 @@ class _TasksTabState extends ConsumerState<TasksTab>
                   Text('Hằng tháng')
                 ],
               ),
-              selected: _selectedRecurrence == TaskRecurrence.monthly,
+              selected: _selectedRecurrence == 'monthly',
               onSelected: (selected) => setState(() => _selectedRecurrence =
-                  selected ? TaskRecurrence.monthly : null),
+                  selected ? 'monthly' : null),
               selectedColor: Colors.purple[100],
             ),
             const SizedBox(width: 8),
@@ -305,9 +386,9 @@ class _TasksTabState extends ConsumerState<TasksTab>
                   Text('Đột xuất')
                 ],
               ),
-              selected: _selectedRecurrence == TaskRecurrence.adhoc,
+              selected: _selectedRecurrence == 'adhoc',
               onSelected: (selected) => setState(() =>
-                  _selectedRecurrence = selected ? TaskRecurrence.adhoc : null),
+                  _selectedRecurrence = selected ? 'adhoc' : null),
               selectedColor: Colors.orange[100],
             ),
             const SizedBox(width: 8),
@@ -320,9 +401,9 @@ class _TasksTabState extends ConsumerState<TasksTab>
                   Text('Dự án')
                 ],
               ),
-              selected: _selectedRecurrence == TaskRecurrence.project,
+              selected: _selectedRecurrence == 'project',
               onSelected: (selected) => setState(() => _selectedRecurrence =
-                  selected ? TaskRecurrence.project : null),
+                  selected ? 'project' : null),
               selectedColor: Colors.teal[100],
             ),
           ],
@@ -331,82 +412,472 @@ class _TasksTabState extends ConsumerState<TasksTab>
     );
   }
 
-  Widget _buildTasksList(AsyncValue<List<Task>> tasksAsync) {
-    print('🎯 [TasksTab] Building tasks list, async state: $tasksAsync');
-    
+  // ─── CHECKLIST VIEW ──────────────────────────────────────────────────────
+
+  Widget _buildChecklistView(AsyncValue<List<ManagementTask>> tasksAsync) {
     return tasksAsync.when(
-        data: (tasks) {
-          print('✅ [TasksTab] Received ${tasks.length} tasks from provider');
-          
-          var filteredTasks = _selectedRecurrence == null
-              ? tasks
-              : tasks
-                  .where((task) => task.recurrence == _selectedRecurrence)
-                  .toList();
+      data: (tasks) {
+        if (tasks.isEmpty) return _buildEmptyState();
 
-          print('🔍 [TasksTab] After filter: ${filteredTasks.length} tasks (filter: $_selectedRecurrence)');
+        // Group by recurrence
+        final daily = tasks.where((t) => t.recurrence == 'daily').toList();
+        final weekly = tasks.where((t) => t.recurrence == 'weekly').toList();
+        final monthly = tasks.where((t) => t.recurrence == 'monthly').toList();
+        final others = tasks
+            .where((t) =>
+                t.recurrence != 'daily' &&
+                t.recurrence != 'weekly' &&
+                t.recurrence != 'monthly')
+            .toList();
 
-          if (filteredTasks.isEmpty) {
-            print('⚠️ [TasksTab] No tasks after filtering, showing empty state');
-            return _buildEmptyState();
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(companyTasksProvider(widget.companyId));
-              ref.invalidate(companyTaskStatsProvider(widget.companyId));
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: filteredTasks.length,
-              itemBuilder: (context, index) =>
-                  _buildTaskCard(filteredTasks[index]),
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(cachedCompanyTasksProvider(widget.companyId));
+            ref.invalidate(cachedCompanyTaskStatsProvider(widget.companyId));
+          },
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: [
+              if (daily.isNotEmpty)
+                _buildChecklistSection(
+                  'Hôm nay',
+                  'Hằng ngày',
+                  Icons.today_rounded,
+                  AppColors.success,
+                  daily,
+                ),
+              if (weekly.isNotEmpty)
+                _buildChecklistSection(
+                  'Tuần này',
+                  'Hằng tuần',
+                  Icons.date_range_rounded,
+                  AppColors.info,
+                  weekly,
+                ),
+              if (monthly.isNotEmpty)
+                _buildChecklistSection(
+                  'Tháng này',
+                  'Hằng tháng',
+                  Icons.calendar_month_rounded,
+                  AppColors.paymentRefunded,
+                  monthly,
+                ),
+              if (others.isNotEmpty)
+                _buildChecklistSection(
+                  'Đột xuất & Dự án',
+                  '',
+                  Icons.flash_on_rounded,
+                  AppColors.warning,
+                  others,
+                ),
+            ],
+          ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, __) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+            const SizedBox(height: 16),
+            Text('Lỗi tải dữ liệu', style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                ref.invalidate(cachedCompanyTasksProvider(widget.companyId));
+              },
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Thử lại'),
             ),
-          );
-        },
-        loading: () => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text(
-                'Đang tải công việc...',
-                style: TextStyle(color: Colors.grey[600], fontSize: 14),
-              ),
-            ],
-          ),
+          ],
         ),
-        error: (error, __) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-              const SizedBox(height: 16),
-              Text('Lỗi tải dữ liệu', style: TextStyle(fontSize: 16, color: Colors.grey[700])),
-              const SizedBox(height: 8),
-              Text(
-                error.toString().contains('TimeoutException') 
-                  ? 'Mất kết nối với máy chủ. Vui lòng thử lại.'
-                  : 'Không thể tải công việc. Vui lòng thử lại.',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () {
-                  ref.invalidate(companyTasksProvider(widget.companyId));
-                },
-                icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Thử lại'),
-              ),
-            ],
-          ),
-        ),
-      );
+      ),
+    );
   }
 
-  Widget _buildTaskCard(Task task) {
+  Widget _buildChecklistSection(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+    List<ManagementTask> tasks,
+  ) {
+    final completed =
+        tasks.where((t) => t.status == TaskStatus.completed).length;
+    final total = tasks.length;
+    final progress = total > 0 ? completed / total : 0.0;
+    final isDone = total > 0 && completed == total;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.35), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Section Header ──────────────────────────────
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(icon, size: 17, color: color),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        if (subtitle.isNotEmpty)
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[500],
+                              height: 1.2,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const Spacer(),
+                    // Progress badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDone
+                            ? Colors.green.withValues(alpha: 0.15)
+                            : color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isDone
+                              ? Colors.green.withValues(alpha: 0.5)
+                              : color.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isDone) ...
+                            [
+                              Icon(Icons.check_circle_rounded,
+                                  size: 13, color: Colors.green[700]),
+                              const SizedBox(width: 4),
+                            ],
+                          Text(
+                            '$completed/$total',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: isDone ? Colors.green[700] : color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Add task button for this recurrence
+                    InkWell(
+                      onTap: () => _showCreateTaskDialog(context),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(Icons.add, size: 15, color: color),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Progress bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: Colors.grey[200],
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDone ? Colors.green : color,
+                    ),
+                    minHeight: 6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ── Task checklist items ─────────────────────────
+          ...tasks.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final task = entry.value;
+            return Column(
+              children: [
+                if (idx > 0)
+                  Divider(
+                      height: 1,
+                      indent: 50,
+                      endIndent: 0,
+                      color: Colors.grey[100]),
+                _buildChecklistItem(task),
+              ],
+            );
+          }),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChecklistItem(ManagementTask task) {
+    final isCompleted = task.status == TaskStatus.completed;
+    final isInProgress = task.status == TaskStatus.inProgress;
+
+    return InkWell(
+      onTap: () => _showTaskDetails(task),
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(13)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Animated Checkbox
+            GestureDetector(
+              onTap: () => _toggleComplete(task),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: isCompleted ? Colors.green : Colors.transparent,
+                  border: Border.all(
+                    color: isCompleted
+                        ? Colors.green
+                        : isInProgress
+                            ? Colors.purple
+                            : Colors.grey[400]!,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: isCompleted
+                    ? Icon(Icons.check_rounded,
+                        size: 15, color: Theme.of(context).colorScheme.surface)
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Priority dot
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: task.priority.color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Title + meta
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight:
+                          isCompleted ? FontWeight.w400 : FontWeight.w600,
+                      color:
+                          isCompleted ? Colors.grey[400] : Colors.grey[800],
+                      decoration: isCompleted
+                          ? TextDecoration.lineThrough
+                          : null,
+                      decorationColor: Colors.grey[400],
+                      height: 1.25,
+                    ),
+                  ),
+                  if (task.assignedToName != null || task.dueDate != null) ...
+                    [
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          if (task.assignedToName != null) ...
+                            [
+                              Icon(Icons.person_outline,
+                                  size: 11, color: Colors.grey[400]),
+                              const SizedBox(width: 3),
+                              Text(
+                                task.assignedToName!,
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.grey[500]),
+                              ),
+                              if (task.dueDate != null)
+                                Text(' · ',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey[400])),
+                            ],
+                          if (task.dueDate != null) ...
+                            [
+                              Icon(Icons.access_time_rounded,
+                                  size: 11, color: _dueDateColor(task)),
+                              const SizedBox(width: 3),
+                              Text(
+                                DateFormat('dd/MM').format(task.dueDate!),
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: _dueDateColor(task)),
+                              ),
+                            ],
+                        ],
+                      ),
+                    ],
+                ],
+              ),
+            ),
+            // Status badge for in-progress
+            if (isInProgress) ...
+              [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.purple[50],
+                    borderRadius: BorderRadius.circular(4),
+                    border:
+                        Border.all(color: Colors.purple.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    'Đang làm',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.purple[700],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+            // 3-dot menu
+            PopupMenuButton<String>(
+              padding: EdgeInsets.zero,
+              iconSize: 18,
+              icon: Icon(Icons.more_vert, size: 18, color: Colors.grey[400]),
+              onSelected: (value) {
+                if (value == 'edit') {
+                  _showEditTaskDialog(task);
+                } else if (value == 'delete') {
+                  _deleteTask(task);
+                } else if (value == 'assignee') {
+                  _showChangeAssigneeDialog(task);
+                } else if (value == 'recurrence') {
+                  _showChangeRecurrenceDialog(task);
+                }
+              },
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(children: [
+                    Icon(Icons.edit_outlined, size: 18),
+                    SizedBox(width: 8),
+                    Text('Chỉnh sửa')
+                  ]),
+                ),
+                const PopupMenuItem(
+                  value: 'assignee',
+                  child: Row(children: [
+                    Icon(Icons.person_outline, size: 18),
+                    SizedBox(width: 8),
+                    Text('Phân công')
+                  ]),
+                ),
+                const PopupMenuItem(
+                  value: 'recurrence',
+                  child: Row(children: [
+                    Icon(Icons.repeat, size: 18),
+                    SizedBox(width: 8),
+                    Text('Chuyển lịch lặp')
+                  ]),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(children: [
+                    Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Xóa',
+                        style: TextStyle(color: Colors.red))
+                  ]),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _dueDateColor(ManagementTask task) {
+    if (task.dueDate == null) return Colors.grey[400]!;
+    final diff = task.dueDate!.difference(DateTime.now()).inDays;
+    if (diff < 0) return Colors.red[600]!;
+    if (diff <= 3) return Colors.orange[700]!;
+    return Colors.grey[500]!;
+  }
+
+  Future<void> _toggleComplete(ManagementTask task) async {
+    final newStatusStr = task.status == TaskStatus.completed
+        ? TaskStatus.pending.value
+        : TaskStatus.completed.value;
+    try {
+      final service = ref.read(managementTaskServiceProvider);
+      await service.updateTaskStatus(taskId: task.id, status: newStatusStr);
+      if (mounted) {
+        ref.invalidate(cachedCompanyTasksProvider(widget.companyId));
+        ref.invalidate(cachedCompanyTaskStatsProvider(widget.companyId));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // ignore: unused_element
+  Widget _buildTaskCard(ManagementTask task) {
     final dateFormat = DateFormat('dd/MM/yyyy');
     final now = DateTime.now();
     final daysUntilDue = task.dueDate?.difference(now).inDays ?? 0;
@@ -417,7 +888,7 @@ class _TasksTabState extends ConsumerState<TasksTab>
     Color borderColor = Colors.grey[300]!;
     if (isOverdue) {
       borderColor = Colors.red;
-    } else if (task.priority == TaskPriority.urgent || isUrgent) {
+    } else if (task.priority == TaskPriority.critical || isUrgent) {
       borderColor = Colors.red[700]!;
     } else if (task.priority == TaskPriority.high) {
       borderColor = Colors.orange[700]!;
@@ -471,10 +942,10 @@ class _TasksTabState extends ConsumerState<TasksTab>
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (task.description.isNotEmpty) ...[
+                        if ((task.description ?? '').isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(
-                            task.description,
+                            task.description!,
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 13,
@@ -713,11 +1184,11 @@ class _TasksTabState extends ConsumerState<TasksTab>
                   ),
                   
                   // Recurring badge (nếu có)
-                  if (task.recurrence != TaskRecurrence.none) ...[
+                  if (task.recurrence.isNotEmpty && task.recurrence != 'none') ...[
                     const SizedBox(width: 6),
                     _buildCompactBadge(
-                      task.recurrence.label,
-                      task.recurrence.color,
+                      _recurrenceLabel(task.recurrence),
+                      _recurrenceColor(task.recurrence),
                       icon: Icons.repeat,
                     ),
                   ],
@@ -732,7 +1203,7 @@ class _TasksTabState extends ConsumerState<TasksTab>
 
   IconData _getPriorityIcon(TaskPriority priority) {
     switch (priority) {
-      case TaskPriority.urgent:
+      case TaskPriority.critical:
         return Icons.crisis_alert_rounded;
       case TaskPriority.high:
         return Icons.priority_high_rounded;
@@ -749,8 +1220,10 @@ class _TasksTabState extends ConsumerState<TasksTab>
         return Icons.check_circle_rounded;
       case TaskStatus.inProgress:
         return Icons.play_circle_outline_rounded;
-      case TaskStatus.todo:
+      case TaskStatus.pending:
         return Icons.pending_outlined;
+      case TaskStatus.overdue:
+        return Icons.warning_rounded;
       case TaskStatus.cancelled:
         return Icons.cancel_outlined;
     }
@@ -830,18 +1303,21 @@ class _TasksTabState extends ConsumerState<TasksTab>
             Row(
               children: [
                 _buildCompactBadge(
-                    template.recurrence.label, template.recurrence.color,
-                    icon: template.recurrence.icon),
+                    _recurrenceLabel(template.recurrence), _recurrenceColor(template.recurrence),
+                    icon: _recurrenceIcon(template.recurrence)),
                 const SizedBox(width: 8),
-                _buildCompactBadge(template.priority.label, template.priority.color),
+                _buildCompactBadge(
+                  TaskPriority.fromString(template.priority).label,
+                  TaskPriority.fromString(template.priority).color,
+                ),
                 const Spacer(),
                 ElevatedButton.icon(
                   onPressed: () => _applyTemplate(template),
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Áp dụng'),
+                  label: Text('Áp dụng'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green[600],
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
@@ -867,7 +1343,7 @@ class _TasksTabState extends ConsumerState<TasksTab>
                   Icon(Icons.category, size: 14, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
-                    template.category!.label,
+                    template.category!,
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
@@ -886,33 +1362,33 @@ class _TasksTabState extends ConsumerState<TasksTab>
         title: 'Kiểm tra vệ sinh khu vực làm việc',
         description:
             'Kiểm tra và đảm bảo vệ sinh sạch sẽ tất cả các bàn bi-a, khu vực chơi, và khu vực chung',
-        recurrence: TaskRecurrence.daily,
-        priority: TaskPriority.high,
-        category: TaskCategory.maintenance,
+        recurrence: 'daily',
+        priority: 'high',
+        category: 'maintenance',
       ),
       TaskTemplate(
         title: 'Báo cáo doanh thu cuối ngày',
         description:
             'Tổng hợp doanh thu, số lượng khách, và các chỉ số kinh doanh của ngày',
-        recurrence: TaskRecurrence.daily,
-        priority: TaskPriority.high,
-        category: TaskCategory.operations,
+        recurrence: 'daily',
+        priority: 'high',
+        category: 'operations',
       ),
       TaskTemplate(
         title: 'Kiểm tra thiết bị âm thanh ánh sáng',
         description:
             'Kiểm tra hệ thống âm thanh, đèn chiếu sáng và thiết bị kỹ thuật hoạt động bình thường',
-        recurrence: TaskRecurrence.daily,
-        priority: TaskPriority.medium,
-        category: TaskCategory.maintenance,
+        recurrence: 'daily',
+        priority: 'medium',
+        category: 'maintenance',
       ),
       TaskTemplate(
         title: 'Cập nhật tình trạng kho',
         description:
             'Kiểm tra và cập nhật số lượng đồ uống, thức ăn và vật tư tiêu hao',
-        recurrence: TaskRecurrence.daily,
-        priority: TaskPriority.medium,
-        category: TaskCategory.inventory,
+        recurrence: 'daily',
+        priority: 'medium',
+        category: 'inventory',
       ),
 
       // Hằng tuần
@@ -920,41 +1396,41 @@ class _TasksTabState extends ConsumerState<TasksTab>
         title: 'Họp team hàng tuần',
         description:
             'Họp đánh giá hiệu suất, chia sẻ kinh nghiệm và lên kế hoạch cho tuần tiếp theo',
-        recurrence: TaskRecurrence.weekly,
-        priority: TaskPriority.high,
-        category: TaskCategory.operations,
+        recurrence: 'weekly',
+        priority: 'high',
+        category: 'operations',
       ),
       TaskTemplate(
         title: 'Vệ sinh tổng thể cơ sở',
         description:
             'Vệ sinh sâu toàn bộ cơ sở: sàn nhà, tường, trần, kho và khu vực ngoài trời',
-        recurrence: TaskRecurrence.weekly,
-        priority: TaskPriority.high,
-        category: TaskCategory.maintenance,
+        recurrence: 'weekly',
+        priority: 'high',
+        category: 'maintenance',
       ),
       TaskTemplate(
         title: 'Kiểm tra và bảo dưỡng bàn bi-a',
         description:
             'Kiểm tra độ phẳng bàn, nỉ, giấy, băng cao su và các bộ phận của bàn bi-a',
-        recurrence: TaskRecurrence.weekly,
-        priority: TaskPriority.medium,
-        category: TaskCategory.maintenance,
+        recurrence: 'weekly',
+        priority: 'medium',
+        category: 'maintenance',
       ),
       TaskTemplate(
         title: 'Review feedback khách hàng',
         description:
             'Đọc và phân tích các feedback từ khách hàng, đề xuất cải thiện',
-        recurrence: TaskRecurrence.weekly,
-        priority: TaskPriority.medium,
-        category: TaskCategory.customerService,
+        recurrence: 'weekly',
+        priority: 'medium',
+        category: 'customerService',
       ),
       TaskTemplate(
         title: 'Cập nhật bảng giá và khuyến mãi',
         description:
             'Review và cập nhật bảng giá dịch vụ, các chương trình khuyến mãi',
-        recurrence: TaskRecurrence.weekly,
-        priority: TaskPriority.medium,
-        category: TaskCategory.operations,
+        recurrence: 'weekly',
+        priority: 'medium',
+        category: 'operations',
       ),
 
       // Hằng tháng
@@ -962,33 +1438,33 @@ class _TasksTabState extends ConsumerState<TasksTab>
         title: 'Kiểm kê kho hàng tháng',
         description:
             'Kiểm kê toàn bộ kho hàng, đối chiếu với sổ sách và lập báo cáo',
-        recurrence: TaskRecurrence.monthly,
-        priority: TaskPriority.high,
-        category: TaskCategory.inventory,
+        recurrence: 'monthly',
+        priority: 'high',
+        category: 'inventory',
       ),
       TaskTemplate(
         title: 'Báo cáo tài chính tháng',
         description:
             'Tổng hợp doanh thu, chi phí, lợi nhuận và các chỉ số tài chính của tháng',
-        recurrence: TaskRecurrence.monthly,
-        priority: TaskPriority.high,
-        category: TaskCategory.operations,
+        recurrence: 'monthly',
+        priority: 'high',
+        category: 'operations',
       ),
       TaskTemplate(
         title: 'Đánh giá nhân viên tháng',
         description:
             'Đánh giá hiệu suất làm việc, thái độ và kỹ năng của từng nhân viên',
-        recurrence: TaskRecurrence.monthly,
-        priority: TaskPriority.medium,
-        category: TaskCategory.operations,
+        recurrence: 'monthly',
+        priority: 'medium',
+        category: 'operations',
       ),
       TaskTemplate(
         title: 'Bảo trì thiết bị định kỳ',
         description:
             'Bảo trì, bảo dưỡng toàn bộ thiết bị: máy lạnh, quạt, đèn, máy tính tiền',
-        recurrence: TaskRecurrence.monthly,
-        priority: TaskPriority.medium,
-        category: TaskCategory.maintenance,
+        recurrence: 'monthly',
+        priority: 'medium',
+        category: 'maintenance',
       ),
 
       // Đột xuất
@@ -996,84 +1472,77 @@ class _TasksTabState extends ConsumerState<TasksTab>
         title: 'Xử lý khiếu nại khách hàng',
         description:
             'Tiếp nhận và xử lý nhanh các khiếu nại, phàn nàn từ khách hàng',
-        recurrence: TaskRecurrence.adhoc,
-        priority: TaskPriority.urgent,
-        category: TaskCategory.customerService,
+        recurrence: 'adhoc',
+        priority: 'critical',
+        category: 'customerService',
       ),
       TaskTemplate(
         title: 'Sửa chữa thiết bị hỏng hóc',
         description:
             'Xử lý sự cố và sửa chữa thiết bị bị hỏng trong quá trình hoạt động',
-        recurrence: TaskRecurrence.adhoc,
-        priority: TaskPriority.urgent,
-        category: TaskCategory.maintenance,
+        recurrence: 'adhoc',
+        priority: 'critical',
+        category: 'maintenance',
       ),
       TaskTemplate(
         title: 'Đặt hàng khẩn cấp',
         description: 'Đặt hàng bổ sung khẩn cấp khi hết hàng hoặc thiếu vật tư',
-        recurrence: TaskRecurrence.adhoc,
-        priority: TaskPriority.high,
-        category: TaskCategory.inventory,
+        recurrence: 'adhoc',
+        priority: 'high',
+        category: 'inventory',
       ),
 
       // Dự án
       TaskTemplate(
         title: 'Tổ chức sự kiện giải đấu',
         description: 'Lên kế hoạch và tổ chức giải đấu bi-a thu hút khách hàng',
-        recurrence: TaskRecurrence.project,
-        priority: TaskPriority.high,
-        category: TaskCategory.operations,
+        recurrence: 'project',
+        priority: 'high',
+        category: 'operations',
       ),
       TaskTemplate(
         title: 'Mở rộng/cải tạo cơ sở',
         description:
             'Lên kế hoạch và thực hiện dự án mở rộng hoặc cải tạo cơ sở',
-        recurrence: TaskRecurrence.project,
-        priority: TaskPriority.medium,
-        category: TaskCategory.operations,
+        recurrence: 'project',
+        priority: 'medium',
+        category: 'operations',
       ),
       TaskTemplate(
         title: 'Đào tạo nhân viên mới',
         description:
             'Chương trình đào tạo toàn diện cho nhân viên mới về quy trình và kỹ năng',
-        recurrence: TaskRecurrence.project,
-        priority: TaskPriority.medium,
-        category: TaskCategory.operations,
+        recurrence: 'project',
+        priority: 'medium',
+        category: 'operations',
       ),
       TaskTemplate(
         title: 'Chiến dịch marketing',
         description:
             'Lên kế hoạch và triển khai chiến dịch marketing thu hút khách hàng mới',
-        recurrence: TaskRecurrence.project,
-        priority: TaskPriority.medium,
-        category: TaskCategory.operations,
+        recurrence: 'project',
+        priority: 'medium',
+        category: 'operations',
       ),
     ];
   }
 
   Future<void> _applyTemplate(TaskTemplate template) async {
     try {
-      final appUser = ref.read(authProvider).user;
+      final appUser = ref.read(currentUserProvider);
       if (appUser == null) return;
 
-      final taskService = TaskService();
-      final task = Task(
-        id: '',
-        branchId: null, // Không dùng chi nhánh
-        companyId: widget.company.id, // Thêm company_id
+      final service = ref.read(managementTaskServiceProvider);
+      await service.createTask(
         title: template.title,
         description: template.description,
-        category: template.category ?? TaskCategory.operations,
         priority: template.priority,
-        status: TaskStatus.todo,
-        recurrence: template.recurrence,
+        assignedTo: '',
+        companyId: widget.company.id,
         dueDate: _calculateDueDate(template.recurrence),
-        createdBy: appUser.id,
-        createdByName: appUser.email ?? '',
-        createdAt: DateTime.now(),
+        category: template.category,
+        recurrence: template.recurrence,
       );
-
-      await taskService.createTask(task);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1102,18 +1571,18 @@ class _TasksTabState extends ConsumerState<TasksTab>
     }
   }
 
-  DateTime _calculateDueDate(TaskRecurrence recurrence) {
+  DateTime _calculateDueDate(String recurrence) {
     final now = DateTime.now();
     switch (recurrence) {
-      case TaskRecurrence.daily:
+      case 'daily':
         return DateTime(now.year, now.month, now.day, 23, 59);
-      case TaskRecurrence.weekly:
+      case 'weekly':
         return now.add(const Duration(days: 7));
-      case TaskRecurrence.monthly:
+      case 'monthly':
         return DateTime(now.year, now.month + 1, now.day);
-      case TaskRecurrence.adhoc:
+      case 'adhoc':
         return now.add(const Duration(days: 1));
-      case TaskRecurrence.project:
+      case 'project':
         return now.add(const Duration(days: 30));
       default:
         return now.add(const Duration(days: 7));
@@ -1121,9 +1590,59 @@ class _TasksTabState extends ConsumerState<TasksTab>
   }
 
   void _showCreateTaskDialog(BuildContext context) async {
+    // Load assignees for the task dialog
+    final employeesAsync = ref.read(cachedCompanyEmployeesProvider(widget.companyId));
+    final employees = employeesAsync.when(
+      data: (data) => data,
+      loading: () => <dynamic>[],
+      error: (_, __) => <dynamic>[],
+    );
+    
+    // Convert to format expected by TaskCreateEditDialog
+    final assignees = employees.map<Map<String, dynamic>>((e) => {
+      'id': e['id'],
+      'full_name': e['name'] ?? e['email'] ?? '',
+      'role': e['role'] ?? '',
+    }).toList();
+
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => CreateTaskDialog(companyId: widget.companyId),
+      builder: (context) => TaskCreateEditDialog(
+        assignees: assignees,
+        defaultCompanyId: widget.companyId,
+        onSave: (data) async {
+          // Use ManagementTaskService.createTask
+          final service = ref.read(managementTaskServiceProvider);
+          
+          // Resolve assignee name from the assignees list
+          String? assigneeName;
+          String? assigneeRole;
+          if (data['assigned_to'] != null) {
+            final match = assignees.where((a) => a['id'] == data['assigned_to']).toList();
+            if (match.isNotEmpty) {
+              assigneeName = match.first['full_name'] as String?;
+              assigneeRole = match.first['role'] as String?;
+            }
+          }
+          
+          await service.createTask(
+            title: data['title'],
+            description: data['description'],
+            priority: data['priority'],
+            assignedTo: data['assigned_to'] ?? '',
+            assignedToName: assigneeName,
+            assignedToRole: assigneeRole,
+            companyId: widget.companyId,
+            dueDate: data['due_date'] != null
+                ? DateTime.parse(data['due_date'])
+                : null,
+            category: data['category'],
+            checklist: data['checklist'] != null
+                ? List<Map<String, dynamic>>.from(data['checklist'])
+                : null,
+          );
+        },
+      ),
     );
 
     if (result == true && mounted) {
@@ -1133,7 +1652,7 @@ class _TasksTabState extends ConsumerState<TasksTab>
     }
   }
 
-  void _showEditTaskDialog(Task task) async {
+  void _showEditTaskDialog(ManagementTask task) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => EditTaskDialog(
@@ -1149,19 +1668,19 @@ class _TasksTabState extends ConsumerState<TasksTab>
     }
   }
 
-  void _showTaskDetails(Task task) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => TaskDetailsDialog(task: task),
-    );
-
-    if (result == true && mounted) {
-      ref.invalidate(companyTasksProvider(widget.companyId));
-      ref.invalidate(companyTaskStatsProvider(widget.companyId));
-    }
+  void _showTaskDetails(ManagementTask task) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => TaskDetailPage(task: task)),
+    ).then((_) {
+      if (mounted) {
+        ref.invalidate(cachedCompanyTasksProvider(widget.companyId));
+        ref.invalidate(cachedCompanyTaskStatsProvider(widget.companyId));
+      }
+    });
   }
 
-  Future<void> _deleteTask(Task task) async {
+  Future<void> _deleteTask(ManagementTask task) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1198,10 +1717,6 @@ class _TasksTabState extends ConsumerState<TasksTab>
         final unused1 = ref.refresh(cachedCompanyTasksProvider(widget.companyId));
         // ignore: unused_local_variable
         final unused2 = ref.refresh(cachedCompanyTaskStatsProvider(widget.companyId));
-        // ignore: unused_local_variable
-        final unused3 = ref.refresh(companyTasksProvider(widget.companyId));
-        // ignore: unused_local_variable
-        final unused4 = ref.refresh(companyTaskStatsProvider(widget.companyId));
         
         // ✅ Force UI rebuild by updating state
         setState(() {});
@@ -1221,22 +1736,28 @@ class _TasksTabState extends ConsumerState<TasksTab>
   }
 
   // Chuyển lịch lặp
-  Future<void> _showChangeRecurrenceDialog(Task task) async {
-    final newRecurrence = await showDialog<TaskRecurrence>(
+  Future<void> _showChangeRecurrenceDialog(ManagementTask task) async {
+    final recurrenceOptions = [
+      ('daily', 'Hằng ngày', Icons.today_rounded),
+      ('weekly', 'Hằng tuần', Icons.date_range_rounded),
+      ('monthly', 'Hằng tháng', Icons.calendar_month_rounded),
+      ('adhoc', 'Đột xuất', Icons.flash_on_rounded),
+      ('project', 'Dự án', Icons.work_rounded),
+      ('none', 'Không lặp', Icons.event_note_rounded),
+    ];
+
+    final newRecurrence = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Chọn lịch lặp mới'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: TaskRecurrence.values.map((recurrence) {
+          children: recurrenceOptions.map((opt) {
             return ListTile(
-              leading: Icon(
-                recurrence.icon,
-                color: recurrence.color,
-              ),
-              title: Text(recurrence.label),
-              selected: task.recurrence == recurrence,
-              onTap: () => Navigator.pop(context, recurrence),
+              leading: Icon(opt.$3, color: _recurrenceColor(opt.$1)),
+              title: Text(opt.$2),
+              selected: task.recurrence == opt.$1,
+              onTap: () => Navigator.pop(context, opt.$1),
             );
           }).toList(),
         ),
@@ -1254,13 +1775,13 @@ class _TasksTabState extends ConsumerState<TasksTab>
     try {
       final taskService = TaskService();
       await taskService.updateTask(task.id, {
-        'recurrence': newRecurrence.name,
+        'recurrence': newRecurrence,
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Đã chuyển sang "${newRecurrence.label}"'),
+            content: Text('Đã chuyển sang "${_recurrenceLabel(newRecurrence)}"'),
             backgroundColor: Colors.green,
           ),
         );
@@ -1279,7 +1800,7 @@ class _TasksTabState extends ConsumerState<TasksTab>
   }
 
   // Đổi người phụ trách
-  Future<void> _showChangeAssigneeDialog(Task task) async {
+  Future<void> _showChangeAssigneeDialog(ManagementTask task) async {
     final employeesAsync = ref.read(cachedCompanyEmployeesProvider(widget.companyId));
 
     if (!mounted) return;

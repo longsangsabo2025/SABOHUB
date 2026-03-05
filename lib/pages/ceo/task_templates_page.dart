@@ -6,10 +6,11 @@ import '../../models/task_template.dart';
 import '../../models/management_task.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/management_task_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 final _templatesProvider = FutureProvider<List<TaskTemplate>>((ref) async {
   final supabase = Supabase.instance.client;
-  final user = ref.read(authProvider).user;
+  final user = ref.read(currentUserProvider);
   final companyId = user?.companyId;
 
   var query = supabase.from('task_templates').select('*').eq('is_active', true);
@@ -17,7 +18,7 @@ final _templatesProvider = FutureProvider<List<TaskTemplate>>((ref) async {
     query = query.eq('company_id', companyId);
   }
 
-  final response = await query.order('created_at', ascending: false);
+  final response = await query.order('created_at', ascending: false).limit(100);
   return (response as List).map((j) => TaskTemplate.fromJson(j)).toList();
 });
 
@@ -36,9 +37,9 @@ class _TaskTemplatesPageState extends ConsumerState<TaskTemplatesPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Task Templates'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        title: Text('Task Templates'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface87,
         elevation: 0,
         actions: [
           IconButton(
@@ -108,11 +109,11 @@ class _TaskTemplatesPageState extends ConsumerState<TaskTemplatesPage> {
     }[template.priority] ?? Colors.grey;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -507,7 +508,7 @@ class _TaskTemplatesPageState extends ConsumerState<TaskTemplatesPage> {
               onPressed: () async {
                 if (titleCtrl.text.isEmpty) return;
                 try {
-                  final user = ref.read(authProvider).user;
+                  final user = ref.read(currentUserProvider);
                   await Supabase.instance.client.from('task_templates').insert({
                     'title': titleCtrl.text,
                     'description':

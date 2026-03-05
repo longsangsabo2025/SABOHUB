@@ -5,11 +5,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../providers/auth_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 final _revenueDataProvider =
     FutureProvider.family<List<Map<String, dynamic>>, int>((ref, days) async {
   final supabase = Supabase.instance.client;
-  final user = ref.read(authProvider).user;
+  final user = ref.read(currentUserProvider);
   final companyId = user?.companyId;
 
   final startDate =
@@ -48,9 +49,9 @@ class _RevenueDashboardPageState extends ConsumerState<RevenueDashboardPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Doanh thu'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        title: Text('Doanh thu'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface87,
         elevation: 0,
       ),
       body: revenueAsync.when(
@@ -132,11 +133,11 @@ class _RevenueDashboardPageState extends ConsumerState<RevenueDashboardPage> {
 
   Widget _statCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,10 +162,10 @@ class _RevenueDashboardPageState extends ConsumerState<RevenueDashboardPage> {
       return Container(
         height: 200,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Center(
+        child: Center(
           child: Text('Chưa có dữ liệu doanh thu',
               style: TextStyle(color: Colors.grey)),
         ),
@@ -179,11 +180,11 @@ class _RevenueDashboardPageState extends ConsumerState<RevenueDashboardPage> {
 
     return Container(
       height: 220,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,14 +221,14 @@ class _RevenueDashboardPageState extends ConsumerState<RevenueDashboardPage> {
 
   Widget _buildDailyTable(List<Map<String, dynamic>> data) {
     final reversed = data.reversed.take(10).toList();
-    if (reversed.isEmpty) return const SizedBox.shrink();
+    if (reversed.isEmpty) return SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

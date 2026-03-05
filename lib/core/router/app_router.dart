@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/user.dart' as user_model;
+import '../../utils/app_logger.dart';
 import '../../pages/auth/dual_login_page.dart';
 import '../../pages/auth/email_verification_page.dart';
 import '../../pages/auth/employee_signup_page.dart';
@@ -14,7 +15,6 @@ import '../../pages/employees/create_invitation_page.dart';
 import '../../pages/employees/employee_list_page.dart';
 import '../../pages/onboarding/onboarding_page.dart';
 import '../../pages/role_based_dashboard.dart';
-import '../../pages/staff/staff_profile_page.dart';
 import '../../pages/user/user_profile_page.dart';
 import '../../layouts/manager_main_layout.dart';
 import '../../layouts/shift_leader_main_layout.dart';
@@ -43,17 +43,12 @@ import '../../business_types/manufacturing/pages/manufacturing/purchase_orders_p
 import '../../business_types/manufacturing/pages/manufacturing/production_orders_page.dart';
 import '../../business_types/manufacturing/pages/manufacturing/payables_page.dart';
 // Service Module Pages
-import '../../business_types/service/pages/tables/table_list_page.dart';
 import '../../business_types/service/pages/sessions/session_list_page.dart';
 import '../../business_types/service/pages/menu/menu_list_page.dart';
-// Map & GPS Module Pages - TEMPORARILY DISABLED for web compatibility
-// import '../../pages/map/map_overview_page.dart';
-// import '../../pages/map/delivery_tracking_page.dart';
-// import '../../pages/map/staff_tracking_page.dart';
-// import '../../pages/map/route_planning_page.dart';
 // Gamification Module Pages
 import '../../pages/gamification/quest_hub_page.dart';
 import '../../pages/gamification/ceo_game_profile_page.dart';
+import '../../pages/action_center_page.dart';
 import '../../pages/gamification/staff_performance_page.dart';
 import '../../pages/gamification/uytin_store_page.dart';
 import '../../pages/gamification/season_pass_page.dart';
@@ -62,6 +57,17 @@ import '../../pages/gamification/leaderboard_page.dart';
 import '../../pages/gamification/gamification_analytics_page.dart';
 import '../../pages/gamification/game_notifications_page.dart';
 import '../../pages/gamification/ai_quest_config_page.dart';
+// SABO Token Module Pages
+import '../../pages/token/sabo_wallet_page.dart';
+import '../../pages/token/sabo_token_store_page.dart';
+import '../../pages/token/sabo_token_analytics_page.dart';
+import '../../pages/token/sabo_achievements_page.dart';
+import '../../pages/token/sabo_token_leaderboard_page.dart';
+// Referral & Showcase Pages
+import '../../pages/referral/referral_page.dart';
+import '../../pages/company_showcase/company_showcase_page.dart';
+// Travis AI
+import '../../pages/travis/travis_chat_page.dart';
 import '../../providers/auth_provider.dart';
 import '../navigation/navigation_models.dart' as nav;
 
@@ -74,16 +80,12 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String onboarding = '/onboard/:token'; // Employee onboarding
   static const String profile = '/profile';
-
-  // Super Admin routes
-  static const String superAdminDashboard = '/super-admin/dashboard';
+  static const String actionCenter = '/action-center';
 
   // Staff routes
   static const String staffCheckin = '/staff/checkin';
-  static const String staffTables = '/staff/tables';
   static const String staffTasks = '/staff/tasks';
   static const String staffMessages = '/staff/messages';
-  static const String staffProfile = '/staff/profile';
 
   // Shift Leader routes
   static const String shiftLeaderTeam = '/shift-leader/team';
@@ -106,12 +108,6 @@ class AppRoutes {
   static const String createInvitation = '/employees/invite';
   static const String employeeList = '/employees/list';
   static const String joinInvitation = '/join/:code';
-
-  // Commission routes (NEW!)
-  static const String myCommission = '/commission/my-commission';
-  static const String billsManagement = '/commission/bills';
-  static const String commissionRules = '/commission/rules';
-  static const String uploadBill = '/commission/upload-bill';
 
   // Odori B2B Module routes
   static const String odoriCustomers = '/odori/customers';
@@ -140,7 +136,6 @@ class AppRoutes {
   static const String manufacturingPayables = '/manufacturing/payables';
 
   // Entertainment Module routes
-  static const String entertainmentTables = '/entertainment/tables';
   static const String entertainmentSessions = '/entertainment/sessions';
   static const String entertainmentMenu = '/entertainment/menu';
 
@@ -161,6 +156,20 @@ class AppRoutes {
   static const String gamificationAnalytics = '/gamification-analytics';
   static const String gameNotifications = '/game-notifications';
   static const String aiQuestConfig = '/ai-quest-config';
+
+  // SABO Token routes
+  static const String saboWallet = '/sabo-wallet';
+  static const String saboTokenStore = '/sabo-token-store';
+  static const String saboTokenAnalytics = '/sabo-token-analytics';
+  static const String saboAchievements = '/sabo-achievements';
+  static const String saboTokenLeaderboard = '/sabo-token-leaderboard';
+
+  // Referral & Showcase routes
+  static const String referral = '/referral';
+  static const String companyShowcase = '/company-showcase';
+
+  // Travis AI
+  static const String travisChat = '/travis';
 
   // Debug routes (temporarily disabled)
   // static const String debugSettings = '/debug/settings';
@@ -188,6 +197,10 @@ final currentUserRoleProvider = Provider<nav.UserRole>((Ref ref) {
         return nav.UserRole.driver;
       case user_model.UserRole.warehouse:
         return nav.UserRole.warehouse;
+      case user_model.UserRole.finance:
+        return nav.UserRole.finance;
+      case user_model.UserRole.shareholder:
+        return nav.UserRole.shareholder;
     }
   }
 
@@ -202,7 +215,6 @@ class RouteGuard {
     '/employees/invite',
     '/company/settings',
     '/manager-reports',
-    '/entertainment/tables',
     '/entertainment/sessions',
     '/entertainment/menu',
   ];
@@ -228,7 +240,7 @@ class RouteGuard {
     if (!allowedRoutes.contains(route)) {
       switch (userRole) {
         case nav.UserRole.superAdmin:
-          return AppRoutes.superAdminDashboard;
+          return AppRoutes.home; // SuperAdmin goes to home (no dedicated dashboard)
         case nav.UserRole.staff:
           return AppRoutes.staffCheckin;
         case nav.UserRole.shiftLeader:
@@ -241,6 +253,10 @@ class RouteGuard {
           return AppRoutes.driverDashboard;
         case nav.UserRole.warehouse:
           return AppRoutes.warehousePicking;
+        case nav.UserRole.finance:
+          return AppRoutes.home; // Finance role redirects to home
+        case nav.UserRole.shareholder:
+          return AppRoutes.home; // Shareholder role redirects to home
       }
     }
 
@@ -277,7 +293,7 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
 
       // Router navigation logging (debug only)
       assert(() {
-        debugPrint('[ROUTER] ${state.matchedLocation} | auth=$isLoggedIn | role=$userRole');
+        AppLogger.nav('${state.matchedLocation} | auth=$isLoggedIn | role=$userRole');
         return true;
       }());
 
@@ -367,13 +383,15 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) => const UserProfilePage(),
       ),
 
+      // Action Center route - accessible by all roles
+      GoRoute(
+        path: AppRoutes.actionCenter,
+        builder: (BuildContext context, GoRouterState state) => const ActionCenterPage(),
+      ),
+
       // Staff routes - Use full layout for proper navigation
       GoRoute(
         path: AppRoutes.staffCheckin,
-        builder: (BuildContext context, GoRouterState state) => const StaffMainLayout(),
-      ),
-      GoRoute(
-        path: AppRoutes.staffTables,
         builder: (BuildContext context, GoRouterState state) => const StaffMainLayout(),
       ),
       GoRoute(
@@ -384,11 +402,6 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.staffMessages,
         builder: (BuildContext context, GoRouterState state) => const StaffMainLayout(),
       ),
-      GoRoute(
-        path: AppRoutes.staffProfile,
-        builder: (BuildContext context, GoRouterState state) => const StaffProfilePage(),
-      ),
-
       // Shift Leader routes
       GoRoute(
         path: AppRoutes.shiftLeaderTeam,
@@ -415,6 +428,12 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.managerReports,
         builder: (BuildContext context, GoRouterState state) => const ManagerReportsPage(),
+      ),
+
+      // Travis AI Chat
+      GoRoute(
+        path: AppRoutes.travisChat,
+        builder: (BuildContext context, GoRouterState state) => const TravisChatPage(),
       ),
 
       // CEO routes - Remove GlobalKey to fix navigation conflicts
@@ -520,10 +539,6 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
 
       // Entertainment Module routes
       GoRoute(
-        path: AppRoutes.entertainmentTables,
-        builder: (BuildContext context, GoRouterState state) => const TableListPage(),
-      ),
-      GoRoute(
         path: AppRoutes.entertainmentSessions,
         builder: (BuildContext context, GoRouterState state) => const SessionListPage(),
       ),
@@ -577,27 +592,59 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
       ),
       GoRoute(
         path: AppRoutes.seasonPass,
-        builder: (BuildContext context, GoRouterState state) => const SeasonPassPage(),
+        builder: (BuildContext context, GoRouterState state) => SeasonPassPage(),
       ),
       GoRoute(
         path: AppRoutes.companyRanking,
-        builder: (BuildContext context, GoRouterState state) => const CompanyRankingPage(),
+        builder: (BuildContext context, GoRouterState state) => CompanyRankingPage(),
       ),
       GoRoute(
         path: AppRoutes.leaderboard,
-        builder: (BuildContext context, GoRouterState state) => const LeaderboardPage(),
+        builder: (BuildContext context, GoRouterState state) => LeaderboardPage(),
       ),
       GoRoute(
         path: AppRoutes.gamificationAnalytics,
-        builder: (BuildContext context, GoRouterState state) => const GamificationAnalyticsPage(),
+        builder: (BuildContext context, GoRouterState state) => GamificationAnalyticsPage(),
       ),
       GoRoute(
         path: AppRoutes.gameNotifications,
-        builder: (BuildContext context, GoRouterState state) => const GameNotificationsPage(),
+        builder: (BuildContext context, GoRouterState state) => GameNotificationsPage(),
       ),
       GoRoute(
         path: AppRoutes.aiQuestConfig,
-        builder: (BuildContext context, GoRouterState state) => const AiQuestConfigPage(),
+        builder: (BuildContext context, GoRouterState state) => AiQuestConfigPage(),
+      ),
+
+      // SABO Token routes
+      GoRoute(
+        path: AppRoutes.saboWallet,
+        builder: (BuildContext context, GoRouterState state) => SaboWalletPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.saboTokenStore,
+        builder: (BuildContext context, GoRouterState state) => SaboTokenStorePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.saboTokenAnalytics,
+        builder: (BuildContext context, GoRouterState state) => SaboTokenAnalyticsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.saboAchievements,
+        builder: (BuildContext context, GoRouterState state) => SaboAchievementsPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.saboTokenLeaderboard,
+        builder: (BuildContext context, GoRouterState state) => SaboTokenLeaderboardPage(),
+      ),
+
+      // Referral & Showcase routes
+      GoRoute(
+        path: AppRoutes.referral,
+        builder: (BuildContext context, GoRouterState state) => const ReferralPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.companyShowcase,
+        builder: (BuildContext context, GoRouterState state) => CompanyShowcasePage(),
       ),
 
       // Map & GPS routes - TEMPORARILY DISABLED for web compatibility
@@ -635,7 +682,7 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
               size: 64,
               color: Colors.red,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Route not found: ${state.matchedLocation}',
               style: Theme.of(context).textTheme.headlineSmall,

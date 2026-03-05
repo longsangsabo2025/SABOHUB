@@ -12,9 +12,9 @@ final paymentServiceProvider = Provider<PaymentService>((ref) {
 // All payments provider
 final allPaymentsProvider = FutureProvider.autoDispose<List<Payment>>((ref) async {
   final paymentService = ref.read(paymentServiceProvider);
-  final auth = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!auth.isAuthenticated) {
+  if (user == null) {
     return [];
   }
   
@@ -24,9 +24,9 @@ final allPaymentsProvider = FutureProvider.autoDispose<List<Payment>>((ref) asyn
 // Payments by status provider (family)
 final paymentsByStatusProvider = FutureProvider.autoDispose.family<List<Payment>, PaymentStatus>((ref, status) async {
   final paymentService = ref.read(paymentServiceProvider);
-  final auth = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!auth.isAuthenticated) {
+  if (user == null) {
     return [];
   }
   
@@ -36,9 +36,9 @@ final paymentsByStatusProvider = FutureProvider.autoDispose.family<List<Payment>
 // Payments by session provider (family)
 final paymentsBySessionProvider = FutureProvider.autoDispose.family<List<Payment>, String>((ref, sessionId) async {
   final paymentService = ref.read(paymentServiceProvider);
-  final auth = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!auth.isAuthenticated) {
+  if (user == null) {
     return [];
   }
   
@@ -48,9 +48,9 @@ final paymentsBySessionProvider = FutureProvider.autoDispose.family<List<Payment
 // Payment stats provider
 final paymentStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final paymentService = ref.read(paymentServiceProvider);
-  final auth = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!auth.isAuthenticated) {
+  if (user == null) {
     return {
       'totalPayments': 0,
       'completedToday': 0,
@@ -70,9 +70,9 @@ final paymentStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((r
 // Individual payment provider (family)
 final paymentProvider = FutureProvider.autoDispose.family<Payment?, String>((ref, paymentId) async {
   final paymentService = ref.read(paymentServiceProvider);
-  final auth = ref.watch(authProvider);
+  final user = ref.watch(currentUserProvider);
   
-  if (!auth.isAuthenticated) {
+  if (user == null) {
     return null;
   }
   

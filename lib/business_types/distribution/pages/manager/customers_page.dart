@@ -22,6 +22,8 @@ import '../../../../widgets/customer_visits_sheet.dart';
 import '../../../../widgets/customer_avatar.dart';
 import '../../../../pages/orders/order_form_page.dart';
 import '../../../../pages/customers/customer_detail_page.dart';
+import '../../../../utils/app_logger.dart';
+import 'package:flutter_sabohub/utils/postgrest_sanitizer.dart';
 
 // Extracted sub-components
 import 'customers_sheets/customer_form_sheet.dart';
@@ -96,7 +98,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
   Future<void> _loadStatistics() async {
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       if (companyId.isEmpty) return;
 
       // Use count() for accurate statistics (not limited by 1000 row default)
@@ -162,14 +164,14 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Error loading statistics: $e');
+      AppLogger.error('Error loading statistics: $e');
     }
   }
 
   /// Load revenue data và tier statistics
   Future<void> _loadRevenueData() async {
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       if (companyId.isEmpty) return;
 
       final revenueMap = await CustomerRevenueService.getRevenueByCompany(companyId);
@@ -180,14 +182,14 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Error loading revenue data: $e');
+      AppLogger.error('Error loading revenue data: $e');
     }
   }
 
   /// Load tier statistics từ database (đếm theo trường tier của customers)
   Future<void> _loadTierStats() async {
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       if (companyId.isEmpty) return;
 
       final Map<CustomerTier, int> stats = {
@@ -228,7 +230,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Error loading tier stats: $e');
+      AppLogger.error('Error loading tier stats: $e');
     }
   }
 
@@ -280,13 +282,13 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     });
 
     try {
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
       if (companyId.isEmpty) {
         setState(() => _isInitialLoading = false);
         return;
       }
 
-      debugPrint('🔄 Loading initial customers for company: $companyId');
+      AppLogger.data('Loading customers', {'companyId': companyId});
 
       var query = supabase
           .from('customers')
@@ -318,7 +320,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
       final customers = (response as List).map((json) => OdoriCustomer.fromJson(json)).toList();
 
-      debugPrint('✅ Initial load: ${customers.length} customers');
+      AppLogger.info('Initial load: ${customers.length} customers');
 
       // Discard stale response if a newer request was started
       if (thisVersion != _loadVersion) return;
@@ -331,7 +333,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         _isInitialLoading = false;
       });
     } catch (e) {
-      debugPrint('❌ Error loading customers: $e');
+      AppLogger.error('Error loading customers: $e');
       if (thisVersion == _loadVersion) {
         setState(() => _isInitialLoading = false);
       }
@@ -346,9 +348,9 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
     try {
       final newOffset = _currentOffset + _pageSize;
-      final companyId = ref.read(authProvider).user?.companyId ?? '';
+      final companyId = ref.read(currentUserProvider)?.companyId ?? '';
 
-      debugPrint('🔄 Loading more customers: offset=$newOffset, current total=${_allCustomers.length}');
+      AppLogger.data('Loading more customers', {'offset': newOffset, 'total': _allCustomers.length});
 
       var query = supabase
           .from('customers')
@@ -365,7 +367,8 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         query = query.neq('status', 'inactive');
       }
       if (_searchQuery.isNotEmpty) {
-        query = query.or('name.ilike.%$_searchQuery%,code.ilike.%$_searchQuery%,phone.ilike.%$_searchQuery%');
+        final sanitized = PostgrestSanitizer.sanitizeSearch(_searchQuery);
+        query = query.or('name.ilike.%$sanitized%,code.ilike.%$sanitized%,phone.ilike.%$sanitized%');
       }
       // Filter theo tier (query từ database)
       if (_selectedTier != null) {
@@ -380,7 +383,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
       final newCustomers = (response as List).map((json) => OdoriCustomer.fromJson(json)).toList();
 
-      debugPrint('✅ Loaded ${newCustomers.length} customers at offset $newOffset');
+      AppLogger.info('Loaded ${newCustomers.length} customers at offset $newOffset');
 
       // Discard stale response
       if (thisVersion != _loadVersion) return;
@@ -396,7 +399,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         _isLoadingMore = false;
       });
     } catch (e) {
-      debugPrint('❌ Error loading more customers: $e');
+      AppLogger.error('Error loading more customers: $e');
       setState(() => _isLoadingMore = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -872,7 +875,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
             OutlinedButton.icon(
               onPressed: () => Navigator.pop(context, 'archive'),
               icon: const Icon(Icons.archive, size: 18),
-              label: const Text('Lưu trữ'),
+              label: Text('Lưu trữ'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.orange,
               ),
@@ -881,7 +884,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
             onPressed: () => Navigator.pop(context, 'delete'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.surface,
             ),
             child: const Text('Xóa vĩnh viễn'),
           ),
@@ -897,7 +900,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
     if (result != 'delete') return;
 
     try {
-      await supabase.from('customers').delete().eq('id', customer.id);
+      await supabase.from('customers').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', customer.id);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1104,7 +1107,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
               minHeight: 56,
               maxHeight: 56,
               child: Container(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
                   children: [
@@ -1167,7 +1170,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                       icon: Icon(Icons.more_vert, color: Colors.teal.shade700),
                       tooltip: 'Thêm tùy chọn',
                       onSelected: (value) async {
-                        final companyId = ref.read(authProvider).user?.companyId;
+                        final companyId = ref.read(currentUserProvider)?.companyId;
                         if (companyId == null) return;
                         
                         if (value == 'export') {
@@ -1221,7 +1224,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
           // Compact Filters - single row
           SliverToBoxAdapter(
             child: Container(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: Row(
                 children: [
@@ -1327,7 +1330,7 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
       body: Stack(
         children: [
           _isInitialLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator())
               : _allCustomers.isEmpty
                   ? _buildEmptyState()
                   : NotificationListener<ScrollNotification>(
@@ -1396,8 +1399,8 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
             child: FloatingActionButton.extended(
               onPressed: _showAddCustomerDialog,
               backgroundColor: Colors.teal,
-              icon: const Icon(Icons.person_add, color: Colors.white),
-              label: const Text('Thêm KH', style: TextStyle(color: Colors.white)),
+              icon: Icon(Icons.person_add, color: Theme.of(context).colorScheme.surface),
+              label: Text('Thêm KH', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
             ),
           ),
         ],
@@ -1407,9 +1410,9 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
 
   Widget _buildStatCard(String emoji, String value, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -1419,18 +1422,18 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(emoji, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 4),
+              SizedBox(width: 4),
               Flexible(
                 child: Text(
                   value, 
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.surface),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.9))),
+          SizedBox(height: 2),
+          Text(label, style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.surface.withOpacity(0.9))),
         ],
       ),
     );
@@ -1519,13 +1522,13 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                           right: 0,
                           top: 0,
                           child: Container(
-                            padding: const EdgeInsets.all(2),
+                            padding: EdgeInsets.all(2),
                             decoration: BoxDecoration(
                               color: Colors.red,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 1.5),
+                              border: Border.all(color: Theme.of(context).colorScheme.surface, width: 1.5),
                             ),
-                            child: const Icon(Icons.priority_high, size: 10, color: Colors.white),
+                            child: Icon(Icons.priority_high, size: 10, color: Theme.of(context).colorScheme.surface),
                           ),
                         ),
                     ],

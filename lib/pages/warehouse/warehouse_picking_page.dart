@@ -20,8 +20,8 @@ final warehouseOrdersProvider = FutureProvider.autoDispose<List<WarehouseOrder>>
 
 // Provider for drivers (unchanged)
 final driversProvider = FutureProvider.autoDispose<List<Driver>>((ref) async {
-  final authState = ref.watch(authProvider);
-  final companyId = authState.user?.companyId;
+  final user = ref.watch(currentUserProvider);
+  final companyId = user?.companyId;
   if (companyId == null) return [];
 
   final response = await supabase
@@ -206,7 +206,7 @@ class _WarehousePickingPageState extends ConsumerState<WarehousePickingPage> {
                 return _OrderPickingCard(
                   order: order,
                   drivers: driversAsync.valueOrNull ?? [],
-                  onPick: () => _showPickingDialog(order, driversAsync.valueOrNull ?? []),
+                  onPick: () => _showPickingDialog(context, order, driversAsync.valueOrNull ?? []),
                 );
               },
             ),
@@ -216,7 +216,7 @@ class _WarehousePickingPageState extends ConsumerState<WarehousePickingPage> {
     );
   }
 
-  void _showPickingDialog(WarehouseOrder order, List<Driver> drivers) {
+  void _showPickingDialog(BuildContext context, WarehouseOrder order, List<Driver> drivers) {
     // Copy items with pick status
     final pickItems = order.items.map((item) => OrderItem(
       id: item.id,
@@ -240,8 +240,8 @@ class _WarehousePickingPageState extends ConsumerState<WarehousePickingPage> {
           
           return Container(
             height: MediaQuery.of(context).size.height * 0.85,
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
@@ -317,8 +317,8 @@ class _WarehousePickingPageState extends ConsumerState<WarehousePickingPage> {
                             ),
                             child: Text(
                               '${item.quantity}',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.surface,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -370,10 +370,10 @@ class _WarehousePickingPageState extends ConsumerState<WarehousePickingPage> {
                               ? () => _completePicking(order, selectedDriverId)
                               : null,
                           icon: const Icon(Icons.check),
-                          label: const Text('Hoàn tất soạn hàng'),
+                          label: Text('Hoàn tất soạn hàng'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).colorScheme.surface,
                           ),
                         ),
                       ),
@@ -398,8 +398,8 @@ class _WarehousePickingPageState extends ConsumerState<WarehousePickingPage> {
 
       // Create delivery if driver is assigned
       if (driverId != null) {
-        final authState = ref.read(authProvider);
-        final companyId = authState.user?.companyId;
+        final user = ref.read(currentUserProvider);
+        final companyId = user?.companyId;
         
         // Generate delivery number using database function
         final deliveryNumberResult = await supabase.rpc(
@@ -562,10 +562,10 @@ class _OrderPickingCard extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: onPick,
                   icon: const Icon(Icons.inventory),
-                  label: const Text('Bắt đầu soạn'),
+                  label: Text('Bắt đầu soạn'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
                   ),
                 ),
               ),

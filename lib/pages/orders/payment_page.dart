@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../business_types/service/models/session.dart';
 import '../../models/payment.dart';
 import '../../providers/payment_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class PaymentPage extends ConsumerStatefulWidget {
   final TableSession session;
@@ -40,15 +41,15 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thanh toán'),
+        title: Text('Thanh toán'),
         backgroundColor: Colors.green.shade600,
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.surface,
         leading: _isProcessing 
-            ? const Padding(
+            ? Padding(
                 padding: EdgeInsets.all(14),
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                 ),
               )
             : null,
@@ -60,7 +61,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
           children: [
             // Session Info Card
             _buildSessionInfoCard(totalAmount),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Payment Method Selection
             Text(
@@ -93,11 +94,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   border: const OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               if (_paidAmountController.text.isNotEmpty) ...[
                 _buildChangeCalculation(totalAmount),
               ],
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
             ],
 
             // Customer name
@@ -110,13 +111,13 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             const SizedBox(height: 8),
             TextFormField(
               controller: _customerNameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Tên khách hàng',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // Notes
             Text(
@@ -145,15 +146,15 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                     ? null 
                     : _processPayment,
                 icon: _isProcessing
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.surface),
                         ),
                       )
-                    : const Icon(Icons.payment),
+                    : Icon(Icons.payment),
                 label: Text(
                   _isProcessing 
                       ? 'Đang xử lý thanh toán...' 
@@ -161,7 +162,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   textStyle: const TextStyle(
                     fontSize: 16,
@@ -244,7 +245,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             style: TextStyle(
               fontSize: isTotal ? 16 : 14,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? Colors.black87 : Colors.grey.shade700,
+              color: isTotal ? Theme.of(context).colorScheme.onSurface87 : Colors.grey.shade700,
             ),
           ),
           Text(
@@ -312,7 +313,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? method.color : Colors.black87,
+                            color: isSelected ? method.color : Theme.of(context).colorScheme.onSurface87,
                           ),
                         ),
                         Text(

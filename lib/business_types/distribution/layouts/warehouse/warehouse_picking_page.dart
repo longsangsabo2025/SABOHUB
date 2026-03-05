@@ -36,8 +36,8 @@ class _PickingOrdersPageState extends ConsumerState<WarehousePickingPage>
 
   Future<void> _loadOrders() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) return;
 
@@ -84,9 +84,9 @@ class _PickingOrdersPageState extends ConsumerState<WarehousePickingPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
+                Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface),
                 SizedBox(width: 12),
                 Text('Đã nhận đơn! Bắt đầu lấy hàng.'),
               ],
@@ -148,9 +148,9 @@ class _PickingOrdersPageState extends ConsumerState<WarehousePickingPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.celebration, color: Colors.white),
+                Icon(Icons.celebration, color: Theme.of(context).colorScheme.surface),
                 SizedBox(width: 12),
                 Expanded(child: Text('🎉 Hoàn thành! Chuyển sang tab Đóng gói.')),
               ],
@@ -190,8 +190,8 @@ class _PickingOrdersPageState extends ConsumerState<WarehousePickingPage>
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              color: Colors.white,
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 children: [
                   Row(
@@ -222,11 +222,11 @@ class _PickingOrdersPageState extends ConsumerState<WarehousePickingPage>
                     child: TabBar(
                       controller: _tabController,
                       indicator: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
                             blurRadius: 4,
                           ),
                         ],
@@ -246,14 +246,14 @@ class _PickingOrdersPageState extends ConsumerState<WarehousePickingPage>
                               if (_pendingOrders.isNotEmpty) ...[
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: Colors.orange,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
                                     '${_pendingOrders.length}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 11, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
@@ -270,14 +270,14 @@ class _PickingOrdersPageState extends ConsumerState<WarehousePickingPage>
                               if (_pickingOrders.isNotEmpty) ...[
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: Colors.blue,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
                                     '${_pickingOrders.length}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 11, fontWeight: FontWeight.bold),
                                   ),
                                 ),
                               ],
@@ -358,13 +358,13 @@ class _PickingOrdersPageState extends ConsumerState<WarehousePickingPage>
     final warehouseName = warehouse?['name'] ?? 'Kho chính';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -561,7 +561,7 @@ class _PickingOrdersPageState extends ConsumerState<WarehousePickingPage>
                 label: Text(isPending ? 'Nhận đơn - Bắt đầu lấy hàng' : 'Hoàn thành lấy hàng'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isPending ? Colors.orange : Colors.green,
-                  foregroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),

@@ -1,0 +1,7 @@
+Analyzing SABOHUB...                                            
+
+warning - The operand can't be 'null', so the condition is always 'false' - test\services\employee_auth_service_test.dart:643:36 - unnecessary_null_comparison
+warning - The value of the local variable 'task' isn't used - test\services\management_task_service_test.dart:673:18 - unused_local_variable
+warning - Dead code - test\services\management_task_service_test.dart:738:14 - dead_code
+warning - Dead code - test\services\management_task_service_test.dart:752:25 - dead_code
+

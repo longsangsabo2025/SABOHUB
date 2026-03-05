@@ -1,11 +1,11 @@
 {
-    "name": "flutter_sabohub",
-    "short_name": "flutter_sabohub",
+    "name": "SABOHUB",
+    "short_name": "SABOHUB",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#7C3AED",
+    "theme_color": "#7C3AED",
+    "description": "SABOHUB - Hệ thống quản lý doanh nghiệp đa ngành",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

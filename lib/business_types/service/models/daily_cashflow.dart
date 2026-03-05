@@ -1,3 +1,23 @@
+/// Report Status for daily cashflow workflow
+enum ReportStatus {
+  draft('draft', 'Nháp', 0xFF9E9E9E),
+  pending('pending', 'Chờ duyệt', 0xFFFFA000),
+  approved('approved', 'Đã duyệt', 0xFF4CAF50),
+  rejected('rejected', 'Từ chối', 0xFFF44336);
+
+  const ReportStatus(this.value, this.label, this.colorValue);
+  final String value;
+  final String label;
+  final int colorValue;
+
+  static ReportStatus fromString(String? value) {
+    return ReportStatus.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => ReportStatus.approved,
+    );
+  }
+}
+
 /// Daily Cashflow Model - Báo cáo cuối ngày từ POS (KiotViet / Excel)
 class DailyCashflow {
   final String id;
@@ -34,6 +54,16 @@ class DailyCashflow {
   final DateTime createdAt;
   final DateTime? updatedAt;
 
+  // Workflow fields
+  final ReportStatus status;
+  final String? submittedBy;
+  final DateTime? submittedAt;
+  final String? reviewedBy;
+  final DateTime? reviewedAt;
+  final String? approvedBy;
+  final DateTime? approvedAt;
+  final String? rejectionReason;
+
   DailyCashflow({
     required this.id,
     required this.companyId,
@@ -60,6 +90,14 @@ class DailyCashflow {
     this.rawData,
     required this.createdAt,
     this.updatedAt,
+    this.status = ReportStatus.approved,
+    this.submittedBy,
+    this.submittedAt,
+    this.reviewedBy,
+    this.reviewedAt,
+    this.approvedBy,
+    this.approvedAt,
+    this.rejectionReason,
   });
 
   factory DailyCashflow.fromJson(Map<String, dynamic> json) {
@@ -91,6 +129,20 @@ class DailyCashflow {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
+      status: ReportStatus.fromString(json['status'] as String?),
+      submittedBy: json['submitted_by'] as String?,
+      submittedAt: json['submitted_at'] != null
+          ? DateTime.parse(json['submitted_at'] as String)
+          : null,
+      reviewedBy: json['reviewed_by'] as String?,
+      reviewedAt: json['reviewed_at'] != null
+          ? DateTime.parse(json['reviewed_at'] as String)
+          : null,
+      approvedBy: json['approved_by'] as String?,
+      approvedAt: json['approved_at'] != null
+          ? DateTime.parse(json['approved_at'] as String)
+          : null,
+      rejectionReason: json['rejection_reason'] as String?,
     );
   }
 
@@ -117,7 +169,63 @@ class DailyCashflow {
         'imported_by': importedBy,
         'notes': notes,
         'raw_data': rawData,
+        'status': status.value,
+        'submitted_by': submittedBy,
+        'submitted_at': submittedAt?.toIso8601String(),
+        'reviewed_by': reviewedBy,
+        'reviewed_at': reviewedAt?.toIso8601String(),
+        'approved_by': approvedBy,
+        'approved_at': approvedAt?.toIso8601String(),
+        'rejection_reason': rejectionReason,
       };
+
+  /// Copy with new values
+  DailyCashflow copyWith({
+    ReportStatus? status,
+    String? submittedBy,
+    DateTime? submittedAt,
+    String? reviewedBy,
+    DateTime? reviewedAt,
+    String? approvedBy,
+    DateTime? approvedAt,
+    String? rejectionReason,
+  }) {
+    return DailyCashflow(
+      id: id,
+      companyId: companyId,
+      branchId: branchId,
+      reportDate: reportDate,
+      branchName: branchName,
+      cashAmount: cashAmount,
+      transferAmount: transferAmount,
+      cardAmount: cardAmount,
+      ewalletAmount: ewalletAmount,
+      pointsAmount: pointsAmount,
+      totalRevenue: totalRevenue,
+      totalOrders: totalOrders,
+      cashOrders: cashOrders,
+      transferOrders: transferOrders,
+      cardOrders: cardOrders,
+      pointsOrders: pointsOrders,
+      ewalletOrders: ewalletOrders,
+      uniqueItems: uniqueItems,
+      totalQuantity: totalQuantity,
+      sourceFile: sourceFile,
+      importedBy: importedBy,
+      notes: notes,
+      rawData: rawData,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      status: status ?? this.status,
+      submittedBy: submittedBy ?? this.submittedBy,
+      submittedAt: submittedAt ?? this.submittedAt,
+      reviewedBy: reviewedBy ?? this.reviewedBy,
+      reviewedAt: reviewedAt ?? this.reviewedAt,
+      approvedBy: approvedBy ?? this.approvedBy,
+      approvedAt: approvedAt ?? this.approvedAt,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
+    );
+  }
 
   /// Percentage of cash vs total
   double get cashPercent =>

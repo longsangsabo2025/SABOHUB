@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../providers/auth_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class PDFReportPage extends ConsumerStatefulWidget {
   const PDFReportPage({super.key});
@@ -24,9 +25,9 @@ class _PDFReportPageState extends ConsumerState<PDFReportPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Xuất báo cáo PDF'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        title: Text('Xuất báo cáo PDF'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface87,
         elevation: 0,
       ),
       body: Padding(
@@ -65,16 +66,16 @@ class _PDFReportPageState extends ConsumerState<PDFReportPage> {
               Icons.campaign,
               Colors.purple,
             ),
-            const Spacer(),
+            Spacer(),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
                 icon: _isGenerating
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
+                            color: Theme.of(context).colorScheme.surface, strokeWidth: 2))
                     : const Icon(Icons.picture_as_pdf),
                 label: Text(
                     _isGenerating ? 'Đang tạo...' : 'Tạo & Xem PDF'),
@@ -92,9 +93,9 @@ class _PDFReportPageState extends ConsumerState<PDFReportPage> {
     final isSelected = _reportType == value;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isSelected ? color : Colors.grey.shade200,
@@ -128,7 +129,7 @@ class _PDFReportPageState extends ConsumerState<PDFReportPage> {
     try {
       final pdf = pw.Document();
       final supabase = Supabase.instance.client;
-      final user = ref.read(authProvider).user;
+      final user = ref.read(currentUserProvider);
       final companyId = user?.companyId;
       final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
@@ -166,7 +167,7 @@ class _PDFReportPageState extends ConsumerState<PDFReportPage> {
       SupabaseClient supabase, String? companyId, String dateStr) async {
     var query = supabase.from('tasks').select('status, priority, category, progress');
     if (companyId != null) query = query.eq('company_id', companyId);
-    final tasks = List<Map<String, dynamic>>.from(await query);
+    final tasks = List<Map<String, dynamic>>.from(await query.limit(1000));
 
     final byStatus = <String, int>{};
     final byCategory = <String, int>{};
@@ -213,7 +214,8 @@ class _PDFReportPageState extends ConsumerState<PDFReportPage> {
           .select('full_name, role, department')
           .eq('company_id', companyId)
           .eq('is_active', true)
-          .order('full_name'),
+          .order('full_name')
+          .limit(1000),
     );
 
     pdf.addPage(pw.Page(
@@ -250,7 +252,7 @@ class _PDFReportPageState extends ConsumerState<PDFReportPage> {
         .gte('date', startDate);
     if (companyId != null) query = query.eq('company_id', companyId);
     final data = List<Map<String, dynamic>>.from(
-        await query.order('date', ascending: false));
+        await query.order('date', ascending: false).limit(1000));
 
     final total = data.fold<double>(
         0, (s, d) => s + ((d['total_revenue'] as num?)?.toDouble() ?? 0));
@@ -286,7 +288,7 @@ class _PDFReportPageState extends ConsumerState<PDFReportPage> {
       SupabaseClient supabase, String? companyId, String dateStr) async {
     var query = supabase.from('media_channels').select('*');
     if (companyId != null) query = query.eq('company_id', companyId);
-    final channels = List<Map<String, dynamic>>.from(await query);
+    final channels = List<Map<String, dynamic>>.from(await query.limit(1000));
 
     pdf.addPage(pw.Page(
       pageFormat: PdfPageFormat.a4,

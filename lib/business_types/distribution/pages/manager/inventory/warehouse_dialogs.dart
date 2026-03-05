@@ -6,12 +6,13 @@ import 'package:dvhcvn/dvhcvn.dart' as dvhcvn;
 import 'package:geocoding/geocoding.dart';
 import '../../../models/odori_product.dart';
 import '../../../../../providers/auth_provider.dart';
+import '../../../../../utils/app_logger.dart';
 import 'inventory_constants.dart';
 
 // ==================== WAREHOUSE VALIDATION ====================
 /// Validates that a new warehouse is properly set up
 Future<void> _validateWarehouseSetup(String warehouseId, String companyId) async {
-  debugPrint('🔍 Validating warehouse setup for: $warehouseId');
+  AppLogger.info('Validating warehouse setup for: $warehouseId');
   
   try {
     // 1. Verify warehouse record
@@ -21,20 +22,20 @@ Future<void> _validateWarehouseSetup(String warehouseId, String companyId) async
         .eq('id', warehouseId)
         .single();
     
-    debugPrint('✓ Warehouse record verified');
+    AppLogger.info('Warehouse record verified');
     
     // 2. Check is_primary
     if (warehouse['is_primary'] == null) {
-      debugPrint('⚠️  WARNING: is_primary is NULL');
+      AppLogger.warn('WARNING: is_primary is NULL');
     } else {
-      debugPrint('✓ is_primary = ${warehouse['is_primary']}');
+      AppLogger.info('is_primary = ${warehouse['is_primary']}');
     }
     
     // 3. Check is_active
     if (!warehouse['is_active']) {
-      debugPrint('⚠️  WARNING: Warehouse is not active');
+      AppLogger.warn('WARNING: Warehouse is not active');
     } else {
-      debugPrint('✓ Warehouse is active');
+      AppLogger.info('Warehouse is active');
     }
     
     // 4. Test inventory queries work
@@ -44,7 +45,7 @@ Future<void> _validateWarehouseSetup(String warehouseId, String companyId) async
         .eq('warehouse_id', warehouseId)
         .limit(1);
     
-    debugPrint('✓ Inventory query works (${(inventoryTest as List).isEmpty ? 'empty' : 'has data'})');
+    AppLogger.info('Inventory query works (${(inventoryTest as List).isEmpty ? 'empty' : 'has data'})');
     
     // 5. Test inventory_movements queries work
     final movementsTest = await supabase
@@ -53,12 +54,12 @@ Future<void> _validateWarehouseSetup(String warehouseId, String companyId) async
         .eq('warehouse_id', warehouseId)
         .limit(1);
     
-    debugPrint('✓ Inventory movements query works (${(movementsTest as List).isEmpty ? 'empty' : 'has data'})');
+    AppLogger.info('Inventory movements query works (${(movementsTest as List).isEmpty ? 'empty' : 'has data'})');
     
-    debugPrint('✅ Warehouse validation complete - all systems ready!');
+    AppLogger.info('Warehouse validation complete - all systems ready!');
     
   } catch (e) {
-    debugPrint('❌ Validation error: $e');
+    AppLogger.error('Validation error: $e');
     // Don't throw - just log. Warehouse is still created.
   }
 }
@@ -127,8 +128,8 @@ class WarehouseFormSheet {
       builder: (context) => StatefulBuilder(
         builder: (sheetContext, setSheetState) => Container(
           height: MediaQuery.of(context).size.height * 0.9,
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -183,7 +184,7 @@ class WarehouseFormSheet {
               // Form
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -376,8 +377,8 @@ class WarehouseFormSheet {
               Container(
                 padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + MediaQuery.of(context).padding.bottom),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+                  color: Theme.of(context).colorScheme.surface,
+                  boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05), blurRadius: 10, offset: Offset(0, -5))],
                 ),
                 child: SizedBox(
                   width: double.infinity,
@@ -421,7 +422,7 @@ class WarehouseFormSheet {
                               lng = locations.first.longitude;
                             }
                           } catch (e) {
-                            debugPrint('Geocoding failed: $e');
+                            AppLogger.error('Geocoding failed: $e');
                           }
                         }
 
@@ -443,7 +444,7 @@ class WarehouseFormSheet {
                         if (isEdit) {
                           await supabase.from('warehouses').update(data).eq('id', warehouse['id']);
                         } else {
-                          final companyId = ref.read(authProvider).user?.companyId ?? '';
+                          final companyId = ref.read(currentUserProvider)?.companyId ?? '';
                           data['company_id'] = companyId;
                           
                           // ⚠️ CRITICAL: Check if this is the first warehouse for company
@@ -457,11 +458,11 @@ class WarehouseFormSheet {
                           // If first warehouse: MUST set is_primary = true
                           if (isFirstWarehouse) {
                             data['is_primary'] = true;
-                            debugPrint('⭐ First warehouse for company - automatically setting is_primary = TRUE');
+                            AppLogger.info('First warehouse for company - automatically setting is_primary = TRUE');
                           } else {
                             // For secondary warehouses: default to false if not explicitly set
                             data['is_primary'] = data['is_primary'] ?? false;
-                            debugPrint('📦 Secondary warehouse - is_primary = ${data['is_primary']}');
+                            AppLogger.data('Secondary warehouse', {'is_primary': data['is_primary']});
                           }
                           
                           // Ensure is_active defaults to true
@@ -471,7 +472,7 @@ class WarehouseFormSheet {
                           final response = await supabase.from('warehouses').insert(data).select();
                           final newWarehouseId = response[0]['id'];
                           
-                          debugPrint('✅ Created warehouse: $newWarehouseId');
+                          AppLogger.info('Created warehouse: $newWarehouseId');
                           
                           // Validate warehouse setup
                           await _validateWarehouseSetup(newWarehouseId, companyId);
@@ -495,12 +496,12 @@ class WarehouseFormSheet {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.teal,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text(
                       isEdit ? 'Cập nhật kho' : 'Thêm kho',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.surface),
                     ),
                   ),
                 ),
@@ -560,8 +561,8 @@ class StockInSheet {
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => Container(
           height: MediaQuery.of(context).size.height * 0.7,
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -664,8 +665,8 @@ class StockInSheet {
                             }
 
                             try {
-                              final companyId = ref.read(authProvider).user?.companyId ?? '';
-                              final userId = ref.read(authProvider).user?.id ?? '';
+                              final companyId = ref.read(currentUserProvider)?.companyId ?? '';
+                              final userId = ref.read(currentUserProvider)?.id ?? '';
 
                               // Only create movement - trigger will handle inventory update
                               await supabase.from('inventory_movements').insert({
@@ -694,10 +695,10 @@ class StockInSheet {
                             }
                           },
                           icon: const Icon(Icons.check),
-                          label: const Text('Nhập hàng'),
+                          label: Text('Nhập hàng'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).colorScheme.surface,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),
@@ -737,8 +738,8 @@ class StockOutSheet {
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => Container(
           height: MediaQuery.of(context).size.height * 0.7,
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -881,8 +882,8 @@ class StockOutSheet {
                                 }
 
                                 try {
-                                  final companyId = ref.read(authProvider).user?.companyId ?? '';
-                                  final userId = ref.read(authProvider).user?.id ?? '';
+                                  final companyId = ref.read(currentUserProvider)?.companyId ?? '';
+                                  final userId = ref.read(currentUserProvider)?.id ?? '';
 
                                   // 1. Update inventory (decrease stock)
                                   final existingInventory = await supabase
@@ -933,10 +934,10 @@ class StockOutSheet {
                                 }
                               },
                               icon: const Icon(Icons.check),
-                              label: const Text('Xuất hàng'),
+                              label: Text('Xuất hàng'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.orange,
-                                foregroundColor: Colors.white,
+                                foregroundColor: Theme.of(context).colorScheme.surface,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                             ),
@@ -983,8 +984,8 @@ class TransferStockSheet {
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => Container(
           height: MediaQuery.of(context).size.height * 0.8,
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -1150,8 +1151,8 @@ class TransferStockSheet {
                                 }
 
                                 try {
-                                  final companyId = ref.read(authProvider).user?.companyId ?? '';
-                                  final userId = ref.read(authProvider).user?.id ?? '';
+                                  final companyId = ref.read(currentUserProvider)?.companyId ?? '';
+                                  final userId = ref.read(currentUserProvider)?.id ?? '';
                                   final toWarehouse = allWarehouses.firstWhere((w) => w['id'] == toWarehouseId, orElse: () => {});
                                   final toWarehouseName = toWarehouse['name'] ?? 'kho đích';
 
@@ -1209,10 +1210,10 @@ class TransferStockSheet {
                                 }
                               },
                               icon: const Icon(Icons.check),
-                              label: const Text('Chuyển kho'),
+                              label: Text('Chuyển kho'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.purple,
-                                foregroundColor: Colors.white,
+                                foregroundColor: Theme.of(context).colorScheme.surface,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                             ),

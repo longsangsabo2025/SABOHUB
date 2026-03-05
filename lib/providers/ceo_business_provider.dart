@@ -8,7 +8,7 @@ import 'auth_provider.dart';
 /// Replaces mock data with actual distribution business metrics
 /// ============================================================================
 
-final _supabase = Supabase.instance.client;
+SupabaseClient get _supabase => Supabase.instance.client;
 
 // ---------------------------------------------------------------------------
 // 1. TODAY'S BUSINESS PULSE — What CEO sees first thing in the morning
@@ -17,7 +17,7 @@ final _supabase = Supabase.instance.client;
 /// Today's real-time business numbers
 final todayBusinessPulseProvider =
     FutureProvider.autoDispose<TodayPulse>((ref) async {
-  final user = ref.read(authProvider).user;
+  final user = ref.watch(currentUserProvider);
   if (user == null) return TodayPulse.empty();
 
   final today = DateTime.now();
@@ -126,7 +126,7 @@ final todayBusinessPulseProvider =
 /// Real KPIs calculated from sales_orders + employees + customers
 final realCEOKPIsProvider =
     FutureProvider.autoDispose<CEOKPIs>((ref) async {
-  final user = ref.read(authProvider).user;
+  final user = ref.watch(currentUserProvider);
   if (user == null) return CEOKPIs.empty();
 
   try {
@@ -171,7 +171,7 @@ final realCEOKPIsProvider =
           .eq('status', 'active'),
 
       // Total companies
-      _supabase.from('companies').select('id').inFilter('id', companyIds),
+      _supabase.from('companies').select('id').inFilter('id', companyIds).limit(500),
 
       // Cost of goods (from sales_order_items this month)
       _supabase
@@ -258,7 +258,7 @@ final realCEOKPIsProvider =
 /// Items waiting for CEO decision
 final pendingApprovalsProvider =
     FutureProvider.autoDispose<PendingApprovals>((ref) async {
-  final user = ref.read(authProvider).user;
+  final user = ref.watch(currentUserProvider);
   if (user == null) return PendingApprovals.empty();
 
   try {
@@ -311,7 +311,7 @@ final pendingApprovalsProvider =
 /// Customer analytics for CEO
 final customerInsightsProvider =
     FutureProvider.autoDispose<CustomerInsights>((ref) async {
-  final user = ref.read(authProvider).user;
+  final user = ref.watch(currentUserProvider);
   if (user == null) return CustomerInsights.empty();
 
   try {
@@ -428,7 +428,7 @@ final customerInsightsProvider =
 /// Compare all CEO's companies
 final companyComparisonProvider =
     FutureProvider.autoDispose<List<CompanyStats>>((ref) async {
-  final user = ref.read(authProvider).user;
+  final user = ref.watch(currentUserProvider);
   if (user == null) return [];
 
   try {
@@ -507,7 +507,7 @@ final companyComparisonProvider =
 /// Daily revenue data for chart (last 30 days)
 final dailyRevenueChartProvider =
     FutureProvider.autoDispose<List<DailyRevenue>>((ref) async {
-  final user = ref.read(authProvider).user;
+  final user = ref.watch(currentUserProvider);
   if (user == null) return [];
 
   try {
@@ -560,7 +560,7 @@ final dailyRevenueChartProvider =
 /// Returns same structure for drop-in replacement in analytics page
 final ceoPeriodRevenueProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>, String>((ref, period) async {
-  final user = ref.read(authProvider).user;
+  final user = ref.watch(currentUserProvider);
   if (user == null) {
     return _emptyPeriodRevenue(period);
   }
@@ -718,7 +718,7 @@ Future<List<String>> _getCEOCompanyIds(String? userId) async {
     final role = (employee['role'] as String?)?.toLowerCase() ?? '';
     if (role == 'super_admin') {
       // Super admin sees all companies
-      final all = await _supabase.from('companies').select('id') as List;
+      final all = await _supabase.from('companies').select('id').limit(500) as List;
       return all.map((c) => c['id'] as String).toList();
     }
 

@@ -58,12 +58,12 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
       children: [
         // Header with Stats
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -85,10 +85,10 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
                   ElevatedButton.icon(
                     onPressed: () => _showCreateEmployeeDialog(widget.company),
                     icon: const Icon(Icons.person_add, size: 18),
-                    label: const Text('Thêm nhân viên'),
+                    label: Text('Thêm nhân viên'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[600],
-                      foregroundColor: Colors.white,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                 ],
@@ -181,9 +181,9 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
         ),
         // Search and Filter Section
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             border: Border(
               top: BorderSide(color: Colors.grey[200]!),
             ),
@@ -505,12 +505,20 @@ class _EmployeesTabState extends ConsumerState<EmployeesTab> {
         roleColor = Colors.brown;
         roleLabel = 'Nhân viên kho';
         break;
+      case app_user.UserRole.finance:
+        roleColor = Colors.green.shade700;
+        roleLabel = 'Kế toán';
+        break;
+      case app_user.UserRole.shareholder:
+        roleColor = Colors.cyan;
+        roleLabel = 'Cổ đông';
+        break;
     }
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       elevation: 0,
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: Colors.grey[200]!),

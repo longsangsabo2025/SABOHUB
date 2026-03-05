@@ -12,6 +12,7 @@ import '../../models/customer_contact.dart';
 import '../../business_types/distribution/providers/odori_providers.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/customer_avatar.dart';
+import '../../utils/app_logger.dart';
 
 class OrderFormPage extends ConsumerStatefulWidget {
   final OdoriCustomer? preselectedCustomer;
@@ -157,7 +158,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       
       setState(() {});
     } catch (e) {
-      debugPrint('Error loading order for edit: $e');
+      AppLogger.error('Error loading order for edit: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi tải đơn hàng: $e'), backgroundColor: Colors.red),
@@ -168,8 +169,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
 
   Future<void> _loadWarehouses() async {
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       
       if (companyId == null) return;
       
@@ -231,7 +232,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
         _isLoadingAddresses = false;
       });
     } catch (e) {
-      debugPrint('Error loading customer addresses: $e');
+      AppLogger.error('Error loading customer addresses: $e');
       setState(() => _isLoadingAddresses = false);
     }
   }
@@ -269,7 +270,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
         _isLoadingContacts = false;
       });
     } catch (e) {
-      debugPrint('Error loading customer contacts: $e');
+      AppLogger.error('Error loading customer contacts: $e');
       setState(() => _isLoadingContacts = false);
     }
   }
@@ -310,13 +311,13 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildCustomerSection(),
+                    _buildCustomerSection(context),
                     const SizedBox(height: 16),
                     _buildWarehouseSection(),
                     const SizedBox(height: 16),
-                    _buildItemsSection(),
+                    _buildItemsSection(context),
                     const SizedBox(height: 16),
-                    _buildTotalsSection(),
+                    _buildTotalsSection(context),
                     const SizedBox(height: 16),
                      TextFormField(
                       controller: _notesController,
@@ -343,7 +344,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     );
   }
 
-  Widget _buildCustomerSection() {
+  Widget _buildCustomerSection(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -388,10 +389,10 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
               ),
               // Delivery Address Section
               const Divider(),
-              _buildDeliveryAddressSection(),
+              _buildDeliveryAddressSection(context),
               // Delivery Contact Section
               const SizedBox(height: 12),
-              _buildDeliveryContactSection(),
+              _buildDeliveryContactSection(context),
             ],
           ],
         ),
@@ -399,7 +400,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     );
   }
 
-  Widget _buildDeliveryAddressSection() {
+  Widget _buildDeliveryAddressSection(BuildContext context) {
     if (_isLoadingAddresses) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 8),
@@ -581,7 +582,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     );
   }
 
-  Widget _buildDeliveryContactSection() {
+  Widget _buildDeliveryContactSection(BuildContext context) {
     if (_isLoadingContacts) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 8),
@@ -865,7 +866,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     );
   }
 
-  Widget _buildItemsSection() {
+  Widget _buildItemsSection(BuildContext context) {
     if (_orderItems.isEmpty) {
       return Card(
         child: Padding(
@@ -935,7 +936,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     );
   }
 
-  Widget _buildTotalsSection() {
+  Widget _buildTotalsSection(BuildContext context) {
     final subtotal = _orderItems.fold<double>(0, (sum, item) => sum + item.total);
     
     // Calculate discount amount
@@ -985,8 +986,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildDiscountTypeButton('%', 'percent'),
-                      _buildDiscountTypeButton('VNĐ', 'fixed'),
+                      _buildDiscountTypeButton(context, '%', 'percent'),
+                      _buildDiscountTypeButton(context, 'VNĐ', 'fixed'),
                     ],
                   ),
                 ),
@@ -1045,7 +1046,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     );
   }
 
-  Widget _buildDiscountTypeButton(String label, String type) {
+  Widget _buildDiscountTypeButton(BuildContext context, String label, String type) {
     final isSelected = _discountType == type;
     return InkWell(
       onTap: () {
@@ -1056,7 +1057,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? Colors.orange : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
@@ -1066,7 +1067,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: isSelected ? Colors.white : Colors.grey.shade600,
+            color: isSelected ? Theme.of(context).colorScheme.surface : Colors.grey.shade600,
           ),
         ),
       ),
@@ -1136,8 +1137,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
 
     // === Check overdue receivables & credit limit before allowing order ===
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
       if (companyId != null && _selectedCustomer != null) {
         final cf = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
         final orderTotal = _orderItems.fold<double>(0, (sum, item) => sum + item.total);
@@ -1160,7 +1161,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                 title: Row(children: [
                   Icon(Icons.credit_card_off, color: Colors.orange.shade700),
                   const SizedBox(width: 8),
-                  const Text('Vượt hạn mức'),
+                  Text('Vượt hạn mức'),
                 ]),
                 content: Text(
                   'Đơn hàng sẽ vượt hạn mức tín dụng:\n\n'
@@ -1173,12 +1174,12 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Hủy'),
+                    child: Text('Hủy'),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Vẫn tạo đơn', style: TextStyle(color: Colors.white)),
+                    child: Text('Vẫn tạo đơn', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
                   ),
                 ],
               ),
@@ -1206,7 +1207,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
               title: Row(children: [
                 Icon(Icons.warning_amber_rounded, color: Colors.red.shade700),
                 const SizedBox(width: 8),
-                const Text('Khách hàng quá hạn'),
+                Text('Khách hàng quá hạn'),
               ]),
               content: Text(
                 'Khách hàng này có ${overdueCheck.length} khoản nợ quá hạn '
@@ -1216,12 +1217,12 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Hủy'),
+                  child: Text('Hủy'),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                   onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Vẫn tạo đơn', style: TextStyle(color: Colors.white)),
+                  child: Text('Vẫn tạo đơn', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
                 ),
               ],
             ),
@@ -1236,8 +1237,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) throw Exception('Không tìm thấy thông tin công ty');
 
@@ -1320,7 +1321,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
           'company_id': companyId,
           'order_number': orderNumber,
           ...orderData,
-          'sale_id': authState.user?.id,
+          'sale_id': user?.id,
           'order_date': DateTime.now().toIso8601String().split('T')[0],
           'status': 'pending_approval',
           'payment_status': 'unpaid',
@@ -1588,13 +1589,13 @@ class _CustomerListTile extends StatelessWidget {
                     right: 0,
                     bottom: 0,
                     child: Container(
-                      padding: const EdgeInsets.all(2),
+                      padding: EdgeInsets.all(2),
                       decoration: BoxDecoration(
                         color: Colors.green,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(color: Theme.of(context).colorScheme.surface, width: 1.5),
                       ),
-                      child: const Icon(Icons.location_on, size: 10, color: Colors.white),
+                      child: Icon(Icons.location_on, size: 10, color: Theme.of(context).colorScheme.surface),
                     ),
                   ),
               ],

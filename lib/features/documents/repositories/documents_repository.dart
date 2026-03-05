@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_sabohub/utils/postgrest_sanitizer.dart';
 import '../models/document.dart';
 import '../../../utils/app_logger.dart';
 
@@ -100,7 +101,7 @@ class DocumentsRepository {
           .select()
           .eq('company_id', companyId)
           .eq('is_deleted', false)
-          .or('file_name.ilike.%$searchQuery%,description.ilike.%$searchQuery%')
+          .or('file_name.ilike.%${PostgrestSanitizer.sanitizeSearch(searchQuery)}%,description.ilike.%${PostgrestSanitizer.sanitizeSearch(searchQuery)}%')
           .order('created_at', ascending: false);
 
       final documents = (response as List)
@@ -259,17 +260,21 @@ class DocumentsRepository {
     }
   }
 
-  /// Hard delete a document (permanent)
+  /// Hard delete a document — Converted to soft delete for safety
   Future<bool> hardDeleteDocument(String documentId) async {
     try {
-      AppLogger.api('Hard deleting document: $documentId');
+      AppLogger.api('Soft deleting document (was hard delete): $documentId');
 
-      await _supabase.from(_tableName).delete().eq('id', documentId);
+      // Soft delete - sets is_deleted=true, deleted_at timestamp
+      await _supabase.from(_tableName).update({
+        'is_deleted': true,
+        'deleted_at': DateTime.now().toIso8601String(),
+      }).eq('id', documentId);
 
-      AppLogger.api('Document permanently deleted');
+      AppLogger.api('Document soft deleted');
       return true;
     } catch (e) {
-      AppLogger.error('Error hard deleting document', e);
+      AppLogger.error('Error deleting document', e);
       return false;
     }
   }

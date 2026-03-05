@@ -29,11 +29,11 @@ class MessageBubble extends StatelessWidget {
           bottomLeft:
               isUser ? const Radius.circular(16) : const Radius.circular(4),
           bottomRight:
-              isUser ? const Radius.circular(4) : const Radius.circular(16),
+              isUser ? Radius.circular(4) : Radius.circular(16),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -46,8 +46,8 @@ class MessageBubble extends StatelessWidget {
           if (isUser)
             Text(
               message.content,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.surface,
                 fontSize: 15,
                 height: 1.4,
               ),
@@ -140,24 +140,24 @@ class MessageBubble extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isUser ? Colors.white.withValues(alpha: 0.2) : Colors.white,
+        color: isUser ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.2) : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color:
-              isUser ? Colors.white.withValues(alpha: 0.3) : Colors.grey[300]!,
+              isUser ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.3) : Colors.grey[300]!,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: isUser ? Colors.white : color),
-          const SizedBox(width: 6),
+          Icon(icon, size: 16, color: isUser ? Theme.of(context).colorScheme.surface : color),
+          SizedBox(width: 6),
           Text(
             attachment.url.split('/').last,
             style: TextStyle(
-              color: isUser ? Colors.white : Colors.grey[800],
+              color: isUser ? Theme.of(context).colorScheme.surface : Colors.grey[800],
               fontSize: 12,
             ),
             maxLines: 1,

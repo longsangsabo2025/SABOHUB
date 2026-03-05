@@ -13,7 +13,7 @@ final managerKPIServiceProvider = Provider<ManagerKPIService>((ref) {
 final managerDashboardKPIsProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>, String?>((ref, branchId) async {
   final service = ref.read(managerKPIServiceProvider);
-  final currentUser = ref.read(authProvider).user;
+  final currentUser = ref.watch(currentUserProvider);
   
   if (currentUser == null) {
     throw Exception('No user logged in');
@@ -32,7 +32,7 @@ final managerTeamMembersProvider =
     FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String?>(
         (ref, branchId) async {
   final service = ref.read(managerKPIServiceProvider);
-  final currentUser = ref.read(authProvider).user;
+  final currentUser = ref.watch(currentUserProvider);
   
   if (currentUser == null) {
     throw Exception('No user logged in');
@@ -51,7 +51,7 @@ final managerRecentActivitiesProvider = FutureProvider.autoDispose.family<
     List<Map<String, dynamic>>,
     ({String? branchId, int limit})>((ref, params) async {
   final service = ref.read(managerKPIServiceProvider);
-  final currentUser = ref.read(authProvider).user;
+  final currentUser = ref.watch(currentUserProvider);
   
   if (currentUser == null) {
     throw Exception('No user logged in');

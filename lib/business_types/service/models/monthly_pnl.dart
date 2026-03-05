@@ -26,6 +26,13 @@ class MonthlyPnl {
   final double salaryExpenses;
   final double operatingProfit;
 
+  // Monthly Expense Categories (New)
+  final double rentExpense;        // Mặt bằng
+  final double electricityExpense; // Điện
+  final double advertisingExpense; // Quảng Cáo
+  final double invoicedPurchases;  // Nhập hàng có hóa đơn
+  final double otherPurchases;     // Mua hàng hóa/vật dụng khác
+
   // Other
   final double otherIncome;
   final double returnFees;
@@ -61,6 +68,11 @@ class MonthlyPnl {
     this.pointsPayment = 0,
     this.salaryExpenses = 0,
     this.operatingProfit = 0,
+    this.rentExpense = 0,
+    this.electricityExpense = 0,
+    this.advertisingExpense = 0,
+    this.invoicedPurchases = 0,
+    this.otherPurchases = 0,
     this.otherIncome = 0,
     this.returnFees = 0,
     this.salaryRefunds = 0,
@@ -95,6 +107,11 @@ class MonthlyPnl {
       pointsPayment: _toDouble(json['points_payment']),
       salaryExpenses: _toDouble(json['salary_expenses']),
       operatingProfit: _toDouble(json['operating_profit']),
+      rentExpense: _toDouble(json['rent_expense']),
+      electricityExpense: _toDouble(json['electricity_expense']),
+      advertisingExpense: _toDouble(json['advertising_expense']),
+      invoicedPurchases: _toDouble(json['invoiced_purchases']),
+      otherPurchases: _toDouble(json['other_purchases']),
       otherIncome: _toDouble(json['other_income']),
       returnFees: _toDouble(json['return_fees']),
       salaryRefunds: _toDouble(json['salary_refunds']),
@@ -126,6 +143,11 @@ class MonthlyPnl {
   /// Operating margin percentage
   double get operatingMarginPct =>
       netRevenue > 0 ? (operatingProfit / netRevenue) * 100 : 0;
+
+  /// Total categorized monthly expenses (new categories)
+  double get totalCategorizedExpenses =>
+      rentExpense + electricityExpense + advertisingExpense +
+      invoicedPurchases + otherPurchases + salaryExpenses;
 
   /// Month label (e.g., "T3/2024")
   String get monthLabel => 'T${reportMonth.month}/${reportMonth.year}';

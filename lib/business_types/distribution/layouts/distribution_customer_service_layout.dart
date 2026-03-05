@@ -32,8 +32,8 @@ class _DistributionCustomerServiceLayoutState
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final userName = authState.user?.name ?? 'CSKH';
+    final user = ref.watch(currentUserProvider);
+    final userName = user?.name ?? 'CSKH';
     
     return Scaffold(
       appBar: AppBar(

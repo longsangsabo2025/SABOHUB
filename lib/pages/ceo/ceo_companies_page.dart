@@ -1,3 +1,4 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,7 +17,7 @@ class _CEOCompaniesPageState extends ConsumerState<CEOCompaniesPage> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFFF5F5F5),
+      backgroundColor: AppColors.grey100,
       body: CompaniesTab(),
     );
   }

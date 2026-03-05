@@ -43,7 +43,7 @@ class LevelBadge extends StatelessWidget {
             child: Text(
               '$level',
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 fontWeight: FontWeight.bold,
                 fontSize: size * 0.38,
               ),
@@ -68,24 +68,24 @@ class LevelBadge extends StatelessWidget {
 
   _LevelTier _tierForLevel(int level) {
     if (level >= 100) {
-      return _LevelTier([const Color(0xFFFFD700), const Color(0xFFFF6F00)], 'Huyền Thoại');
+      return _LevelTier([Color(0xFFFFD700), Color(0xFFFF6F00)], 'Huyền Thoại');
     }
     if (level >= 76) {
-      return _LevelTier([const Color(0xFFFF6F00), const Color(0xFFE65100)], 'Đế Vương');
+      return _LevelTier([Color(0xFFFF6F00), Color(0xFFE65100)], 'Đế Vương');
     }
     if (level >= 51) {
-      return _LevelTier([const Color(0xFFAB47BC), const Color(0xFF7B1FA2)], 'Tướng Quân');
+      return _LevelTier([Color(0xFFAB47BC), Color(0xFF7B1FA2)], 'Tướng Quân');
     }
     if (level >= 31) {
-      return _LevelTier([const Color(0xFF26C6DA), const Color(0xFF0097A7)], 'Doanh Nhân');
+      return _LevelTier([Color(0xFF26C6DA), Color(0xFF0097A7)], 'Doanh Nhân');
     }
     if (level >= 16) {
-      return _LevelTier([const Color(0xFF66BB6A), const Color(0xFF2E7D32)], 'Ông Chủ');
+      return _LevelTier([Color(0xFF66BB6A), Color(0xFF2E7D32)], 'Ông Chủ');
     }
     if (level >= 6) {
-      return _LevelTier([const Color(0xFF42A5F5), const Color(0xFF1565C0)], 'Chủ Tiệm');
+      return _LevelTier([Color(0xFF42A5F5), Color(0xFF1565C0)], 'Chủ Tiệm');
     }
-    return _LevelTier([const Color(0xFF78909C), const Color(0xFF455A64)], 'Tân Binh');
+    return _LevelTier([Color(0xFF78909C), Color(0xFF455A64)], 'Tân Binh');
   }
 }
 

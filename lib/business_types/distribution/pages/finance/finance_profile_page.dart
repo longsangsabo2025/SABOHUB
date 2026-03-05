@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../providers/auth_provider.dart';
 import '../../../../widgets/bug_report_dialog.dart';
-import '../../../../pages/staff/staff_profile_page.dart';
 
 // ============================================================================
 // PROFILE PAGE - Modern UI
@@ -26,13 +25,13 @@ class FinanceProfilePage extends ConsumerWidget {
             children: [
               // Profile Header
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -53,8 +52,8 @@ class FinanceProfilePage extends ConsumerWidget {
                         child: Center(
                           child: Text(
                             (user?.name ?? 'U')[0].toUpperCase(),
-                            style: const TextStyle(
-                                color: Colors.white,
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.surface,
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold),
                           ),
@@ -95,18 +94,18 @@ class FinanceProfilePage extends ConsumerWidget {
               // Stats cards
               Row(
                 children: [
-                  _buildInfoCard(Icons.business, 'Công ty', user?.companyName ?? 'N/A', Colors.green),
+                  _buildInfoCard(context, Icons.business, 'Công ty', user?.companyName ?? 'N/A', Colors.green),
                   const SizedBox(width: 12),
-                  _buildInfoCard(Icons.phone, 'Điện thoại', user?.phone ?? 'N/A', Colors.orange),
+                  _buildInfoCard(context, Icons.phone, 'Điện thoại', user?.phone ?? 'N/A', Colors.orange),
                 ],
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               // Menu items
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Column(
@@ -118,11 +117,7 @@ class FinanceProfilePage extends ConsumerWidget {
                       'Xem và chỉnh sửa hồ sơ',
                       Colors.blue,
                       () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const StaffProfilePage()),
-                        );
+                        context.push('/profile');
                       },
                     ),
                     _buildDivider(),
@@ -172,7 +167,7 @@ class FinanceProfilePage extends ConsumerWidget {
                       () {
                         showDialog(
                           context: context,
-                          builder: (context) => const BugReportDialog(),
+                          builder: (context) => BugReportDialog(),
                         );
                       },
                     ),
@@ -206,8 +201,8 @@ class FinanceProfilePage extends ConsumerWidget {
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10)),
                                 ),
-                                child: const Text('Đăng xuất',
-                                    style: TextStyle(color: Colors.white)),
+                                child: Text('Đăng xuất',
+                                    style: TextStyle(color: Theme.of(context).colorScheme.surface)),
                               ),
                             ],
                           ),
@@ -253,16 +248,16 @@ class FinanceProfilePage extends ConsumerWidget {
     }
   }
 
-  Widget _buildInfoCard(IconData icon, String label, String value, MaterialColor color) {
+  Widget _buildInfoCard(BuildContext context, IconData icon, String label, String value, MaterialColor color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.03),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

@@ -40,10 +40,10 @@ class _DistributionDriverLayoutState extends ConsumerState<DistributionDriverLay
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),

@@ -1,3 +1,4 @@
+import '../core/repositories/impl/employee_repository.dart';
 import '../core/services/supabase_service.dart';
 import '../models/staff.dart';
 
@@ -5,25 +6,24 @@ import '../models/staff.dart';
 /// Handles all staff/employee-related database operations
 class StaffService {
   final _supabase = supabase.client;
+  final EmployeeRepository _repo = EmployeeRepository();
 
   /// Get all staff members
   Future<List<Staff>> getAllStaff({String? branchId, String? companyId}) async {
     try {
-      // Query from employees table (not users)
-      var query = _supabase.from('employees').select(
-          'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at');
+      final response = await _repo.getEmployees(
+        companyId: companyId,
+        limit: 200,
+      );
 
+      var filtered = response;
       if (branchId != null) {
-        query = query.eq('branch_id', branchId);
-      }
-      
-      if (companyId != null) {
-        query = query.eq('company_id', companyId);
+        filtered = filtered
+            .where((row) => row['branch_id'] == branchId)
+            .toList();
       }
 
-      final response = await query.order('created_at', ascending: false);
-
-      return (response as List).map((json) => Staff.fromJson(json)).toList();
+      return filtered.map((json) => Staff.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch staff: $e');
     }
@@ -32,14 +32,8 @@ class StaffService {
   /// Get staff by ID
   Future<Staff?> getStaffById(String id) async {
     try {
-      // Query from employees table (not users)
-      final response = await _supabase
-          .from('employees')
-          .select(
-              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
-          .eq('id', id)
-          .single();
-
+      final response = await _repo.getEmployeeById(id);
+      if (response == null) return null;
       return Staff.fromJson(response);
     } catch (e) {
       return null;
@@ -47,7 +41,7 @@ class StaffService {
   }
 
   /// Get staff by role
-  Future<List<Staff>> getStaffByRole(String role, {String? branchId}) async {
+  Future<List<Staff>> getStaffByRole(String role, {String? branchId, String? companyId}) async {
     try {
       // Query from employees table (not users)
       var query = _supabase
@@ -56,11 +50,14 @@ class StaffService {
               'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
           .eq('role', role);
 
+      if (companyId != null) {
+        query = query.eq('company_id', companyId);
+      }
       if (branchId != null) {
         query = query.eq('branch_id', branchId);
       }
 
-      final response = await query.order('created_at', ascending: false);
+      final response = await query.order('created_at', ascending: false).limit(200);
 
       return (response as List).map((json) => Staff.fromJson(json)).toList();
     } catch (e) {
@@ -75,22 +72,18 @@ class StaffService {
     required String role,
     String? phone,
     String? branchId,
+    String? companyId,
   }) async {
     try {
-      // Create staff in employees table (not users)
-      final response = await _supabase
-          .from('employees')
-          .insert({
-            'full_name': name,
-            'email': email,
-            'role': role,
-            'phone': phone,
-            'branch_id': branchId,
-            'is_active': true,
-          })
-          .select(
-              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
-          .single();
+      final response = await _repo.createEmployee({
+        'full_name': name,
+        'email': email,
+        'role': role,
+        'phone': phone,
+        'branch_id': branchId,
+        if (companyId != null) 'company_id': companyId,
+        'is_active': true,
+      });
 
       return Staff.fromJson(response);
     } catch (e) {
@@ -101,42 +94,36 @@ class StaffService {
   /// Update staff member
   Future<Staff> updateStaff(String id, Map<String, dynamic> updates) async {
     try {
-      // Update in employees table (not users)
-      final response = await _supabase
-          .from('employees')
-          .update(updates)
-          .eq('id', id)
-          .select(
-              'id, full_name, email, role, phone, avatar_url, branch_id, company_id, is_active, created_at, updated_at')
-          .single();
-
+      final response = await _repo.updateEmployee(id, updates);
       return Staff.fromJson(response);
     } catch (e) {
       throw Exception('Failed to update staff: $e');
     }
   }
 
-  /// Delete staff member (soft delete by setting status to inactive)
+  /// Delete staff member (soft delete via repository)
   Future<void> deleteStaff(String id) async {
     try {
-      // Update in employees table (not users)
-      await _supabase.from('employees').update({'is_active': false}).eq('id', id);
+      await _repo.deleteEmployee(id);
     } catch (e) {
       throw Exception('Failed to delete staff: $e');
     }
   }
 
-  /// Get staff statistics by branch
-  Future<Map<String, dynamic>> getStaffStats({String? branchId}) async {
+  /// Get staff statistics by branch/company
+  Future<Map<String, dynamic>> getStaffStats({String? branchId, String? companyId}) async {
     try {
       // Query from employees table (not users)
       var query = _supabase.from('employees').select('role, is_active');
 
+      if (companyId != null) {
+        query = query.eq('company_id', companyId);
+      }
       if (branchId != null) {
         query = query.eq('branch_id', branchId);
       }
 
-      final response = await query;
+      final response = await query.limit(500);
       final staffList = response as List;
 
       // Count by role
@@ -176,10 +163,7 @@ class StaffService {
 
   /// Subscribe to staff changes
   Stream<List<Staff>> subscribeToStaff({String? branchId}) {
-    // Subscribe to employees table (not users)
-    var stream = _supabase
-        .from('employees')
-        .stream(primaryKey: ['id']).order('created_at', ascending: false);
+    final stream = _repo.subscribeToEmployees();
 
     return stream.map((data) {
       var filtered = data;

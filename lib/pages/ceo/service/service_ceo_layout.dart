@@ -1,3 +1,4 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,12 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/services/supabase_service.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/realtime_notification_widgets.dart';
-import '../ceo_profile_page.dart';
 import '../ceo_notifications_page.dart';
-import '../ceo_reports_settings_page.dart' show CEOSettingsPage;
 import '../shared/ceo_more_page.dart';
 import '../ceo_tasks_page.dart';
 import '../ceo_employees_page.dart';
@@ -29,11 +27,9 @@ import '../company_details_page.dart' hide companyStatsProvider;
 import 'tournament_form_page.dart';
 import 'event_form_page.dart';
 import 'content_form_page.dart';
-import '../../../business_types/service/pages/cashflow/daily_cashflow_import_page.dart';
-import '../../../business_types/service/providers/monthly_pnl_provider.dart';
-import '../../../business_types/service/models/monthly_pnl.dart';
 import '../../../core/router/app_router.dart';
 import '../../../widgets/gamification/ceo_game_summary_card.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 /// ═══════════════════════════════════════════════════════
 /// SABO Corporation CEO Command Center — Musk Style
@@ -68,35 +64,34 @@ class _ServiceCEOLayoutState
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF0F172A),
-        surfaceTintColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.backgroundDark,
+        surfaceTintColor: AppColors.backgroundDark,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               companyName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
               ),
             ),
-            const Text(
+            Text(
               'CEO Command Center',
-              style: TextStyle(fontSize: 11, color: Colors.white54),
+              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.surface54),
             ),
           ],
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.surface),
         actions: [
-          const RealtimeNotificationBell(),
+          RealtimeNotificationBell(),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white70),
+            icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.surface70),
             onSelected: (value) {
               switch (value) {
                 case 'profile':
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const CEOProfilePage()));
+                  context.push(AppRoutes.profile);
                   break;
                 case 'notifications':
                   Navigator.push(
@@ -105,8 +100,7 @@ class _ServiceCEOLayoutState
                           builder: (_) => const CEONotificationsPage()));
                   break;
                 case 'settings':
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const CEOSettingsPage()));
+                  context.push(AppRoutes.ceoSettings);
                   break;
                 case 'more':
                   Navigator.push(context,
@@ -151,7 +145,7 @@ class _ServiceCEOLayoutState
         },
         height: 65,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         indicatorColor: AppColors.primary.withValues(alpha: 0.1),
         destinations: const [
           NavigationDestination(
@@ -230,25 +224,29 @@ class _CorporationOverviewTabState
 
       final results = await Future.wait([
         // Employees
-        sb.from('employees').select('id, is_active').eq('company_id', companyId),
+        sb.from('employees').select('id, is_active').eq('company_id', companyId).limit(1000),
         // Today revenue
         sb.from('daily_revenue').select('total_revenue')
             .eq('company_id', companyId)
-            .eq('date', todayStr),
+            .eq('date', todayStr)
+            .limit(100),
         // Month revenue
         sb.from('daily_revenue').select('total_revenue')
             .eq('company_id', companyId)
-            .gte('date', monthStart),
+            .gte('date', monthStart)
+            .limit(100),
         // Tasks
         sb.from('tasks').select('id, status, due_date')
             .eq('company_id', companyId)
-            .inFilter('status', ['pending', 'in_progress']),
+            .inFilter('status', ['pending', 'in_progress'])
+            .limit(1000),
         // Tables
-        sb.from('tables').select('id, status').eq('company_id', companyId),
+        sb.from('tables').select('id, status').eq('company_id', companyId).limit(500),
         // Active sessions
         sb.from('table_sessions').select('id')
             .eq('company_id', companyId)
-            .eq('status', 'active'),
+            .eq('status', 'active')
+            .limit(1000),
       ]);
 
       final employees = List<Map<String, dynamic>>.from(results[0] as List);
@@ -335,28 +333,26 @@ class _CorporationOverviewTabState
             Row(
               children: [
                 _metricCard('Doanh thu hôm nay', _fmt(_todayRevenue),
-                    Icons.payments, const Color(0xFF10B981),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => const CEOSettingsPage()))),
+                    Icons.payments, AppColors.success,
+                    onTap: () => context.push(AppRoutes.ceoSettings)),
                 const SizedBox(width: 8),
                 _metricCard('Doanh thu tháng', _fmt(_monthRevenue),
-                    Icons.account_balance_wallet, const Color(0xFF3B82F6),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => const CEOSettingsPage()))),
+                    Icons.account_balance_wallet, AppColors.info,
+                    onTap: () => context.push(AppRoutes.ceoSettings)),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               children: [
                 _metricCard('Nhân viên', '$_activeEmployees/$_totalEmployees',
-                    Icons.people, const Color(0xFF8B5CF6),
+                    Icons.people, AppColors.paymentRefunded,
                     onTap: () => widget.onSwitchTab(3)),
                 const SizedBox(width: 8),
                 _metricCard(
                   'Tasks',
                   '$_pendingTasks đang${_overdueTasks > 0 ? ' · $_overdueTasks trễ' : ''}',
                   Icons.assignment,
-                  _overdueTasks > 0 ? Colors.orange : const Color(0xFF06B6D4),
+                  _overdueTasks > 0 ? Colors.orange : AppColors.secondary,
                   onTap: () => Navigator.push(context, MaterialPageRoute(
                     builder: (_) => const CEOTasksPage())),
                 ),
@@ -414,27 +410,27 @@ class _CorporationOverviewTabState
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                  colors: [AppColors.backgroundDark, AppColors.textPrimary],
                 ),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '"If you\'re not growing, you\'re dying."',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                       fontStyle: FontStyle.italic,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Text(
                     'SABO — Media · Tournaments · Technology',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
                       fontSize: 11,
                     ),
                   ),
@@ -514,7 +510,7 @@ class _CorporationOverviewTabState
   Widget _buildContentPipeline(Map<String, int> stats) {
     final total = stats['total'] ?? 0;
     final overdue = stats['overdue'] ?? 0;
-    if (total == 0) return const SizedBox();
+    if (total == 0) return SizedBox();
 
     final inProduction = (stats['scripting'] ?? 0) +
         (stats['filming'] ?? 0) +
@@ -716,13 +712,13 @@ class _CorporationOverviewTabState
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8),
             ],
           ),
           child: Row(
@@ -843,7 +839,7 @@ class _CorporationOverviewTabState
 
   Widget _errorCard(String msg) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.red.shade50,
         borderRadius: BorderRadius.circular(12),
@@ -854,11 +850,11 @@ class _CorporationOverviewTabState
   }
 
   BoxDecoration _cardDecoration() => BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8),
         ],
       );
 
@@ -906,7 +902,7 @@ class _MediaCommandTabState extends State<_MediaCommandTab>
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: TabBar(
             controller: _tabController,
             labelColor: AppColors.primary,
@@ -985,17 +981,17 @@ class _MediaOverviewSubTab extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: _metricCard('Followers', _fmtCompact(totalFollowers), Icons.people, const Color(0xFF3B82F6))),
+                        Expanded(child: _metricCard(context, 'Followers', _fmtCompact(totalFollowers), Icons.people, AppColors.info)),
                         const SizedBox(width: 10),
-                        Expanded(child: _metricCard('Videos', '$totalVideos', Icons.videocam, const Color(0xFF8B5CF6))),
+                        Expanded(child: _metricCard(context, 'Videos', '$totalVideos', Icons.videocam, AppColors.paymentRefunded)),
                       ],
                     ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        Expanded(child: _metricCard('Views', _fmtCompact(totalViews), Icons.visibility, const Color(0xFFF59E0B))),
+                        Expanded(child: _metricCard(context, 'Views', _fmtCompact(totalViews), Icons.visibility, AppColors.warning)),
                         const SizedBox(width: 10),
-                        Expanded(child: _metricCard('Doanh thu', _fmtMoney(totalRevenue), Icons.attach_money, const Color(0xFF10B981))),
+                        Expanded(child: _metricCard(context, 'Doanh thu', _fmtMoney(totalRevenue), Icons.attach_money, AppColors.success)),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -1006,7 +1002,7 @@ class _MediaOverviewSubTab extends ConsumerWidget {
                     if (list.isEmpty)
                       _emptyState('Chưa có kênh nào', 'Vào tab Kênh để thêm kênh mới.', Icons.play_circle_outline)
                     else
-                      ..._buildPlatformBreakdown(list),
+                      ..._buildPlatformBreakdown(context, list),
                   ],
                 );
               },
@@ -1036,11 +1032,11 @@ class _MediaOverviewSubTab extends ConsumerWidget {
                       _emptyState('Chưa có content', 'Vào tab Nội dung để tạo content mới.', Icons.calendar_month)
                     else
                       Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(12),
-                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+                          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
                         ),
                         child: Column(
                           children: [
@@ -1099,13 +1095,13 @@ class _MediaOverviewSubTab extends ConsumerWidget {
     );
   }
 
-  Widget _metricCard(String label, String value, IconData icon, Color color) {
+  Widget _metricCard(BuildContext context, String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
       ),
       child: Row(
         children: [
@@ -1147,7 +1143,7 @@ class _MediaOverviewSubTab extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildPlatformBreakdown(List<dynamic> channels) {
+  List<Widget> _buildPlatformBreakdown(BuildContext context, List<dynamic> channels) {
     // Group by platform
     final platformGroups = <String, List<dynamic>>{};
     for (final ch in channels) {
@@ -1186,11 +1182,11 @@ class _MediaOverviewSubTab extends ConsumerWidget {
       }
       return Container(
         margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6)],
+          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.03), blurRadius: 6)],
         ),
         child: Column(
           children: [
@@ -1352,12 +1348,12 @@ class _MediaChannelsSubTab extends ConsumerWidget {
           // Group by platform
           final grouped = <String, List<dynamic>>{};
           for (final ch in list) {
-            grouped.putIfAbsent(ch.platform as String, () => []).add(ch);
+            grouped.putIfAbsent(ch.platform, () => []).add(ch);
           }
           const platformOrder = ['youtube', 'tiktok', 'facebook', 'instagram', 'twitter', 'linkedin'];
           final sortedPlatforms = grouped.keys.toList()
-            ..sort((a, b) => (platformOrder.indexOf(a) < 0 ? 99 : platformOrder.indexOf(a))
-                .compareTo(platformOrder.indexOf(b) < 0 ? 99 : platformOrder.indexOf(b)));
+            ..sort((a, b) => (!platformOrder.contains(a) ? 99 : platformOrder.indexOf(a))
+                .compareTo(!platformOrder.contains(b) ? 99 : platformOrder.indexOf(b)));
 
           const platformLabels = <String, (String, String)>{
             'youtube': ('🔴', 'YouTube'),
@@ -1419,11 +1415,11 @@ class _MediaChannelsSubTab extends ConsumerWidget {
       onTap: () => _showChannelDetailSheet(context, ref, ch, companyId),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1897,8 +1893,8 @@ class _MediaProjectsSubTabState extends ConsumerState<_MediaProjectsSubTab> {
           children: [
             // ── Stats bar ──
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: Theme.of(context).colorScheme.surface,
               child: Row(
                 children: [
                   _projectStat('Tổng', totalCount, Colors.grey),
@@ -1916,15 +1912,15 @@ class _MediaProjectsSubTabState extends ConsumerState<_MediaProjectsSubTab> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _typeChip('all', 'Tất cả'),
-                    _typeChip('corporation', '🏢 Tổng Công Ty'),
-                    _typeChip('billiards', '🎱 Bida'),
-                    _typeChip('restaurant', '🍽️ Nhà hàng'),
-                    _typeChip('cafe', '☕ Cafe'),
-                    _typeChip('distribution', '🚚 Phân phối'),
-                    _typeChip('manufacturing', '🏭 Sản xuất'),
-                    _typeChip('hotel', '🏨 Khách sạn'),
-                    _typeChip('retail', '🛒 Bán lẻ'),
+                    _typeChip(context, 'all', 'Tất cả'),
+                    _typeChip(context, 'corporation', '🏢 Tổng Công Ty'),
+                    _typeChip(context, 'billiards', '🎱 Bida'),
+                    _typeChip(context, 'restaurant', '🍽️ Nhà hàng'),
+                    _typeChip(context, 'cafe', '☕ Cafe'),
+                    _typeChip(context, 'distribution', '🚚 Phân phối'),
+                    _typeChip(context, 'manufacturing', '🏭 Sản xuất'),
+                    _typeChip(context, 'hotel', '🏨 Khách sạn'),
+                    _typeChip(context, 'retail', '🛒 Bán lẻ'),
                   ],
                 ),
               ),
@@ -1971,16 +1967,16 @@ class _MediaProjectsSubTabState extends ConsumerState<_MediaProjectsSubTab> {
     );
   }
 
-  Widget _typeChip(String type, String label) {
+  Widget _typeChip(BuildContext context, String type, String label) {
     final isSelected = _filterType == type;
     return Padding(
-      padding: const EdgeInsets.only(right: 6),
+      padding: EdgeInsets.only(right: 6),
       child: FilterChip(
-        label: Text(label, style: TextStyle(fontSize: 10, color: isSelected ? Colors.white : Colors.grey.shade700)),
+        label: Text(label, style: TextStyle(fontSize: 10, color: isSelected ? Theme.of(context).colorScheme.surface : Colors.grey.shade700)),
         selected: isSelected,
         onSelected: (_) => setState(() => _filterType = type),
         selectedColor: AppColors.primary,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         side: BorderSide(color: isSelected ? AppColors.primary : Colors.grey.shade300),
         padding: const EdgeInsets.symmetric(horizontal: 2),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -2310,11 +2306,11 @@ class _MediaContentSubTabState extends ConsumerState<_MediaContentSubTab> {
                         ('Đã đăng', stats['published'] ?? 0, Colors.green),
                       ];
                       return Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(12),
-                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+                          boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
                         ),
                         child: Column(
                           children: stages.map((s) => Padding(
@@ -2401,12 +2397,12 @@ class _MediaContentSubTabState extends ConsumerState<_MediaContentSubTab> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: item.isOverdue ? Border.all(color: Colors.red.shade300, width: 1.5) : null,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 6)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2622,6 +2618,7 @@ class _MediaContentSubTabState extends ConsumerState<_MediaContentSubTab> {
 // ═══════════════════════════════════════════════════════════════════
 // TAB 3: TOURNAMENT COMMAND — "Compete or Die"
 // ═══════════════════════════════════════════════════════════════════
+// ignore: unused_element
 class _TournamentCommandTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2814,13 +2811,13 @@ class _TournamentCommandTab extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(ctx!).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
+              color: Theme.of(ctx).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -2864,8 +2861,7 @@ class _TournamentCommandTab extends ConsumerWidget {
                 _tournamentInfo(Icons.monetization_on, _fmtMoney(t.prizePool)),
             ],
           ),
-          if (ctx != null)
-            Row(
+          Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton.icon(
@@ -2899,9 +2895,9 @@ class _TournamentCommandTab extends ConsumerWidget {
   Widget _buildEventCard(dynamic e, [BuildContext? ctx, WidgetRef? wRef]) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(ctx!).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
@@ -2941,7 +2937,7 @@ class _TournamentCommandTab extends ConsumerWidget {
               style: const TextStyle(
                   fontSize: 12, fontWeight: FontWeight.bold),
             ),
-          if (ctx != null) ...[            const SizedBox(width: 4),
+          ...[            const SizedBox(width: 4),
             InkWell(
               onTap: () async {
                 final result = await Navigator.push<bool>(
@@ -3008,7 +3004,7 @@ class _CEOTeamTabState extends State<_CEOTeamTab>
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           child: TabBar(
             controller: _tabController,
             labelColor: AppColors.primary,
@@ -3078,21 +3074,26 @@ class _CEOGrowthTabState extends ConsumerState<_CEOGrowthTab> {
         sb.from('daily_revenue').select('date, total_revenue')
             .eq('company_id', companyId)
             .gte('date', thirtyDaysAgo)
-            .order('date'),
+            .order('date')
+            .limit(100),
         sb.from('daily_revenue').select('total_revenue')
             .eq('company_id', companyId)
-            .gte('date', thisMonthStart),
+            .gte('date', thisMonthStart)
+            .limit(100),
         sb.from('daily_revenue').select('total_revenue')
             .eq('company_id', companyId)
             .gte('date', lastMonthStart)
-            .lt('date', thisMonthStart),
+            .lt('date', thisMonthStart)
+            .limit(100),
         sb.from('table_sessions').select('id')
             .eq('company_id', companyId)
-            .gte('start_time', '${thisMonthStart}T00:00:00'),
+            .gte('start_time', '${thisMonthStart}T00:00:00')
+            .limit(1000),
         sb.from('table_sessions').select('id')
             .eq('company_id', companyId)
             .gte('start_time', '${lastMonthStart}T00:00:00')
-            .lt('start_time', '${thisMonthStart}T00:00:00'),
+            .lt('start_time', '${thisMonthStart}T00:00:00')
+            .limit(1000),
       ]);
 
       if (mounted) {
@@ -3190,7 +3191,7 @@ class _CEOGrowthTabState extends ConsumerState<_CEOGrowthTab> {
                 ),
               )
             else
-              _buildSimpleTrendChart(),
+              _buildSimpleTrendChart(context),
 
             const SizedBox(height: 20),
 
@@ -3202,22 +3203,22 @@ class _CEOGrowthTabState extends ConsumerState<_CEOGrowthTab> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF0F172A),
+                color: AppColors.backgroundDark,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('"Growth or die."',
                       style: TextStyle(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           fontStyle: FontStyle.italic)),
                   SizedBox(height: 4),
                   Text(
                       'Ra quyết định dựa trên data, không phải cảm xúc.',
-                      style: TextStyle(color: Colors.white54, fontSize: 11)),
+                      style: TextStyle(color: Theme.of(context).colorScheme.surface54, fontSize: 11)),
                 ],
               ),
             ),
@@ -3231,13 +3232,13 @@ class _CEOGrowthTabState extends ConsumerState<_CEOGrowthTab> {
       bool isUp, IconData icon) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05), blurRadius: 10),
           ],
         ),
         child: Column(
@@ -3282,7 +3283,7 @@ class _CEOGrowthTabState extends ConsumerState<_CEOGrowthTab> {
     );
   }
 
-  Widget _buildSimpleTrendChart() {
+  Widget _buildSimpleTrendChart(BuildContext context) {
     double maxRev = 0;
     for (final d in _last30DaysRevenue) {
       final v = (d['total_revenue'] as num?)?.toDouble() ?? 0;
@@ -3292,13 +3293,13 @@ class _CEOGrowthTabState extends ConsumerState<_CEOGrowthTab> {
 
     return Container(
       height: 120,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Row(
@@ -3315,10 +3316,10 @@ class _CEOGrowthTabState extends ConsumerState<_CEOGrowthTab> {
                   height: (ratio * 80).clamp(2.0, 80.0),
                   decoration: BoxDecoration(
                     color: ratio > 0.7
-                        ? const Color(0xFF10B981)
+                        ? AppColors.success
                         : ratio > 0.4
-                            ? const Color(0xFF3B82F6)
-                            : const Color(0xFFE5E7EB),
+                            ? AppColors.info
+                            : Color(0xFFE5E7EB),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),

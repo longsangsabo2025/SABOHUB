@@ -106,14 +106,14 @@ class SessionService {
 
   // Start a new session
   Future<TableSession> startSession({
-    required String tableId,
+    String? tableId,
     required double hourlyRate,
     String? customerName,
     String? notes,
   }) async {
     try {
       final sessionData = {
-        'table_id': tableId,
+        if (tableId != null) 'table_id': tableId,
         'start_time': DateTime.now().toIso8601String(),
         'hourly_rate': hourlyRate,
         'status': SessionStatus.active.name,
@@ -128,22 +128,16 @@ class SessionService {
       final response = await _supabase
           .from('table_sessions')
           .insert(sessionData)
-          .select('''
-            *,
-            tables!inner(
-              table_number,
-              table_type,
-              hourly_rate,
-              company_id
-            )
-          ''')
+          .select('*')
           .single();
 
-      // Update table status to occupied
-      await _supabase
-          .from('tables')
-          .update({'status': 'occupied'})
-          .eq('id', tableId);
+      // Update table status to occupied if tableId provided
+      if (tableId != null) {
+        await _supabase
+            .from('tables')
+            .update({'status': 'occupied'})
+            .eq('id', tableId);
+      }
 
       return _mapToTableSession(response);
     } catch (e) {

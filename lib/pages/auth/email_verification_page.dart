@@ -38,7 +38,7 @@ class _EmailVerificationPageState extends ConsumerState<EmailVerificationPage> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.timer_outlined, color: Colors.white),
+                  Icon(Icons.timer_outlined, color: Theme.of(context).colorScheme.surface),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -76,10 +76,10 @@ class _EmailVerificationPageState extends ConsumerState<EmailVerificationPage> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white),
+                Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text('✉️ Email xác thực đã được gửi lại!'),
@@ -99,7 +99,7 @@ class _EmailVerificationPageState extends ConsumerState<EmailVerificationPage> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error_outline, color: Colors.white),
+                Icon(Icons.error_outline, color: Theme.of(context).colorScheme.surface),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text('Lỗi: ${e.toString()}'),
@@ -144,7 +144,7 @@ class _EmailVerificationPageState extends ConsumerState<EmailVerificationPage> {
                     color: AppConstants.primaryColor,
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 32),
 
                 // Title
                 Text(
@@ -159,7 +159,7 @@ class _EmailVerificationPageState extends ConsumerState<EmailVerificationPage> {
 
                 // Email
                 Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 12,
                   ),
@@ -187,12 +187,12 @@ class _EmailVerificationPageState extends ConsumerState<EmailVerificationPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
 
                 // Instructions
                 Card(
                   elevation: 0,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(color: Colors.grey.shade200),
@@ -351,8 +351,8 @@ class _EmailVerificationPageState extends ConsumerState<EmailVerificationPage> {
           child: Center(
             child: Text(
               number,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.surface,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),

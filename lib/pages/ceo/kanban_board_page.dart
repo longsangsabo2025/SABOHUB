@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../models/management_task.dart';
 import '../../providers/management_task_provider.dart';
 import 'task_detail_page.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class KanbanBoardPage extends ConsumerStatefulWidget {
   const KanbanBoardPage({super.key});
@@ -30,9 +31,9 @@ class _KanbanBoardPageState extends ConsumerState<KanbanBoardPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text('Kanban Board'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        title: Text('Kanban Board'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface87,
         elevation: 0,
       ),
       body: tasksAsync.when(
@@ -225,14 +226,14 @@ class _KanbanBoardPageState extends ConsumerState<KanbanBoardPage> {
     }[task.priority.value] ?? Colors.grey;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDragging ? 0.15 : 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: isDragging ? 0.15 : 0.05),
             blurRadius: isDragging ? 12 : 4,
             offset: isDragging ? const Offset(0, 4) : Offset.zero,
           ),

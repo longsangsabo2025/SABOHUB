@@ -1,3 +1,4 @@
+import 'package:flutter_sabohub/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,7 +7,7 @@ import '../../providers/gamification_provider.dart';
 import '../../providers/auth_provider.dart';
 
 class AiQuestConfigPage extends ConsumerStatefulWidget {
-  const AiQuestConfigPage({super.key});
+  AiQuestConfigPage({super.key});
 
   @override
   ConsumerState<AiQuestConfigPage> createState() => _AiQuestConfigPageState();
@@ -58,14 +59,14 @@ class _AiQuestConfigPageState extends ConsumerState<AiQuestConfigPage> {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  colors: [Color(0xFF6366F1), AppColors.paymentRefunded],
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 32),
+              child: Icon(Icons.auto_awesome, color: Theme.of(context).colorScheme.surface, size: 32),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -215,12 +216,12 @@ class _AiQuestConfigPageState extends ConsumerState<AiQuestConfigPage> {
       child: FilledButton.icon(
         onPressed: _generating ? null : _onGenerate,
         icon: _generating
-            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface))
             : const Icon(Icons.auto_awesome),
         label: Text(_generating ? 'Đang tạo...' : 'Tạo Config bằng AI'),
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          backgroundColor: const Color(0xFF6366F1),
+          backgroundColor: Color(0xFF6366F1),
         ),
       ),
     );
@@ -309,16 +310,16 @@ class _AiQuestConfigPageState extends ConsumerState<AiQuestConfigPage> {
                     child: OutlinedButton.icon(
                       onPressed: () => _onReject(config.id),
                       icon: const Icon(Icons.close, size: 18),
-                      label: const Text('Từ chối'),
+                      label: Text('Từ chối'),
                       style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: _applying ? null : () => _onApply(config.id),
                       icon: _applying
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface))
                           : const Icon(Icons.check, size: 18),
                       label: Text(_applying ? 'Đang áp dụng...' : 'Áp Dụng'),
                       style: FilledButton.styleFrom(backgroundColor: Colors.green),
@@ -405,6 +406,8 @@ class _AiQuestConfigPageState extends ConsumerState<AiQuestConfigPage> {
       final service = ref.read(gamificationServiceProvider);
       await service.rejectAiConfig(configId);
       ref.invalidate(aiConfigProvider);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AiQuestConfigPage._onReject error: $e');
+    }
   }
 }

@@ -1,6 +1,6 @@
 import '../core/services/supabase_service.dart';
 import '../models/accounting.dart';
-import '../utils/logger_service.dart';
+import '../utils/app_logger.dart';
 
 /// Accounting Service
 /// Handles all accounting-related database operations
@@ -88,8 +88,8 @@ class AccountingService {
         unpaidOrderCount: unpaidOrderCount,
       );
     } catch (e, stackTrace) {
-      logger.error('Failed to get accounting summary', e, stackTrace);
-      logger.logUserAction('accounting_summary_error', {
+      AppLogger.error('Failed to get accounting summary', e, stackTrace);
+      AppLogger.info('accounting_summary_error', {
         'company_id': companyId,
         'start_date': startDate.toIso8601String(),
         'end_date': endDate.toIso8601String(),
@@ -215,7 +215,7 @@ class AccountingService {
       transactions.sort((a, b) => b.date.compareTo(a.date));
       return transactions;
     } catch (e) {
-      logger.error('Failed to get transactions', e, null);
+      AppLogger.error('Failed to get transactions', e);
       return [];
     }
   }
@@ -292,7 +292,7 @@ class AccountingService {
       
       return dailyMap.values.toList()..sort((a, b) => b.date.compareTo(a.date));
     } catch (e) {
-      logger.error('Failed to get daily revenue', e, null);
+      AppLogger.error('Failed to get daily revenue', e);
       return [];
     }
   }
@@ -317,7 +317,7 @@ class AccountingService {
       final response = await query.order('order_date', ascending: false);
       return (response as List).map((e) => e as Map<String, dynamic>).toList();
     } catch (e) {
-      logger.error('Failed to get receivables', e, null);
+      AppLogger.error('Failed to get receivables', e);
       return [];
     }
   }
@@ -352,7 +352,7 @@ class AccountingService {
       final response = await query.order('payment_collected_at', ascending: false);
       return (response as List).map((e) => e as Map<String, dynamic>).toList();
     } catch (e) {
-      logger.error('Failed to get collections', e, null);
+      AppLogger.error('Failed to get collections', e);
       return [];
     }
   }
@@ -418,7 +418,8 @@ class AccountingService {
   /// Delete transaction
   Future<void> deleteTransaction(String id) async {
     try {
-      await _supabase.from('accounting_transactions').delete().eq('id', id);
+      // Soft delete - sets is_active=false
+      await _supabase.from('accounting_transactions').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', id);
     } catch (e) {
       throw Exception('Failed to delete transaction: $e');
     }

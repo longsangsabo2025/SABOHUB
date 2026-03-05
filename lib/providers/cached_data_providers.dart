@@ -10,11 +10,13 @@ import '../services/company_service.dart';
 import '../services/employee_document_service.dart';
 import '../services/business_document_service.dart';
 import '../services/employee_service.dart';
-import '../services/task_service.dart';
 import '../utils/app_logger.dart';
+import '../models/management_task.dart';
 import 'cache_provider.dart';
 import 'document_provider.dart';
 import 'auth_provider.dart';
+import 'task_provider.dart'; // taskServiceProvider is defined here
+import 'cached_providers.dart' show managementTaskServiceProvider;
 
 // PHASE 3A - Multi-role dashboard providers
 import 'ceo_dashboard_provider.dart';
@@ -37,7 +39,7 @@ final cachedCompaniesProvider =
 
   // Fetch from service - using getMyCompanies for data isolation
   final service = ref.watch(companyServiceProvider);
-  final userId = ref.read(authProvider).user?.id;
+  final userId = ref.watch(currentUserProvider)?.id;
   final companies = await service.getMyCompanies(userId: userId);
 
   // Cache result
@@ -253,7 +255,7 @@ final cachedCompanyEmployeesProvider =
 
 /// Cached Company Tasks Provider (Tasks Tab)
 final cachedCompanyTasksProvider =
-    FutureProvider.autoDispose.family<List, String>((ref, companyId) async {
+    FutureProvider.autoDispose.family<List<ManagementTask>, String>((ref, companyId) async {
   AppLogger.state('cachedCompanyTasksProvider called for company: $companyId');
   
   final memoryCache = ref.watch(memoryCacheProvider);
@@ -261,7 +263,7 @@ final cachedCompanyTasksProvider =
   final cacheKey = 'company_tasks_$companyId';
 
   // Try memory cache
-  final cached = memoryCache.get<List<dynamic>>(cacheKey);
+  final cached = memoryCache.get<List<ManagementTask>>(cacheKey);
   if (cached != null) {
     AppLogger.state('Returning ${cached.length} tasks from cache');
     return cached;
@@ -270,7 +272,7 @@ final cachedCompanyTasksProvider =
   AppLogger.state('Cache miss, fetching from service...');
   
   // Fetch from service
-  final service = ref.watch(taskServiceProvider);
+  final service = ref.watch(managementTaskServiceProvider);
   final tasks = await service.getTasksByCompany(companyId);
   
   AppLogger.state('Service returned ${tasks.length} tasks, caching...');
@@ -437,10 +439,7 @@ final employeeServiceProvider = Provider<EmployeeService>((ref) {
   return EmployeeService();
 });
 
-/// Provider for task service
-final taskServiceProvider = Provider<TaskService>((ref) {
-  return TaskService();
-});
+// NOTE: taskServiceProvider is imported from task_provider.dart — do not redefine here
 
 /// Provider for company service
 final companyServiceProvider = Provider<CompanyService>((ref) {

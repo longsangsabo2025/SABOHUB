@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../business_types/distribution/providers/odori_providers.dart';
 import '../../services/image_upload_service.dart';
 import '../../widgets/sabo_image_picker.dart';
+import '../../utils/app_logger.dart';
 
 class ProductFormPage extends ConsumerStatefulWidget {
   final OdoriProduct? product;
@@ -94,13 +95,13 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
     setState(() => _isLoading = true);
 
     try {
-      final authState = ref.read(authProvider);
-      final companyId = authState.user?.companyId;
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
 
       if (companyId == null) throw Exception('User context not found');
       
       // Debug: Print selected category
-      debugPrint('📦 Saving product with category_id: $_selectedCategoryId');
+      AppLogger.data('Saving product', {'category_id': _selectedCategoryId});
 
       // Upload image if selected
       String? imageUrl = _imageUrlController.text.trim().isNotEmpty 
@@ -181,17 +182,17 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xác nhận xóa'),
+        title: Text('Xác nhận xóa'),
         content: Text('Bạn có chắc muốn xóa sản phẩm "${widget.product!.name}"?\n\nHành động này không thể hoàn tác.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+            child: Text('Xóa', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
           ),
         ],
       ),
@@ -203,7 +204,8 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
 
     try {
       final db = Supabase.instance.client;
-      await db.from('products').delete().eq('id', widget.product!.id);
+      // Soft delete - sets is_active=false
+      await db.from('products').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', widget.product!.id);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -324,7 +326,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                         )),
                       ],
                       onChanged: (val) {
-                        debugPrint('📂 Category selected: $val');
+                        AppLogger.data('Category selected', {'value': val});
                         setState(() => _selectedCategoryId = val);
                       },
                     ),
@@ -377,7 +379,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
 
               // Advanced Fields (Collapsible)
               if (_showAdvanced) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _buildSectionCard(
                   title: 'Thông tin mở rộng',
                   icon: Icons.more_horiz,
@@ -527,7 +529,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                   ],
                 ),
               ],
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               // Submit Button
               SizedBox(
@@ -536,12 +538,12 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                 child: ElevatedButton.icon(
                   onPressed: _isLoading ? null : _submitForm,
                   icon: _isLoading 
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.surface))
                       : Icon(isEditing ? Icons.save : Icons.add, size: 20),
                   label: Text(isEditing ? 'Lưu thay đổi' : 'Thêm sản phẩm'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.teal,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),

@@ -5,13 +5,14 @@ import 'package:intl/intl.dart';
 import '../../models/schedule.dart';
 import '../../services/schedule_service.dart';
 import '../../providers/auth_provider.dart';
+import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 final _scheduleServiceProvider = Provider((_) => ScheduleService());
 
 final _scheduleStatsProvider =
     FutureProvider<Map<String, int>>((ref) async {
   final service = ref.read(_scheduleServiceProvider);
-  final user = ref.read(authProvider).user;
+  final user = ref.read(currentUserProvider);
   final companyId = user?.companyId;
   if (companyId == null) return {};
   return service.getScheduleStats(companyId);
@@ -20,7 +21,7 @@ final _scheduleStatsProvider =
 final _weekSchedulesProvider =
     FutureProvider<List<Schedule>>((ref) async {
   final service = ref.read(_scheduleServiceProvider);
-  final user = ref.read(authProvider).user;
+  final user = ref.read(currentUserProvider);
   final companyId = user?.companyId;
   if (companyId == null) return [];
   return service.getUpcomingSchedules(companyId);
@@ -47,9 +48,9 @@ class _CEOScheduleOverviewPageState
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Lịch làm việc'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        title: Text('Lịch làm việc'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface87,
         elevation: 0,
       ),
       body: RefreshIndicator(
@@ -122,17 +123,19 @@ class _CEOScheduleOverviewPageState
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _buildEmptyCard('Lỗi tải thống kê: $e'),
+      error: (e, _) => _buildErrorCard('Lỗi tải thống kê', '$e', () {
+        ref.invalidate(_scheduleStatsProvider);
+      }),
     );
   }
 
   Widget _statCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -174,12 +177,12 @@ class _CEOScheduleOverviewPageState
               final isToday = _isToday(date);
 
               return Container(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: isToday ? Border.all(color: Colors.blue, width: 1.5) : null,
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+                  boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.04), blurRadius: 8)],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,21 +205,21 @@ class _CEOScheduleOverviewPageState
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
-                              color: isToday ? Colors.blue : Colors.black87,
+                              color: isToday ? Colors.blue : Theme.of(context).colorScheme.onSurface87,
                             ),
                           ),
                           if (isToday) ...[
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(
+                              padding: EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.blue,
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Text('HÔM NAY',
+                              child: Text('HÔM NAY',
                                   style: TextStyle(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold)),
                             ),
@@ -237,7 +240,9 @@ class _CEOScheduleOverviewPageState
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _buildEmptyCard('Lỗi tải lịch: $e'),
+      error: (e, _) => _buildErrorCard('Lỗi tải lịch', '$e', () {
+        ref.invalidate(_weekSchedulesProvider);
+      }),
     );
   }
 
@@ -292,9 +297,9 @@ class _CEOScheduleOverviewPageState
   Widget _buildEmptyCard(String message) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -304,6 +309,45 @@ class _CEOScheduleOverviewPageState
           Text(message,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorCard(String title, String detail, VoidCallback onRetry) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 40),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.red,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            detail,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('Thử lại'),
+          ),
         ],
       ),
     );
