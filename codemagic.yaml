@@ -25,7 +25,7 @@ workflows:
       vars:
         BUNDLE_ID: "com.sabohub.app"
         APP_NAME: "SABOHUB"
-        APP_VERSION_NAME: "1.8.1"
+        APP_VERSION_NAME: "1.8.2"
         # Apple Developer Portal - Hardcoded for testing
         APP_STORE_CONNECT_ISSUER_ID: "4405e7f9-8e89-495a-b535-f9e83e96a7ad"
         APP_STORE_CONNECT_KEY_IDENTIFIER: "JL9L6RNRXB"

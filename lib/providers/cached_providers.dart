@@ -1412,7 +1412,7 @@ final cachedSalesCustomersProvider =
       .select('*')
       .eq('company_id', companyId)
       .eq('status', 'active')
-      .isFilter('deleted_at', null)
+      .isFilter('rejected_at', null)
       .order('name');
 
   final customers = List<Map<String, dynamic>>.from(response as List);
@@ -1665,3 +1665,4 @@ void refreshAllDataByRole(WidgetRef ref) {
       refreshStaffData(ref);
   }
 }
+

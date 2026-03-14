@@ -178,11 +178,25 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
     try {
       final supabase = Supabase.instance.client;
 
-      await supabase.from('sales_orders').update({
-        'status': 'completed',
-        'delivery_status': 'awaiting_pickup',
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', orderId);
+      // Use SECURITY DEFINER RPC to bypass RLS for warehouse staff
+      final result = await supabase.rpc('mark_order_ready_for_delivery', params: {
+        'p_order_id': orderId,
+      });
+
+      if (result != null && result['success'] == false) {
+        final errorMsg = result['error']?.toString() ?? 'Cập nhật thất bại';
+        AppLogger.error('mark_order_ready_for_delivery failed: $errorMsg');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi: $errorMsg'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -203,6 +217,15 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
       }
     } catch (e) {
       AppLogger.error('Failed to mark ready', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi kết nối: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _processingOrders.remove(orderId));
@@ -228,12 +251,6 @@ class _PackingPageState extends ConsumerState<WarehousePackingPage> with SingleT
       if (result != null && result['success'] == false) {
         throw Exception(result['error'] ?? 'Unknown error');
       }
-
-      // Ensure sales_orders delivery_status is updated
-      await supabase.from('sales_orders').update({
-        'delivery_status': 'delivering',
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', orderId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

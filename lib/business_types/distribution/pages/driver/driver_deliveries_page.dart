@@ -82,6 +82,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
           ''')
           .eq('company_id', companyId)
+          .isFilter('rejected_at', null)
           .eq('delivery_status', 'awaiting_pickup')
           .order('created_at', ascending: true)
           .limit(100);
@@ -1170,6 +1171,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
           .from('sales_orders')
           .select('order_number, payment_method, payment_status, total, customer_id, customers(name, total_debt)')
           .eq('id', orderId)
+          .isFilter('rejected_at', null)
           .single();
 
       final paymentMethod = orderResponse['payment_method']?.toString().toLowerCase() ?? 'cod';
@@ -2044,3 +2046,4 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     );
   }
 }
+

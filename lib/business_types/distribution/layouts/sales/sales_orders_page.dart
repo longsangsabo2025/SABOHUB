@@ -189,6 +189,7 @@ class _SalesOrderListState extends ConsumerState<SalesOrderList> {
           .from('sales_orders')
           .select('*, customers(name, phone, address)')
           .eq('company_id', companyId)
+          .isFilter('rejected_at', null)
           .eq('sale_id', userId ?? '');
 
       if (widget.statusFilter != null) {
@@ -446,3 +447,4 @@ class _SalesOrderListState extends ConsumerState<SalesOrderList> {
     });
   }
 }
+

@@ -186,7 +186,8 @@ final salesOrdersProvider = FutureProvider.autoDispose
   var query = supabase
       .from('sales_orders')
       .select('*, customers(name), employees(full_name), warehouses(name)')
-      .eq('company_id', companyId);
+      .eq('company_id', companyId)
+      .isFilter('rejected_at', null);
 
   if (filters.status != null) {
     query = query.eq('status', filters.status!);
@@ -212,6 +213,7 @@ final salesOrderDetailProvider = FutureProvider.autoDispose
       .from('sales_orders')
       .select('*, customers(name), employees(full_name), warehouses(name), sales_order_items(*, products(name, sku))')
       .eq('id', orderId)
+      .isFilter('rejected_at', null)
       .single();
 
   return OdoriSalesOrder.fromJson(response);
@@ -238,6 +240,7 @@ final pendingApprovalsProvider = FutureProvider.autoDispose<List<OdoriSalesOrder
       .from('sales_orders')
       .select('*, customers(name), employees(full_name)')
       .eq('company_id', companyId)
+      .isFilter('rejected_at', null)
       .eq('status', 'pending_approval')
       .order('created_at');
 
@@ -495,7 +498,8 @@ final dashboardStatsProvider = FutureProvider.autoDispose<OdoriDashboardStats>((
     final ordersResult = await supabase
         .from('sales_orders')
         .select('id, status, delivery_status, payment_status, total, created_at, updated_at')
-        .eq('company_id', companyId);
+      .eq('company_id', companyId)
+      .isFilter('rejected_at', null);
     final orders = ordersResult as List;
     
     // Đơn chờ xử lý: delivery_status = pending hoặc null (chưa giao)
@@ -649,6 +653,7 @@ final recentOrdersProvider = FutureProvider.autoDispose<List<OdoriSalesOrder>>((
       .from('sales_orders')
       .select('*, customers(name)')
       .eq('company_id', companyId)
+      .isFilter('rejected_at', null)
       .order('created_at', ascending: false)
       .limit(10);
 
@@ -820,3 +825,4 @@ class CommissionFilters {
   @override
   int get hashCode => status.hashCode ^ referrerId.hashCode;
 }
+

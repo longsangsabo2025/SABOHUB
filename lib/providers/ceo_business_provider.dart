@@ -10,6 +10,11 @@ import 'auth_provider.dart';
 
 SupabaseClient get _supabase => Supabase.instance.client;
 
+final _ceoCompanyIdsProvider = FutureProvider.autoDispose<List<String>>((ref) async {
+  final user = ref.read(authProvider).user;
+  return _getCEOCompanyIds(user?.id);
+});
+
 // ---------------------------------------------------------------------------
 // 1. TODAY'S BUSINESS PULSE — What CEO sees first thing in the morning
 // ---------------------------------------------------------------------------
@@ -26,7 +31,7 @@ final todayBusinessPulseProvider =
 
   try {
     // Get all company IDs this CEO owns
-    final companyIds = await _getCEOCompanyIds(user.id);
+    final companyIds = await ref.watch(_ceoCompanyIdsProvider.future);
     if (companyIds.isEmpty) return TodayPulse.empty();
 
     // Parallel queries for today's data
@@ -130,7 +135,7 @@ final realCEOKPIsProvider =
   if (user == null) return CEOKPIs.empty();
 
   try {
-    final companyIds = await _getCEOCompanyIds(user.id);
+    final companyIds = await ref.watch(_ceoCompanyIdsProvider.future);
     if (companyIds.isEmpty) return CEOKPIs.empty();
 
     final now = DateTime.now();
@@ -262,7 +267,7 @@ final pendingApprovalsProvider =
   if (user == null) return PendingApprovals.empty();
 
   try {
-    final companyIds = await _getCEOCompanyIds(user.id);
+    final companyIds = await ref.watch(_ceoCompanyIdsProvider.future);
     if (companyIds.isEmpty) return PendingApprovals.empty();
 
     final results = await Future.wait([
@@ -315,7 +320,7 @@ final customerInsightsProvider =
   if (user == null) return CustomerInsights.empty();
 
   try {
-    final companyIds = await _getCEOCompanyIds(user.id);
+    final companyIds = await ref.watch(_ceoCompanyIdsProvider.future);
     if (companyIds.isEmpty) return CustomerInsights.empty();
 
     final now = DateTime.now();
@@ -432,7 +437,7 @@ final companyComparisonProvider =
   if (user == null) return [];
 
   try {
-    final companyIds = await _getCEOCompanyIds(user.id);
+    final companyIds = await ref.watch(_ceoCompanyIdsProvider.future);
     if (companyIds.isEmpty) return [];
 
     // Get company info
@@ -511,7 +516,7 @@ final dailyRevenueChartProvider =
   if (user == null) return [];
 
   try {
-    final companyIds = await _getCEOCompanyIds(user.id);
+    final companyIds = await ref.watch(_ceoCompanyIdsProvider.future);
     if (companyIds.isEmpty) return [];
 
     final now = DateTime.now();
@@ -566,7 +571,7 @@ final ceoPeriodRevenueProvider =
   }
 
   try {
-    final companyIds = await _getCEOCompanyIds(user.id);
+    final companyIds = await ref.watch(_ceoCompanyIdsProvider.future);
     if (companyIds.isEmpty) return _emptyPeriodRevenue(period);
 
     // Calculate date range based on period

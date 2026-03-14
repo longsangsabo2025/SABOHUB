@@ -56,6 +56,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
           .from('sales_orders')
           .select('id')
           .eq('company_id', companyId)
+          .isFilter('rejected_at', null)
           .eq('delivery_status', 'awaiting_pickup')
           .count();
 
@@ -88,6 +89,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
           .from('sales_orders')
           .select('*, customers(name, phone, address), sales_order_items(id, product_name, quantity, unit, unit_price, line_total)')
           .eq('company_id', companyId)
+          .isFilter('rejected_at', null)
           .eq('delivery_status', 'awaiting_pickup')
           .order('created_at', ascending: true)
           .limit(20);
@@ -1033,7 +1035,12 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
   Future<void> _collectPayment(String orderId) async {
     final supabase = Supabase.instance.client;
-    final orderData = await supabase.from('sales_orders').select('total, customer_id, payment_method, customers(name, total_debt)').eq('id', orderId).maybeSingle();
+    final orderData = await supabase
+        .from('sales_orders')
+        .select('total, customer_id, payment_method, customers(name, total_debt)')
+        .eq('id', orderId)
+        .isFilter('rejected_at', null)
+        .maybeSingle();
     if (orderData == null) return;
     
     final total = (orderData['total'] as num?)?.toDouble() ?? 0;
@@ -1191,7 +1198,12 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
 
     try {
       final supabase = Supabase.instance.client;
-      final orderResponse = await supabase.from('sales_orders').select('payment_method, payment_status, total, customers(name)').eq('id', orderId).single();
+        final orderResponse = await supabase
+          .from('sales_orders')
+          .select('payment_method, payment_status, total, customers(name)')
+          .eq('id', orderId)
+          .isFilter('rejected_at', null)
+          .single();
 
       final paymentMethod = orderResponse['payment_method']?.toString().toLowerCase() ?? 'cod';
       final paymentStatus = orderResponse['payment_status']?.toString().toLowerCase() ?? 'unpaid';
@@ -1253,3 +1265,4 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 }
+
