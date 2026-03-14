@@ -1247,15 +1247,17 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
     );
   }
   
-  /// Soft-delete order (mark inactive instead of permanent delete)
+  /// Cancel order (sales_orders does not have is_active column)
   Future<void> _deleteOrder(OdoriSalesOrder order) async {
     try {
       final supabase = Supabase.instance.client;
       final now = DateTime.now().toIso8601String();
       
-      // Soft-delete the main order — child rows remain for audit trail
+      // Mark order as cancelled to keep audit trail and avoid hard delete.
       await supabase.from('sales_orders').update({
-        'is_active': false,
+        'status': 'cancelled',
+        'rejected_at': now,
+        'rejection_reason': 'Xóa đơn từ màn hình quản lý',
         'updated_at': now,
       }).eq('id', order.id);
       

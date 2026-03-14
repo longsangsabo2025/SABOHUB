@@ -36,8 +36,139 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
     with SingleTickerProviderStateMixin {
   late TabController _detailTabController;
   List<Map<String, dynamic>> _unpaidOrders = [];
+  List<Map<String, dynamic>> _unpaidReceivables = [];
   List<Map<String, dynamic>> _paymentHistory = [];
   bool _isLoading = true;
+
+  Future<void> _recalculateAndUpdateCustomerDebt({
+    required SupabaseClient supabase,
+    required String companyId,
+    required String customerId,
+  }) async {
+    final salesDebtResp = await supabase
+        .from('sales_orders')
+        .select('total, paid_amount')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId)
+        .neq('payment_status', 'paid')
+        .neq('status', 'cancelled');
+
+    final receivableResp = await supabase
+        .from('receivables')
+        .select('original_amount, paid_amount, write_off_amount')
+        .eq('customer_id', customerId)
+        .eq('company_id', companyId);
+
+    final salesDebt = List<Map<String, dynamic>>.from(salesDebtResp).fold<double>(
+      0,
+      (sum, row) {
+        final total = (row['total'] as num?)?.toDouble() ?? 0;
+        final paid = (row['paid_amount'] as num?)?.toDouble() ?? 0;
+        return sum + (total - paid);
+      },
+    );
+
+    final receivableDebt = List<Map<String, dynamic>>.from(receivableResp).fold<double>(
+      0,
+      (sum, row) {
+        final original = (row['original_amount'] as num?)?.toDouble() ?? 0;
+        final paid = (row['paid_amount'] as num?)?.toDouble() ?? 0;
+        final writeOff = (row['write_off_amount'] as num?)?.toDouble() ?? 0;
+        final remaining = original - paid - writeOff;
+        return sum + (remaining > 0 ? remaining : 0);
+      },
+    );
+
+    await supabase
+        .from('customers')
+        .update({'total_debt': salesDebt + receivableDebt, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', customerId)
+        .eq('company_id', companyId);
+  }
+
+  Future<void> _deleteDebtEntry(Map<String, dynamic> entry, {required bool isSalesOrder}) async {
+    final user = ref.read(currentUserProvider);
+    final companyId = user?.companyId;
+    if (companyId == null) return;
+
+    final customerId = widget.customer['id']?.toString();
+    if (customerId == null || customerId.isEmpty) return;
+
+    final supabase = Supabase.instance.client;
+    final id = entry['id']?.toString();
+    if (id == null || id.isEmpty) return;
+
+    try {
+      if (isSalesOrder) {
+        await supabase.from('sales_orders').update({
+          'status': 'cancelled',
+          'rejected_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', id).eq('company_id', companyId);
+      } else {
+        await supabase
+            .from('receivables')
+            .delete()
+            .eq('id', id)
+            .eq('company_id', companyId)
+            .eq('reference_type', 'manual');
+      }
+
+      await _recalculateAndUpdateCustomerDebt(
+        supabase: supabase,
+        companyId: companyId,
+        customerId: customerId,
+      );
+
+      await _loadData();
+      await widget.onRefresh();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isSalesOrder ? 'Da huy don no' : 'Da xoa khoan no nhap tay'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Khong the xoa no: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteDebtEntry(Map<String, dynamic> entry, {required bool isSalesOrder}) async {
+    final ref = isSalesOrder
+        ? ('#${entry['order_number'] ?? ''}')
+        : ((entry['invoice_number'] ?? entry['reference_number'] ?? 'CONG-NO').toString());
+
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(isSalesOrder ? 'Huy don no' : 'Xoa khoan no'),
+            content: Text(
+              isSalesOrder
+                  ? 'Ban co chac muon huy don $ref?\nTong cong no se duoc cap nhat lai.'
+                  : 'Ban co chac muon xoa khoan no $ref?\nTong cong no se duoc cap nhat lai.',
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Khong')),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Xac nhan', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed) return;
+    await _deleteDebtEntry(entry, isSalesOrder: isSalesOrder);
+  }
 
   @override
   void initState() {
@@ -71,6 +202,29 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
           .neq('status', 'cancelled')
           .order('created_at', ascending: false);
 
+        // Load unpaid manual receivables so tab "Đơn nợ" reflects full customer debt.
+        final receivables = await supabase
+          .from('receivables')
+            .select('id, reference_number, original_amount, paid_amount, write_off_amount, status, notes, created_at, invoice_date, due_date, reference_type')
+          .eq('customer_id', customerId)
+          .eq('company_id', companyId)
+          .order('created_at', ascending: false);
+
+        final mappedReceivables = List<Map<String, dynamic>>.from(receivables)
+            .map((row) {
+              final original = (row['original_amount'] as num?)?.toDouble() ?? 0;
+              final paid = (row['paid_amount'] as num?)?.toDouble() ?? 0;
+              final writeOff = (row['write_off_amount'] as num?)?.toDouble() ?? 0;
+              final remaining = (original - paid - writeOff);
+              return {
+                ...row,
+                'invoice_number': row['reference_number'],
+                'remaining_amount': remaining,
+              };
+            })
+            .where((row) => ((row['remaining_amount'] as num?)?.toDouble() ?? 0) > 0)
+            .toList();
+
       // Load payment history
       final payments = await supabase
           .from('customer_payments')
@@ -82,6 +236,7 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
 
       setState(() {
         _unpaidOrders = List<Map<String, dynamic>>.from(orders);
+        _unpaidReceivables = mappedReceivables;
         _paymentHistory = List<Map<String, dynamic>>.from(payments);
         _isLoading = false;
       });
@@ -117,6 +272,7 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
   @override
   Widget build(BuildContext context) {
     final cf = widget.currencyFormat;
+    final totalDebtEntries = _unpaidOrders.length + _unpaidReceivables.length;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -192,7 +348,7 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text('Đơn nợ', style: TextStyle(color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8), fontSize: 11)),
-                            Text('${_unpaidOrders.length}', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 18, fontWeight: FontWeight.bold)),
+                            Text('$totalDebtEntries', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontSize: 18, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         SizedBox(width: 16),
@@ -230,7 +386,7 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
                       unselectedLabelColor: Colors.grey.shade600,
                       labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                       tabs: [
-                        Tab(text: 'Đơn nợ (${_unpaidOrders.length})'),
+                        Tab(text: 'Đơn nợ ($totalDebtEntries)'),
                         Tab(text: 'Lịch sử TT (${_paymentHistory.length})'),
                       ],
                     ),
@@ -258,7 +414,26 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
   }
 
   Widget _buildUnpaidOrdersTab(NumberFormat cf) {
-    if (_unpaidOrders.isEmpty) {
+    final entries = <Map<String, dynamic>>[
+      ..._unpaidOrders.map((o) => {
+            ...o,
+            '_source': 'sales_order',
+            '_sort_at': o['order_date'] ?? o['created_at'],
+          }),
+      ..._unpaidReceivables.map((r) => {
+            ...r,
+            '_source': 'receivable',
+            '_sort_at': r['invoice_date'] ?? r['created_at'],
+          }),
+    ];
+
+    entries.sort((a, b) {
+      final aDate = DateTime.tryParse((a['_sort_at'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = DateTime.tryParse((b['_sort_at'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bDate.compareTo(aDate);
+    });
+
+    if (entries.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -273,21 +448,35 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: _unpaidOrders.length,
+      itemCount: entries.length,
       itemBuilder: (context, index) {
-        final order = _unpaidOrders[index];
-        final total = (order['total'] ?? 0).toDouble();
-        final paid = (order['paid_amount'] ?? 0).toDouble();
-        final remaining = total - paid;
-        final items = order['sales_order_items'] as List? ?? [];
-        final orderNum = order['order_number'] ?? '';
-        final age = _calcDebtAge(order);
-        final ageCol = _ageColor(order);
-        final createdAt = order['order_date'] != null
-            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(order['order_date']))
-            : order['created_at'] != null
-                ? DateFormat('dd/MM/yyyy').format(DateTime.parse(order['created_at']).toLocal())
-                : '';
+        final entry = entries[index];
+        final isSalesOrder = entry['_source'] == 'sales_order';
+        final total = isSalesOrder
+            ? (entry['total'] ?? 0).toDouble()
+            : (entry['original_amount'] ?? 0).toDouble();
+        final paid = (entry['paid_amount'] ?? 0).toDouble();
+        final remaining = isSalesOrder
+            ? (total - paid)
+            : (entry['remaining_amount'] ?? (total - paid)).toDouble();
+        final items = isSalesOrder ? (entry['sales_order_items'] as List? ?? []) : const [];
+        final orderNum = isSalesOrder
+            ? (entry['order_number'] ?? '')
+            : (entry['invoice_number'] ?? entry['reference_number'] ?? 'MANUAL');
+        final age = isSalesOrder ? _calcDebtAge(entry) : _calcDebtAge({
+          'delivery_date': entry['due_date'],
+          'order_date': entry['invoice_date'],
+          'created_at': entry['created_at'],
+        });
+        final ageCol = isSalesOrder ? _ageColor(entry) : _ageColor({
+          'delivery_date': entry['due_date'],
+          'order_date': entry['invoice_date'],
+          'created_at': entry['created_at'],
+        });
+        final createdAtRaw = isSalesOrder ? (entry['order_date'] ?? entry['created_at']) : (entry['invoice_date'] ?? entry['created_at']);
+        final createdAt = createdAtRaw != null
+            ? DateFormat('dd/MM/yyyy').format(DateTime.parse(createdAtRaw.toString()).toLocal())
+            : '';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
@@ -306,10 +495,17 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: Colors.indigo.shade50,
+                      color: isSalesOrder ? Colors.indigo.shade50 : Colors.orange.shade50,
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text('#$orderNum', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.indigo.shade700)),
+                    child: Text(
+                      isSalesOrder ? '#$orderNum' : '${orderNum.toString().isNotEmpty ? orderNum : 'Công nợ đầu kỳ'}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: isSalesOrder ? Colors.indigo.shade700 : Colors.orange.shade700,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Text(createdAt, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
@@ -324,12 +520,18 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
                       ),
                       child: Text(age, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: ageCol)),
                     ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    tooltip: isSalesOrder ? 'Huy don no' : 'Xoa khoan no',
+                    icon: Icon(Icons.delete_outline, size: 18, color: Colors.red.shade400),
+                    onPressed: () => _confirmDeleteDebtEntry(entry, isSalesOrder: isSalesOrder),
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
 
               // Branch/delivery address
-              if (order['delivery_address'] != null && (order['delivery_address'] as String).isNotEmpty)
+              if (isSalesOrder && entry['delivery_address'] != null && (entry['delivery_address'] as String).isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Row(
@@ -338,7 +540,7 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          order['delivery_address'] as String,
+                          entry['delivery_address'] as String,
                           style: TextStyle(fontSize: 12, color: Colors.teal.shade700, fontWeight: FontWeight.w500),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -349,7 +551,10 @@ class _CustomerDebtDetailSheetState extends ConsumerState<CustomerDebtDetailShee
                 ),
 
               // Items summary
-              Text('${items.length} sản phẩm', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              Text(
+                isSalesOrder ? '${items.length} sản phẩm' : 'Công nợ nhập thủ công',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
 
               const SizedBox(height: 8),
 

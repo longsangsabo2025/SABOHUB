@@ -39,6 +39,12 @@ class _AccountsReceivablePageState
   String _sortBy = 'debt_desc'; // debt_desc, debt_asc, name_asc
   double? _minDebtFilter;
 
+  double _parseCurrencyInput(String input) {
+    final digitsOnly = input.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitsOnly.isEmpty) return 0;
+    return double.tryParse(digitsOnly) ?? 0;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -931,8 +937,8 @@ class _AccountsReceivablePageState
                           );
                           return;
                         }
-                        final amount = double.tryParse(amountController.text.replaceAll(RegExp(r'[^0-9.]'), ''));
-                        if (amount == null || amount <= 0) {
+                        final amount = _parseCurrencyInput(amountController.text);
+                        if (amount <= 0) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Vui lòng nhập số tiền hợp lệ'), backgroundColor: AppColors.warning),
                           );
@@ -1636,8 +1642,7 @@ class _AccountsReceivablePageState
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    final amount =
-                        double.tryParse(amountController.text) ?? 0;
+                    final amount = _parseCurrencyInput(amountController.text);
                     if (amount <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                           content: Text('Vui lòng nhập số tiền hợp lệ')));
