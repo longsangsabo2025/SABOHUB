@@ -25,7 +25,7 @@ workflows:
       vars:
         BUNDLE_ID: "com.sabohub.app"
         APP_NAME: "SABOHUB"
-        APP_VERSION_NAME: "1.8.2"
+        APP_VERSION_NAME: "1.8.3"
         # Apple Developer Portal - Hardcoded for testing
         APP_STORE_CONNECT_ISSUER_ID: "4405e7f9-8e89-495a-b535-f9e83e96a7ad"
         APP_STORE_CONNECT_KEY_IDENTIFIER: "JL9L6RNRXB"
@@ -117,8 +117,15 @@ workflows:
             VERSION_NAME="$APP_VERSION_NAME"
           fi
           
-          # Increment build number
-          NEW_BUILD_NUMBER=$((BUILD_NUMBER + 1))
+          # Increment build number and avoid App Store duplicate uploads.
+          # Use the larger value between (current+1) and unix timestamp.
+          CANDIDATE_BUILD_NUMBER=$((BUILD_NUMBER + 1))
+          TIME_BUILD_NUMBER=$(date +%s)
+          if [ "$TIME_BUILD_NUMBER" -gt "$CANDIDATE_BUILD_NUMBER" ]; then
+            NEW_BUILD_NUMBER=$TIME_BUILD_NUMBER
+          else
+            NEW_BUILD_NUMBER=$CANDIDATE_BUILD_NUMBER
+          fi
           NEW_VERSION="${VERSION_NAME}+${NEW_BUILD_NUMBER}"
           
           echo "📱 Updating version to: $NEW_VERSION"
