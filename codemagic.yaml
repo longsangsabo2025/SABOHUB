@@ -25,6 +25,7 @@ workflows:
       vars:
         BUNDLE_ID: "com.sabohub.app"
         APP_NAME: "SABOHUB"
+        APP_VERSION_NAME: "1.8.1"
         # Apple Developer Portal - Hardcoded for testing
         APP_STORE_CONNECT_ISSUER_ID: "4405e7f9-8e89-495a-b535-f9e83e96a7ad"
         APP_STORE_CONNECT_KEY_IDENTIFIER: "JL9L6RNRXB"
@@ -110,6 +111,11 @@ workflows:
           # Split version into name and build number
           VERSION_NAME=$(echo $CURRENT_VERSION | cut -d'+' -f1)  # e.g., 1.0.8
           BUILD_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f2)  # e.g., 30
+
+          # Override version name for release if APP_VERSION_NAME is set
+          if [ -n "$APP_VERSION_NAME" ]; then
+            VERSION_NAME="$APP_VERSION_NAME"
+          fi
           
           # Increment build number
           NEW_BUILD_NUMBER=$((BUILD_NUMBER + 1))
