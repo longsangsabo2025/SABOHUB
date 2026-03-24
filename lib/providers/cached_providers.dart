@@ -1496,7 +1496,7 @@ final cachedSalesDashboardStatsProvider =
     'total_orders': orders.length,
     'orders_today': todayOrders.length,
     'revenue_today': todayOrders.fold<double>(0, 
-      (sum, o) => sum + ((o['total_amount'] as num?)?.toDouble() ?? 0)),
+      (sum, o) => sum + ((o['total'] as num?)?.toDouble() ?? 0)),
   };
 
   memoryCache.set(cacheKey, stats, config.shortTTL);

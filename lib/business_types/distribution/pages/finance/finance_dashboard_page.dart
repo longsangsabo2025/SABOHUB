@@ -55,14 +55,55 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
       final rangeStart = effectiveRange.start;
       final rangeEnd = effectiveRange.end.add(const Duration(days: 1));
 
-      // Get total receivables from unpaid orders (real-time, khớp với Reports page)
-      final unpaidOrders = await supabase
-          .from('sales_orders')
-          .select('customer_id, total, paid_amount, created_at, customers(name)')
-          .eq('company_id', companyId)
-          .neq('status', 'cancelled')
-          .inFilter('payment_status', ['unpaid', 'debt', 'partial', 'pending_transfer']);
+      // Run independent queries in parallel for better performance
+      final results = await Future.wait([
+        // [0] Get total receivables from unpaid orders
+        supabase
+            .from('sales_orders')
+            .select('customer_id, total, paid_amount, created_at, customers(name)')
+            .eq('company_id', companyId)
+            .neq('status', 'cancelled')
+            .inFilter('payment_status', ['unpaid', 'debt', 'partial', 'pending_transfer']),
+        // [1] Get payments in date range
+        supabase
+            .from('customer_payments')
+            .select('id, amount, payment_date, customers(name)')
+            .eq('company_id', companyId)
+            .gte('payment_date', rangeStart.toIso8601String())
+            .lt('payment_date', rangeEnd.toIso8601String())
+            .order('payment_date', ascending: false),
+        // [2] Recent payments
+        supabase
+            .from('customer_payments')
+            .select('*, customers(name, phone)')
+            .eq('company_id', companyId)
+            .order('payment_date', ascending: false)
+            .limit(5),
+        // [3] Pending transfer orders
+        supabase
+            .from('sales_orders')
+            .select('id, order_number, total, customer_name, customer_phone, created_at, customers(name, phone)')
+            .eq('company_id', companyId)
+            .eq('payment_status', 'pending_transfer')
+            .order('created_at', ascending: false)
+            .limit(20),
+        // [4] Revenue in date range (completed orders)
+        supabase
+            .from('sales_orders')
+            .select('id, total')
+            .eq('company_id', companyId)
+            .eq('status', 'completed')
+            .gte('created_at', rangeStart.toIso8601String())
+            .lte('created_at', rangeEnd.toIso8601String()),
+      ]);
 
+      final unpaidOrders = results[0] as List;
+      final paymentsData = results[1] as List;
+      final recentPayments = results[2] as List;
+      final pendingTransfers = results[3] as List;
+      final ordersData = results[4] as List;
+
+      // Process unpaid orders for receivables
       double totalReceivable = 0;
       double overdueAmount = 0;
       int overdueCustomers = 0;
@@ -79,7 +120,6 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
         final custId = order['customer_id'] as String?;
         if (custId != null) customerIds.add(custId);
 
-        // Quá hạn: đơn cũ hơn 30 ngày chưa thanh toán
         final createdAtStr = order['created_at'] as String?;
         if (createdAtStr != null && remaining > 0) {
           final orderDate = DateTime.parse(createdAtStr);
@@ -91,46 +131,12 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
       }
       overdueCustomers = overdueCustomerIds.length;
 
-      // Get payments in date range
-      final paymentsData = await supabase
-          .from('customer_payments')
-          .select('id, amount, payment_date, customers(name)')
-          .eq('company_id', companyId)
-          .gte('payment_date', rangeStart.toIso8601String())
-          .lt('payment_date', rangeEnd.toIso8601String())
-          .order('payment_date', ascending: false);
-
+      // Process payments
       double paidThisMonth = 0;
       for (var payment in paymentsData) {
         paidThisMonth += (payment['amount'] ?? 0).toDouble();
       }
 
-      // Recent payments
-      final recentPayments = await supabase
-          .from('customer_payments')
-          .select('*, customers(name, phone)')
-          .eq('company_id', companyId)
-          .order('payment_date', ascending: false)
-          .limit(5);
-
-      // Pending transfer orders (awaiting finance confirmation)
-      final pendingTransfers = await supabase
-          .from('sales_orders')
-          .select('id, order_number, total, customer_name, customer_phone, created_at, customers(name, phone)')
-          .eq('company_id', companyId)
-          .eq('payment_status', 'pending_transfer')
-          .order('created_at', ascending: false)
-          .limit(20);
-
-      // Get revenue in date range (completed orders)
-      final ordersData = await supabase
-          .from('sales_orders')
-          .select('id, total')
-          .eq('company_id', companyId)
-          .eq('status', 'completed')
-          .gte('created_at', rangeStart.toIso8601String())
-          .lte('created_at', rangeEnd.toIso8601String());
-      
       double totalRevenue = 0;
       for (var order in ordersData) {
         totalRevenue += (order['total'] ?? 0).toDouble();

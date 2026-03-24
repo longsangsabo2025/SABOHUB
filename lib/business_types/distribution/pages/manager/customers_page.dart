@@ -305,7 +305,8 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
         query = query.neq('status', 'inactive');
       }
       if (_searchQuery.isNotEmpty) {
-        query = query.or('name.ilike.%$_searchQuery%,code.ilike.%$_searchQuery%,phone.ilike.%$_searchQuery%');
+        final sanitized = PostgrestSanitizer.sanitizeSearch(_searchQuery);
+        query = query.or('name.ilike.%$sanitized%,code.ilike.%$sanitized%,phone.ilike.%$sanitized%');
       }
       // Filter theo tier (query từ database)
       if (_selectedTier != null) {

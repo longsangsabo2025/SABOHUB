@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../constants/roles.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../models/odori_sales_order.dart';
 import '../../../../pages/orders/order_form_page.dart';
@@ -1107,9 +1108,11 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
     return status == 'confirmed' || status == 'processing';
   }
   
-  /// Check if order can be deleted — manager can delete any order
+  /// Check if order can be deleted — only CEO and superAdmin can delete
   bool _canDelete(String status) {
-    return true;
+    final user = ref.read(currentUserProvider);
+    if (user == null) return false;
+    return user.role == SaboRole.ceo || user.role == SaboRole.superAdmin;
   }
   
   /// Navigate to edit order form
@@ -1271,9 +1274,10 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
         _loadInitial(); // Refresh list
       }
     } catch (e) {
+      AppLogger.error('Failed to delete order ${order.id}', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Lỗi xóa đơn: $e'),
+          content: Text('Lỗi xóa đơn: ${e.toString().replaceAll('Exception: ', '')}'),
           backgroundColor: Colors.red,
         ));
       }

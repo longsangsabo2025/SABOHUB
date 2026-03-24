@@ -1247,6 +1247,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
       final orderNumber = _isEditMode 
           ? widget.orderToEdit!.orderNumber 
           : 'SO-${DateFormat('yyMMdd').format(DateTime.now())}-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
+
+      final customerName = _selectedCustomer?.name;
       
       final subtotal = _orderItems.fold<double>(0, (sum, item) => sum + item.total);
 
@@ -1321,7 +1323,9 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
           'company_id': companyId,
           'order_number': orderNumber,
           ...orderData,
+          'customer_name': customerName,
           'sale_id': user?.id,
+          'created_by': user?.id,
           'order_date': DateTime.now().toIso8601String().split('T')[0],
           'status': 'pending_approval',
           'payment_status': 'unpaid',

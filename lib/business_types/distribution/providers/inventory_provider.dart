@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/odori_product.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../utils/app_logger.dart';
+import '../../../utils/postgrest_sanitizer.dart';
 
 // =====================================================================
 // InventoryState + InventoryNotifier
@@ -169,7 +170,8 @@ class InventoryNotifier extends Notifier<InventoryState> {
         query = query.eq('category_id', state.selectedCategory!);
       }
       if (state.searchQuery.isNotEmpty) {
-        query = query.or('name.ilike.%${state.searchQuery}%,sku.ilike.%${state.searchQuery}%');
+        final sanitized = PostgrestSanitizer.sanitizeSearch(state.searchQuery);
+        query = query.or('name.ilike.%$sanitized%,sku.ilike.%$sanitized%');
       }
 
       final response = await query.order('name').range(0, InventoryState.pageSize - 1);
@@ -216,7 +218,8 @@ class InventoryNotifier extends Notifier<InventoryState> {
         query = query.eq('category_id', state.selectedCategory!);
       }
       if (state.searchQuery.isNotEmpty) {
-        query = query.or('name.ilike.%${state.searchQuery}%,sku.ilike.%${state.searchQuery}%');
+        final sanitized = PostgrestSanitizer.sanitizeSearch(state.searchQuery);
+        query = query.or('name.ilike.%$sanitized%,sku.ilike.%$sanitized%');
       }
 
       final response = await query.order('name').range(newOffset, newOffset + InventoryState.pageSize - 1);
@@ -406,7 +409,8 @@ class InventoryNotifier extends Notifier<InventoryState> {
       }
 
       if (state.sampleSearchQuery.isNotEmpty) {
-        query = query.or('product_name.ilike.%${state.sampleSearchQuery}%,product_sku.ilike.%${state.sampleSearchQuery}%');
+        final sanitized = PostgrestSanitizer.sanitizeSearch(state.sampleSearchQuery);
+        query = query.or('product_name.ilike.%$sanitized%,product_sku.ilike.%$sanitized%');
       }
 
       final data = await query.order('sent_date', ascending: false).limit(100);

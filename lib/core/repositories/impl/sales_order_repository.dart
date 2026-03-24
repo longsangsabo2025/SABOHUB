@@ -227,7 +227,7 @@ order_items(*)
         }
 
         // --- Fallback: fetch tất cả rồi tính trên client ---
-        var query = client.from(tableName).select('id, status, total_amount');
+        var query = client.from(tableName).select('id, status, total');
 
         if (companyId != null) {
           query = query.eq('company_id', companyId);
@@ -250,7 +250,7 @@ order_items(*)
 
         for (final row in rows) {
           final s = row['status'] as String?;
-          final amount = (row['total_amount'] as num?)?.toDouble() ?? 0;
+          final amount = (row['total'] as num?)?.toDouble() ?? 0;
 
           switch (s) {
             case 'pending':

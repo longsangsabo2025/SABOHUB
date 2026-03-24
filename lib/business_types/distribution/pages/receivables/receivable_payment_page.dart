@@ -70,7 +70,7 @@ class _ReceivablePaymentPageState extends ConsumerState<ReceivablePaymentPage> {
       final db = Supabase.instance.client;
       final res = await db
           .from('receivables')
-          .select('id, invoice_number, total_amount, paid_amount, due_date')
+          .select('id, reference_number, original_amount, paid_amount, due_date')
           .eq('customer_id', customerId)
           .inFilter('status', ['open', 'partial'])
           .order('due_date');
@@ -113,9 +113,8 @@ class _ReceivablePaymentPageState extends ConsumerState<ReceivablePaymentPage> {
       await db.from('payments').insert({
         'company_id': companyId,
         'customer_id': _selectedCustomerId,
-        'receivable_id': _selectedReceivableId, // Can be null for general payment
         'amount': amount,
-        'payment_date': _paymentDate.toIso8601String(),
+        'payment_date': _paymentDate.toIso8601String().split('T')[0],
         'payment_method': _paymentMethod,
         'reference_number': _referenceController.text,
         'notes': _notesController.text,
@@ -133,7 +132,7 @@ class _ReceivablePaymentPageState extends ConsumerState<ReceivablePaymentPage> {
         
         if (receivable.isNotEmpty) {
           final currentPaid = (receivable['paid_amount'] as num?)?.toDouble() ?? 0;
-          final totalAmount = (receivable['total_amount'] as num?)?.toDouble() ?? 0;
+          final totalAmount = (receivable['original_amount'] as num?)?.toDouble() ?? 0;
           final newPaidAmount = currentPaid + amount;
           
           String newStatus = 'partial';
@@ -247,10 +246,10 @@ class _ReceivablePaymentPageState extends ConsumerState<ReceivablePaymentPage> {
                       itemCount: _openReceivables.length,
                       itemBuilder: (context, index) {
                         final rec = _openReceivables[index];
-                        final remaining = (rec['total_amount'] as num).toDouble() -
+                        final remaining = (rec['original_amount'] as num).toDouble() -
                             ((rec['paid_amount'] as num?)?.toDouble() ?? 0);
                         return RadioListTile<String>(
-                          title: Text(rec['invoice_number'] ?? 'Công nợ #${rec['id'].substring(0, 8)}'),
+                          title: Text(rec['reference_number'] ?? 'Công nợ #${rec['id'].substring(0, 8)}'),
                           subtitle: Text('Còn nợ: ${remaining.toStringAsFixed(0)}đ'),
                           value: rec['id'],
                           groupValue: _selectedReceivableId,

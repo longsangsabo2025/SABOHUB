@@ -254,17 +254,21 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
       if (companyId == null || userId == null) throw Exception('Missing company or user ID');
 
       final supabase = Supabase.instance.client;
-      final orderNumber = 'SO-${DateTime.now().millisecondsSinceEpoch}';
+      final now = DateTime.now();
+      final orderNumber = 'SO-${DateFormat('yyMMdd').format(now)}-${now.millisecondsSinceEpoch.toString().substring(8)}';
 
       final orderData = await supabase
           .from('sales_orders')
           .insert({
             'company_id': companyId,
             'customer_id': _selectedCustomer!['id'],
+            'customer_name': _selectedCustomer!['name'],
             'sale_id': userId,
+            'created_by': userId,
             'order_number': orderNumber,
-            'order_date': DateTime.now().toIso8601String().split('T')[0],
+            'order_date': now.toIso8601String().split('T')[0],
             'status': 'pending_approval',
+            'payment_status': 'unpaid',
             'delivery_status': 'pending',
             'subtotal': _orderTotal,
             'total': _orderTotal,

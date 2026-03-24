@@ -354,6 +354,7 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
         'customer_id': _selectedCustomerId,
         'order_number': orderNumber,
         'order_date': DateTime.now().toIso8601String().split('T')[0],
+        'order_type': 'sample',
         'status': 'pending_approval',
         'payment_status': 'unpaid',
         'delivery_status': 'pending',
@@ -361,6 +362,8 @@ class _AddSampleSheetState extends ConsumerState<AddSampleSheet> {
         'subtotal': subtotal,
         'total': subtotal,
         'sale_id': userId,
+        'created_by': userId,
+        'customer_name': _selectedCustomerName,
         'notes': '[MẪU SP] Gửi mẫu ${validItems.length} sản phẩm${notesText.isNotEmpty ? ' - $notesText' : ''}',
       }).select().single();
 

@@ -65,7 +65,7 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
       // 1. Fetch store visits (check-in/out)
       final visits = await supabase
           .from('store_visits')
-          .select('id, customer_id, check_in_time, check_out_time, status, outcomes, issues_reported, order_placed, order_amount, customers(name)')
+          .select('id, customer_id, check_in_time, check_out_time, status, customer_feedback, next_visit_notes, order_placed, order_amount, customers(name)')
           .eq('company_id', companyId)
           .eq('employee_id', userId)
           .gte('visit_date', dayStart.toIso8601String())
@@ -78,7 +78,7 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
           activities.add(_ActivityItem(
             type: _ActivityType.checkIn,
             title: 'Check-in: $customerName',
-            subtitle: v['outcomes'] ?? 'Đang ghé thăm',
+            subtitle: v['customer_feedback'] ?? 'Đang ghé thăm',
             time: DateTime.parse(v['check_in_time']),
             icon: Icons.login,
             color: Colors.green,
@@ -92,8 +92,8 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
             title: 'Check-out: $customerName',
             subtitle: hasOrder
                 ? 'Đã đặt hàng ${_formatCurrency(v['order_amount'])}'
-                : (v['issues_reported']?.toString().isNotEmpty == true
-                    ? 'Vấn đề: ${v['issues_reported']}'
+                : (v['next_visit_notes']?.toString().isNotEmpty == true
+                    ? 'Vấn đề: ${v['next_visit_notes']}'
                     : 'Không đặt hàng'),
             time: DateTime.parse(v['check_out_time']),
             icon: Icons.logout,
@@ -150,19 +150,19 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
 
       // 4. Fetch visit photos uploaded today
       final photos = await supabase
-          .from('visit_photos')
-          .select('id, created_at, category')
+          .from('store_visit_photos')
+          .select('id, taken_at, category')
           .eq('uploaded_by', userId)
-          .gte('created_at', dayStart.toIso8601String())
-          .lt('created_at', dayEnd.toIso8601String())
-          .order('created_at', ascending: false);
+          .gte('taken_at', dayStart.toIso8601String())
+          .lt('taken_at', dayEnd.toIso8601String())
+          .order('taken_at', ascending: false);
 
       for (final p in photos) {
         activities.add(_ActivityItem(
           type: _ActivityType.photo,
           title: 'Chụp ảnh điểm bán',
           subtitle: _getCategoryLabel(p['category']),
-          time: DateTime.parse(p['created_at']),
+          time: DateTime.parse(p['taken_at']),
           icon: Icons.camera_alt,
           color: Colors.deepPurple,
         ));

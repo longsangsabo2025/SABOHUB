@@ -204,7 +204,8 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
         
         await supabase.from('sales_order_items').delete().eq('order_id', orderId);
       } else {
-        orderNumber = 'SO${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+        final now = DateTime.now();
+        orderNumber = 'SO-${DateFormat('yyMMdd').format(now)}-${now.millisecondsSinceEpoch.toString().substring(8)}';
         
         final orderResponse = await supabase
             .from('sales_orders')

@@ -24,6 +24,186 @@
 
 ## Lịch Sử Phát Triển (Changelog)
 
+### 2026-03-25 — Search Bar Audit Across All Roles
+**Summary**: Audited all 18+ search bars across all roles. Found 4 bugs: 1 non-functional search bar (Driver), 1 broken filtering pattern (CSKH), and 2 unsanitized server-side searches. Fixed all.
+
+##### Bug #17 — Driver Deliveries Search Bar Does Nothing (P1)
+- [x] **FIX** `lib/business_types/distribution/pages/driver/driver_deliveries_page.dart` — `_searchQuery` was set on each keystroke but `_loadDeliveries()` never used it and list builders passed unfiltered lists. Added `_filterBySearch()` helper that filters all 4 delivery tabs by customer name, order number, phone, and address. Changed from re-fetching on search to client-side filtering (data already loaded).
+
+##### Bug #18 — CSKH Customers Search: SizedBox.shrink Pattern + Phone Case (P2)
+- [x] **FIX** `lib/business_types/distribution/layouts/cskh/cskh_customers_page.dart` — Search used `SizedBox.shrink()` inside `ListView.builder` for non-matching items → scrollbar showed wrong length, blank gaps appeared between results. Changed to pre-filtered list with proper `itemCount`. Also added `.toLowerCase()` to phone comparison for consistency.
+
+##### Bug #19 — Unsanitized Customer Search in Initial Load (P2)
+- [x] **FIX** `lib/business_types/distribution/pages/manager/customers_page.dart` — Line 308: initial customer load passed raw `_searchQuery` to `.or()` ilike without `PostgrestSanitizer.sanitizeSearch()`. Load-more (line 371) was already sanitized — now both are consistent.
+
+##### Bug #20 — Unsanitized Inventory/Product Search (P2)
+- [x] **FIX** `lib/business_types/distribution/providers/inventory_provider.dart` — 3 server-side searches (products initial load, load-more, and product samples) all passed raw `state.searchQuery` directly to `.or()` ilike without sanitization. Added `PostgrestSanitizer.sanitizeSearch()` to all 3.
+
+##### Search Bars Verified Working (No Fix Needed)
+- Sales Customers Page — client-side filter by name, phone, code ✅
+- Odori Customers Page — server-side, sanitized ✅
+- Journey Plan Page — server-side, sanitized ✅
+- Odori Products Page — server-side, sanitized ✅
+- Product Samples Page — server-side via provider ✅
+- Sales Create Order (product + customer modals) — client-side ✅
+- Warehouse Stock View — client-side by name, sku ✅
+- Warehouse Detail — client-side by name, sku ✅
+- Orders Management — server-side, sanitized ✅
+- Accounts Receivable — client-side by name, code, phone ✅
+- Task Board — client-side by title, description, assignee, creator ✅
+- CEO Employees — client-side by name, email ✅
+- CEO Attendance — client-side by employee name ✅
+- CEO Accounting — client-side by description, counterparty, items ✅
+- SuperAdmin Companies — client-side by name ✅
+- Referrers Page — client-side by name, phone ✅
+
+#### Verification
+- Flutter analyze: 0 new errors (3 pre-existing in manager_overview_tab.dart)
+- Flutter build web: PASS
+
+### 2026-03-26 — Receivables & Payments Subsystem Audit + Role-Feature Documentation
+**Summary**: Created comprehensive role-feature documentation (ROLE_FEATURES.md). Audited all roles against actual DB schema. Found and fixed 3 bugs (5 files) concentrated in the receivables/payments subsystem where code was written against a planned schema that differs from actual DB. Many suspected bugs in other modules (customers, products, deliveries) were verified as false alarms after DB schema validation.
+
+##### Bug #14 — Receivable Payment Page Wrong Column Names (P0-CRASH)
+- [x] **FIX** `lib/business_types/distribution/pages/receivables/receivable_payment_page.dart` — Query used `invoice_number` (should be `reference_number`), `total_amount` (should be `original_amount`). Payments insert included `receivable_id` column (doesn't exist in `payments` table). Fixed `payment_date` to use date format `.split('T')[0]`.
+
+##### Bug #15 — OdoriReceivable Model Wrong Column Names (P0-CRASH)
+- [x] **FIX** `lib/business_types/distribution/models/odori_receivable.dart` — `json['invoice_number'] as String` → crash (column is `reference_number`). `json['remaining_amount'] as num` → crash (column doesn't exist, must compute from `original_amount - paid_amount - write_off_amount`). `json['order_id']` → should be `json['reference_id']`. Fixed `toJson()` to match.
+
+##### Bug #16 — Duplicate OdoriReceivable/OdoriPayment Models + Service Wrong Columns (P0-CRASH)
+- [x] **FIX** `lib/business_types/distribution/models/odori_models.dart` — Duplicate `OdoriReceivable.fromJson()`: `json['receivable_number']` → `json['reference_number']`, `json['amount']` → `json['original_amount']`, `json['remaining_amount']` → computed value. `OdoriPayment.fromJson()`: `json['receivable_id'] as String` (non-nullable cast → crash, made nullable), `json['latitude']`/`json['longitude']` → `json['collection_lat']`/`json['collection_lng']`.
+- [x] **FIX** `lib/business_types/distribution/services/odori_service.dart` — `recordPayment()`: removed `receivable_id` from payments insert, changed `latitude`/`longitude` → `collection_lat`/`collection_lng`, removed `remaining_amount` from receivables update. `getAgingReport()`: changed select from non-existent `remaining_amount` to `original_amount, paid_amount, write_off_amount` and compute remaining in code.
+
+##### Documentation Created
+- [x] **NEW** `docs/ROLE_FEATURES.md` — Comprehensive feature inventory for all 18 role+businessType combinations (SuperAdmin, CEO, Manager, ShiftLeader, Staff, Driver, Warehouse × distribution/entertainment variants). 200+ features documented.
+
+##### False Alarms Verified (No Fix Needed)
+- `customers.status` = varchar ('active'/'inactive'/'blocked') — NOT boolean, queries are correct
+- `products.status` = varchar ('active') — NOT boolean, queries are correct
+- `deliveries.total_amount` EXISTS — driver pages are correct
+- `sales_orders.invoice_printed`, `invoice_printed_at`, `payment_confirmed_at` EXIST
+- `customer_payments.reference` is correct (not `reference_number`)
+- `v_receivables_aging` view EXISTS with correct columns
+
+#### Verification
+- Flutter analyze: 0 new errors (only pre-existing info-level warnings)
+- Flutter build web: PASS
+
+### 2026-03-26 — Store Visit & Product Sample Feature Audit
+**Summary**: Audited store visit (check-in/check-out) and product sample features for correctness and data synchronization. Found and fixed 6 bugs across 4 files.
+
+##### Bug #8 — Sample Orders Missing order_type (P0)
+- [x] **FIX** `lib/business_types/distribution/pages/manager/inventory/add_sample_sheet.dart` — Added `'order_type': 'sample'`, `'created_by': userId`, `'customer_name'` to sales_orders insert. Without `order_type='sample'`, sample orders were treated as regular (default='regular'), going through warehouse/delivery flow instead of being skipped.
+
+##### Bug #9 — Visit Photos: Wrong Column Names in StoreVisitService (P1)
+- [x] **FIX** `lib/business_types/distribution/services/store_visit_service.dart` — Fixed `visit_photos` table column mappings: `visit_id` → `store_visit_id`, `image_url` → `photo_url`, `captured_at` → `taken_at`. All photo CRUD operations would fail at runtime due to non-existent column names.
+
+##### Bug #12 — Sales Activity Page Queries Non-Existent Columns (P0)
+- [x] **FIX** `lib/business_types/distribution/pages/sales/sales_activity_page.dart` — Query selected `outcomes` and `issues_reported` columns that DON'T EXIST in `store_visits` table → runtime error. Changed to `customer_feedback` and `next_visit_notes` (actual DB columns). Also fixed display references.
+
+##### Bug #13 — StoreVisit Model Uses Wrong Column Names (P1)
+- [x] **FIX** `lib/business_types/distribution/services/store_visit_service.dart` — `StoreVisit.fromJson()` read `json['outcomes']`, `json['issues_reported']`, `json['feedback']`, `json['visit_rating']`, `json['objectives']` — **none of these columns exist** in `store_visits` table. Replaced with `json['customer_feedback']` and `json['next_visit_notes']`. Removed phantom fields (`objectives`, `outcomes`, `issuesReported`, `visitRating`, `feedback`).
+
+##### Bug #10 — Sales Activity Page Reads Wrong Photo Table (P1)
+- [x] **FIX** `lib/business_types/distribution/pages/sales/sales_activity_page.dart` — Changed photo query from `visit_photos` table (missing `uploaded_by`, `created_at` columns) to `store_visit_photos` table (has correct columns). Also fixed column references: `created_at` → `taken_at`.
+
+##### Bug #11 — Product Samples Page Conversion Incomplete (P2)
+- [x] **FIX** `lib/business_types/distribution/pages/products/product_samples_page.dart` — When marking sample as 'converted', now also updates linked `sales_orders.order_type` from 'sample' to 'regular' and auto-confirms. Previously only `sample_management_page.dart` did this; `product_samples_page.dart` just set the flag without updating the order.
+
+##### DB Findings (No Fix Needed)
+- Both `visit_photos` (0 rows) and `store_visit_photos` (0 rows) tables exist — no data migration needed
+- 10 stale in-progress visits (checked in but never checked out, from March 2026) — normal for test data
+- All 6 existing SM- orders already have `order_type='sample'` correctly set
+- 13 product samples exist (11 pending, 2 received), none converted yet
+
+#### Verification
+- Flutter analyze: 0 new errors (3 pre-existing in manager_overview_tab.dart)
+- Flutter build web: PASS
+
+### 2026-03-26 — Cross-Role Data Consistency Audit (Finance + Sales)
+**Summary**: Full audit of data synchronization between roles (CEO, Finance, Driver, Sales). Found and fixed 7 code bugs + 4 DB data integrity issues affecting 227 orders and 19 customers.
+
+#### Phase 1: Finance/CEO/Driver Audit
+
+##### Bug #1 — Sales Staff revenue_today = 0 (P0)
+- [x] **FIX** `lib/providers/cached_providers.dart` — `o['total_amount']` → `o['total']` in `cachedSalesDashboardStatsProvider`. Column `total_amount` doesn't exist on `sales_orders` table, so revenue was always 0.
+
+##### Bug #2 — CEO Outstanding Debt = 0 (P0)
+- [x] **FIX** `lib/providers/ceo_business_provider.dart` — `receivables.balance` column doesn't exist. Changed to `select('original_amount, paid_amount, write_off_amount')` and compute balance = original - paid - writeoff.
+
+##### Bug #3 — Driver Cash Payment Missing paid_amount (P1)
+- [x] **FIX** `lib/business_types/distribution/pages/driver/driver_route_page.dart` — Cash payment now sets `paid_amount: total` on sales_orders, matching finance confirmation flow. Previously only set payment_status without paid_amount.
+
+##### DB Fix #1 — 76 Paid Orders with paid_amount = 0
+- [x] **DB** Set `paid_amount = total` for all 76 paid orders that had `paid_amount = 0`. Root cause: driver cash flow never set `paid_amount` (fixed in Bug #3).
+
+##### DB Fix #2 — 19 Customers with Wrong total_debt
+- [x] **DB** Recalculated `customers.total_debt` from `sales_orders` (debt/partial status). 19 customers had mismatched values. Most had stale positive debt from already-paid orders.
+
+#### Phase 2: Sales Role Audit
+
+##### Bug #4 — Order Creation Missing created_by (P1)
+- [x] **FIX** `lib/business_types/distribution/layouts/sales/sales_create_order_page.dart` — Added `created_by: userId`, `customer_name`, `payment_status: 'unpaid'` to order insert. Previously 227 orders had NULL `created_by`.
+
+##### Bug #5 — Order Creation Missing customer_name (P1)
+- [x] **FIX** `lib/pages/orders/order_form_page.dart` — Added `created_by: user?.id`, `customer_name` to order insert.
+
+##### Bug #6 — Order Number Collision Risk (P2)
+- [x] **FIX** `lib/business_types/distribution/layouts/sales/sheets/sales_create_order_form.dart` — Changed from `SO{timestamp.substring(5)}` (8-digit, collision risk) to `SO-YYMMDD-{5digits}` format matching `order_form_page.dart`.
+
+##### Bug #7 — Standardized Order Number Format (P2)
+- [x] **FIX** `lib/business_types/distribution/layouts/sales/sales_create_order_page.dart` — Changed from `SO-{full_timestamp}` to `SO-YYMMDD-{5digits}` format for consistency.
+
+##### DB Fix #3 — 227 Orders Missing created_by
+- [x] **DB** Set `created_by = sale_id` for all 227 orders where `created_by` was NULL.
+
+##### DB Fix #4 — 227 Orders Missing customer_name
+- [x] **DB** Backfilled `customer_name` from `customers.name` for all 227 orders.
+
+#### Data Totals After Fix
+- `sales_orders.SUM(paid_amount)` for paid orders: 86.8M → 235M (now matches `SUM(total)`)
+- Customer debt mismatches: 19 → 0
+- Orders missing `created_by`: 227 → 0
+- Orders missing `customer_name`: 227 → 0
+
+#### Verification
+- Flutter analyze: 0 new errors (3 pre-existing in manager_overview_tab.dart — missing table_provider import)
+- Flutter build web: PASS
+
+### 2026-03-25 — Critical Bug Fix Sprint: 7 Customer-Reported Issues
+**Summary**: Fixed all 7 customer-reported issues across cash payments, sum calculations, sample orders, stuck orders, delete permissions, performance, and activity logs. Added `order_type` column to DB. Fixed 5 stuck orders in DB.
+
+#### Fix #1 — Cash Payments Not Recorded (P0)
+- [x] **FIX** `lib/business_types/distribution/pages/driver/driver_route_page.dart` — Added `customer_payments` INSERT after cash payment so finance "Thu tiền" tab shows cash records
+- [x] **FIX** Also fetch `order_number` in payment query for proper audit notes
+
+#### Fix #2 — Sum Calculation Returns 0 (P0)
+- [x] **FIX** `lib/core/repositories/impl/sales_order_repository.dart` — Changed `total_amount` → `total` (column name mismatch, 2 places)
+
+#### Fix #3 — Sample Orders Create Unnecessary Deliveries (P1)
+- [x] **DB** Added `order_type` column to `sales_orders` (values: regular, sample, return, exchange)
+- [x] **DB** Marked 6 existing sample orders with `order_type='sample'`
+- [x] **FIX** `lib/pages/warehouse/warehouse_picking_page.dart` — Skip delivery creation for sample orders in `_completePicking()`
+
+#### Fix #4 — 5 Orders Stuck in "Delivering" (P1)
+- [x] **DB** Fixed 5 stuck orders: `delivery_status='delivering'` → `'delivered'`, `deliveries.status='in_progress'` → `'completed'`
+- [x] **DB** Added audit trail entries in `sales_order_history` for all 5 orders
+
+#### Fix #5 — Delete Permission Too Broad (P2)
+- [x] **FIX** `lib/business_types/distribution/pages/manager/orders_management_page.dart` — `_canDelete()` now restricts to CEO and superAdmin only (was returning `true` for all)
+- [x] **FIX** Added `AppLogger.error()` in `_deleteOrder()` catch block for better debugging
+
+#### Fix #6 — Finance Dashboard Performance (P2)
+- [x] **FIX** `lib/business_types/distribution/pages/finance/finance_dashboard_page.dart` — Parallelized 5 sequential DB queries using `Future.wait()` (~5x faster load)
+
+#### Fix #7 — Activity Log Not Displayed (P1)
+- [x] **FIX** `lib/business_types/distribution/pages/manager/customers_sheets/customer_order_detail_dialog.dart` — Added `sales_order_history` query + timeline UI section (1,598 records existed but were never shown)
+- [x] **FIX** Parallelized items + history loading with `Future.wait()`
+
+#### Verification
+- Flutter analyze: 0 errors, 0 warnings
+- Flutter build web: PASS
+
 ### 2026-03-05 — UI Enhancement: White Header + Logout Clarity
 **Summary**: Changed CEO dashboard header backgroundColor to white for cleaner appearance and clarified logout button location for users.
 

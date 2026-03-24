@@ -1037,7 +1037,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
     final supabase = Supabase.instance.client;
     final orderData = await supabase
         .from('sales_orders')
-        .select('total, customer_id, payment_method, customers(name, total_debt)')
+        .select('total, customer_id, order_number, payment_method, customers(name, total_debt)')
         .eq('id', orderId)
         .isFilter('rejected_at', null)
         .maybeSingle();
@@ -1045,6 +1045,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
     
     final total = (orderData['total'] as num?)?.toDouble() ?? 0;
     final customerId = orderData['customer_id'];
+    final orderNumber = orderData['order_number'] as String? ?? orderId;
     final customerName = orderData['customers']?['name'] ?? 'Khách hàng';
     final currentDebt = (orderData['customers']?['total_debt'] as num?)?.toDouble() ?? 0;
     
@@ -1131,8 +1132,22 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
       if (confirmed == 'cash') {
         await supabase.from('sales_orders').update({
           'payment_status': 'paid', 'payment_method': 'cash',
+          'paid_amount': total,
           'payment_collected_at': DateTime.now().toIso8601String(), 'updated_at': DateTime.now().toIso8601String(),
         }).eq('id', orderId);
+        // Insert customer_payments record so finance "Thu tiền" tab shows cash payments
+        if (customerId != null) {
+          final user = ref.read(currentUserProvider);
+          await supabase.from('customer_payments').insert({
+            'company_id': user?.companyId,
+            'customer_id': customerId,
+            'amount': total,
+            'payment_date': DateTime.now().toIso8601String(),
+            'payment_method': 'cash',
+            'created_by': user?.id,
+            'notes': 'Thu tiền mặt khi giao hàng - $orderNumber',
+          });
+        }
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Row(children: [Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface), SizedBox(width: 12), Text('💰 Đã xác nhận thu tiền mặt!')]), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))));
       } else if (confirmed == 'transfer') {
         await supabase.from('sales_orders').update({'payment_status': 'pending_transfer', 'payment_method': 'transfer', 'updated_at': DateTime.now().toIso8601String()}).eq('id', orderId);

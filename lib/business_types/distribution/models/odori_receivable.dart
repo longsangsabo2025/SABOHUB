@@ -50,19 +50,22 @@ class OdoriReceivable {
   }
 
   factory OdoriReceivable.fromJson(Map<String, dynamic> json) {
+    final original = (json['original_amount'] as num).toDouble();
+    final paid = (json['paid_amount'] as num?)?.toDouble() ?? 0;
+    final writeOff = (json['write_off_amount'] as num?)?.toDouble() ?? 0;
     return OdoriReceivable(
       id: json['id'] as String,
       companyId: json['company_id'] as String,
       customerId: json['customer_id'] as String,
       customerName: json['customers']?['name'] as String?,
-      orderId: json['order_id'] as String?,
+      orderId: json['reference_id'] as String?,
       orderNumber: json['sales_orders']?['order_number'] as String?,
-      invoiceNumber: json['invoice_number'] as String,
+      invoiceNumber: (json['reference_number'] as String?) ?? '',
       invoiceDate: DateTime.parse(json['invoice_date'] as String),
       dueDate: DateTime.parse(json['due_date'] as String),
-      originalAmount: (json['original_amount'] as num).toDouble(),
-      paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0,
-      remainingAmount: (json['remaining_amount'] as num).toDouble(),
+      originalAmount: original,
+      paidAmount: paid,
+      remainingAmount: original - paid - writeOff,
       status: json['status'] as String,
       notes: json['notes'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -77,13 +80,12 @@ class OdoriReceivable {
       'id': id,
       'company_id': companyId,
       'customer_id': customerId,
-      'order_id': orderId,
-      'invoice_number': invoiceNumber,
+      'reference_id': orderId,
+      'reference_number': invoiceNumber,
       'invoice_date': invoiceDate.toIso8601String(),
       'due_date': dueDate.toIso8601String(),
       'original_amount': originalAmount,
       'paid_amount': paidAmount,
-      'remaining_amount': remainingAmount,
       'status': status,
       'notes': notes,
     };

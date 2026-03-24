@@ -21,24 +21,34 @@ class OrderDetailDialog extends StatefulWidget {
 
 class _OrderDetailDialogState extends State<OrderDetailDialog> {
   List<Map<String, dynamic>> _items = [];
+  List<Map<String, dynamic>> _history = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadItems();
+    _loadData();
   }
 
-  Future<void> _loadItems() async {
+  Future<void> _loadData() async {
     try {
-      final response = await _supabase
-          .from('sales_order_items')
-          .select('id, product_name, product_sku, quantity, unit, unit_price, line_total, notes')
-          .eq('order_id', widget.order['id'])
-          .order('created_at');
+      final orderId = widget.order['id'];
+      final results = await Future.wait([
+        _supabase
+            .from('sales_order_items')
+            .select('id, product_name, product_sku, quantity, unit, unit_price, line_total, notes')
+            .eq('order_id', orderId)
+            .order('created_at'),
+        _supabase
+            .from('sales_order_history')
+            .select('id, from_status, to_status, action, notes, created_by, created_at')
+            .eq('order_id', orderId)
+            .order('created_at', ascending: false),
+      ]);
 
       setState(() {
-        _items = List<Map<String, dynamic>>.from(response);
+        _items = List<Map<String, dynamic>>.from(results[0] as List);
+        _history = List<Map<String, dynamic>>.from(results[1] as List);
         _isLoading = false;
       });
     } catch (e) {
@@ -181,7 +191,6 @@ class _OrderDetailDialogState extends State<OrderDetailDialog> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
               ),
               child: Column(
                 children: [
@@ -216,6 +225,71 @@ class _OrderDetailDialogState extends State<OrderDetailDialog> {
                     ),
                   ],
                 ],
+              ),
+            ),
+
+            // Activity History
+            if (_history.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: Colors.blue.shade50,
+                child: Text(
+                  'Lịch sử hoạt động (${_history.length})',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade700, fontSize: 13),
+                ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shrinkWrap: true,
+                  itemCount: _history.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                  itemBuilder: (context, index) {
+                    final h = _history[index];
+                    final action = h['action'] as String? ?? '';
+                    final from = h['from_status'] as String? ?? '';
+                    final to = h['to_status'] as String? ?? '';
+                    final notes = h['notes'] as String?;
+                    final createdAt = DateTime.tryParse(h['created_at']?.toString() ?? '');
+                    
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.circle, size: 8, color: Colors.blue.shade300),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$action: $from → $to',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                              ),
+                              if (notes != null && notes.isNotEmpty)
+                                Text(notes, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                              if (createdAt != null)
+                                Text(
+                                  DateFormat('dd/MM/yyyy HH:mm').format(createdAt),
+                                  style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+
+            // Bottom spacer
+            Container(
+              height: 8,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
               ),
             ),
           ],

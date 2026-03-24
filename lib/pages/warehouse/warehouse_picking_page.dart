@@ -396,26 +396,36 @@ class _WarehousePickingPageState extends ConsumerState<WarehousePickingPage> {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', order.id);
 
-      // Create delivery if driver is assigned
+      // Create delivery if driver is assigned and order is not a sample
       if (driverId != null) {
-        final user = ref.read(currentUserProvider);
-        final companyId = user?.companyId;
-        
-        // Generate delivery number using database function
-        final deliveryNumberResult = await supabase.rpc(
-          'generate_delivery_number',
-          params: {'p_company_id': companyId},
-        );
-        final deliveryNumber = deliveryNumberResult as String? ?? 'DLV${DateTime.now().millisecondsSinceEpoch}';
-        
-        await supabase.from('deliveries').insert({
-          'company_id': companyId,
-          'order_id': order.id,
-          'driver_id': driverId,
-          'delivery_number': deliveryNumber,
-          'status': 'planned',
-          'delivery_date': DateTime.now().toIso8601String().split('T')[0],
-        });
+        // Check if this is a sample order (no delivery needed)
+        final orderCheck = await supabase
+            .from('sales_orders')
+            .select('order_type')
+            .eq('id', order.id)
+            .single();
+        final orderType = orderCheck['order_type'] as String? ?? 'regular';
+
+        if (orderType != 'sample') {
+          final user = ref.read(currentUserProvider);
+          final companyId = user?.companyId;
+          
+          // Generate delivery number using database function
+          final deliveryNumberResult = await supabase.rpc(
+            'generate_delivery_number',
+            params: {'p_company_id': companyId},
+          );
+          final deliveryNumber = deliveryNumberResult as String? ?? 'DLV${DateTime.now().millisecondsSinceEpoch}';
+          
+          await supabase.from('deliveries').insert({
+            'company_id': companyId,
+            'order_id': order.id,
+            'driver_id': driverId,
+            'delivery_number': deliveryNumber,
+            'status': 'planned',
+            'delivery_date': DateTime.now().toIso8601String().split('T')[0],
+          });
+        }
       }
 
       if (mounted) {

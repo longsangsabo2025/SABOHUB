@@ -546,6 +546,18 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
         }
         if (result['status'] == 'converted') {
           updateData['converted_to_order'] = true;
+
+          // Convert linked order from 'sample' to 'regular'
+          if (sample.orderId != null && sample.orderId!.isNotEmpty) {
+            await Supabase.instance.client
+                .from('sales_orders')
+                .update({
+                  'order_type': 'regular',
+                  'status': 'confirmed',
+                  'updated_at': DateTime.now().toIso8601String(),
+                })
+                .eq('id', sample.orderId!);
+          }
         }
       }
 

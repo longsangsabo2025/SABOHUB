@@ -188,7 +188,19 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
 
   void _onSearchChanged(String value) {
     setState(() => _searchQuery = value);
-    _loadDeliveries();
+  }
+
+  List<Map<String, dynamic>> _filterBySearch(List<Map<String, dynamic>> items) {
+    if (_searchQuery.isEmpty) return items;
+    final q = _searchQuery.toLowerCase();
+    return items.where((item) {
+      // Pending items come from sales_orders directly
+      final customerName = (item['customer_name'] ?? item['sales_orders']?['customer_name'] ?? '').toString().toLowerCase();
+      final orderNumber = (item['order_number'] ?? item['sales_orders']?['order_number'] ?? '').toString().toLowerCase();
+      final customerPhone = (item['customers']?['phone'] ?? item['sales_orders']?['customers']?['phone'] ?? '').toString().toLowerCase();
+      final address = (item['delivery_address'] ?? item['sales_orders']?['delivery_address'] ?? item['sales_orders']?['customer_address'] ?? '').toString().toLowerCase();
+      return customerName.contains(q) || orderNumber.contains(q) || customerPhone.contains(q) || address.contains(q);
+    }).toList();
   }
 
   Widget _buildContent() {
@@ -294,10 +306,10 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                   : TabBarView(
                       controller: _tabController,
                       children: [
-                        _buildDeliveryList(_pendingDeliveries, isPending: true),
-                        _buildAwaitingList(_awaitingDeliveries),
-                        _buildDeliveryList(_inProgressDeliveries, isPending: false),
-                        _buildDeliveredList(_deliveredDeliveries),
+                        _buildDeliveryList(_filterBySearch(_pendingDeliveries), isPending: true),
+                        _buildAwaitingList(_filterBySearch(_awaitingDeliveries)),
+                        _buildDeliveryList(_filterBySearch(_inProgressDeliveries), isPending: false),
+                        _buildDeliveredList(_filterBySearch(_deliveredDeliveries)),
                       ],
                     ),
             ),

@@ -16,14 +16,11 @@ class StoreVisit {
   final Map<String, dynamic>? checkOutLocation;
   final String status;
   final String visitType;
-  final String? objectives;
-  final String? outcomes;
-  final String? issuesReported;
+  final String? customerFeedback;
+  final String? nextVisitNotes;
   final bool orderPlaced;
   final String? orderId;
   final double? orderAmount;
-  final String? visitRating;
-  final String? feedback;
   final DateTime createdAt;
   
   // Joined data
@@ -46,14 +43,11 @@ class StoreVisit {
     this.checkOutLocation,
     this.status = 'planned',
     this.visitType = 'regular',
-    this.objectives,
-    this.outcomes,
-    this.issuesReported,
+    this.customerFeedback,
+    this.nextVisitNotes,
     this.orderPlaced = false,
     this.orderId,
     this.orderAmount,
-    this.visitRating,
-    this.feedback,
     required this.createdAt,
     this.customerName,
     this.customerAddress,
@@ -80,14 +74,12 @@ class StoreVisit {
       checkOutLocation: json['check_out_location'],
       status: json['status'] ?? 'planned',
       visitType: json['visit_type'] ?? 'regular',
-      objectives: json['objectives'],
-      outcomes: json['outcomes'],
-      issuesReported: json['issues_reported'],
+      customerFeedback: json['customer_feedback'],
+      nextVisitNotes: json['next_visit_notes'],
       orderPlaced: json['order_placed'] ?? false,
       orderId: json['order_id'],
       orderAmount: json['order_amount']?.toDouble(),
-      visitRating: json['visit_rating'],
-      feedback: json['feedback'],
+
       createdAt: DateTime.parse(json['created_at']),
       customerName: json['customers']?['name'],
       customerAddress: json['customers']?['address'],
@@ -129,12 +121,12 @@ class VisitPhoto {
   factory VisitPhoto.fromJson(Map<String, dynamic> json) {
     return VisitPhoto(
       id: json['id'],
-      visitId: json['visit_id'],
-      imageUrl: json['image_url'],
+      visitId: json['store_visit_id'] ?? json['visit_id'],
+      imageUrl: json['photo_url'] ?? json['image_url'],
       photoType: json['photo_type'] ?? 'general',
       caption: json['caption'],
       location: json['location'],
-      capturedAt: DateTime.parse(json['captured_at']),
+      capturedAt: DateTime.parse(json['taken_at'] ?? json['captured_at']),
     );
   }
 }
@@ -423,8 +415,8 @@ class StoreVisitService {
     final response = await _supabase
         .from('visit_photos')
         .select()
-        .eq('visit_id', visitId)
-        .order('captured_at');
+        .eq('store_visit_id', visitId)
+        .order('taken_at');
     
     return (response as List).map((p) => VisitPhoto.fromJson(p)).toList();
   }
@@ -456,12 +448,12 @@ class StoreVisitService {
     final response = await _supabase
         .from('visit_photos')
         .insert({
-          'visit_id': visitId,
-          'image_url': imageUrl,
+          'store_visit_id': visitId,
+          'photo_url': imageUrl,
           'photo_type': photoType,
           'caption': caption,
           'location': location,
-          'captured_at': DateTime.now().toIso8601String(),
+          'taken_at': DateTime.now().toIso8601String(),
         })
         .select()
         .single();
@@ -474,12 +466,12 @@ class StoreVisitService {
     // Get photo URL first
     final photo = await _supabase
         .from('visit_photos')
-        .select('image_url')
+        .select('photo_url')
         .eq('id', photoId)
         .single();
     
     // Delete from storage
-    final url = photo['image_url'] as String;
+    final url = photo['photo_url'] as String;
     final path = url.split('/visit-assets/').last;
     await _supabase.storage.from('visit-assets').remove([path]);
     

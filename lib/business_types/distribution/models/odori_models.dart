@@ -652,16 +652,19 @@ class OdoriReceivable extends Equatable {
   });
 
   factory OdoriReceivable.fromJson(Map<String, dynamic> json) {
+    final original = (json['original_amount'] as num).toDouble();
+    final paid = (json['paid_amount'] as num?)?.toDouble() ?? 0;
+    final writeOff = (json['write_off_amount'] as num?)?.toDouble() ?? 0;
     return OdoriReceivable(
       id: json['id'] as String,
       companyId: json['company_id'] as String,
       customerId: json['customer_id'] as String,
-      orderId: json['order_id'] as String?,
+      orderId: json['reference_id'] as String?,
       deliveryId: json['delivery_id'] as String?,
-      receivableNumber: json['receivable_number'] as String,
-      amount: (json['amount'] as num).toDouble(),
-      paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0,
-      remainingAmount: (json['remaining_amount'] as num).toDouble(),
+      receivableNumber: (json['reference_number'] as String?) ?? '',
+      amount: original,
+      paidAmount: paid,
+      remainingAmount: original - paid - writeOff,
       dueDate: DateTime.parse(json['due_date'] as String),
       status: _parseReceivableStatus(json['status'] as String?),
       lastPaymentDate: json['last_payment_date'] != null
@@ -737,7 +740,7 @@ class OdoriPayment extends Equatable {
   factory OdoriPayment.fromJson(Map<String, dynamic> json) {
     return OdoriPayment(
       id: json['id'] as String,
-      receivableId: json['receivable_id'] as String,
+      receivableId: (json['receivable_id'] as String?) ?? '',
       paymentNumber: json['payment_number'] as String,
       amount: (json['amount'] as num).toDouble(),
       paymentMethod: json['payment_method'] as String,
@@ -745,8 +748,8 @@ class OdoriPayment extends Equatable {
       referenceNumber: json['reference_number'] as String?,
       notes: json['notes'] as String?,
       collectedBy: json['collected_by'] as String?,
-      latitude: (json['latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble(),
+      latitude: (json['collection_lat'] as num?)?.toDouble(),
+      longitude: (json['collection_lng'] as num?)?.toDouble(),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }

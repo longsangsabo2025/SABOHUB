@@ -480,7 +480,6 @@ class OdoriService {
     final paymentResponse = await _supabase
         .from('payments')
         .insert({
-          'receivable_id': receivableId,
           'payment_number': paymentNumber,
           'amount': amount,
           'payment_method': paymentData['payment_method'],
@@ -488,8 +487,8 @@ class OdoriService {
           'reference_number': paymentData['reference_number'],
           'notes': paymentData['notes'],
           'collected_by': paymentData['collected_by'],
-          'latitude': paymentData['latitude'],
-          'longitude': paymentData['longitude'],
+          'collection_lat': paymentData['latitude'],
+          'collection_lng': paymentData['longitude'],
         })
         .select()
         .single();
@@ -497,7 +496,6 @@ class OdoriService {
     // Update receivable
     await _supabase.from('receivables').update({
       'paid_amount': newPaidAmount,
-      'remaining_amount': newRemaining > 0 ? newRemaining : 0,
       'status': newStatus,
       'last_payment_date': paymentData['payment_date'] ?? DateTime.now().toIso8601String().split('T')[0],
     }).eq('id', receivableId);
@@ -510,7 +508,7 @@ class OdoriService {
 
     final response = await _supabase
         .from('receivables')
-        .select('remaining_amount, due_date, status')
+        .select('original_amount, paid_amount, write_off_amount, due_date, status')
         .eq('company_id', cid)
         .isFilter('rejected_at', null)
         .inFilter('status', ['pending', 'partial']);
@@ -524,7 +522,10 @@ class OdoriService {
 
     for (final r in response as List) {
       final dueDate = DateTime.parse(r['due_date'] as String);
-      final amount = (r['remaining_amount'] as num).toDouble();
+      final original = (r['original_amount'] as num).toDouble();
+      final paid = (r['paid_amount'] as num?)?.toDouble() ?? 0;
+      final writeOff = (r['write_off_amount'] as num?)?.toDouble() ?? 0;
+      final amount = original - paid - writeOff;
       final daysPastDue = today.difference(dueDate).inDays;
 
       if (daysPastDue <= 0) {

@@ -189,7 +189,7 @@ final realCEOKPIsProvider =
       // Outstanding receivables
       _supabase
           .from('receivables')
-          .select('balance')
+          .select('original_amount, paid_amount, write_off_amount')
           .inFilter('company_id', companyIds)
           .inFilter('status', ['open', 'partial', 'overdue']),
     ]);
@@ -232,10 +232,13 @@ final realCEOKPIsProvider =
     double grossProfit = monthlyRevenue - cogs;
     double grossMargin = monthlyRevenue > 0 ? (grossProfit / monthlyRevenue) * 100 : 0;
 
-    // Outstanding debt
+    // Outstanding debt (balance = original_amount - paid_amount - write_off_amount)
     double totalOutstanding = 0;
     for (final r in receivables) {
-      totalOutstanding += ((r['balance'] ?? 0) as num).toDouble();
+      final original = ((r['original_amount'] ?? 0) as num).toDouble();
+      final paid = ((r['paid_amount'] ?? 0) as num).toDouble();
+      final writeOff = ((r['write_off_amount'] ?? 0) as num).toDouble();
+      totalOutstanding += (original - paid - writeOff);
     }
 
     return CEOKPIs(

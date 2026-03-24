@@ -93,20 +93,25 @@ class _CSKHCustomersPageState extends ConsumerState<CSKHCustomersPage> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _customers.length,
-                    itemBuilder: (context, index) {
-                      final customer = _customers[index];
+                : Builder(
+                    builder: (context) {
                       final searchQuery = _searchController.text.toLowerCase();
-                      
-                      if (searchQuery.isNotEmpty &&
-                          !customer['name'].toString().toLowerCase().contains(searchQuery) &&
-                          !customer['phone'].toString().contains(searchQuery)) {
-                        return const SizedBox.shrink();
+                      final filtered = searchQuery.isEmpty
+                          ? _customers
+                          : _customers.where((customer) {
+                              return customer['name'].toString().toLowerCase().contains(searchQuery) ||
+                                     customer['phone'].toString().toLowerCase().contains(searchQuery);
+                            }).toList();
+                      if (filtered.isEmpty) {
+                        return Center(
+                          child: Text('Không tìm thấy khách hàng', style: TextStyle(color: Colors.grey)),
+                        );
                       }
-                      
-                      return _buildCustomerCard(customer);
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) => _buildCustomerCard(filtered[index]),
+                      );
                     },
                   ),
           ),
