@@ -95,6 +95,13 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
             .eq('status', 'completed')
             .gte('created_at', rangeStart.toIso8601String())
             .lte('created_at', rangeEnd.toIso8601String()),
+        // [5] Manual receivables (not linked to sales orders)
+        supabase
+            .from('receivables')
+            .select('customer_id, original_amount, paid_amount, write_off_amount, due_date')
+            .eq('company_id', companyId)
+            .eq('reference_type', 'manual')
+            .neq('status', 'paid'),
       ]);
 
       final unpaidOrders = results[0] as List;
@@ -102,6 +109,7 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
       final recentPayments = results[2] as List;
       final pendingTransfers = results[3] as List;
       final ordersData = results[4] as List;
+      final manualReceivables = results[5] as List;
 
       // Process unpaid orders for receivables
       double totalReceivable = 0;
@@ -115,13 +123,14 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
         final total = (order['total'] ?? 0).toDouble();
         final paid = (order['paid_amount'] ?? 0).toDouble();
         final remaining = total - paid;
+        if (remaining <= 0) continue;
         totalReceivable += remaining;
         
         final custId = order['customer_id'] as String?;
         if (custId != null) customerIds.add(custId);
 
         final createdAtStr = order['created_at'] as String?;
-        if (createdAtStr != null && remaining > 0) {
+        if (createdAtStr != null) {
           final orderDate = DateTime.parse(createdAtStr);
           if (now.difference(orderDate).inDays > 30) {
             overdueAmount += remaining;
@@ -129,6 +138,29 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
           }
         }
       }
+
+      // Add manual receivables to totals
+      for (var recv in manualReceivables) {
+        final original = (recv['original_amount'] ?? 0).toDouble();
+        final paid = (recv['paid_amount'] ?? 0).toDouble();
+        final writeOff = (recv['write_off_amount'] ?? 0).toDouble();
+        final remaining = original - paid - writeOff;
+        if (remaining <= 0) continue;
+        totalReceivable += remaining;
+
+        final custId = recv['customer_id'] as String?;
+        if (custId != null) customerIds.add(custId);
+
+        final dueDateStr = recv['due_date']?.toString();
+        if (dueDateStr != null) {
+          final dueDate = DateTime.tryParse(dueDateStr);
+          if (dueDate != null && now.isAfter(dueDate)) {
+            overdueAmount += remaining;
+            if (custId != null) overdueCustomerIds.add(custId);
+          }
+        }
+      }
+
       overdueCustomers = overdueCustomerIds.length;
 
       // Process payments

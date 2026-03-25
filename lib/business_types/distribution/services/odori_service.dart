@@ -510,8 +510,7 @@ class OdoriService {
         .from('receivables')
         .select('original_amount, paid_amount, write_off_amount, due_date, status')
         .eq('company_id', cid)
-        .isFilter('rejected_at', null)
-        .inFilter('status', ['pending', 'partial']);
+        .neq('status', 'paid');
 
     final today = DateTime.now();
     double current = 0;

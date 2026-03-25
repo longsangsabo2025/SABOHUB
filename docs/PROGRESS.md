@@ -24,6 +24,28 @@
 
 ## Lịch Sử Phát Triển (Changelog)
 
+### 2026-03-27 — Finance "Công Nợ" Tab Deep Audit
+**Summary**: User reported finance role's Công nợ (receivables/debt) tab was broken and missing features. Deep audit of all 5 finance tabs against live DB schema. Found and fixed 5 bugs across 3 files.
+
+##### Bug #21 — getAgingReport() Queries Non-Existent Column + Wrong Status Values (P0-CRASH)
+- [x] **FIX** `lib/business_types/distribution/services/odori_service.dart` — `getAgingReport()` used `.isFilter('rejected_at', null)` but `rejected_at` does NOT exist on `receivables` table (only on `sales_orders`), causing immediate query failure. Also used `.inFilter('status', ['pending', 'partial'])` but actual receivable statuses in DB are only 'open' and 'paid'. Fixed: removed `rejected_at` filter, changed to `.neq('status', 'paid')`.
+
+##### Bug #22 — Payment Auto-Allocation Ignores Manual Receivables (P1)
+- [x] **FIX** `lib/business_types/distribution/pages/finance/accounts_receivable_page.dart` — When recording a payment via "Thu tiền" dialog, the auto-allocation only applied to `sales_orders`, never to `receivables` table. Manual receivables (công nợ đầu kỳ) stayed 'open' forever even after full payment. Added allocation to oldest unpaid receivables after sales orders, updating `paid_amount`, `status`, and `last_payment_date`.
+
+##### Bug #23 — "Quá hạn" Tab Only Shows Receivables, Ignores Sales Orders (P1)
+- [x] **FIX** `lib/business_types/distribution/pages/finance/accounts_receivable_page.dart` — The "Quá hạn" (Overdue) tab used only `v_receivables_aging` view data which only tracks manual receivables. Customers with old unpaid sales orders (the primary debt source) were never flagged as overdue. Added sales order aging computation in `_loadCustomers()`, combined both sources in `_overdueCustomers`, `_agingSummary`, and `_buildDebtCard()`.
+
+##### Bug #24 — Aging Bar Only Reflects Manual Receivables (P2)
+- [x] **FIX** `lib/business_types/distribution/pages/finance/accounts_receivable_page.dart` — Aging bar (Tuổi nợ) only showed data from `v_receivables_aging` view. Now combines receivables aging + sales order aging for complete debt age analysis. Bar and visibility condition updated.
+
+##### Bug #25 — Finance Dashboard Uses Invalid 'debt' Payment Status (P3)
+- [x] **FIX** `lib/business_types/distribution/pages/finance/finance_dashboard_page.dart` — `inFilter('payment_status', ['unpaid', 'debt', 'partial', 'pending_transfer'])` included 'debt' which doesn't exist in DB (actual values: paid, partial, pending_transfer, unpaid). Removed invalid value.
+
+#### Verification
+- Flutter analyze: 0 new errors (only pre-existing info-level warnings)
+- Flutter build web: PASS
+
 ### 2026-03-25 — Search Bar Audit Across All Roles
 **Summary**: Audited all 18+ search bars across all roles. Found 4 bugs: 1 non-functional search bar (Driver), 1 broken filtering pattern (CSKH), and 2 unsanitized server-side searches. Fixed all.
 

@@ -34,6 +34,7 @@ class _AccountsReceivablePageState
   late TabController _tabController;
   List<Map<String, dynamic>> _customersWithDebt = [];
   List<Map<String, dynamic>> _agingData = [];
+  List<Map<String, dynamic>> _salesOrderAgingData = [];
   bool _isLoading = true;
   final _searchController = TextEditingController();
   String _sortBy = 'debt_desc'; // debt_desc, debt_asc, name_asc
@@ -68,6 +69,51 @@ class _AccountsReceivablePageState
 
       final supabase = Supabase.instance.client;
 
+      // Load unpaid sales orders first (needed for aging AND debt calculation)
+      List<Map<String, dynamic>> soAging = [];
+      Map<String, double> soDebtByCustomer = {};
+      try {
+        final unpaidOrders = await supabase
+            .from('sales_orders')
+            .select('customer_id, total, paid_amount, created_at, order_date')
+            .eq('company_id', companyId)
+            .neq('payment_status', 'paid')
+            .neq('status', 'cancelled');
+        final now = DateTime.now();
+        for (final o in unpaidOrders) {
+          final total = (o['total'] ?? 0).toDouble();
+          final paid = (o['paid_amount'] ?? 0).toDouble();
+          final balance = total - paid;
+          if (balance <= 0) continue;
+          final custId = o['customer_id']?.toString() ?? '';
+          soDebtByCustomer[custId] = (soDebtByCustomer[custId] ?? 0) + balance;
+          final dateStr = (o['order_date'] ?? o['created_at'])?.toString();
+          if (dateStr == null) continue;
+          final date = DateTime.tryParse(dateStr);
+          if (date == null) continue;
+          final daysOverdue = now.difference(date).inDays;
+          String bucket = 'current';
+          if (daysOverdue > 90) {
+            bucket = '90+';
+          } else if (daysOverdue > 60) {
+            bucket = '61-90';
+          } else if (daysOverdue > 30) {
+            bucket = '31-60';
+          } else if (daysOverdue > 0) {
+            bucket = '1-30';
+          }
+          soAging.add({
+            'customer_id': custId,
+            'balance': balance,
+            'aging_bucket': bucket,
+            'days_overdue': daysOverdue,
+          });
+        }
+      } catch (e) {
+        AppLogger.warn('Sales order aging not available: $e');
+      }
+
+      // Load customers with total_debt > 0 (DB trigger keeps this in sync)
       final data = await supabase
           .from('customers')
           .select('id, name, code, phone, address, total_debt, credit_limit, payment_terms')
@@ -75,6 +121,39 @@ class _AccountsReceivablePageState
           .gt('total_debt', 0)
           .order('total_debt', ascending: false)
           .limit(500);
+
+      final customerMap = <String, Map<String, dynamic>>{};
+      for (final c in data) {
+        customerMap[c['id']?.toString() ?? ''] = Map<String, dynamic>.from(c);
+      }
+
+      // Safety net: find customers with SO debt but not in the list (in case trigger didn't fire)
+      final missingIds = soDebtByCustomer.keys
+          .where((id) => id.isNotEmpty && !customerMap.containsKey(id))
+          .toList();
+
+      if (missingIds.isNotEmpty) {
+        try {
+          final extra = await supabase
+              .from('customers')
+              .select('id, name, code, phone, address, total_debt, credit_limit, payment_terms')
+              .eq('company_id', companyId)
+              .inFilter('id', missingIds);
+          for (final c in extra) {
+            final cId = c['id']?.toString() ?? '';
+            final row = Map<String, dynamic>.from(c);
+            // Use computed SO debt as total_debt
+            row['total_debt'] = soDebtByCustomer[cId] ?? 0;
+            customerMap[cId] = row;
+          }
+        } catch (e) {
+          AppLogger.warn('Extra customer load failed: $e');
+        }
+      }
+
+      // Build final sorted list
+      final customerList = customerMap.values.toList()
+        ..sort((a, b) => ((b['total_debt'] ?? 0) as num).compareTo((a['total_debt'] ?? 0) as num));
 
       // Load aging data from receivables view
       List<Map<String, dynamic>> aging = [];
@@ -88,8 +167,9 @@ class _AccountsReceivablePageState
       }
 
       setState(() {
-        _customersWithDebt = List<Map<String, dynamic>>.from(data);
+        _customersWithDebt = customerList;
         _agingData = aging;
+        _salesOrderAgingData = soAging;
         _isLoading = false;
       });
     } catch (e) {
@@ -137,20 +217,36 @@ class _AccountsReceivablePageState
   }
 
   List<Map<String, dynamic>> get _overdueCustomers {
-    // Use real aging data - find customers with overdue receivables
-    final overdueCustomerIds = _agingData
-        .where((a) => (a['days_overdue'] ?? 0) > 0)
-        .map((a) => a['customer_id'])
-        .toSet();
+    // Combine overdue from receivables view AND sales orders
+    final overdueCustomerIds = <dynamic>{};
+    // From receivables aging view
+    overdueCustomerIds.addAll(
+      _agingData
+          .where((a) => (a['days_overdue'] ?? 0) > 0)
+          .map((a) => a['customer_id']),
+    );
+    // From sales orders aging (> 30 days old counts as overdue)
+    overdueCustomerIds.addAll(
+      _salesOrderAgingData
+          .where((a) => (a['days_overdue'] ?? 0) > 30)
+          .map((a) => a['customer_id']),
+    );
     return _filteredCustomers.where((c) => overdueCustomerIds.contains(c['id'])).toList();
   }
 
-  // Aging summary for the header
+  // Aging summary for the header (combines receivables + sales orders)
   Map<String, double> get _agingSummary {
     final summary = <String, double>{
       'current': 0, '1-30': 0, '31-60': 0, '61-90': 0, '90+': 0,
     };
+    // From receivables aging view
     for (final a in _agingData) {
+      final bucket = a['aging_bucket']?.toString() ?? 'current';
+      final balance = (a['balance'] ?? 0).toDouble();
+      summary[bucket] = (summary[bucket] ?? 0) + balance;
+    }
+    // From sales orders aging
+    for (final a in _salesOrderAgingData) {
       final bucket = a['aging_bucket']?.toString() ?? 'current';
       final balance = (a['balance'] ?? 0).toDouble();
       summary[bucket] = (summary[bucket] ?? 0) + balance;
@@ -348,7 +444,7 @@ class _AccountsReceivablePageState
                     ),
 
                     // Aging summary bar
-                    if (_agingData.isNotEmpty) ...[
+                    if (_agingData.isNotEmpty || _salesOrderAgingData.isNotEmpty) ...[
                       AppSpacing.gapSM,
                       _buildAgingBar(),
                     ],
@@ -1242,12 +1338,18 @@ class _AccountsReceivablePageState
   Widget _buildDebtCard(Map<String, dynamic> customer) {
     final debt = (customer['total_debt'] ?? 0).toDouble();
     final creditLimit = (customer['credit_limit'] ?? 0).toDouble();
-    // Use real aging data for overdue detection
+    // Use real aging data for overdue detection (from receivables AND sales orders)
     final customerAgingRecords = _agingData.where((a) =>
         a['customer_id'] == customer['id'] && (a['days_overdue'] ?? 0) > 0).toList();
-    final isOverdue = customerAgingRecords.isNotEmpty;
-    final maxOverdueDays = isOverdue
-        ? customerAgingRecords.map((a) => (a['days_overdue'] as num?) ?? 0).reduce((a, b) => a > b ? a : b)
+    final customerSORecords = _salesOrderAgingData.where((a) =>
+        a['customer_id'] == customer['id'] && (a['days_overdue'] ?? 0) > 30).toList();
+    final isOverdue = customerAgingRecords.isNotEmpty || customerSORecords.isNotEmpty;
+    final allOverdueDays = [
+      ...customerAgingRecords.map((a) => (a['days_overdue'] as num?) ?? 0),
+      ...customerSORecords.map((a) => (a['days_overdue'] as num?) ?? 0),
+    ];
+    final maxOverdueDays = allOverdueDays.isNotEmpty
+        ? allOverdueDays.reduce((a, b) => a > b ? a : b)
         : 0;
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
 
@@ -1713,6 +1815,39 @@ class _AccountsReceivablePageState
                         }).eq('id', order['id']);
 
                         remaining -= applyAmount;
+                      }
+
+                      // Auto-allocate remaining payment to manual receivables
+                      if (remaining > 0) {
+                        final unpaidReceivables = await supabase
+                            .from('receivables')
+                            .select('id, original_amount, paid_amount, write_off_amount, status')
+                            .eq('customer_id', customer['id'])
+                            .eq('company_id', companyId)
+                            .neq('status', 'paid')
+                            .order('invoice_date', ascending: true);
+
+                        for (final rec in unpaidReceivables) {
+                          if (remaining <= 0) break;
+                          final origAmt = (rec['original_amount'] ?? 0).toDouble();
+                          final paidAmt = (rec['paid_amount'] ?? 0).toDouble();
+                          final writeOff = (rec['write_off_amount'] ?? 0).toDouble();
+                          final recRemaining = origAmt - paidAmt - writeOff;
+
+                          if (recRemaining <= 0) continue;
+
+                          final applyAmt = remaining >= recRemaining ? recRemaining : remaining;
+                          final newRecPaid = paidAmt + applyAmt;
+                          final newRecStatus = (newRecPaid + writeOff) >= origAmt ? 'paid' : 'open';
+
+                          await supabase.from('receivables').update({
+                            'paid_amount': newRecPaid,
+                            'status': newRecStatus,
+                            'last_payment_date': DateTime.now().toIso8601String().split('T')[0],
+                          }).eq('id', rec['id']);
+
+                          remaining -= applyAmt;
+                        }
                       }
 
                       if (context.mounted) {
