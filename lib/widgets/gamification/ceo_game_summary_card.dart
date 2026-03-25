@@ -11,7 +11,7 @@ import 'streak_counter.dart';
 class CeoGameSummaryCard extends ConsumerWidget {
   final VoidCallback? onTap;
 
-  CeoGameSummaryCard({super.key, this.onTap});
+  const CeoGameSummaryCard({super.key, this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

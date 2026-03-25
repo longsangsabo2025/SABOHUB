@@ -7,7 +7,7 @@ import '../../providers/token_provider.dart';
 import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class SaboAchievementsPage extends ConsumerStatefulWidget {
-  SaboAchievementsPage({super.key});
+  const SaboAchievementsPage({super.key});
 
   @override
   ConsumerState<SaboAchievementsPage> createState() =>

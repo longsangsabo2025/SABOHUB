@@ -18,7 +18,7 @@ import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 /// Bug Report Dialog Widget
 /// Allows users to report bugs/issues with optional screenshot
 class BugReportDialog extends ConsumerStatefulWidget {
-  BugReportDialog({super.key});
+  const BugReportDialog({super.key});
 
   /// Show the bug report dialog
   static Future<void> show(BuildContext context) async {

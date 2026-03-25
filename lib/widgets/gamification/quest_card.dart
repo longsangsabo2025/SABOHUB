@@ -8,7 +8,7 @@ class QuestCard extends StatelessWidget {
   final QuestProgress progress;
   final VoidCallback? onTap;
 
-  QuestCard({
+  const QuestCard({
     super.key,
     required this.progress,
     this.onTap,

@@ -11,7 +11,7 @@ import 'sabo_token_store_page.dart';
 import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class SaboWalletPage extends ConsumerStatefulWidget {
-  SaboWalletPage({super.key});
+  const SaboWalletPage({super.key});
 
   @override
   ConsumerState<SaboWalletPage> createState() => _SaboWalletPageState();

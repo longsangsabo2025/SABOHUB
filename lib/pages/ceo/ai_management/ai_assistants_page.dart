@@ -8,7 +8,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../utils/app_logger.dart';
 
 class AIAssistantsPage extends ConsumerStatefulWidget {
-  AIAssistantsPage({super.key});
+  const AIAssistantsPage({super.key});
 
   @override
   ConsumerState<AIAssistantsPage> createState() => _AIAssistantsPageState();

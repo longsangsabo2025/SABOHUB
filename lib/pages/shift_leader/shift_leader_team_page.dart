@@ -7,7 +7,7 @@ import '../../providers/auth_provider.dart';
 
 /// Shift Leader Team Page - Show team members in same branch
 class ShiftLeaderTeamPage extends ConsumerStatefulWidget {
-  ShiftLeaderTeamPage({super.key});
+  const ShiftLeaderTeamPage({super.key});
 
   @override
   ConsumerState<ShiftLeaderTeamPage> createState() =>

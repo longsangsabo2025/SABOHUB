@@ -24,6 +24,155 @@
 
 ## Lịch Sử Phát Triển (Changelog)
 
+### 2026-03-25 — Debt Consistency Fix (Manager vs Finance)
+**Summary**: Investigated real data discrepancy across Manager `Báo cáo > Công nợ` and Finance debt screens. Unified debt calculations to use transaction-derived outstanding values (sales orders + manual receivables), removing stale-field drift.
+
+##### Root Cause (Validated)
+- [x] **INVESTIGATION** Manager receivables report only summed unpaid `sales_orders` balances (`76,755,230đ`) and excluded manual receivables.
+- [x] **INVESTIGATION** Finance receivables page relied on `customers.total_debt` (`88,675,359đ`), which can drift from source transactions when historical sync is stale.
+- [x] **INVESTIGATION** Actual outstanding from source transactions = unpaid sales orders + manual receivables = `83,395,230đ`.
+
+##### Fixes Applied
+- [x] **FIX** `lib/business_types/distribution/pages/manager/reports_page.dart` — Receivables tab now includes manual receivables (`reference_type = manual`) in totals/customer breakdown and ignores zero balances.
+- [x] **FIX** `lib/business_types/distribution/pages/finance/accounts_receivable_page.dart` — Debt list now computes per-customer debt from source transactions (unpaid sales orders + manual receivables) instead of trusting cached `customers.total_debt`.
+- [x] **FIX** `lib/business_types/distribution/pages/finance/finance_dashboard_page.dart` — Removed invalid `payment_status = debt` filter from unpaid-order query.
+
+#### Verification
+- `flutter analyze` => **No issues found** (0 errors, 0 warnings, 0 infos)
+
+### 2026-03-25 — Full Analyzer Cleanup (Service/Distribution/CEO)
+**Summary**: Completed a full lint/diagnostic sweep in one pass: applied automated immutable-constructor fixes workspace-wide and manually resolved all remaining async `BuildContext` warnings.
+
+##### Batch Fix — Workspace-wide lint stabilization
+- [x] **FIX** Workspace — Applied `dart fix --apply --code prefer_const_constructors_in_immutables` (29 fixes / 28 files).
+- [x] **FIX** `lib/business_types/distribution/pages/finance/widgets/payment_record_bottom_sheet.dart` — Added post-`await onSuccess()` mounted guard before using `sheetContext` for snackbar.
+- [x] **FIX** `lib/business_types/distribution/pages/sales/journey_plan_page.dart` — Added `if (!mounted) return;` after async replace-plan check to safely use page context.
+- [x] **FIX** `lib/business_types/service/pages/reservations/reservation_list_page.dart` — Removed shadowed method `BuildContext` parameter in reservation detail flow so mounted checks guard the same state context.
+- [x] **FIX** `lib/pages/ceo/ceo_employees_page.dart` — Replaced `context.mounted` guards with state `mounted` in async permission dialog/update flow.
+- [x] **FIX** `lib/pages/ceo/company/documents_tab.dart` — Removed async-path `Theme.of(context)` dependency in success snackbar icon to avoid stale context access.
+
+#### Verification
+- `flutter analyze` => **No issues found** (0 errors, 0 warnings, 0 infos)
+
+##### Follow-up Hardening — Medium-risk Behavior Fixes
+- [x] **FIX** `lib/business_types/distribution/pages/sales/journey_plan_page.dart` — Reworked replace-journey flow to avoid deleting current plan before new plan creation succeeds (prevents data loss on cancel/network failure).
+- [x] **FIX** `lib/business_types/distribution/providers/odori_providers.dart` — Default product sample listing now keeps `NULL` status rows visible while excluding only `cancelled` rows.
+- [x] **FIX** `lib/business_types/distribution/pages/products/product_samples_page.dart` — Linked sample-order cancel helper now validates affected rows and only returns success when update actually applied.
+- [x] **FIX** `lib/business_types/service/layouts/tabs/manager_overview_tab.dart` — Hid table-status card when table metrics are unavailable to avoid misleading zeroed KPIs.
+
+#### Verification
+- `flutter analyze` => **No issues found** (0 errors, 0 warnings, 0 infos)
+
+### 2026-03-25 — Service Manager Overview Compile Stabilization
+**Summary**: Removed the remaining broken table-stats dependency in the service manager overview tab and switched the table-status panel to consume valid session stats keys/fallbacks.
+
+##### Compile Fix — Remove orphaned `tableStats` usage
+- [x] **FIX** `lib/business_types/service/layouts/tabs/manager_overview_tab.dart` — Replaced `tableStats.when(...)` with `sessionStats.when(...)` in the table-status breakdown card.
+- [x] **FIX** `lib/business_types/service/layouts/tabs/manager_overview_tab.dart` — Added safe key fallbacks for counts (`available/availableTables`, `occupied/activeSessions`, `reserved/reservedTables`, `maintenance/maintenanceTables`) to avoid missing-key runtime drift.
+
+#### Verification
+- File-level diagnostics on touched files: 0 errors (`manager_overview_tab.dart`, `manager_projects_tab.dart`, `journey_plan_page.dart`)
+- Workspace diagnostics: pre-existing non-blocking lint/info backlog remains; no new compile errors from this patch
+
+### 2026-03-25 — Product Samples Soft Delete Schema Fix
+**Summary**: Fixed a runtime PostgREST schema error in product samples by removing the invalid `is_active` update path and aligning soft-delete behavior with the actual table structure.
+
+##### Bug Fix — `product_samples.is_active` Does Not Exist
+- [x] **FIX** `lib/business_types/distribution/pages/products/product_samples_page.dart` — Replaced invalid soft-delete update (`is_active = false`) with `status = 'cancelled'` and clarified the user-facing snackbar message.
+- [x] **FIX** `lib/business_types/distribution/providers/odori_providers.dart` — Excluded `cancelled` product samples from the default list query while still allowing explicit cancelled filtering.
+- [x] **FIX** `lib/business_types/distribution/pages/manager/inventory/sample_management_page.dart` — Removed non-existent `shipped_date`, `shipped_by_id`, and `converted_date` writes/reads; aligned manager sample status flow with actual columns (`sent_by_id`, `received_date`, `feedback_date`, `updated_at`).
+- [x] **FIX** `lib/business_types/distribution/pages/products/product_samples_page.dart` — Prevented marking standalone samples as `converted` when no linked `order_id` exists, avoiding inconsistent `converted_to_order = true` records with no sales order.
+- [x] **FIX** `lib/business_types/distribution/pages/products/product_samples_page.dart` — When cancelling/deleting a sample with a linked sample order, also cancel the related `sales_orders` row (`status = cancelled`, `rejected_at`) to avoid orphan sample orders in downstream flows.
+
+#### Verification
+- File-level diagnostics on modified files: 0 errors
+- Flutter analyze: unchanged pre-existing errors in `lib/business_types/service/layouts/tabs/manager_overview_tab.dart`; no new analyze errors from modified product sample files
+
+### 2026-03-25 — Sales Orders Header Auto-Collapse On Scroll
+**Summary**: Applied the same scroll ergonomics from `Khách hàng` to `Đơn hàng` so the large sales hero auto-collapses while browsing order lists and expands back when returning to top.
+
+##### UX Improvement — More Vertical Space In Sales Orders
+- [x] **FIX** `lib/business_types/distribution/layouts/sales/sales_orders_page.dart` — Added scroll-notification driven collapse state and switched hero rendering to `AnimatedCrossFade` (full hero ↔ compact strip), keeping existing tabs/filter/create-order flow unchanged.
+
+#### Verification
+- File-level diagnostics on modified file: 0 errors
+
+### 2026-03-25 — Sales Customers Header Auto-Collapse On Scroll
+**Summary**: Improved mobile browsing ergonomics in Sales `Khách hàng` by auto-collapsing the large hero header while scrolling down, then restoring it when scrolling up.
+
+##### UX Improvement — Save Vertical Space While Browsing
+- [x] **FIX** `lib/business_types/distribution/layouts/sales/sales_customers_page.dart` — Added scroll-driven hero collapse/expand behavior using `AnimatedCrossFade` and existing list scroll controller, reducing occupied vertical space during list reading.
+- [x] **FIX** `lib/business_types/distribution/layouts/sales/sales_customers_page.dart` — Added compact top strip variant (count + quick add action) when collapsed to preserve key actions/context without the full hero footprint.
+
+#### Verification
+- File-level diagnostics on modified file: 0 errors
+
+### 2026-03-25 — Sales Journey Shell Visual Harmonization
+**Summary**: Continued the sales UI unification by modernizing the `Hành trình` tab shell to match the upgraded look already applied to `Đơn hàng`, `Khách hàng`, and `Hoạt động`, while preserving all existing journey logic/actions.
+
+##### UX Polish — Journey Hero & Empty State Refresh
+- [x] **FIX** `lib/business_types/distribution/pages/sales/journey_plan_page.dart` — Upgraded app bar shell with gradient treatment, refreshed empty state styling (stronger visual hierarchy + tip chip), and aligned CTA tone with the sales visual language.
+- [x] **FIX** `lib/business_types/distribution/pages/sales/journey_plan_page.dart` — Reworked journey summary header into a premium hero card (status chip, route context, metrics, progress bar, action CTAs) without changing data flow/business rules.
+- [x] **FIX** `lib/business_types/distribution/pages/sales/journey_plan_page.dart` — Adjusted stop-list spacing/padding for cleaner scanability and consistency with other upgraded sales tabs.
+
+#### Verification
+- File-level diagnostics on modified file: 0 errors
+
+### 2026-03-25 — Sales Overview & Activity Visual Harmonization
+**Summary**: Continued the sales UI modernization by aligning the `Hoạt động` page shell with the premium sales look and slightly tuning `Tổng quan` header colors for consistency. Also removed one noisy runtime warning in activity data loading.
+
+##### UX Polish — Sales Activity Hero Shell
+- [x] **FIX** `lib/business_types/distribution/pages/sales/sales_activity_page.dart` — Replaced plain app bar shell with a premium hero header (context chips, date selector, refresh CTA) while keeping timeline/stat logic intact.
+- [x] **FIX** `lib/business_types/distribution/pages/sales/sales_activity_page.dart` — Removed non-existent `store_visits.order_amount` from query to stop recurring warning noise in logs.
+
+##### UX Polish — Sales Dashboard Header Tone Alignment
+- [x] **FIX** `lib/business_types/distribution/layouts/sales/sales_dashboard_page.dart` — Updated top gradient palette to match the new cross-tab sales visual language.
+
+#### Verification
+- File-level diagnostics on modified files: 0 errors
+- Flutter analyze: unchanged pre-existing repo issues outside modified files
+
+### 2026-03-25 — Sales Customers Shell Visual Upgrade
+**Summary**: Upgraded the sales `Khách hàng` tab shell to align with the newer premium sales UI direction established in the orders tab. The page now has a stronger visual hierarchy while preserving existing sales-specific customer actions and workflow.
+
+##### UX Polish — Premium Sales Customers Shell
+- [x] **FIX** `lib/business_types/distribution/layouts/sales/sales_customers_page.dart` — Added a premium hero header, integrated CTA for adding customers, compact stats cards, richer archive/status context chips, and a clearer search/filter panel without changing underlying sales customer logic.
+
+#### Verification
+- File-level diagnostics on modified file: 0 errors
+
+### 2026-03-25 — Sales Orders Header Visual Polish
+**Summary**: Upgraded the sales `Đơn hàng` shell to feel more premium while keeping the shared manager order list under the hood. The shell now has a stronger sales-specific visual identity instead of looking like a plain reused wrapper.
+
+##### UX Polish — Premium Sales Orders Shell
+- [x] **FIX** `lib/business_types/distribution/layouts/sales/sales_orders_page.dart` — Reworked the top shell into a richer hero header with gradient treatment, better CTA placement, contextual chips, and a separated rounded tab container for clearer visual hierarchy.
+
+#### Verification
+- File-level diagnostics on modified file: 0 errors
+- Flutter run Chrome: app re-launched successfully; existing debug-service noise remains non-blocking
+
+### 2026-03-25 — Sales Orders UI Reused From Manager Flow
+**Summary**: Refactored the sales `Đơn hàng` tab to reuse the manager order-list UI and interaction model instead of maintaining a separate lower-quality implementation. Sales now gets the same card/list/search/detail visual system with sales-specific filters and permissions.
+
+##### UX Improvement — Reuse Manager Order List For Sales
+- [x] **FIX** `lib/business_types/distribution/pages/manager/orders_management_page.dart` — Extended `OrderListByStatus` with optional `saleId`, `dateFilter`, and permission toggles so the same UI can serve both manager and sales contexts.
+- [x] **FIX** `lib/business_types/distribution/layouts/sales/sales_orders_page.dart` — Rebuilt the sales orders tab as a thin shell on top of shared `OrderListByStatus`, preserving the sales header, create-order CTA, and date filter while upgrading cards, stats, search, paging, and detail sheet to match manager quality.
+
+#### Verification
+- File-level diagnostics on modified files: 0 errors
+- Flutter analyze: still fails only on pre-existing unrelated errors in `lib/business_types/service/layouts/tabs/manager_overview_tab.dart`
+
+### 2026-03-25 — Sales Navigation Simplification
+**Summary**: Simplified the sales role bottom navigation by merging the standalone `Tạo đơn` tab into the `Đơn hàng` flow, reducing bottom-nav clutter while preserving the full create-order screen.
+
+##### UX Improvement — Merge `Tạo đơn` + `Đơn hàng` For Sales Role
+- [x] **FIX** `lib/business_types/distribution/layouts/distribution_sales_layout.dart` — Reduced sales bottom navigation from 6 tabs to 5 tabs by removing the separate `Tạo đơn` destination and keeping a single `Đơn hàng` entry.
+- [x] **FIX** `lib/business_types/distribution/layouts/sales/sales_orders_page.dart` — Added inline `Tạo đơn` action button in the orders page header that opens the existing full create-order screen. Added refresh token handling so order lists reload when returning from the create-order flow.
+
+#### Verification
+- File-level diagnostics on modified files: 0 errors
+- Flutter analyze: still fails on pre-existing unrelated errors in `lib/business_types/service/layouts/tabs/manager_overview_tab.dart`
+
 ### 2026-03-27 — Finance "Công Nợ" Tab Deep Audit
 **Summary**: User reported finance role's Công nợ (receivables/debt) tab was broken and missing features. Deep audit of all 5 finance tabs against live DB schema. Found and fixed 5 bugs across 3 files.
 

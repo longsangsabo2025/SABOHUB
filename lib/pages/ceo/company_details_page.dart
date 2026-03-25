@@ -71,7 +71,7 @@ final companyServiceProvider = Provider<CompanyService>((ref) {
 class CompanyDetailsPage extends ConsumerStatefulWidget {
   final String companyId;
 
-  CompanyDetailsPage({
+  const CompanyDetailsPage({
     super.key,
     required this.companyId,
   });

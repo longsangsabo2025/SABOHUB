@@ -46,31 +46,36 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
   Future<void> _loadActivities() async {
     setState(() => _isLoading = true);
 
+    final user = ref.read(currentUserProvider);
+    final companyId = user?.companyId;
+    final userId = user?.id;
+
+    if (companyId == null || userId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    final supabase = Supabase.instance.client;
+    final dayStart = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+
+    final activities = <_ActivityItem>[];
+    var visitCount = 0;
+    var orderCount = 0;
+    var sampleCount = 0;
+    var photoCount = 0;
+    var surveyCount = 0;
+
     try {
-      final user = ref.read(currentUserProvider);
-      final companyId = user?.companyId;
-      final userId = user?.id;
-
-      if (companyId == null || userId == null) {
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final supabase = Supabase.instance.client;
-      final dayStart = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
-      final dayEnd = dayStart.add(const Duration(days: 1));
-
-      final activities = <_ActivityItem>[];
-
-      // 1. Fetch store visits (check-in/out)
       final visits = await supabase
           .from('store_visits')
-          .select('id, customer_id, check_in_time, check_out_time, status, customer_feedback, next_visit_notes, order_placed, order_amount, customers(name)')
+          .select('id, customer_id, check_in_time, check_out_time, status, customer_feedback, next_visit_notes, order_placed, customers(name)')
           .eq('company_id', companyId)
           .eq('employee_id', userId)
-          .gte('visit_date', dayStart.toIso8601String())
-          .lt('visit_date', dayEnd.toIso8601String())
+          .gte('visit_date', dayStart.toIso8601String().split('T')[0])
+          .lt('visit_date', dayEnd.toIso8601String().split('T')[0])
           .order('check_in_time', ascending: false);
+      visitCount = visits.length;
 
       for (final v in visits) {
         final customerName = (v['customers'] as Map?)?['name'] ?? 'Khách hàng';
@@ -91,7 +96,7 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
             type: _ActivityType.checkOut,
             title: 'Check-out: $customerName',
             subtitle: hasOrder
-                ? 'Đã đặt hàng ${_formatCurrency(v['order_amount'])}'
+                ? 'Đã đặt hàng'
                 : (v['next_visit_notes']?.toString().isNotEmpty == true
                     ? 'Vấn đề: ${v['next_visit_notes']}'
                     : 'Không đặt hàng'),
@@ -101,19 +106,23 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
           ));
         }
       }
+    } catch (e) {
+      AppLogger.warn('Sales activity visits query failed: $e');
+    }
 
-      // 2. Fetch orders created today
+    try {
       final orders = await supabase
           .from('sales_orders')
-          .select('id, order_number, total, status, created_at, customers(name)')
+          .select('id, order_number, total, status, created_at, customer_name')
           .eq('company_id', companyId)
           .eq('sale_id', userId)
           .gte('created_at', dayStart.toIso8601String())
           .lt('created_at', dayEnd.toIso8601String())
           .order('created_at', ascending: false);
+      orderCount = orders.length;
 
       for (final o in orders) {
-        final customerName = (o['customers'] as Map?)?['name'] ?? 'Khách hàng';
+        final customerName = o['customer_name'] ?? 'Khách hàng';
         activities.add(_ActivityItem(
           type: _ActivityType.order,
           title: 'Tạo đơn: ${o['order_number'] ?? 'N/A'}',
@@ -124,19 +133,23 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
           metadata: {'order_id': o['id']},
         ));
       }
+    } catch (e) {
+      AppLogger.warn('Sales activity orders query failed: $e');
+    }
 
-      // 3. Fetch product samples sent today
+    try {
       final samples = await supabase
           .from('product_samples')
-          .select('id, status, sent_date, quantity, unit, products(name), customers(name)')
+          .select('id, status, sent_date, quantity, unit, product_name, customer_id, customers(name), created_at')
           .eq('company_id', companyId)
           .eq('sent_by_id', userId)
-          .gte('sent_date', dayStart.toIso8601String().split('T')[0])
-          .lte('sent_date', dayEnd.toIso8601String().split('T')[0])
+          .gte('sent_date', dayStart.toIso8601String())
+          .lt('sent_date', dayEnd.toIso8601String())
           .order('created_at', ascending: false);
+      sampleCount = samples.length;
 
       for (final s in samples) {
-        final productName = (s['products'] as Map?)?['name'] ?? 'Sản phẩm';
+        final productName = s['product_name'] ?? 'Sản phẩm';
         final customerName = (s['customers'] as Map?)?['name'] ?? 'Khách hàng';
         activities.add(_ActivityItem(
           type: _ActivityType.sample,
@@ -147,8 +160,11 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
           color: Colors.pink,
         ));
       }
+    } catch (e) {
+      AppLogger.warn('Sales activity samples query failed: $e');
+    }
 
-      // 4. Fetch visit photos uploaded today
+    try {
       final photos = await supabase
           .from('store_visit_photos')
           .select('id, taken_at, category')
@@ -156,6 +172,7 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
           .gte('taken_at', dayStart.toIso8601String())
           .lt('taken_at', dayEnd.toIso8601String())
           .order('taken_at', ascending: false);
+      photoCount = photos.length;
 
       for (final p in photos) {
         activities.add(_ActivityItem(
@@ -167,46 +184,46 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
           color: Colors.deepPurple,
         ));
       }
+    } catch (e) {
+      AppLogger.warn('Sales activity photos query failed: $e');
+    }
 
-      // 5. Fetch survey responses submitted today
+    try {
       final surveyResponses = await supabase
           .from('survey_responses')
-          .select('id, created_at, surveys(title)')
+          .select('id, created_at, survey_id')
           .eq('respondent_id', userId)
           .gte('created_at', dayStart.toIso8601String())
           .lt('created_at', dayEnd.toIso8601String())
           .order('created_at', ascending: false);
+      surveyCount = surveyResponses.length;
 
       for (final sr in surveyResponses) {
-        final surveyTitle = (sr['surveys'] as Map?)?['title'] ?? 'Khảo sát';
         activities.add(_ActivityItem(
           type: _ActivityType.survey,
           title: 'Hoàn thành khảo sát',
-          subtitle: surveyTitle,
+          subtitle: 'Mã khảo sát: ${sr['survey_id'] ?? 'N/A'}',
           time: DateTime.parse(sr['created_at']),
           icon: Icons.poll,
           color: Colors.purple,
         ));
       }
-
-      // Sort by time descending
-      activities.sort((a, b) => b.time.compareTo(a.time));
-
-      // Update stats
-      _totalVisits = visits.length;
-      _totalOrders = orders.length;
-      _totalSamples = samples.length;
-      _totalPhotos = photos.length;
-      _totalSurveys = surveyResponses.length;
-
-      setState(() {
-        _activities = activities;
-        _isLoading = false;
-      });
     } catch (e) {
-      AppLogger.error('Failed to load sales activities', e);
-      setState(() => _isLoading = false);
+      AppLogger.warn('Sales activity surveys query failed: $e');
     }
+
+    activities.sort((a, b) => b.time.compareTo(a.time));
+
+    _totalVisits = visitCount;
+    _totalOrders = orderCount;
+    _totalSamples = sampleCount;
+    _totalPhotos = photoCount;
+    _totalSurveys = surveyCount;
+
+    setState(() {
+      _activities = activities;
+      _isLoading = false;
+    });
   }
 
   String _formatCurrency(dynamic amount) {
@@ -246,69 +263,193 @@ class _SalesActivityPageState extends ConsumerState<SalesActivityPage>
   @override
   Widget build(BuildContext context) {
     final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
+    final user = ref.watch(currentUserProvider);
+    final salesName = user?.name?.trim().isNotEmpty == true
+        ? user!.name!.trim()
+        : 'Nhân viên sale';
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: const Text('Hoạt động Sales'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: _pickDate,
-            tooltip: 'Chọn ngày',
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadActivities,
-            tooltip: 'Làm mới',
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(40),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: GestureDetector(
-              onTap: _pickDate,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  isToday ? 'Hôm nay' : DateFormat('EEEE, dd/MM/yyyy', 'vi').format(_selectedDate),
-                  style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.w500),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadActivities,
-              child: CustomScrollView(
-                slivers: [
-                  // Stats Summary
-                  SliverToBoxAdapter(child: _buildStatsGrid()),
-
-                  // Timeline
-                  if (_activities.isEmpty)
-                    SliverFillRemaining(child: _buildEmptyState())
-                  else
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) => _buildActivityTile(_activities[index], index),
-                        childCount: _activities.length,
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadActivities,
+                child: CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _buildHeroHeader(
+                        context: context,
+                        salesName: salesName,
+                        isToday: isToday,
                       ),
                     ),
-
-                  // Bottom padding
-                  const SliverToBoxAdapter(child: SizedBox(height: 80)),
-                ],
+                    SliverToBoxAdapter(child: _buildStatsGrid()),
+                    if (_activities.isEmpty)
+                      SliverFillRemaining(child: _buildEmptyState())
+                    else
+                      SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => _buildActivityTile(_activities[index], index),
+                          childCount: _activities.length,
+                        ),
+                      ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                  ],
+                ),
               ),
-            ),
+      ),
+    );
+  }
+
+  Widget _buildHeroHeader({
+    required BuildContext context,
+    required String salesName,
+    required bool isToday,
+  }) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.deepPurple.shade700,
+            Colors.indigo.shade600,
+            Colors.blue.shade500,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.indigo.withOpacity(0.18),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.16),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: Colors.white.withOpacity(0.18)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.timeline, color: Colors.white, size: 14),
+                          SizedBox(width: 6),
+                          Text(
+                            'Sales Activity Hub',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Nhật ký hoạt động',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        height: 1.05,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Theo dõi check-in, đơn hàng, mẫu sản phẩm, ảnh trưng bày và khảo sát trong ngày của $salesName.',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.92),
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(Icons.insights, color: Colors.white, size: 28),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: _pickDate,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white.withOpacity(0.22)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_today, color: Colors.white, size: 14),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            isToday
+                                ? 'Hôm nay'
+                                : DateFormat('EEEE, dd/MM/yyyy', 'vi').format(_selectedDate),
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              FilledButton.icon(
+                onPressed: _loadActivities,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Làm mới'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.indigo.shade800,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

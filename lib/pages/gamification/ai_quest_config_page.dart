@@ -7,7 +7,7 @@ import '../../providers/gamification_provider.dart';
 import '../../providers/auth_provider.dart';
 
 class AiQuestConfigPage extends ConsumerStatefulWidget {
-  AiQuestConfigPage({super.key});
+  const AiQuestConfigPage({super.key});
 
   @override
   ConsumerState<AiQuestConfigPage> createState() => _AiQuestConfigPageState();

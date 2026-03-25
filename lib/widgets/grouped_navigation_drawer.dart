@@ -8,7 +8,7 @@ class GroupedNavigationDrawer extends StatefulWidget {
   final UserRole userRole;
   final String currentRoute;
 
-  GroupedNavigationDrawer({
+  const GroupedNavigationDrawer({
     super.key,
     required this.userRole,
     required this.currentRoute,

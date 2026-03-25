@@ -8,12 +8,11 @@ import '../../../../providers/auth_provider.dart';
 import '../../../../utils/screen_perf_tracker.dart';
 import '../../providers/media_channel_provider.dart';
 import '../../providers/session_provider.dart';
-import '../../providers/table_provider.dart';
 import '../../services/service_number_formatters.dart';
 
 class ManagerOverviewTab extends ConsumerStatefulWidget {
   final void Function(int) onSwitchTab;
-  const ManagerOverviewTab({required this.onSwitchTab});
+  const ManagerOverviewTab({super.key, required this.onSwitchTab});
 
   @override
   ConsumerState<ManagerOverviewTab> createState() =>
@@ -120,7 +119,6 @@ class ManagerOverviewTabState extends ConsumerState<ManagerOverviewTab> {
 
   @override
   Widget build(BuildContext context) {
-    final tableStats = ref.watch(tableStatsProvider);
     final sessionStats = ref.watch(sessionStatsProvider);
     final user = ref.watch(currentUserProvider);
     final companyId = user?.companyId ?? '';
@@ -128,7 +126,6 @@ class ManagerOverviewTabState extends ConsumerState<ManagerOverviewTab> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(tableStatsProvider);
         ref.invalidate(sessionStatsProvider);
         ref.invalidate(mediaChannelStatsProvider);
         _loadOverview();
@@ -170,9 +167,8 @@ class ManagerOverviewTabState extends ConsumerState<ManagerOverviewTab> {
                     children: [
                       _miniCard(
                         'Bàn đang chơi',
-                        tableStats.when(
-                          data: (s) =>
-                              '${s['occupied'] ?? 0}/${s['total'] ?? 0}',
+                        sessionStats.when(
+                          data: (s) => '${s['activeSessions'] ?? 0}',
                           loading: () => '...',
                           error: (_, __) => '—',
                         ),
@@ -181,14 +177,14 @@ class ManagerOverviewTabState extends ConsumerState<ManagerOverviewTab> {
                       ),
                       const SizedBox(width: 10),
                       _miniCard(
-                        'Phiên hoạt động',
+                        'Tạm dừng',
                         sessionStats.when(
-                          data: (s) => '${s['activeSessions'] ?? 0}',
+                          data: (s) => '${s['pausedSessions'] ?? 0}',
                           loading: () => '...',
                           error: (_, __) => '—',
                         ),
-                        Icons.timer,
-                        Colors.orange,
+                        Icons.pause_circle,
+                        Colors.deepOrange,
                       ),
                     ],
                   ),
@@ -279,12 +275,29 @@ class ManagerOverviewTabState extends ConsumerState<ManagerOverviewTab> {
                   const SizedBox(height: 16),
 
                   // ── Table Status Breakdown ──
-                  tableStats.when(
+                  sessionStats.when(
                     data: (s) {
-                      final available = s['available'] ?? 0;
-                      final occupied = s['occupied'] ?? 0;
-                      final reserved = s['reserved'] ?? 0;
-                      final maintenance = s['maintenance'] ?? 0;
+                      final hasTableMetrics =
+                          s.containsKey('available') ||
+                          s.containsKey('availableTables') ||
+                          s.containsKey('reserved') ||
+                          s.containsKey('reservedTables') ||
+                          s.containsKey('maintenance') ||
+                          s.containsKey('maintenanceTables');
+                      if (!hasTableMetrics) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final available =
+                          (s['available'] ?? s['availableTables'] ?? 0)
+                              as int;
+                      final occupied =
+                          (s['occupied'] ?? s['activeSessions'] ?? 0) as int;
+                      final reserved =
+                          (s['reserved'] ?? s['reservedTables'] ?? 0) as int;
+                      final maintenance =
+                          (s['maintenance'] ?? s['maintenanceTables'] ?? 0)
+                              as int;
                       return Card(
                         elevation: 0,
                         shape: RoundedRectangleBorder(

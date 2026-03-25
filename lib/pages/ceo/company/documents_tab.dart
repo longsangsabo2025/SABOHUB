@@ -162,7 +162,7 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
                   SnackBar(
                     content: Row(
                       children: [
-                        Icon(Icons.check_circle, color: Theme.of(context).colorScheme.surface),
+                        const Icon(Icons.check_circle, color: Colors.white),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text('Upload thành công: ${file.name}'),

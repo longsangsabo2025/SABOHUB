@@ -175,7 +175,7 @@ class LoadingOverlay extends StatelessWidget {
   final String? message;
   final bool isVisible;
 
-  LoadingOverlay({
+  const LoadingOverlay({
     super.key,
     this.message,
     required this.isVisible,

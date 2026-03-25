@@ -11,7 +11,7 @@ class ErrorBoundary extends ConsumerStatefulWidget {
   final Widget Function(AppError error)? errorBuilder;
   final void Function(AppError error)? onError;
 
-  ErrorBoundary({
+  const ErrorBoundary({
     super.key,
     required this.child,
     this.errorBuilder,
@@ -218,7 +218,7 @@ class _DefaultErrorWidget extends StatelessWidget {
 class ErrorDialog extends StatelessWidget {
   final AppError error;
 
-  ErrorDialog({
+  const ErrorDialog({
     super.key,
     required this.error,
   });

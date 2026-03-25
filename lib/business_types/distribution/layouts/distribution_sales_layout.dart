@@ -7,7 +7,6 @@ import '../pages/sales/sales_activity_page.dart';
 
 // Sub-pages extracted for maintainability
 import 'sales/sales_dashboard_page.dart';
-import 'sales/sales_create_order_page.dart';
 import 'sales/sales_orders_page.dart';
 import 'sales/sales_customers_page.dart';
 
@@ -17,8 +16,7 @@ import 'sales/sales_customers_page.dart';
 ///
 /// Sub-files tổ chức trong layouts/sales/:
 ///   - sales_dashboard_page.dart     → Tổng quan & KPI
-///   - sales_create_order_page.dart  → Tạo đơn hàng (inline)
-///   - sales_orders_page.dart        → Danh sách đơn hàng theo trạng thái
+///   - sales_orders_page.dart        → Danh sách đơn hàng + action tạo đơn
 ///   - sales_customers_page.dart     → Quản lý khách hàng
 ///   - sales_activity_page.dart      → Timeline hoạt động sales
 ///   - sheets/
@@ -41,7 +39,6 @@ class _DistributionSalesLayoutState
     SalesDashboardPage(),
     JourneyPlanPage(),
     SalesActivityPage(),
-    SalesCreateOrderPage(),
     SalesOrdersPage(),
     SalesCustomersPage(),
   ];
@@ -110,18 +107,6 @@ class _DistributionSalesLayoutState
               ),
               NavigationDestination(
                 icon: Icon(Icons.add_shopping_cart_outlined, color: Colors.grey.shade600),
-                selectedIcon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.add_shopping_cart, color: Colors.green.shade700),
-                ),
-                label: 'Tạo đơn',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.receipt_long_outlined, color: Colors.grey.shade600),
                 selectedIcon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(

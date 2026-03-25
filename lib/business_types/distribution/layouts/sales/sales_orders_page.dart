@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../providers/auth_provider.dart';
-import '../../../../utils/app_logger.dart';
 import '../../../../utils/quick_date_range_picker.dart';
-import '../../../../widgets/customer_avatar.dart';
-import 'sheets/sales_create_order_form.dart';
+import '../../pages/manager/orders_management_page.dart';
+import 'sales_create_order_page.dart';
 
-/// Sales Orders Page - với tabs theo trạng thái
+/// Sales Orders Page - dùng lại UI order list của manager nhưng filter theo sale_id.
 class SalesOrdersPage extends ConsumerStatefulWidget {
   const SalesOrdersPage({super.key});
 
@@ -17,434 +14,448 @@ class SalesOrdersPage extends ConsumerStatefulWidget {
   ConsumerState<SalesOrdersPage> createState() => _SalesOrdersPageState();
 }
 
-class _SalesOrdersPageState extends ConsumerState<SalesOrdersPage> with SingleTickerProviderStateMixin {
+class _SalesOrdersPageState extends ConsumerState<SalesOrdersPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   DateTimeRange? _dateFilter;
-  
+  int _refreshSeed = 0;
+  bool _collapseHero = false;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
 
+  Future<void> _openCreateOrderPage() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (context) => const SalesCreateOrderPage()),
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _tabController.animateTo(0);
+      _refreshSeed++;
+    });
+  }
+
+  String _buildKey(String tab) {
+    final start = _dateFilter?.start.toIso8601String() ?? 'none';
+    final end = _dateFilter?.end.toIso8601String() ?? 'none';
+    return 'sales-$tab-$_refreshSeed-$start-$end';
+  }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    VoidCallback? onTap,
+    bool outlined = false,
+  }) {
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: outlined ? Colors.transparent : color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(outlined ? 0.45 : 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) return chip;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: chip,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(currentUserProvider);
+    final salesName = user?.name?.trim().isNotEmpty == true
+        ? user!.name!.trim()
+        : 'Nhân viên sale';
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification.metrics.axis != Axis.vertical) return false;
+            final shouldCollapse = notification.metrics.pixels > 64;
+            if (shouldCollapse != _collapseHero) {
+              setState(() => _collapseHero = shouldCollapse);
+            }
+            return false;
+          },
+          child: Column(
+            children: [
             Container(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
-              color: Theme.of(context).colorScheme.surface,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.teal.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.receipt_long, color: Colors.teal.shade700, size: 24),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text('Đơn hàng của tôi', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Date filter
-                  GestureDetector(
-                    onTap: () async {
-                      final picked = await showQuickDateRangePicker(context, current: _dateFilter);
-                      if (picked != null) {
-                        setState(() {
-                          _dateFilter = picked.start.year == 1970 ? null : picked;
-                        });
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  AnimatedCrossFade(
+                    duration: const Duration(milliseconds: 220),
+                    crossFadeState: _collapseHero
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                    firstChild: Container(
+                      padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: _dateFilter != null ? Colors.teal.shade50 : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(10),
-                        border: _dateFilter != null ? Border.all(color: Colors.teal.shade300) : null,
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.teal.shade700,
+                            Colors.green.shade600,
+                            Colors.orange.shade400,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.teal.withOpacity(0.18),
+                            blurRadius: 22,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.16),
+                                        borderRadius: BorderRadius.circular(999),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.18),
+                                        ),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.tune,
+                                            color: Colors.white,
+                                            size: 14,
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'Sales Order Hub',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    const Text(
+                                      'Đơn hàng của tôi',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w800,
+                                        height: 1.05,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Theo dõi pipeline đơn hàng, sửa đơn chờ duyệt và tạo đơn mới nhanh cho $salesName.',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.92),
+                                        fontSize: 13,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.14),
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: const Icon(
+                                  Icons.receipt_long,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              _buildInfoChip(
+                                icon: Icons.person,
+                                label: salesName,
+                                color: Colors.white,
+                                outlined: true,
+                              ),
+                              _buildInfoChip(
+                                icon: Icons.layers,
+                                label: '5 trạng thái theo dõi',
+                                color: Colors.white,
+                                outlined: true,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildInfoChip(
+                                  icon: Icons.calendar_today,
+                                  label: _dateFilter != null
+                                      ? getDateRangeLabel(_dateFilter!)
+                                      : 'Lọc theo ngày',
+                                  color: Colors.white,
+                                  outlined: true,
+                                  onTap: () async {
+                                    final picked = await showQuickDateRangePicker(
+                                      context,
+                                      current: _dateFilter,
+                                    );
+                                    if (picked != null) {
+                                      setState(() {
+                                        _dateFilter = picked.start.year == 1970
+                                            ? null
+                                            : picked;
+                                      });
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              FilledButton.icon(
+                                onPressed: _openCreateOrderPage,
+                                icon: const Icon(Icons.add_shopping_cart),
+                                label: const Text('Tạo đơn'),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.teal.shade800,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    secondChild: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.teal.shade700, Colors.green.shade600],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.calendar_today, size: 16,
-                              color: _dateFilter != null ? Colors.teal.shade700 : Colors.grey.shade600),
-                          const SizedBox(width: 6),
-                          Text(
-                            _dateFilter != null ? getDateRangeLabel(_dateFilter!) : 'Lọc theo ngày',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: _dateFilter != null ? Colors.teal.shade700 : Colors.grey.shade600,
-                              fontWeight: _dateFilter != null ? FontWeight.w600 : FontWeight.normal,
+                          const Icon(Icons.receipt_long, color: Colors.white, size: 18),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Đơn hàng của tôi',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
-                          if (_dateFilter != null) ...[
-                            const SizedBox(width: 6),
-                            GestureDetector(
-                              onTap: () => setState(() => _dateFilter = null),
-                              child: Icon(Icons.close, size: 16, color: Colors.teal.shade700),
+                          TextButton.icon(
+                            onPressed: _openCreateOrderPage,
+                            icon: const Icon(Icons.add_shopping_cart, size: 16),
+                            label: const Text('Tạo đơn'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: TabBar(
+                        controller: _tabController,
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.start,
+                        labelColor: Colors.teal.shade800,
+                        unselectedLabelColor: Colors.grey.shade700,
+                        indicator: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
                           ],
+                        ),
+                        indicatorPadding: EdgeInsets.zero,
+                        labelStyle: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                        dividerColor: Colors.transparent,
+                        tabs: const [
+                          Tab(text: 'Tất cả'),
+                          Tab(text: 'Chờ duyệt'),
+                          Tab(text: 'Đã duyệt'),
+                          Tab(text: 'Đang giao'),
+                          Tab(text: 'Hoàn thành'),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    labelColor: Colors.teal.shade700,
-                    unselectedLabelColor: Colors.grey.shade600,
-                    indicatorColor: Colors.teal,
-                    indicatorWeight: 3,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                    tabs: const [
-                      Tab(text: 'Tất cả'),
-                      Tab(text: 'Chờ duyệt'),
-                      Tab(text: 'Đã duyệt'),
-                      Tab(text: 'Đang giao'),
-                      Tab(text: 'Hoàn thành'),
-                    ],
-                  ),
                 ],
               ),
             ),
-
-            // Tab content
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  SalesOrderList(statusFilter: null, dateFilter: _dateFilter),
-                  SalesOrderList(statusFilter: 'pending_approval', dateFilter: _dateFilter),
-                  SalesOrderList(statusFilter: 'confirmed', dateFilter: _dateFilter),
-                  SalesOrderList(statusFilter: 'processing', dateFilter: _dateFilter),
-                  SalesOrderList(statusFilter: 'completed', dateFilter: _dateFilter),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Reusable order list widget with status filter
-class SalesOrderList extends ConsumerStatefulWidget {
-  final String? statusFilter;
-  final DateTimeRange? dateFilter;
-  const SalesOrderList({super.key, this.statusFilter, this.dateFilter});
-
-  @override
-  ConsumerState<SalesOrderList> createState() => _SalesOrderListState();
-}
-
-class _SalesOrderListState extends ConsumerState<SalesOrderList> {
-  List<Map<String, dynamic>> _orders = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadOrders();
-  }
-
-  @override
-  void didUpdateWidget(covariant SalesOrderList oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.dateFilter != widget.dateFilter) {
-      _loadOrders();
-    }
-  }
-
-  Future<void> _loadOrders() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      final user = ref.read(currentUserProvider);
-      final companyId = user?.companyId;
-      final userId = user?.id;
-
-      if (companyId == null) return;
-
-      final supabase = Supabase.instance.client;
-
-      var queryBuilder = supabase
-          .from('sales_orders')
-          .select('*, customers(name, phone, address)')
-          .eq('company_id', companyId)
-          .isFilter('rejected_at', null)
-          .eq('sale_id', userId ?? '');
-
-      if (widget.statusFilter != null) {
-        queryBuilder = queryBuilder.eq('status', widget.statusFilter!);
-      }
-
-      if (widget.dateFilter != null) {
-        queryBuilder = queryBuilder
-            .gte('created_at', widget.dateFilter!.start.toIso8601String())
-            .lte('created_at', widget.dateFilter!.end.add(const Duration(days: 1)).toIso8601String());
-      }
-
-      final data = await queryBuilder.order('created_at', ascending: false).limit(50);
-
-      setState(() {
-        _orders = List<Map<String, dynamic>>.from(data);
-        _isLoading = false;
-      });
-    } catch (e) {
-      AppLogger.error('Failed to load orders', e);
-      setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_orders.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
-              child: Icon(Icons.inbox, size: 48, color: Colors.grey.shade400),
-            ),
-            const SizedBox(height: 16),
-            Text('Chưa có đơn hàng nào', style: TextStyle(color: Colors.grey.shade600, fontSize: 16, fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            Text(
-              widget.statusFilter == null ? 'Tạo đơn hàng đầu tiên!' : 'Không có đơn ở trạng thái này',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadOrders,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _orders.length,
-        itemBuilder: (context, index) => _buildOrderCard(_orders[index]),
-      ),
-    );
-  }
-
-  Widget _buildOrderCard(Map<String, dynamic> order) {
-    final customer = order['customers'] as Map<String, dynamic>?;
-    final status = order['status'] ?? 'draft';
-    final deliveryStatus = order['delivery_status'] ?? 'pending';
-    final total = (order['total'] ?? 0).toDouble();
-    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: '₫');
-    final createdAt = DateTime.tryParse(order['created_at'] ?? '');
-
-    Color statusColor;
-    String statusText;
-    switch (status) {
-      case 'draft':
-        statusColor = Colors.grey;
-        statusText = 'Nháp';
-        break;
-      case 'pending':
-      case 'pending_approval':
-        statusColor = Colors.amber;
-        statusText = 'Chờ duyệt';
-        break;
-      case 'confirmed':
-        statusColor = Colors.blue;
-        statusText = 'Đã duyệt';
-        break;
-      case 'processing':
-        statusColor = Colors.purple;
-        statusText = 'Đang xử lý';
-        break;
-      case 'ready':
-        statusColor = Colors.indigo;
-        statusText = 'Sẵn sàng';
-        break;
-      case 'completed':
-        statusColor = Colors.green;
-        statusText = 'Hoàn thành';
-        break;
-      case 'cancelled':
-        statusColor = Colors.red;
-        statusText = 'Đã hủy';
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusText = status;
-    }
-
-    // Delivery status
-    String deliveryText = '';
-    IconData deliveryIcon = Icons.local_shipping_outlined;
-    Color deliveryColor = Colors.grey;
-    switch (deliveryStatus) {
-      case 'pending':
-        deliveryText = 'Chưa giao';
-        deliveryIcon = Icons.schedule;
-        deliveryColor = Colors.grey;
-        break;
-      case 'awaiting_pickup':
-        deliveryText = 'Chờ lấy hàng';
-        deliveryIcon = Icons.inventory;
-        deliveryColor = Colors.orange;
-        break;
-      case 'delivering':
-        deliveryText = 'Đang giao';
-        deliveryIcon = Icons.local_shipping;
-        deliveryColor = Colors.blue;
-        break;
-      case 'delivered':
-        deliveryText = 'Đã giao';
-        deliveryIcon = Icons.check_circle;
-        deliveryColor = Colors.green;
-        break;
-    }
-
-    return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.04), blurRadius: 10, offset: Offset(0, 4))],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Order number & status
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-                  child: Text(order['order_number'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                  child: Text(statusText, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-            
-            // Date
-            if (createdAt != null) ...[
-              const SizedBox(height: 8),
-              Text(DateFormat('dd/MM/yyyy HH:mm').format(createdAt), style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-            ],
-            
-            const SizedBox(height: 12),
-            Divider(color: Colors.grey.shade200, height: 1),
-            const SizedBox(height: 12),
-            
-            // Customer info
-            Row(
-              children: [
-                CustomerAvatar(
-                  seed: customer?['name'] ?? 'K',
-                  radius: 18,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(customer?['name'] ?? 'Khách hàng', style: const TextStyle(fontWeight: FontWeight.w600)),
-                      if (customer?['phone'] != null)
-                        Text(customer!['phone'], style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                    ],
+                  OrderListByStatus(
+                    key: ValueKey(_buildKey('all')),
+                    saleId: user?.id,
+                    dateFilter: _dateFilter,
+                    showManagementActions: false,
+                    showCreateButton: false,
+                    allowEdit: true,
+                    allowCancel: false,
+                    allowDelete: false,
                   ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Delivery status & Total
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: deliveryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                  OrderListByStatus(
+                    key: ValueKey(_buildKey('pending')),
+                    status: 'pending_approval',
+                    saleId: user?.id,
+                    dateFilter: _dateFilter,
+                    showManagementActions: false,
+                    showCreateButton: false,
+                    allowEdit: true,
+                    allowCancel: false,
+                    allowDelete: false,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(deliveryIcon, size: 14, color: deliveryColor),
-                      const SizedBox(width: 4),
-                      Text(deliveryText, style: TextStyle(fontSize: 11, color: deliveryColor, fontWeight: FontWeight.w500)),
-                    ],
+                  OrderListByStatus(
+                    key: ValueKey(_buildKey('approved')),
+                    statusList: const ['confirmed', 'ready'],
+                    saleId: user?.id,
+                    dateFilter: _dateFilter,
+                    showManagementActions: false,
+                    showCreateButton: false,
+                    allowEdit: false,
+                    allowCancel: false,
+                    allowDelete: false,
                   ),
-                ),
-                const Spacer(),
-                Text(currencyFormat.format(total), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green.shade700)),
-              ],
-            ),
-            
-            // Edit button for draft/pending orders
-            if (status == 'draft' || status == 'pending' || status == 'pending_approval') ...[
-              const SizedBox(height: 12),
-              Divider(color: Colors.grey.shade200, height: 1),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => _editOrder(order),
-                    icon: Icon(Icons.edit_outlined, size: 18, color: Colors.blue.shade700),
-                    label: Text('Sửa đơn', style: TextStyle(color: Colors.blue.shade700)),
+                  OrderListByStatus(
+                    key: ValueKey(_buildKey('delivering')),
+                    statusList: const ['processing', 'completed'],
+                    deliveryStatusNotIn: const ['delivered'],
+                    saleId: user?.id,
+                    dateFilter: _dateFilter,
+                    showManagementActions: false,
+                    showCreateButton: false,
+                    allowEdit: false,
+                    allowCancel: false,
+                    allowDelete: false,
+                  ),
+                  OrderListByStatus(
+                    key: ValueKey(_buildKey('completed')),
+                    status: 'completed',
+                    deliveryStatus: 'delivered',
+                    saleId: user?.id,
+                    dateFilter: _dateFilter,
+                    showManagementActions: false,
+                    showCreateButton: false,
+                    allowEdit: false,
+                    allowCancel: false,
+                    allowDelete: false,
                   ),
                 ],
               ),
-            ],
+            ),
           ],
+          ),
         ),
       ),
     );
   }
-  
-  void _editOrder(Map<String, dynamic> order) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SalesCreateOrderFormPage(
-          existingOrder: order,
-          preselectedCustomer: order['customers'],
-        ),
-      ),
-    ).then((result) {
-      if (result == true) {
-        _loadOrders();
-      }
-    });
-  }
 }
+
 

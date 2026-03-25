@@ -24,7 +24,7 @@ class UnifiedTaskCard extends StatelessWidget {
   final bool showProgress;
   final bool showCompany;
 
-  UnifiedTaskCard({
+  const UnifiedTaskCard({
     super.key,
     required this.task,
     this.onTap,

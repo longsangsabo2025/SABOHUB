@@ -553,7 +553,7 @@ class _CEOReportsPageState extends ConsumerState<CEOReportsPage> {
 /// CEO Settings Page
 /// System-wide configuration and preferences
 class CEOSettingsPage extends ConsumerWidget {
-  CEOSettingsPage({super.key});
+  const CEOSettingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

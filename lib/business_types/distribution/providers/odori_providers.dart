@@ -709,6 +709,8 @@ final productSamplesProvider = FutureProvider.autoDispose
 
   if (filters.status != null) {
     query = query.eq('status', filters.status!);
+  } else {
+    query = query.or('status.is.null,status.neq.cancelled');
   }
   if (filters.customerId != null) {
     query = query.eq('customer_id', filters.customerId!);

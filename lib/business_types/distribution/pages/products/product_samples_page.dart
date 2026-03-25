@@ -9,7 +9,14 @@ import '../../providers/odori_providers.dart';
 import '../../../../providers/auth_provider.dart';
 
 class ProductSamplesPage extends ConsumerStatefulWidget {
-  const ProductSamplesPage({super.key});
+  const ProductSamplesPage({
+    super.key,
+    this.initialCustomerId,
+    this.initialCustomerName,
+  });
+
+  final String? initialCustomerId;
+  final String? initialCustomerName;
 
   @override
   ConsumerState<ProductSamplesPage> createState() => _ProductSamplesPageState();
@@ -18,6 +25,8 @@ class ProductSamplesPage extends ConsumerStatefulWidget {
 class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
   String? _statusFilter;
   final _searchController = TextEditingController();
+
+  String? get _customerIdFilter => widget.initialCustomerId;
 
   @override
   void dispose() {
@@ -29,13 +38,32 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
   Widget build(BuildContext context) {
     final samplesAsync = ref.watch(productSamplesProvider(ProductSampleFilters(
       status: _statusFilter,
+      customerId: _customerIdFilter,
       search: _searchController.text.isEmpty ? null : _searchController.text,
     )));
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Mẫu sản phẩm'),
+      ),
       body: Column(
         children: [
           // Search bar
+          if ((widget.initialCustomerName ?? '').isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Khach hang: ${widget.initialCustomerName}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
@@ -74,6 +102,8 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
                   _buildFilterChip('Có phản hồi', 'feedback_received'),
                   const SizedBox(width: 8),
                   _buildFilterChip('Đã mua', 'converted'),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Đã hủy', 'cancelled'),
                 ],
               ),
             ),
@@ -92,7 +122,9 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
                     Text('Lỗi: $error'),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () => ref.refresh(productSamplesProvider(const ProductSampleFilters())),
+                      onPressed: () => ref.refresh(productSamplesProvider(ProductSampleFilters(
+                        customerId: _customerIdFilter,
+                      ))),
                       child: const Text('Thử lại'),
                     ),
                   ],
@@ -118,6 +150,7 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
                 }
                 return RefreshIndicator(
                   onRefresh: () => ref.refresh(productSamplesProvider(ProductSampleFilters(
+                    customerId: _customerIdFilter,
                     status: _statusFilter,
                     search: _searchController.text.isEmpty ? null : _searchController.text,
                   )).future),
@@ -227,6 +260,15 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
                 Navigator.pop(context);
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.cancel_outlined, color: Colors.red),
+              title: const Text('Đã hủy'),
+              trailing: _statusFilter == 'cancelled' ? const Icon(Icons.check, color: Colors.blue) : null,
+              onTap: () {
+                setState(() => _statusFilter = 'cancelled');
+                Navigator.pop(context);
+              },
+            ),
             const SizedBox(height: 16),
           ],
         ),
@@ -237,7 +279,12 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
   void _showAddSampleSheet() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const _AddSamplePage()),
+      MaterialPageRoute(
+        builder: (_) => _AddSamplePage(
+          initialCustomerId: widget.initialCustomerId,
+          initialCustomerName: widget.initialCustomerName,
+        ),
+      ),
     ).then((result) {
       if (result == true) {
         ref.invalidate(productSamplesProvider);
@@ -422,6 +469,11 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
         textColor = Colors.teal;
         text = 'Đã mua';
         break;
+      case 'cancelled':
+        bgColor = Colors.red.withValues(alpha: 0.1);
+        textColor = Colors.red;
+        text = 'Đã hủy';
+        break;
       default:
         bgColor = Colors.grey.withValues(alpha: 0.1);
         textColor = Colors.grey;
@@ -442,12 +494,20 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
   }
 
   Future<void> _updateSampleStatus(ProductSample sample) async {
-    final statuses = ['pending', 'delivered', 'received', 'feedback_received', 'converted'];
-    final statusLabels = ['Chờ gửi', 'Đã gửi', 'Đã nhận', 'Có phản hồi', 'Đã mua hàng'];
+    final statusOptions = <MapEntry<String, String>>[
+      const MapEntry('pending', 'Chờ gửi'),
+      const MapEntry('delivered', 'Đã gửi'),
+      const MapEntry('received', 'Đã nhận'),
+      const MapEntry('feedback_received', 'Có phản hồi'),
+      if (sample.orderId != null && sample.orderId!.isNotEmpty)
+        const MapEntry('converted', 'Đã mua hàng'),
+      const MapEntry('cancelled', 'Đã hủy'),
+    ];
 
     String? selectedStatus = sample.status;
     int? feedbackRating = sample.feedbackRating;
     final feedbackController = TextEditingController(text: sample.feedbackNotes);
+    final cancelReasonController = TextEditingController();
 
     final result = await showDialog<Map<String, dynamic>?>(
       context: context,
@@ -461,10 +521,10 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
               children: [
                 const Text('Trạng thái:', style: TextStyle(fontWeight: FontWeight.w500)),
                 const SizedBox(height: 8),
-                ...List.generate(statuses.length, (index) {
+                ...List.generate(statusOptions.length, (index) {
                   return RadioListTile<String>(
-                    title: Text(statusLabels[index]),
-                    value: statuses[index],
+                    title: Text(statusOptions[index].value),
+                    value: statusOptions[index].key,
                     groupValue: selectedStatus,
                     contentPadding: EdgeInsets.zero,
                     onChanged: (value) {
@@ -501,6 +561,17 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
                     maxLines: 3,
                   ),
                 ],
+                if (selectedStatus == 'cancelled') ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: cancelReasonController,
+                    decoration: const InputDecoration(
+                      labelText: 'Lý do hủy gửi mẫu',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                  ),
+                ],
               ],
             ),
           ),
@@ -515,6 +586,7 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
                   'status': selectedStatus,
                   'feedbackRating': feedbackRating,
                   'feedbackNotes': feedbackController.text,
+                  'cancelReason': cancelReasonController.text,
                 });
               },
               child: const Text('Lưu'),
@@ -527,6 +599,18 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
     if (result == null) return;
 
     try {
+      if (result['status'] == 'converted' && (sample.orderId == null || sample.orderId!.isEmpty)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Mẫu này chưa có đơn hàng liên kết nên không thể chuyển sang trạng thái đã mua.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
       final updateData = <String, dynamic>{
         'status': result['status'],
         'updated_at': DateTime.now().toIso8601String(),
@@ -559,6 +643,26 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
                 .eq('id', sample.orderId!);
           }
         }
+      } else if (result['status'] == 'cancelled') {
+        updateData['converted_to_order'] = false;
+        if (result['cancelReason']?.isNotEmpty == true) {
+          updateData['notes'] = result['cancelReason'];
+        }
+
+        if (sample.orderId != null && sample.orderId!.isNotEmpty) {
+          final cancelled = await _cancelLinkedSampleOrder(
+            sample.orderId!,
+            reason: result['cancelReason']?.toString(),
+          );
+          if (!cancelled && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Đơn hàng liên kết đã ở trạng thái xử lý sâu, không tự động hủy.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
       }
 
       await Supabase.instance.client
@@ -580,6 +684,46 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
         );
       }
     }
+  }
+
+  Future<bool> _cancelLinkedSampleOrder(String orderId, {String? reason}) async {
+    final client = Supabase.instance.client;
+    final order = await client
+        .from('sales_orders')
+        .select('id, status, order_type')
+        .eq('id', orderId)
+        .maybeSingle();
+
+    if (order == null) return false;
+
+    final status = (order['status'] ?? '').toString();
+    final orderType = (order['order_type'] ?? '').toString();
+
+    if (status == 'cancelled') return true;
+
+    const cancellableStatuses = {'draft', 'pending_approval'};
+    if (!cancellableStatuses.contains(status) || orderType != 'sample') {
+      return false;
+    }
+
+    final note = (reason != null && reason.trim().isNotEmpty)
+        ? '[MẪU SP HỦY] ${reason.trim()}'
+        : '[MẪU SP HỦY] Đồng bộ từ trạng thái mẫu sản phẩm';
+
+    final updated = await client
+        .from('sales_orders')
+        .update({
+          'status': 'cancelled',
+          'rejected_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+          'notes': note,
+        })
+        .eq('id', orderId)
+        .inFilter('status', ['draft', 'pending_approval'])
+        .eq('order_type', 'sample')
+        .select('id');
+
+    return (updated as List).isNotEmpty;
   }
 
   Future<void> _deleteSample(ProductSample sample) async {
@@ -605,16 +749,31 @@ class _ProductSamplesPageState extends ConsumerState<ProductSamplesPage> {
     if (confirm != true) return;
 
     try {
+      if (sample.orderId != null && sample.orderId!.isNotEmpty) {
+        final cancelled = await _cancelLinkedSampleOrder(sample.orderId!);
+        if (!cancelled && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đơn hàng liên kết đã ở trạng thái xử lý sâu, không tự động hủy.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+
       await Supabase.instance.client
           .from('product_samples')
-          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
+          .update({
+            'status': 'cancelled',
+            'updated_at': DateTime.now().toIso8601String(),
+          })
           .eq('id', sample.id);
 
       ref.invalidate(productSamplesProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã xóa'), backgroundColor: Colors.orange),
+          const SnackBar(content: Text('Đã hủy mẫu sản phẩm'), backgroundColor: Colors.orange),
         );
       }
     } catch (e) {
@@ -753,6 +912,11 @@ class _SampleCard extends StatelessWidget {
         textColor = Colors.teal;
         text = 'Đã mua';
         break;
+      case 'cancelled':
+        bgColor = Colors.red.withValues(alpha: 0.1);
+        textColor = Colors.red;
+        text = 'Đã hủy';
+        break;
       default:
         bgColor = Colors.grey.withValues(alpha: 0.1);
         textColor = Colors.grey;
@@ -777,7 +941,13 @@ class _SampleCard extends StatelessWidget {
 // ADD SAMPLE PAGE
 // ============================================================================
 class _AddSamplePage extends ConsumerStatefulWidget {
-  const _AddSamplePage();
+  const _AddSamplePage({
+    this.initialCustomerId,
+    this.initialCustomerName,
+  });
+
+  final String? initialCustomerId;
+  final String? initialCustomerName;
 
   @override
   ConsumerState<_AddSamplePage> createState() => _AddSamplePageState();
@@ -803,6 +973,7 @@ class _AddSamplePageState extends ConsumerState<_AddSamplePage> {
   Widget build(BuildContext context) {
     final productsAsync = ref.watch(allProductsProvider);
     final customersAsync = ref.watch(allCustomersProvider);
+    final hasFixedCustomer = (widget.initialCustomerId ?? '').isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -845,22 +1016,37 @@ class _AddSamplePageState extends ConsumerState<_AddSamplePage> {
             // Customer selection
             const Text('Khách hàng', style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
-            customersAsync.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('Lỗi: $e'),
-              data: (customers) => DropdownButtonFormField<OdoriCustomer>(
-                value: _selectedCustomer,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  hintText: 'Chọn khách hàng (không bắt buộc)',
+            if (hasFixedCustomer)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.grey.shade100,
                 ),
-                items: customers.map((c) => DropdownMenuItem(
-                  value: c,
-                  child: Text(c.name, overflow: TextOverflow.ellipsis),
-                )).toList(),
-                onChanged: (value) => setState(() => _selectedCustomer = value),
+                child: Text(
+                  widget.initialCustomerName ?? 'Khách hàng đã chọn',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              )
+            else
+              customersAsync.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text('Lỗi: $e'),
+                data: (customers) => DropdownButtonFormField<OdoriCustomer>(
+                  value: _selectedCustomer,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    hintText: 'Chọn khách hàng (không bắt buộc)',
+                  ),
+                  items: customers.map((c) => DropdownMenuItem(
+                    value: c,
+                    child: Text(c.name, overflow: TextOverflow.ellipsis),
+                  )).toList(),
+                  onChanged: (value) => setState(() => _selectedCustomer = value),
+                ),
               ),
-            ),
             const SizedBox(height: 16),
 
             // Quantity and unit
@@ -965,7 +1151,7 @@ class _AddSamplePageState extends ConsumerState<_AddSamplePage> {
         'product_id': _selectedProduct!.id,
         'product_name': _selectedProduct!.name,
         'product_sku': _selectedProduct!.sku,
-        'customer_id': _selectedCustomer?.id,
+        'customer_id': widget.initialCustomerId ?? _selectedCustomer?.id,
         'quantity': int.parse(_quantityController.text),
         'unit': _unit,
         'sent_date': DateTime.now().toIso8601String(),

@@ -8,7 +8,7 @@ import '../../providers/auth_provider.dart';
 
 /// Manager Staff Page - Show all employees in manager's company
 class ManagerStaffPage extends ConsumerStatefulWidget {
-  ManagerStaffPage({super.key});
+  const ManagerStaffPage({super.key});
 
   @override
   ConsumerState<ManagerStaffPage> createState() =>

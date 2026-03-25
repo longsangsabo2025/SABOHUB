@@ -69,9 +69,9 @@ class _AccountsReceivablePageState
 
       final supabase = Supabase.instance.client;
 
-      // Load unpaid sales orders first (needed for aging AND debt calculation)
+      // Build debt from source transactions to avoid stale cached totals.
       List<Map<String, dynamic>> soAging = [];
-      Map<String, double> soDebtByCustomer = {};
+      final Map<String, double> debtByCustomer = {};
       try {
         final unpaidOrders = await supabase
             .from('sales_orders')
@@ -86,7 +86,7 @@ class _AccountsReceivablePageState
           final balance = total - paid;
           if (balance <= 0) continue;
           final custId = o['customer_id']?.toString() ?? '';
-          soDebtByCustomer[custId] = (soDebtByCustomer[custId] ?? 0) + balance;
+          debtByCustomer[custId] = (debtByCustomer[custId] ?? 0) + balance;
           final dateStr = (o['order_date'] ?? o['created_at'])?.toString();
           if (dateStr == null) continue;
           final date = DateTime.tryParse(dateStr);
@@ -113,46 +113,52 @@ class _AccountsReceivablePageState
         AppLogger.warn('Sales order aging not available: $e');
       }
 
-      // Load customers with total_debt > 0 (DB trigger keeps this in sync)
-      final data = await supabase
-          .from('customers')
-          .select('id, name, code, phone, address, total_debt, credit_limit, payment_terms')
-          .eq('company_id', companyId)
-          .gt('total_debt', 0)
-          .order('total_debt', ascending: false)
-          .limit(500);
+      // Add manual receivables (opening debt) to the same debt map.
+      try {
+        final manualReceivables = await supabase
+            .from('receivables')
+            .select('customer_id, original_amount, paid_amount, write_off_amount')
+            .eq('company_id', companyId)
+            .eq('reference_type', 'manual')
+            .neq('status', 'paid');
 
-      final customerMap = <String, Map<String, dynamic>>{};
-      for (final c in data) {
-        customerMap[c['id']?.toString() ?? ''] = Map<String, dynamic>.from(c);
+        for (final r in manualReceivables) {
+          final original = (r['original_amount'] ?? 0).toDouble();
+          final paid = (r['paid_amount'] ?? 0).toDouble();
+          final writeOff = (r['write_off_amount'] ?? 0).toDouble();
+          final balance = original - paid - writeOff;
+          if (balance <= 0) continue;
+
+          final custId = r['customer_id']?.toString() ?? '';
+          if (custId.isEmpty) continue;
+          debtByCustomer[custId] = (debtByCustomer[custId] ?? 0) + balance;
+        }
+      } catch (e) {
+        AppLogger.warn('Manual receivables load failed: $e');
       }
 
-      // Safety net: find customers with SO debt but not in the list (in case trigger didn't fire)
-      final missingIds = soDebtByCustomer.keys
-          .where((id) => id.isNotEmpty && !customerMap.containsKey(id))
-          .toList();
+      final customerMap = <String, Map<String, dynamic>>{};
 
-      if (missingIds.isNotEmpty) {
-        try {
-          final extra = await supabase
-              .from('customers')
-              .select('id, name, code, phone, address, total_debt, credit_limit, payment_terms')
-              .eq('company_id', companyId)
-              .inFilter('id', missingIds);
-          for (final c in extra) {
-            final cId = c['id']?.toString() ?? '';
-            final row = Map<String, dynamic>.from(c);
-            // Use computed SO debt as total_debt
-            row['total_debt'] = soDebtByCustomer[cId] ?? 0;
-            customerMap[cId] = row;
-          }
-        } catch (e) {
-          AppLogger.warn('Extra customer load failed: $e');
+      final customerIds = debtByCustomer.keys.where((id) => id.isNotEmpty).toList();
+      if (customerIds.isNotEmpty) {
+        final data = await supabase
+            .from('customers')
+            .select('id, name, code, phone, address, total_debt, credit_limit, payment_terms')
+            .eq('company_id', companyId)
+            .inFilter('id', customerIds);
+
+        for (final c in data) {
+          final cId = c['id']?.toString() ?? '';
+          if (cId.isEmpty) continue;
+          final row = Map<String, dynamic>.from(c);
+          row['total_debt'] = debtByCustomer[cId] ?? 0;
+          customerMap[cId] = row;
         }
       }
 
       // Build final sorted list
       final customerList = customerMap.values.toList()
+        ..removeWhere((c) => ((c['total_debt'] ?? 0) as num) <= 0)
         ..sort((a, b) => ((b['total_debt'] ?? 0) as num).compareTo((a['total_debt'] ?? 0) as num));
 
       // Load aging data from receivables view

@@ -133,7 +133,11 @@ class _SalesDashboardPageState extends ConsumerState<SalesDashboardPage> {
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [Colors.orange.shade700, Colors.orange.shade500],
+                            colors: [
+                              Colors.orange.shade700,
+                              Colors.deepOrange.shade500,
+                              Colors.teal.shade500,
+                            ],
                           ),
                           borderRadius: const BorderRadius.only(
                             bottomLeft: Radius.circular(32),

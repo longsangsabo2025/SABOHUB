@@ -104,12 +104,26 @@ class OrderListByStatus extends ConsumerStatefulWidget {
   final List<String>? statusList;
   final String? deliveryStatus;
   final List<String>? deliveryStatusNotIn;
+  final String? saleId;
+  final DateTimeRange? dateFilter;
+  final bool showManagementActions;
+  final bool showCreateButton;
+  final bool allowEdit;
+  final bool allowCancel;
+  final bool allowDelete;
   const OrderListByStatus({
     super.key,
     this.status,
     this.statusList,
     this.deliveryStatus,
     this.deliveryStatusNotIn,
+    this.saleId,
+    this.dateFilter,
+    this.showManagementActions = true,
+    this.showCreateButton = true,
+    this.allowEdit = true,
+    this.allowCancel = true,
+    this.allowDelete = true,
   });
 
   @override
@@ -195,6 +209,10 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
           .from('sales_orders')
           .select('id, total')
           .eq('company_id', user.companyId!);
+
+      if (widget.saleId != null) {
+        query = query.eq('sale_id', widget.saleId!);
+      }
       
       // Apply status filters
       if (widget.statusList != null) {
@@ -209,6 +227,12 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
         for (final ds in widget.deliveryStatusNotIn!) {
           query = query.neq('delivery_status', ds);
         }
+      }
+
+      if (widget.dateFilter != null) {
+        query = query
+            .gte('created_at', widget.dateFilter!.start.toIso8601String())
+            .lt('created_at', widget.dateFilter!.end.add(const Duration(days: 1)).toIso8601String());
       }
       
       final resp = await query;
@@ -247,6 +271,10 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
           .from('sales_orders')
           .select('*, customers!inner(name, address, phone), sales_order_items(*, products(name, sku, image_url))')
           .eq('company_id', user.companyId!);
+
+      if (widget.saleId != null) {
+        query = query.eq('sale_id', widget.saleId!);
+      }
       
       // Apply status filters
       if (widget.statusList != null) {
@@ -261,6 +289,12 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
         for (final ds in widget.deliveryStatusNotIn!) {
           query = query.neq('delivery_status', ds);
         }
+      }
+
+      if (widget.dateFilter != null) {
+        query = query
+            .gte('created_at', widget.dateFilter!.start.toIso8601String())
+            .lt('created_at', widget.dateFilter!.end.add(const Duration(days: 1)).toIso8601String());
       }
 
       if (_searchQuery.isNotEmpty) {
@@ -302,6 +336,10 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
           .from('sales_orders')
           .select('*, customers!inner(name, address, phone), sales_order_items(*, products(name, sku, image_url))')
           .eq('company_id', user.companyId!);
+
+      if (widget.saleId != null) {
+        query = query.eq('sale_id', widget.saleId!);
+      }
       
       // Apply status filters
       if (widget.statusList != null) {
@@ -316,6 +354,12 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
         for (final ds in widget.deliveryStatusNotIn!) {
           query = query.neq('delivery_status', ds);
         }
+      }
+
+      if (widget.dateFilter != null) {
+        query = query
+            .gte('created_at', widget.dateFilter!.start.toIso8601String())
+            .lt('created_at', widget.dateFilter!.end.add(const Duration(days: 1)).toIso8601String());
       }
 
       if (_searchQuery.isNotEmpty) {
@@ -773,7 +817,7 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
         ),
 
         // FAB for creating new order
-        if (widget.status == 'pending_approval')
+        if (widget.showCreateButton && widget.status == 'pending_approval')
           Positioned(
             right: 16,
             bottom: 16,
@@ -997,6 +1041,10 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
   }
 
   List<Widget> _buildActionButtons(BuildContext context, OdoriSalesOrder order) {
+    if (!widget.showManagementActions) {
+      return [];
+    }
+
     switch (widget.status) {
       case 'pending_approval':
         return [
@@ -1088,12 +1136,12 @@ class _OrderListByStatusState extends ConsumerState<OrderListByStatus> {
       builder: (context) => OrderDetailSheet(
         order: order,
         currencyFormat: currencyFormat,
-        onApprove: widget.status == 'pending_approval' ? () => _approveOrder(order) : null,
-        onReject: widget.status == 'pending_approval' ? () => _showRejectDialog(context, order) : null,
-        onUpdateStatus: (newStatus) => _updateOrderStatus(order, newStatus),
-        onEdit: _canEdit(order.status) ? () => _editOrder(context, order) : null,
-        onCancel: _canCancel(order.status) ? () => _showCancelDialog(context, order) : null,
-        onDelete: _canDelete(order.status) ? () => _showDeleteConfirmation(context, order) : null,
+        onApprove: widget.showManagementActions && widget.status == 'pending_approval' ? () => _approveOrder(order) : null,
+        onReject: widget.showManagementActions && widget.status == 'pending_approval' ? () => _showRejectDialog(context, order) : null,
+        onUpdateStatus: widget.showManagementActions ? (newStatus) => _updateOrderStatus(order, newStatus) : null,
+        onEdit: widget.allowEdit && _canEdit(order.status) ? () => _editOrder(context, order) : null,
+        onCancel: widget.allowCancel && _canCancel(order.status) ? () => _showCancelDialog(context, order) : null,
+        onDelete: widget.allowDelete && _canDelete(order.status) ? () => _showDeleteConfirmation(context, order) : null,
       ),
     );
   }
@@ -2026,3 +2074,4 @@ class OrderDetailSheet extends StatelessWidget {
     }
   }
 }
+

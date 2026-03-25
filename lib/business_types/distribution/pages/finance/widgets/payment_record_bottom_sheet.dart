@@ -420,6 +420,7 @@ void showReceivablePaymentDialog({
                       if (sheetContext.mounted) {
                         Navigator.pop(sheetContext);
                         await onSuccess();
+                        if (!sheetContext.mounted) return;
                         ScaffoldMessenger.of(sheetContext).showSnackBar(
                           SnackBar(
                             content: Row(

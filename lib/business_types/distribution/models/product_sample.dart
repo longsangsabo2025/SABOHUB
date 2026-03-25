@@ -14,7 +14,7 @@ class ProductSample {
   final String? sentByName;
   final DateTime? receivedDate;
   final String? receivedBy;
-  final String status; // pending, delivered, received, feedback_received, converted
+  final String status; // pending, delivered, received, feedback_received, converted, cancelled
   final int? feedbackRating; // 1-5
   final String? feedbackNotes;
   final DateTime? feedbackDate;
@@ -65,6 +65,8 @@ class ProductSample {
         return 'Có phản hồi';
       case 'converted':
         return 'Đã mua hàng';
+      case 'cancelled':
+        return 'Đã hủy';
       default:
         return status;
     }
@@ -83,6 +85,8 @@ class ProductSample {
         return 'purple';
       case 'converted':
         return 'teal';
+      case 'cancelled':
+        return 'red';
       default:
         return 'grey';
     }

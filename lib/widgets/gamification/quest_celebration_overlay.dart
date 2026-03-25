@@ -17,7 +17,7 @@ class QuestCelebrationOverlay extends StatefulWidget {
   final int? tokenEarned;
   final VoidCallback? onDismiss;
 
-  QuestCelebrationOverlay({
+  const QuestCelebrationOverlay({
     super.key,
     required this.type,
     required this.title,

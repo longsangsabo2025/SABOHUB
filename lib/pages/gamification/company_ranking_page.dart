@@ -4,7 +4,7 @@ import '../../models/gamification/gamification_models.dart';
 import '../../providers/gamification_provider.dart';
 
 class CompanyRankingPage extends ConsumerWidget {
-  CompanyRankingPage({super.key});
+  const CompanyRankingPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

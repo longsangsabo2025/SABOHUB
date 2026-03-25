@@ -14,7 +14,7 @@ import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 // ──────────────────────────────────────────────
 
 class SaboTokenAnalyticsPage extends ConsumerStatefulWidget {
-  SaboTokenAnalyticsPage({super.key});
+  const SaboTokenAnalyticsPage({super.key});
 
   @override
   ConsumerState<SaboTokenAnalyticsPage> createState() =>

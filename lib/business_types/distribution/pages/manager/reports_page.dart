@@ -659,15 +659,22 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
 
       final supabase = Supabase.instance.client;
 
-      // Get all unpaid/partial orders with customer info
-      // Include pending_transfer as it's also unpaid
+        // Get all unpaid orders with customer info
       final unpaidOrders = await supabase
           .from('sales_orders')
           .select('id, customer_id, total, paid_amount, created_at, payment_status, customers(name, phone, contact_person)')
           .eq('company_id', companyId)
           .neq('status', 'cancelled')
-          .inFilter('payment_status', ['unpaid', 'debt', 'partial', 'pending_transfer'])
+          .inFilter('payment_status', ['unpaid', 'partial', 'pending_transfer'])
           .order('created_at', ascending: false);
+
+        // Manual receivables are debt sources too (not tied to sales orders)
+        final manualReceivables = await supabase
+          .from('receivables')
+          .select('customer_id, original_amount, paid_amount, write_off_amount, due_date, customers(name, phone, code)')
+          .eq('company_id', companyId)
+          .eq('reference_type', 'manual')
+          .neq('status', 'paid');
 
       double totalReceivables = 0;
       double overdueAmount = 0;
@@ -678,6 +685,7 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
         final total = (order['total'] ?? 0).toDouble();
         final paid = (order['paid_amount'] ?? 0).toDouble();
         final remaining = total - paid;
+        if (remaining <= 0) continue;
         totalReceivables += remaining;
 
         // Check if overdue (> 30 days)
@@ -707,6 +715,44 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
           }
           customerDebtMap[custId]!['total'] += remaining;
           customerDebtMap[custId]!['count'] += 1;
+        }
+      }
+
+      for (final recv in manualReceivables) {
+        final original = (recv['original_amount'] ?? 0).toDouble();
+        final paid = (recv['paid_amount'] ?? 0).toDouble();
+        final writeOff = (recv['write_off_amount'] ?? 0).toDouble();
+        final remaining = original - paid - writeOff;
+        if (remaining <= 0) continue;
+
+        totalReceivables += remaining;
+
+        final custId = recv['customer_id'] as String?;
+        final customerData = recv['customers'] as Map<String, dynamic>?;
+        final custName = customerData?['name'] as String? ??
+                        customerData?['code'] as String? ??
+                        customerData?['phone'] as String? ??
+                        'Khách hàng #${custId?.substring(0, 8) ?? 'N/A'}';
+
+        if (custId != null) {
+          if (!customerDebtMap.containsKey(custId)) {
+            customerDebtMap[custId] = {
+              'name': custName,
+              'total': 0.0,
+              'count': 0,
+              'oldestDate': recv['due_date'],
+            };
+          }
+          customerDebtMap[custId]!['total'] += remaining;
+          customerDebtMap[custId]!['count'] += 1;
+        }
+
+        final dueDateStr = recv['due_date']?.toString();
+        if (dueDateStr != null) {
+          final dueDate = DateTime.tryParse(dueDateStr);
+          if (dueDate != null && dueDate.isBefore(now)) {
+            overdueAmount += remaining;
+          }
         }
       }
 

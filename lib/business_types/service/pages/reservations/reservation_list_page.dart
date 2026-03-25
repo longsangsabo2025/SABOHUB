@@ -376,7 +376,7 @@ class _ReservationListPageState extends ConsumerState<ReservationListPage> {
         }
       },
       child: InkWell(
-        onTap: () => _showReservationDetail(context, r),
+        onTap: () => _showReservationDetail(r),
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -585,7 +585,7 @@ class _ReservationListPageState extends ConsumerState<ReservationListPage> {
   }
 
   // ─── Detail dialog ────────────────────────────────────
-  void _showReservationDetail(BuildContext context, Reservation r) {
+  void _showReservationDetail(Reservation r) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

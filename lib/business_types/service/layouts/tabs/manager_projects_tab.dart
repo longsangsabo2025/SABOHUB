@@ -11,13 +11,14 @@ import '../../../../providers/auth_provider.dart';
 import '../../../../providers/company_alerts_provider.dart';
 import '../../../../providers/company_provider.dart';
 import '../../../../providers/project_provider.dart';
-import '../../models/monthly_pnl.dart';
 import '../../pages/cashflow/daily_cashflow_import_page.dart';
 import '../../providers/monthly_pnl_provider.dart';
 import '../../services/service_number_formatters.dart';
 import 'widgets/project_detail_sheet.dart';
 
 class ManagerProjectsTab extends ConsumerStatefulWidget {
+  const ManagerProjectsTab({super.key});
+
   @override
   ConsumerState<ManagerProjectsTab> createState() => ManagerProjectsTabState();
 }
@@ -671,6 +672,7 @@ class ManagerProjectsTabState extends ConsumerState<ManagerProjectsTab> {
   }
 
   // ── Company Detail Bottom Sheet (legacy, kept for reference) ──
+  // ignore: unused_element
   void _showCompanyDetailBottomSheet(BuildContext context, Company c) {
     final typeColor = c.type.color;
     final isActive = c.status == 'active';
@@ -921,7 +923,6 @@ class ManagerProjectsTabState extends ConsumerState<ManagerProjectsTab> {
           );
         }
 
-        final records = summary['records'] as List<MonthlyPnl>;
         final latestRevenue = summary['latestNetRevenue'] as double;
         final latestProfit = summary['latestNetProfit'] as double;
         final latestMargin = summary['latestNetMargin'] as double;

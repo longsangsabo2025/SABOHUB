@@ -37,8 +37,26 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kế hoạch hành trình'),
+        title: const Text('Hành trình bán hàng'),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.teal.shade700,
+                Colors.cyan.shade700,
+              ],
+            ),
+          ),
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: () => _showJourneyPlanActions(journeyPlanAsync.value),
+            tooltip: 'Tạo / quản lý hành trình',
+          ),
           // Map view button - only show when journey has stops
           if (journeyPlanAsync.value?.stops?.isNotEmpty == true)
             IconButton(
@@ -108,10 +126,17 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.teal.shade100,
+                    Colors.cyan.shade100,
+                  ],
+                ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.route, size: 64, color: Colors.blue.shade300),
+              child: Icon(Icons.route, size: 64, color: Colors.teal.shade700),
             ),
             const SizedBox(height: 24),
             Text(
@@ -128,6 +153,24 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
               style: TextStyle(color: Colors.grey[500], fontSize: 14),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.teal.shade50,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.teal.shade100),
+              ),
+              child: Text(
+                'Mẹo: ưu tiên khách nợ quá hạn và khách chưa ghé trong 7 ngày',
+                style: TextStyle(
+                  color: Colors.teal.shade800,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
             const SizedBox(height: 32),
             // Primary: Quick create from customers
             SizedBox(
@@ -137,7 +180,7 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
                 icon: const Icon(Icons.add_location_alt),
                 label: Text('Lên tuyến hôm nay'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: Colors.teal,
                   foregroundColor: Theme.of(context).colorScheme.surface,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -170,121 +213,156 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
   }
 
   Widget _buildJourneyHeader(JourneyPlan plan, AsyncValue<TodayVisitStats> statsAsync) {
-    final statusColor = _getStatusColor(plan.status);
     final statusText = _getStatusText(plan.status);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: statusColor.withAlpha(30),
-        border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  statusText,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.surface,
-                    fontWeight: FontWeight.bold,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.teal.shade600,
+              Colors.cyan.shade700,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.cyan.withAlpha(65),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface.withAlpha(36),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.surface.withAlpha(70),
+                    ),
                   ),
-                ),
-              ),
-              const Spacer(),
-              if (plan.routeName != null)
-                Chip(
-                  avatar: const Icon(Icons.route, size: 18),
-                  label: Text(plan.routeName!),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            DateFormat('EEEE, dd/MM/yyyy', 'vi').format(plan.planDate),
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _buildStatItem(
-                Icons.store,
-                '${plan.visitsCompleted}/${plan.totalVisitsPlanned}',
-                'Đã ghé thăm',
-              ),
-              const SizedBox(width: 24),
-              statsAsync.when(
-                data: (stats) => _buildStatItem(
-                  Icons.timer,
-                  '${stats.avgDurationMinutes} phút',
-                  'TB/điểm',
-                ),
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-              const SizedBox(width: 24),
-              statsAsync.when(
-                data: (stats) => _buildStatItem(
-                  Icons.attach_money,
-                  NumberFormat.compact().format(stats.totalOrderAmount),
-                  'Doanh số',
-                ),
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: plan.completionRate,
-            backgroundColor: Colors.grey[300],
-            valueColor: AlwaysStoppedAnimation(statusColor),
-          ),
-          const SizedBox(height: 8),
-          // Map + Optimize buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _openJourneyMap(plan),
-                  icon: const Icon(Icons.map, size: 18),
-                  label: const Text('Bản đồ'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blue.shade700,
-                    side: BorderSide(color: Colors.blue.shade200),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.surface,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
+                const Spacer(),
+                if (plan.routeName != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface.withAlpha(26),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.route, size: 14, color: Theme.of(context).colorScheme.surface),
+                        const SizedBox(width: 6),
+                        Text(
+                          plan.routeName!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.surface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              DateFormat('EEEE, dd/MM/yyyy', 'vi').format(plan.planDate),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.surface,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _openJourneyMap(plan),
-                  icon: const Icon(Icons.alt_route, size: 18),
-                  label: const Text('Tối ưu'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.amber.shade800,
-                    side: BorderSide(color: Colors.amber.shade300),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 18,
+              runSpacing: 6,
+              children: [
+                _buildStatItem(
+                  Icons.store,
+                  '${plan.visitsCompleted}/${plan.totalVisitsPlanned}',
+                  'Đã ghé thăm',
+                ),
+                statsAsync.when(
+                  data: (stats) => _buildStatItem(
+                    Icons.timer,
+                    '${stats.avgDurationMinutes} phút',
+                    'TB/điểm',
+                  ),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+                statsAsync.when(
+                  data: (stats) => _buildStatItem(
+                    Icons.attach_money,
+                    NumberFormat.compact().format(stats.totalOrderAmount),
+                    'Doanh số',
+                  ),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: plan.completionRate,
+                minHeight: 8,
+                backgroundColor: Theme.of(context).colorScheme.surface.withAlpha(50),
+                valueColor: const AlwaysStoppedAnimation(Colors.white),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => _openJourneyMap(plan),
+                    icon: const Icon(Icons.map, size: 18),
+                    label: const Text('Bản đồ'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      foregroundColor: Colors.teal.shade800,
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openJourneyMap(plan),
+                    icon: Icon(Icons.edit_road, size: 18, color: Theme.of(context).colorScheme.surface),
+                    label: Text('Quản lý', style: TextStyle(color: Theme.of(context).colorScheme.surface)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Theme.of(context).colorScheme.surface.withAlpha(160)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -295,12 +373,24 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 16, color: Colors.grey[600]),
+            Icon(icon, size: 16, color: Theme.of(context).colorScheme.surface),
             const SizedBox(width: 4),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.surface,
+              ),
+            ),
           ],
         ),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.surface.withAlpha(215),
+          ),
+        ),
       ],
     );
   }
@@ -312,7 +402,7 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.fromLTRB(8, 2, 8, 100),
       itemCount: stops.length,
       itemBuilder: (context, index) {
         final stop = stops[index];
@@ -512,19 +602,6 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
     return null;
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'in-progress':
-        return Colors.blue;
-      case 'completed':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.orange;
-    }
-  }
-
   String _getStatusText(String status) {
     switch (status) {
       case 'planned':
@@ -583,6 +660,9 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
   }
 
   Future<void> _createFromRoute() async {
+    final currentPlan = ref.read(todayJourneyPlanProvider).value;
+    if (!await _ensureCanReplaceCurrentPlan(currentPlan)) return;
+
     // Show route selection dialog
     try {
       final routes = await ref.read(salesRoutesProvider.future);
@@ -636,6 +716,9 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
           employeeId: currentUser?.id ?? '',
           planDate: DateTime.now(),
         );
+        if (currentPlan != null) {
+          await _deleteCurrentJourney(currentPlan, showSuccessMessage: false);
+        }
         ref.invalidate(todayJourneyPlanProvider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -654,6 +737,10 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
 
   /// Quick plan: let sale pick customers directly
   Future<void> _createQuickPlan() async {
+    final currentPlan = ref.read(todayJourneyPlanProvider).value;
+    if (!await _ensureCanReplaceCurrentPlan(currentPlan)) return;
+    if (!mounted) return;
+
     final currentUser = ref.read(currentUserProvider);
     final companyId = currentUser?.companyId;
     if (companyId == null) {
@@ -679,6 +766,9 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
         planDate: DateTime.now(),
         customerIds: selectedIds,
       );
+      if (currentPlan != null) {
+        await _deleteCurrentJourney(currentPlan, showSuccessMessage: false);
+      }
       ref.invalidate(todayJourneyPlanProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -747,6 +837,122 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
     } finally {
       if (mounted) setState(() => _isCompleting = false);
     }
+  }
+
+  Future<bool> _ensureCanReplaceCurrentPlan(JourneyPlan? currentPlan) async {
+    if (currentPlan == null) return true;
+
+    final shouldReplace = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Thay hành trình hiện tại?'),
+        content: const Text(
+          'Bạn đã có hành trình hôm nay. Để tạo hành trình mới cần xóa hành trình hiện tại trước. Tiếp tục?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Xóa & tạo mới'),
+          ),
+        ],
+      ),
+    );
+
+    return shouldReplace == true;
+  }
+
+  Future<void> _deleteCurrentJourney(
+    JourneyPlan plan, {
+    bool showSuccessMessage = true,
+  }) async {
+    final service = ref.read(salesRouteServiceProvider);
+    await service.deleteJourneyPlan(plan.id);
+    ref.invalidate(todayJourneyPlanProvider);
+    ref.invalidate(todayVisitStatsProvider);
+    if (mounted && showSuccessMessage) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã xóa hành trình hiện tại'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  void _showJourneyPlanActions(JourneyPlan? currentPlan) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text(
+                'Quản lý hành trình',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_location_alt, color: Colors.blue),
+              title: const Text('Lên hành trình mới'),
+              subtitle: const Text('Chọn khách hàng trực tiếp'),
+              onTap: () {
+                Navigator.pop(context);
+                _createQuickPlan();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.route, color: Colors.indigo),
+              title: const Text('Tạo từ tuyến có sẵn'),
+              subtitle: const Text('Dùng tuyến đã cấu hình'),
+              onTap: () {
+                Navigator.pop(context);
+                _createFromRoute();
+              },
+            ),
+            if (currentPlan != null) ...[
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                title: const Text('Xóa hành trình hiện tại'),
+                subtitle: const Text('Xóa kế hoạch hôm nay để lên kế hoạch mới'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Xác nhận xóa hành trình'),
+                      content: const Text(
+                        'Bạn chắc chắn muốn xóa hành trình hiện tại? Hành động này không thể hoàn tác.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Hủy'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                          child: const Text('Xóa'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    await _deleteCurrentJourney(currentPlan);
+                  }
+                },
+              ),
+            ],
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showStopActions(JourneyPlanStop stop) {

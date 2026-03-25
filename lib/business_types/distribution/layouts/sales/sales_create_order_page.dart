@@ -352,6 +352,12 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
               color: Theme.of(context).colorScheme.surface,
               child: Row(
                 children: [
+                  if (Navigator.of(context).canPop())
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back),
+                      tooltip: 'Quay lại',
+                    ),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(

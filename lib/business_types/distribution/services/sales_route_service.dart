@@ -672,6 +672,14 @@ class SalesRouteService {
     return response as bool;
   }
 
+  /// Delete journey plan (stops are removed by ON DELETE CASCADE)
+  Future<void> deleteJourneyPlan(String planId) async {
+    await _supabase
+        .from('journey_plans')
+        .delete()
+        .eq('id', planId);
+  }
+
   /// Update journey plan stop status
   Future<void> updateStopStatus({
     required String stopId,

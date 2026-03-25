@@ -734,7 +734,7 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
       }
     }
 
-    if (!context.mounted) return;
+    if (!mounted) return;
     final saved = await showDialog<bool>(
       context: context,
       builder: (_) => StatefulBuilder(
@@ -943,13 +943,13 @@ class _CEOEmployeesPageState extends ConsumerState<CEOEmployeesPage> {
       // Reload employees to reflect changes
       await _loadEmployees();
 
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('✅ Đã cập nhật quyền cho ${employee.name ?? ""} (${selectedCompanyIds.length} công ty)'), backgroundColor: Colors.green),
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('❌ Lỗi: $e'), backgroundColor: Colors.red),
         );

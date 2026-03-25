@@ -63,7 +63,7 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
             .select('customer_id, total, paid_amount, created_at, customers(name)')
             .eq('company_id', companyId)
             .neq('status', 'cancelled')
-            .inFilter('payment_status', ['unpaid', 'debt', 'partial', 'pending_transfer']),
+          .inFilter('payment_status', ['unpaid', 'partial', 'pending_transfer']),
         // [1] Get payments in date range
         supabase
             .from('customer_payments')

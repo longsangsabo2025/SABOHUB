@@ -9,7 +9,7 @@ class ChatMessageWidget extends StatelessWidget {
   final AIMessage message;
   final String companyName;
 
-  ChatMessageWidget({
+  const ChatMessageWidget({
     super.key,
     required this.message,
     required this.companyName,

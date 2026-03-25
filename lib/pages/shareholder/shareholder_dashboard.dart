@@ -11,7 +11,7 @@ import '../../business_types/service/models/shareholder.dart';
 /// Shareholder Dashboard Layout
 /// Cổ đông có thể xem thông tin cổ phần của mình
 class ShareholderDashboard extends ConsumerStatefulWidget {
-  ShareholderDashboard({super.key});
+  const ShareholderDashboard({super.key});
 
   @override
   ConsumerState<ShareholderDashboard> createState() => _ShareholderDashboardState();

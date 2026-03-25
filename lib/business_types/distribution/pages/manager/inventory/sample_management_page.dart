@@ -84,8 +84,7 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
 
       // Add status-specific fields
       if (newStatus == 'delivered') {
-        updateData['shipped_date'] = DateTime.now().toIso8601String();
-        updateData['shipped_by_id'] = userId;
+        updateData['sent_by_id'] = userId;
       } else if (newStatus == 'received') {
         updateData['received_date'] = DateTime.now().toIso8601String();
       } else if (newStatus == 'feedback_received') {
@@ -94,7 +93,6 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
         if (notes != null && notes.isNotEmpty) updateData['feedback_notes'] = notes;
       } else if (newStatus == 'converted') {
         updateData['converted_to_order'] = true;
-        updateData['converted_date'] = DateTime.now().toIso8601String();
         
         // Convert linked order from 'sample' to 'regular'
         final orderId = sample['order_id'] as String?;
@@ -292,10 +290,13 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
     final status = sample['status'] as String? ?? 'pending';
     final feedbackRating = sample['feedback_rating'] as int?;
     final feedbackNotes = sample['feedback_notes'] as String?;
-    final shippedDate = sample['shipped_date'] != null ? DateTime.parse(sample['shipped_date']) : null;
+    final sentDate = sample['sent_date'] != null ? DateTime.parse(sample['sent_date']) : null;
     final receivedDate = sample['received_date'] != null ? DateTime.parse(sample['received_date']) : null;
     final feedbackDate = sample['feedback_date'] != null ? DateTime.parse(sample['feedback_date']) : null;
-    final convertedDate = sample['converted_date'] != null ? DateTime.parse(sample['converted_date']) : null;
+    final convertedDate =
+      status == 'converted' && sample['updated_at'] != null
+        ? DateTime.parse(sample['updated_at'])
+        : null;
 
     showModalBottomSheet(
       context: context,
@@ -401,7 +402,8 @@ class _SampleManagementPageState extends ConsumerState<SampleManagementPage> wit
                   // Timeline
                   _buildDetailSection('Quá trình xử lý', [
                     _buildTimelineItem('Gửi mẫu', sample['sent_date'], '📤'),
-                    if (shippedDate != null) _buildTimelineItem('Đã giao', dateFormat.format(shippedDate), '🚚'),
+                    if (status == 'delivered' && sentDate != null)
+                      _buildTimelineItem('Đã giao', dateFormat.format(sentDate), '🚚'),
                     if (receivedDate != null) _buildTimelineItem('Đã nhận', dateFormat.format(receivedDate), '✅'),
                     if (feedbackDate != null) _buildTimelineItem('Phản hồi', dateFormat.format(feedbackDate), '💬'),
                     if (convertedDate != null) _buildTimelineItem('Chuyển đơn', dateFormat.format(convertedDate), '🛒'),

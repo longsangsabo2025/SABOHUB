@@ -5,7 +5,7 @@ import '../../providers/gamification_provider.dart';
 import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class SeasonPassPage extends ConsumerWidget {
-  SeasonPassPage({super.key});
+  const SeasonPassPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

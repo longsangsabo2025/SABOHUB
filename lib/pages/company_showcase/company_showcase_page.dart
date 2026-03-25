@@ -10,7 +10,7 @@ import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 /// Company Showcase page — CEO shares company KPIs and highlights
 /// to attract other businesses to the SABOHUB ecosystem.
 class CompanyShowcasePage extends ConsumerStatefulWidget {
-  CompanyShowcasePage({super.key});
+  const CompanyShowcasePage({super.key});
 
   @override
   ConsumerState<CompanyShowcasePage> createState() =>

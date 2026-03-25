@@ -7,7 +7,7 @@ class StaffPerformanceCard extends StatelessWidget {
   final EmployeeGameProfile profile;
   final VoidCallback? onTap;
 
-  StaffPerformanceCard({
+  const StaffPerformanceCard({
     super.key,
     required this.profile,
     this.onTap,

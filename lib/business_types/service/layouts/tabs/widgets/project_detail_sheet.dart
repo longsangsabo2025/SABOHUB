@@ -9,7 +9,7 @@ import '../../../../../providers/project_provider.dart';
 /// Bottom sheet showing project detail with sub-projects
 class ProjectDetailSheet extends ConsumerWidget {
   final Project project;
-  const ProjectDetailSheet({required this.project});
+  const ProjectDetailSheet({super.key, required this.project});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

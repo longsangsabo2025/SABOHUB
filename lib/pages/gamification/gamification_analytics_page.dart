@@ -5,7 +5,7 @@ import '../../providers/gamification_provider.dart';
 import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class GamificationAnalyticsPage extends ConsumerWidget {
-  GamificationAnalyticsPage({super.key});
+  const GamificationAnalyticsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

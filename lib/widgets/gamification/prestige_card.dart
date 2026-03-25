@@ -4,7 +4,7 @@ import '../../providers/gamification_provider.dart';
 import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
 
 class PrestigeCard extends ConsumerWidget {
-  PrestigeCard({super.key});
+  const PrestigeCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
