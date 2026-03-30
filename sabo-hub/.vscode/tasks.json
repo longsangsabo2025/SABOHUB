@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🚀 Flutter Run Chrome",
+      "type": "shell",
+      "command": "flutter run -d chrome",
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}/sabohub-app/SABOHUB"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔨 Flutter Build Web",
+      "type": "shell",
+      "command": "flutter build web --no-tree-shake-icons",
+      "options": {
+        "cwd": "${workspaceFolder}/sabohub-app/SABOHUB"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔍 Flutter Analyze",
+      "type": "shell",
+      "command": "flutter analyze",
+      "options": {
+        "cwd": "${workspaceFolder}/sabohub-app/SABOHUB"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
