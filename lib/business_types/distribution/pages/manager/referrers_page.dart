@@ -981,7 +981,7 @@ class _ReferrerFormSheetState extends ConsumerState<_ReferrerFormSheet> {
     try {
       await Supabase.instance.client
           .from('referrers')
-          .update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()})
+          .update({'status': 'inactive', 'updated_at': DateTime.now().toIso8601String()})
           .eq('id', widget.referrer!.id);
 
       if (mounted) {

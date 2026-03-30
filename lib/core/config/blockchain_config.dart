@@ -65,15 +65,35 @@ class BlockchainConfig {
   static const String mainnetAchievementAddress =
       '0x0000000000000000000000000000000000000000'; // TODO: Deploy & update
 
+  static const String _zeroAddress =
+      '0x0000000000000000000000000000000000000000';
+
   /// Active contract addresses based on environment
-  static String get tokenAddress =>
-      isTestnet ? testnetTokenAddress : mainnetTokenAddress;
-  static String get bridgeAddress =>
-      isTestnet ? testnetBridgeAddress : mainnetBridgeAddress;
-  static String get stakingAddress =>
-      isTestnet ? testnetStakingAddress : mainnetStakingAddress;
-  static String get achievementAddress =>
-      isTestnet ? testnetAchievementAddress : mainnetAchievementAddress;
+  /// Throws assertion error if mainnet addresses are not configured
+  static String get tokenAddress {
+    final addr = isTestnet ? testnetTokenAddress : mainnetTokenAddress;
+    assert(addr != _zeroAddress, 'Mainnet token address not configured!');
+    return addr;
+  }
+
+  static String get bridgeAddress {
+    final addr = isTestnet ? testnetBridgeAddress : mainnetBridgeAddress;
+    assert(addr != _zeroAddress, 'Mainnet bridge address not configured!');
+    return addr;
+  }
+
+  static String get stakingAddress {
+    final addr = isTestnet ? testnetStakingAddress : mainnetStakingAddress;
+    assert(addr != _zeroAddress, 'Mainnet staking address not configured!');
+    return addr;
+  }
+
+  static String get achievementAddress {
+    final addr =
+        isTestnet ? testnetAchievementAddress : mainnetAchievementAddress;
+    assert(addr != _zeroAddress, 'Mainnet achievement address not configured!');
+    return addr;
+  }
 
   // ─── Bridge Config ────────────────────────────────────
 

@@ -8,6 +8,8 @@ import '../../providers/cached_data_providers.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/multi_account_switcher.dart';
 import 'package:flutter_sabohub/core/theme/color_scheme_extension.dart';
+import '../../business_types/distribution/services/sales_features_service.dart';
+import '../../business_types/distribution/widgets/sales_features_widgets_2.dart';
 
 /// Manager Analytics Page
 /// Detailed analytics for management operations
@@ -154,7 +156,7 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
   }
 
   Widget _buildTabBar() {
-    const tabs = ['Doanh thu', 'Nhân viên', 'Vận hành'];
+    const tabs = ['Doanh thu', 'Nhân viên', 'Vận hành', 'Khảo sát'];
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16),
@@ -210,6 +212,8 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
         return _buildCustomerTab();
       case 2:
         return _buildProductTab();
+      case 3:
+        return _buildSurveyTab();
       default:
         return _buildRevenueTab();
     }
@@ -960,6 +964,286 @@ class _ManagerAnalyticsPageState extends ConsumerState<ManagerAnalyticsPage> {
           ),
         ),
       ),
+    );
+  }
+
+  // ====================================================================
+  // SURVEY TAB
+  // ====================================================================
+  Widget _buildSurveyTab() {
+    final user = ref.watch(currentUserProvider);
+    final companyId = user?.companyId;
+
+    if (companyId == null) {
+      return const Center(child: Text('Không tìm thấy công ty'));
+    }
+
+    return FutureBuilder<Map<String, dynamic>>(
+      future: ref.read(surveyServiceProvider).getSurveyStats(companyId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final stats = snapshot.data ?? {};
+        final totalSurveys = stats['totalSurveys'] ?? 0;
+        final activeSurveys = stats['activeSurveys'] ?? 0;
+        final totalResponses = stats['totalResponses'] ?? 0;
+        final todayResponses = stats['todayResponses'] ?? 0;
+        final avgScore = (stats['avgScore'] ?? 0.0).toDouble();
+        final avgDuration = stats['avgDurationSeconds'] ?? 0;
+        final uniqueRespondents = stats['uniqueRespondents'] ?? 0;
+        final breakdown = List<Map<String, dynamic>>.from(stats['surveyBreakdown'] ?? []);
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Overview metrics
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Tổng quan khảo sát',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricCard(
+                            'Tổng khảo sát',
+                            '$totalSurveys',
+                            '$activeSurveys đang hoạt động',
+                            Colors.purple,
+                            Icons.poll,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildMetricCard(
+                            'Tổng phản hồi',
+                            '$totalResponses',
+                            'Hôm nay: $todayResponses',
+                            AppColors.info,
+                            Icons.question_answer,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricCard(
+                            'Điểm TB',
+                            avgScore > 0 ? avgScore.toStringAsFixed(1) : '-',
+                            '',
+                            AppColors.warning,
+                            Icons.star,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildMetricCard(
+                            'NV đã khảo sát',
+                            '$uniqueRespondents',
+                            avgDuration > 0 ? 'TB ${(avgDuration / 60).toStringAsFixed(1)} phút' : '',
+                            AppColors.success,
+                            Icons.people,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Per-survey breakdown
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text('Chi tiết từng khảo sát',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CreateQuickSurveyForm(),
+                              ),
+                            ).then((created) {
+                              if (created == true) setState(() {});
+                            });
+                          },
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Tạo mới'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (breakdown.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            children: [
+                              Icon(Icons.poll_outlined, size: 48, color: Colors.grey.shade400),
+                              const SizedBox(height: 8),
+                              Text('Chưa có khảo sát nào',
+                                  style: TextStyle(color: Colors.grey.shade600)),
+                              const SizedBox(height: 12),
+                              FilledButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const CreateQuickSurveyForm(),
+                                    ),
+                                  ).then((created) {
+                                    if (created == true) setState(() {});
+                                  });
+                                },
+                                icon: const Icon(Icons.add),
+                                label: const Text('Tạo khảo sát đầu tiên'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      ...breakdown.map((s) => _buildSurveyBreakdownItem(s)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSurveyBreakdownItem(Map<String, dynamic> survey) {
+    final responseCount = survey['responseCount'] ?? 0;
+    final target = survey['targetResponses'] ?? 0;
+    final completion = survey['completionRate'] ?? 0;
+    final isActive = survey['isActive'] == true;
+    final questionCount = survey['questionCount'] ?? 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.purple.shade50 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isActive ? Colors.purple.shade200 : Colors.grey.shade300,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isActive ? Icons.poll : Icons.poll_outlined,
+                color: isActive ? Colors.purple.shade700 : Colors.grey,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  survey['title'] ?? 'Không tên',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: isActive ? Colors.purple.shade900 : Colors.grey.shade700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: isActive ? AppColors.success.withValues(alpha: 0.15) : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  isActive ? 'Hoạt động' : 'Tắt',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isActive ? AppColors.success : Colors.grey,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _buildSurveyChip(Icons.quiz, '$questionCount câu hỏi'),
+              const SizedBox(width: 12),
+              _buildSurveyChip(Icons.question_answer, '$responseCount phản hồi'),
+              if (target > 0) ...[
+                const SizedBox(width: 12),
+                _buildSurveyChip(Icons.flag, '$completion% mục tiêu'),
+              ],
+            ],
+          ),
+          if (target > 0 && responseCount > 0) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: (responseCount / target).clamp(0.0, 1.0),
+                backgroundColor: Colors.grey.shade300,
+                color: completion >= 100 ? AppColors.success : Colors.purple,
+                minHeight: 6,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSurveyChip(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: Colors.grey.shade600),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+      ],
     );
   }
 

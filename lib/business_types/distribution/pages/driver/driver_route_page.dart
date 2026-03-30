@@ -770,6 +770,8 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
     String customerName;
     String? customerAddress;
     String? customerPhone;
+    double? customerLat;
+    double? customerLng;
     String deliveryStatus;
     
     if (isFromSalesOrders) {
@@ -779,6 +781,8 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
       customerName = delivery['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
       customerAddress = delivery['delivery_address'] ?? delivery['customer_address'] ?? customer?['address'];
       customerPhone = delivery['customer_phone'] ?? customer?['phone'];
+      customerLat = (customer?['lat'] as num?)?.toDouble();
+      customerLng = (customer?['lng'] as num?)?.toDouble();
       deliveryStatus = delivery['delivery_status'] as String? ?? 'awaiting_pickup';
     } else {
       final salesOrder = delivery['sales_orders'] as Map<String, dynamic>?;
@@ -788,6 +792,8 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
       customerName = salesOrder?['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
       customerAddress = delivery['delivery_address'] ?? customer?['address'];
       customerPhone = customer?['phone'];
+      customerLat = (customer?['lat'] as num?)?.toDouble();
+      customerLng = (customer?['lng'] as num?)?.toDouble();
       deliveryStatus = delivery['status'] as String? ?? 'planned';
     }
 
@@ -903,7 +909,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
                 if (customerAddress != null && customerAddress.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   GestureDetector(
-                    onTap: () => _openMaps(customerAddress),
+                    onTap: () => _openMaps(customerAddress, lat: customerLat, lng: customerLng),
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(12)),
@@ -1215,7 +1221,7 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
       final supabase = Supabase.instance.client;
         final orderResponse = await supabase
           .from('sales_orders')
-          .select('payment_method, payment_status, total, customers(name)')
+          .select('order_number, payment_method, payment_status, total, customer_id, customers(name, total_debt)')
           .eq('id', orderId)
           .isFilter('rejected_at', null)
           .single();
@@ -1223,8 +1229,11 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
       final paymentMethod = orderResponse['payment_method']?.toString().toLowerCase() ?? 'cod';
       final paymentStatus = orderResponse['payment_status']?.toString().toLowerCase() ?? 'unpaid';
       final total = (orderResponse['total'] ?? 0).toDouble();
+      final customerId = orderResponse['customer_id']?.toString();
       final customerData = orderResponse['customers'] as Map<String, dynamic>?;
       final customerName = customerData?['name'] ?? 'Khách hàng';
+      final currentDebt = (customerData?['total_debt'] ?? 0).toDouble();
+      final orderNumber = orderResponse['order_number']?.toString() ?? orderId.substring(0, 8);
 
       if (!mounted) return;
       final result = await showDialog<Map<String, dynamic>>(
@@ -1248,6 +1257,31 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
         throw Exception(rpcResult['error'] ?? 'Unknown error');
       }
 
+      // Handle debt update (customer balance)
+      if (result['updatePayment'] == true && result['paymentMethod'] == 'debt' && customerId != null) {
+        final newDebt = currentDebt + total;
+        await supabase.from('customers').update({
+          'total_debt': newDebt,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', customerId);
+        AppLogger.info('📝 Updated customer debt: $currentDebt -> $newDebt');
+      }
+
+      // Insert customer_payments record so finance "Thu tiền" tab shows cash payments
+      if (result['updatePayment'] == true && result['paymentMethod'] == 'cash' && customerId != null) {
+        final user = ref.read(currentUserProvider);
+        await supabase.from('customer_payments').insert({
+          'company_id': user?.companyId,
+          'customer_id': customerId,
+          'amount': total,
+          'payment_date': DateTime.now().toIso8601String(),
+          'payment_method': 'cash',
+          'created_by': user?.id,
+          'notes': 'Thu tiền mặt khi giao hàng - $orderNumber',
+        });
+        AppLogger.info('💰 Created customer_payment for cash collection - $orderNumber');
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Row(children: [Icon(Icons.celebration, color: Theme.of(context).colorScheme.surface), SizedBox(width: 12), Expanded(child: Text(result['updatePayment'] == true ? '🎉 Giao hàng và thanh toán thành công!' : '🎉 Giao hàng thành công!'))]),
@@ -1261,13 +1295,19 @@ class DriverRoutePageState extends ConsumerState<DriverRoutePage> {
     }
   }
 
-  Future<void> _openMaps(String? address) async {
-    if (address == null || address.isEmpty) {
+  Future<void> _openMaps(String? address, {double? lat, double? lng}) async {
+    if ((address == null || address.isEmpty) && (lat == null || lng == null)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Không có địa chỉ')));
       return;
     }
-    String cleanAddress = address.contains('--') ? address.split('--').first.trim() : address;
-    final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${Uri.encodeComponent(cleanAddress)}&travelmode=driving');
+    final String destination;
+    if (lat != null && lng != null) {
+      destination = '$lat,$lng';
+    } else {
+      String cleanAddress = address!.contains('--') ? address.split('--').first.trim() : address;
+      destination = Uri.encodeComponent(cleanAddress);
+    }
+    final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=$destination&travelmode=driving');
     if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 

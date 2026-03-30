@@ -45,10 +45,10 @@ void main() {
     });
 
     group('toUpperString / toLowerString', () {
-      test('converts to uppercase', () {
-        expect(SaboRole.ceo.toUpperString(), 'CEO');
-        expect(SaboRole.superAdmin.toUpperString(), 'SUPERADMIN');
-        expect(SaboRole.shiftLeader.toUpperString(), 'SHIFTLEADER');
+      test('converts to db string format (toUpperString is deprecated alias)', () {
+        expect(SaboRole.ceo.toUpperString(), 'ceo');
+        expect(SaboRole.superAdmin.toUpperString(), 'super_admin');
+        expect(SaboRole.shiftLeader.toUpperString(), 'shift_leader');
       });
 
       test('converts to lowercase', () {
@@ -116,15 +116,15 @@ void main() {
     });
 
     group('values', () {
-      test('has exactly 8 roles', () {
-        expect(SaboRole.values.length, 8);
+      test('has exactly 9 roles', () {
+        expect(SaboRole.values.length, 9);
       });
 
       test('contains all expected roles', () {
         final names = SaboRole.values.map((r) => r.name).toList();
         expect(names, containsAll([
           'superAdmin', 'ceo', 'manager', 'shiftLeader',
-          'staff', 'driver', 'warehouse', 'shareholder'
+          'staff', 'driver', 'warehouse', 'finance', 'shareholder'
         ]));
       });
     });

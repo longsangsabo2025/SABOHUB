@@ -411,7 +411,8 @@ class BlockchainService {
             minted: minted,
             active: active,
           ));
-        } catch (_) {
+        } catch (e) {
+          _log('Skipping malformed achievement entry: $e');
           continue;
         }
       }

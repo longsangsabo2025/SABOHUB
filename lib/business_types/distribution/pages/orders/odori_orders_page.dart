@@ -341,7 +341,7 @@ class _OrderCard extends ConsumerWidget {
               Navigator.pop(dialogContext);
               try {
                 await supabase.from('sales_orders').update({
-                  'status': 'approved',
+                  'status': 'confirmed',
                   'updated_at': DateTime.now().toIso8601String(),
                 }).eq('id', order.id);
                 
@@ -387,7 +387,7 @@ class _OrderCard extends ConsumerWidget {
               Navigator.pop(dialogContext);
               try {
                 await supabase.from('sales_orders').update({
-                  'status': 'rejected',
+                  'status': 'cancelled',
                   'updated_at': DateTime.now().toIso8601String(),
                 }).eq('id', order.id);
                 

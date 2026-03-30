@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../utils/app_logger.dart';
 
 /// Model cho kết quả phân tích hóa đơn từ AI
 class InvoiceAnalysisResult {
@@ -346,7 +347,8 @@ class InvoiceScanService {
         counts[s] = (counts[s] ?? 0) + 1;
       }
       return counts;
-    } catch (_) {
+    } catch (e) {
+      AppLogger.error('Invoice status counts failed', e);
       return {'pending': 0, 'confirmed': 0, 'applied': 0, 'rejected': 0};
     }
   }

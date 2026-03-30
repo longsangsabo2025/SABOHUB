@@ -16,13 +16,85 @@
 | **Vercel Token** | `oo1EcKsmpnbAN9bD0jBvsDQr` |
 | **Build** | PASS (0 errors, 0 warnings) |
 | **Last Deploy** | 2026-03-20 (Feature Sprint: Tests + Reservation + Scheduling + QC) |
-| **Last Analyze** | 2026-03-05 (0 errors, 0 warnings — Post notification cleanup) |
+| **Last Analyze** | 2026-03-29 (0 errors, 0 warnings — Health report fixes) |
+| **Tests** | 504/504 passed (2026-03-30) |
 | **Last Cleanup** | 2026-03-05 (Mass theme refactoring fix: 922→0 errors across 200+ files) |
 | **Blockchain** | Base Sepolia Testnet — 4 contracts deployed 2026-03-04 |
 
 ---
 
 ## Lịch Sử Phát Triển (Changelog)
+
+### 2026-03-30 — Comprehensive Test Suite (Safety Net)
+**Summary**: Created comprehensive test suite for critical paths as regression safety net. Added 204 new tests (300 → 504 total). Covers all critical models, core business logic services, error handling, and functional utilities.
+
+##### New Model Tests (8 files, ~150 test cases)
+- [x] **NEW** `test/models/odori_sales_order_test.dart` — OdoriSalesOrder + OdoriSalesOrderItem: fromJson, computed getters (remainingAmount, isPendingApproval, isCompleted), toJson DB column verification, item fallbacks
+- [x] **NEW** `test/models/odori_customer_test.dart` — OdoriCustomer: fromJson, fullAddress, hasLocation, toJson DB column traps (code/type/lat/lng/assigned_sale_id), copyWith
+- [x] **NEW** `test/models/odori_delivery_test.dart` — OdoriDelivery + OdoriDeliveryItem: fromJson, remainingStops, successRate, statusText Vietnamese, formattedDeliveryDate, item status helpers
+- [x] **NEW** `test/models/odori_receivable_test.dart` — OdoriReceivable aging bucket logic (current/1-30/31-60/61-90/90+), isOverdue, remainingAmount with write_off_amount, OdoriPayment Vietnamese labels, toJson DB columns
+- [x] **NEW** `test/models/odori_product_test.dart` — OdoriProduct: margin calculation, isActive, needsReorder, toJson (selling_price NOT base_price), copyWith
+- [x] **NEW** `test/models/table_session_test.dart` — TableSession: playingDuration minus paused, calculateTableAmount (hours*rate), fractional hours, SessionStatus Vietnamese labels
+- [x] **NEW** `test/models/order_test.dart` — Order + OrderItem: totalPrice, totalAmount, total alias, itemCount, copyWith, OrderStatus Vietnamese labels
+- [x] **NEW** `test/models/customer_tier_test.dart` — CustomerTier: fromRevenue thresholds (none/bronze/silver/gold/diamond), fromString parsing, CustomerRevenue tier/completionRate/paymentRate
+- [x] **EXPANDED** `test/models/company_test.dart` — From 1 test → 15+ tests: fromJson with defaults, is_active→status mapping, bank account helpers (primary/secondary switch), toJson DB column names, copyWith
+
+##### New Service/Logic Tests (4 files, ~54 test cases)
+- [x] **NEW** `test/services/debt_calculation_service_test.dart` — CRITICAL money logic: orderBalance, receivableBalance, agingBucket, orderAgeDays, isOrderOverdue, isReceivableOverdue, computeDebtSummaryFromData (full aggregation)
+- [x] **NEW** `test/services/service_number_formatters_test.dart` — formatServiceRevenueCompact (M/K), formatServiceCountCompact, formatServiceCurrencyCompact (B/M/K/comma)
+- [x] **NEW** `test/core/result_test.dart` — Result sealed class: success/failure, when pattern matching, map/flatMap transformations, dataOrNull/errorOrNull/dataOrThrow, equality
+- [x] **NEW** `test/core/app_errors_test.dart` — AppError hierarchy: userMessage Vietnamese per category, shouldReport severity check, NetworkError/AuthenticationError/ValidationError/PermissionError/SystemError, Equatable
+
+#### Verification
+- `flutter test` => **504/504 tests passed** (+204 new)
+- `flutter analyze` => **No issues found** (0 errors, 0 warnings)
+
+### 2026-03-29 — Health Report Fixes (CRITICAL + HIGH)
+**Summary**: Executed all actionable CRITICAL and HIGH priority fixes from HEALTH_REPORT.md audit.
+
+##### Fix 1 — 3 Test Failures → 300/300 pass
+- [x] **FIX** `test/constants/roles_test.dart` — Updated `toUpperString` test to expect lowercase db-format strings (was expecting uppercase after `toUpperString` became alias of `toDbString`).
+- [x] **FIX** `test/constants/roles_test.dart` — Updated `values` test to expect 9 roles (was 8, missing `finance`).
+- [x] **FIX** `test/models/user_test.dart` — Updated `toJson` role assertion from `'MANAGER'` to `'manager'` (matches current `toDbString` output).
+
+##### Fix 2 — ErrorHandler → Sentry Integration
+- [x] **FIX** `lib/core/errors/error_handler.dart` — Connected `_reportError()` to `Sentry.captureException()` with scope tags (error_category, error_severity, SentryLevel). Previously was a TODO placeholder that never actually reported errors.
+
+##### Fix 3 — Blockchain Config Guards
+- [x] **FIX** `lib/core/config/blockchain_config.dart` — Added runtime assertions on `tokenAddress`, `bridgeAddress`, `stakingAddress`, `achievementAddress` getters to prevent usage of zero-address mainnet placeholders.
+
+##### Fix 4 — Silent Catches → Logged (15 instances)
+- [x] **FIX** `lib/services/analytics_service.dart` — 3 silent catches now log via `AppLogger.warn()`
+- [x] **FIX** `lib/services/manager_kpi_service.dart` — Revenue query failure now logged via `AppLogger.error()`
+- [x] **FIX** `lib/services/auto_task_generator.dart` — Task check failure now logged via `AppLogger.error()`
+- [x] **FIX** `lib/services/travis_service.dart` — Health check failure now logged via `AppLogger.warn()`
+- [x] **FIX** `lib/providers/company_alerts_provider.dart` — 2 silent catches now logged via `AppLogger.warn()`
+- [x] **FIX** `lib/business_types/service/services/invoice_scan_service.dart` — Invoice status failure now logged
+- [x] **FIX** `lib/business_types/distribution/providers/odori_providers.dart` — 2 silent catches now logged
+- [x] **FIX** `lib/services/token/blockchain_service.dart` — Malformed achievement entry now logged via `_log()`
+
+##### Fix 5 — print() → debugPrint()
+- [x] **FIX** `lib/main.dart` — Replaced `print('Firebase not fully configured.')` with `debugPrint()`.
+
+#### Verification
+- `flutter analyze` => **No issues found** (0 errors, 0 warnings)
+- `flutter test` => **300/300 tests passed** (previously 297/300)
+
+---
+**Summary**: Extracted all duplicated debt/overdue calculation logic into a shared `DebtCalculationService` to prevent future drift between dashboard, accounts receivable, and reports pages. Fixed two bugs: reports page used inconsistent `inFilter` (missed `debt` status) and calculated overdue at per-item level instead of per-customer level.
+
+##### Architecture — Shared Debt Service
+- [x] **NEW** `lib/business_types/distribution/services/debt_calculation_service.dart` — Created `DebtCalculationService` (single source of truth) with unified queries (`neq('paid')` filter), balance helpers, aging helpers, overdue logic, and `DebtSummary` immutable model.
+- [x] **REFACTOR** `lib/business_types/distribution/pages/finance/finance_dashboard_page.dart` — Replaced ~60 lines of inline debt calculation with `DebtCalculationService.computeDebtSummary()`.
+- [x] **REFACTOR** `lib/business_types/distribution/pages/finance/accounts_receivable_page.dart` — Replaced ~80 lines of inline debt queries with shared service; uses `overdueCustomerIds` from service for consistent overdue customer filtering.
+- [x] **REFACTOR** `lib/business_types/distribution/pages/manager/reports_page.dart` — Replaced inline debt queries (inconsistent `inFilter` + per-item overdue bug) with `DebtCalculationService` shared queries and `computeDebtSummaryFromData()`.
+
+##### Bug Fixes
+- [x] **FIX** Reports page `inFilter(['unpaid','partial','pending_transfer'])` → unified `neq('paid')` (was missing `debt` payment status).
+- [x] **FIX** Reports page overdue amount now uses customer-level calculation (total debt of customers with ANY overdue item) instead of per-item sum.
+
+#### Verification
+- `flutter analyze` => **No issues found** (0 errors, 0 warnings, 0 infos)
 
 ### 2026-03-25 — Debt Consistency Fix (Manager vs Finance)
 **Summary**: Investigated real data discrepancy across Manager `Báo cáo > Công nợ` and Finance debt screens. Unified debt calculations to use transaction-derived outstanding values (sales orders + manual receivables), removing stale-field drift.

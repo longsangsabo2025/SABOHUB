@@ -3319,8 +3319,8 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
     if (confirm != true) return;
 
     try {
-      // Soft delete - sets is_active=false
-      await supabase.from('customers').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', _customer.id);
+      // Soft delete - sets status='inactive'
+      await supabase.from('customers').update({'status': 'inactive', 'updated_at': DateTime.now().toIso8601String()}).eq('id', _customer.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -3349,6 +3349,8 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
         return Colors.red;
       case 'processing':
         return Colors.blue;
+      case 'confirmed':
+      case 'sent_to_warehouse':
       case 'approved':
         return Colors.teal;
       case 'delivering':
@@ -3368,6 +3370,8 @@ class _CustomerDetailPageState extends ConsumerState<CustomerDetailPage>
         return 'Đã hủy';
       case 'processing':
         return 'Đang xử lý';
+      case 'confirmed':
+      case 'sent_to_warehouse':
       case 'approved':
         return 'Đã duyệt';
       case 'delivering':

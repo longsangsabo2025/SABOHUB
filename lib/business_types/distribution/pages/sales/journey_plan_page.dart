@@ -791,21 +791,37 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
     setState(() => _isStarting = true);
     try {
       final location = await _getCurrentLocation();
+      if (location == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không lấy được vị trí. Bắt đầu hành trình không có GPS...'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
       final service = ref.read(salesRouteServiceProvider);
-      await service.startJourney(planId, location: location);
-      ref.invalidate(todayJourneyPlanProvider);
-      if (mounted) {
+      final success = await service.startJourney(planId, location: location);
+      if (!mounted) return;
+      if (success) {
+        ref.invalidate(todayJourneyPlanProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Đã bắt đầu hành trình!'),
             backgroundColor: Colors.green,
           ),
         );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể bắt đầu hành trình. Vui lòng thử lại.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Lỗi bắt đầu hành trình: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -818,13 +834,21 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
     try {
       final location = await _getCurrentLocation();
       final service = ref.read(salesRouteServiceProvider);
-      await service.completeJourney(planId, location: location);
-      ref.invalidate(todayJourneyPlanProvider);
-      if (mounted) {
+      final success = await service.completeJourney(planId, location: location);
+      if (!mounted) return;
+      if (success) {
+        ref.invalidate(todayJourneyPlanProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Đã hoàn thành hành trình!'),
             backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể hoàn thành hành trình. Vui lòng thử lại.'),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -1495,11 +1519,12 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
   }
 
   void _showCompetitorReport(JourneyPlanStop stop) {
+    // NOTE: Do NOT pass storeVisitId as visitId here.
+    // competitor_reports.visit_id FK → customer_visits, not store_visits.
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => CompetitorReportForm(
           customerId: stop.customerId,
-          visitId: stop.storeVisitId,
           onSaved: () {
             ref.invalidate(todayJourneyPlanProvider);
           },
@@ -1680,12 +1705,32 @@ class _JourneyPlanPageState extends ConsumerState<JourneyPlanPage> {
 
   Future<Map<String, dynamic>?> _getCurrentLocation() async {
     try {
-      final permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        await Geolocator.requestPermission();
+      // Check if location services are enabled
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        AppLogger.error('Location services disabled');
+        return null;
       }
-      
-      final position = await Geolocator.getCurrentPosition();
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          AppLogger.error('Location permission denied');
+          return null;
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        AppLogger.error('Location permission permanently denied');
+        return null;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
       return {
         'lat': position.latitude,
         'lng': position.longitude,

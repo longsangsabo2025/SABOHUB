@@ -119,10 +119,13 @@ class CustomerRepository extends BaseRepository
     });
   }
 
-  /// Soft-delete khách hàng (đánh dấu `is_deleted = true`).
+  /// Soft-delete khách hàng (đánh dấu `status = 'inactive'`).
   @override
   Future<void> deleteCustomer(String id) async {
-    return softDelete(id);
+    await client.from(tableName).update({
+      'status': 'inactive',
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', id);
   }
 
   // ---------------------------------------------------------------------------

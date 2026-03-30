@@ -644,6 +644,14 @@ class _SurveysListState extends ConsumerState<SurveysList> {
     }
   }
 
+  void _openCreateSurvey() async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const CreateQuickSurveyForm()),
+    );
+    if (created == true) _loadSurveys();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -658,46 +666,385 @@ class _SurveysListState extends ConsumerState<SurveysList> {
             Icon(Icons.poll_outlined, size: 48, color: Colors.grey.shade400),
             const SizedBox(height: 8),
             Text('Không có khảo sát', style: TextStyle(color: Colors.grey.shade600)),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: _openCreateSurvey,
+              icon: const Icon(Icons.add),
+              label: const Text('Tạo khảo sát'),
+            ),
           ],
         ),
       );
     }
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _surveys.length,
-      itemBuilder: (context, index) {
-        final survey = _surveys[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.purple.shade100,
-              child: Icon(Icons.poll, color: Colors.purple.shade700),
-            ),
-            title: Text(survey.title),
-            subtitle: Text(
-              '${survey.questions.length} câu hỏi • ${survey.currentResponses}/${survey.targetResponses} phản hồi',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SurveyFormWidget(
-                    survey: survey,
-                    customerId: widget.customerId,
-                    visitId: widget.visitId,
-                    onCompleted: () => _loadSurveys(),
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            itemCount: _surveys.length,
+            itemBuilder: (context, index) {
+              final survey = _surveys[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.purple.shade100,
+                    child: Icon(Icons.poll, color: Colors.purple.shade700),
                   ),
+                  title: Text(survey.title),
+                  subtitle: Text(
+                    '${survey.questions.length} câu hỏi • ${survey.currentResponses}/${survey.targetResponses} phản hồi',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SurveyFormWidget(
+                          survey: survey,
+                          customerId: widget.customerId,
+                          visitId: widget.visitId,
+                          onCompleted: () => _loadSurveys(),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               );
             },
           ),
-        );
-      },
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: FilledButton.icon(
+            onPressed: _openCreateSurvey,
+            icon: const Icon(Icons.add),
+            label: const Text('Tạo khảo sát mới'),
+          ),
+        ),
+      ],
     );
+  }
+}
+
+// ============================================================================
+// CREATE QUICK SURVEY FORM - Tạo nhanh khảo sát
+// ============================================================================
+class CreateQuickSurveyForm extends ConsumerStatefulWidget {
+  const CreateQuickSurveyForm({super.key});
+
+  @override
+  ConsumerState<CreateQuickSurveyForm> createState() => _CreateQuickSurveyFormState();
+}
+
+class _CreateQuickSurveyFormState extends ConsumerState<CreateQuickSurveyForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final List<_QuestionItem> _questions = [];
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _addQuestion(); // Start with 1 question
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    for (final q in _questions) {
+      q.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addQuestion() {
+    setState(() {
+      _questions.add(_QuestionItem());
+    });
+  }
+
+  void _removeQuestion(int index) {
+    if (_questions.length <= 1) return;
+    setState(() {
+      _questions[index].dispose();
+      _questions.removeAt(index);
+    });
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_questions.isEmpty) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      final user = ref.read(currentUserProvider);
+      final companyId = user?.companyId;
+      final userId = user?.id;
+      if (companyId == null) return;
+
+      final questions = <Map<String, dynamic>>[];
+      for (var i = 0; i < _questions.length; i++) {
+        final q = _questions[i];
+        final questionText = q.questionController.text.trim();
+        if (questionText.isEmpty) continue;
+
+        final map = <String, dynamic>{
+          'id': 'q${i + 1}',
+          'question': questionText,
+          'type': q.type,
+          'required': q.isRequired,
+        };
+
+        if (q.type == 'single_choice' || q.type == 'multiple_choice') {
+          final options = q.optionsController.text
+              .split('\n')
+              .map((o) => o.trim())
+              .where((o) => o.isNotEmpty)
+              .toList();
+          if (options.isNotEmpty) map['options'] = options;
+        }
+
+        if (q.type == 'rating') {
+          map['max_rating'] = q.maxRating;
+        }
+
+        questions.add(map);
+      }
+
+      if (questions.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cần ít nhất 1 câu hỏi')),
+        );
+        setState(() => _isSaving = false);
+        return;
+      }
+
+      await ref.read(surveyServiceProvider).createSurvey(
+        companyId: companyId,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim().isNotEmpty
+            ? _descriptionController.text.trim()
+            : null,
+        questions: questions,
+        createdBy: userId,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã tạo khảo sát'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tạo khảo sát nhanh'),
+        actions: [
+          TextButton.icon(
+            onPressed: _isSaving ? null : _save,
+            icon: _isSaving
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.check),
+            label: const Text('Lưu'),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.small(
+        onPressed: _addQuestion,
+        child: const Icon(Icons.add),
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            TextFormField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'Tiêu đề khảo sát *',
+                hintText: 'VD: Khảo sát chất lượng dịch vụ',
+                border: OutlineInputBorder(),
+              ),
+              validator: (v) => (v == null || v.trim().isEmpty) ? 'Nhập tiêu đề' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Mô tả (tùy chọn)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Icon(Icons.quiz, size: 20),
+                const SizedBox(width: 8),
+                Text('Câu hỏi (${_questions.length})',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ..._questions.asMap().entries.map((entry) {
+              final index = entry.key;
+              final q = entry.value;
+              return _buildQuestionCard(q, index);
+            }),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _addQuestion,
+              icon: const Icon(Icons.add),
+              label: const Text('Thêm câu hỏi'),
+            ),
+            const SizedBox(height: 80),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuestionCard(_QuestionItem q, int index) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: Colors.purple.shade100,
+                  child: Text('${index + 1}', style: TextStyle(fontSize: 12, color: Colors.purple.shade700)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: q.questionController,
+                    decoration: const InputDecoration(
+                      hintText: 'Nhập câu hỏi...',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Nhập câu hỏi' : null,
+                  ),
+                ),
+                if (_questions.length > 1)
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => _removeQuestion(index),
+                    color: Colors.red,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: q.type,
+                    decoration: const InputDecoration(
+                      labelText: 'Loại',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'text', child: Text('Văn bản')),
+                      DropdownMenuItem(value: 'yes_no', child: Text('Có / Không')),
+                      DropdownMenuItem(value: 'rating', child: Text('Đánh giá (1-5)')),
+                      DropdownMenuItem(value: 'single_choice', child: Text('Chọn 1')),
+                      DropdownMenuItem(value: 'multiple_choice', child: Text('Chọn nhiều')),
+                    ],
+                    onChanged: (v) {
+                      setState(() => q.type = v ?? 'text');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Bắt buộc'),
+                  selected: q.isRequired,
+                  onSelected: (v) => setState(() => q.isRequired = v),
+                ),
+              ],
+            ),
+            if (q.type == 'single_choice' || q.type == 'multiple_choice') ...[
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: q.optionsController,
+                decoration: const InputDecoration(
+                  labelText: 'Các lựa chọn (mỗi dòng 1 lựa chọn)',
+                  hintText: 'Tốt\nBình thường\nKém',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                maxLines: 4,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Nhập ít nhất 2 lựa chọn';
+                  final lines = v.split('\n').where((l) => l.trim().isNotEmpty).toList();
+                  if (lines.length < 2) return 'Cần ít nhất 2 lựa chọn';
+                  return null;
+                },
+              ),
+            ],
+            if (q.type == 'rating') ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Text('Thang điểm tối đa: '),
+                  ...List.generate(4, (i) {
+                    final val = i + 3; // 3,4,5,6
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: ChoiceChip(
+                        label: Text('$val'),
+                        selected: q.maxRating == val,
+                        onSelected: (s) {
+                          if (s) setState(() => q.maxRating = val);
+                        },
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuestionItem {
+  final TextEditingController questionController = TextEditingController();
+  final TextEditingController optionsController = TextEditingController();
+  String type = 'text';
+  bool isRequired = false;
+  int maxRating = 5;
+
+  void dispose() {
+    questionController.dispose();
+    optionsController.dispose();
   }
 }

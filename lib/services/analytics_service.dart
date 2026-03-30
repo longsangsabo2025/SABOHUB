@@ -1,4 +1,5 @@
 import '../core/services/supabase_service.dart';
+import '../utils/app_logger.dart';
 
 /// Analytics Service
 /// Handles dashboard KPIs, metrics, and analytics data
@@ -93,7 +94,8 @@ class AnalyticsService {
           revenueGrowth =
               ((monthlyRevenue - prevRevenue) / prevRevenue * 100);
         }
-      } catch (_) {
+      } catch (e) {
+        AppLogger.warn('Revenue growth calc failed: $e');
         revenueGrowth = 0.0;
       }
 
@@ -272,7 +274,8 @@ class AnalyticsService {
           if (prevRev > 0) {
             growth = ((revenue - prevRev) / prevRev * 100);
           }
-        } catch (_) {
+        } catch (e) {
+          AppLogger.warn('Store growth calc failed: $e');
           growth = 0.0;
         }
 
@@ -476,7 +479,8 @@ class AnalyticsService {
           if (prevRev > 0) {
             growth = ((revenue - prevRev) / prevRev * 100);
           }
-        } catch (_) {
+        } catch (e) {
+          AppLogger.warn('Company growth calc failed: $e');
           growth = 0.0;
         }
 

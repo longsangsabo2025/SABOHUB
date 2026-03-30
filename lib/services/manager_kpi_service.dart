@@ -96,7 +96,8 @@ class ManagerKPIService {
           (sum, item) =>
               sum + ((item['total_revenue'] as num?)?.toDouble() ?? 0),
         );
-      } catch (_) {
+      } catch (e) {
+        AppLogger.error('KPI revenue query failed', e);
         todayRevenue = 0.0;
         yesterdayRevenue = 0.0;
       }

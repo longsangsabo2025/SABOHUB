@@ -257,7 +257,8 @@ class OdoriNotificationService {
       String message;
       
       switch (status) {
-        case 'approved':
+        case 'confirmed':
+        case 'approved': // legacy support
           type = OdoriNotificationType.orderApproved;
           title = 'Đơn hàng được duyệt';
           message = 'Đơn $orderNumber đã được duyệt';

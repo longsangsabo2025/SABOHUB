@@ -27,6 +27,8 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
   bool _isLoadingProducts = true;
   
   final _notesController = TextEditingController();
+  final _discountController = TextEditingController();
+  double _discountPercent = 0;
   DateTime _expectedDeliveryDate = DateTime.now().add(const Duration(days: 1));
   bool _isSubmitting = false;
   final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
@@ -41,6 +43,11 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
     
     if (widget.existingOrder != null) {
       _notesController.text = widget.existingOrder!['notes'] ?? '';
+      final existingDiscount = ((widget.existingOrder!['discount_percent'] ?? 0) as num).toDouble();
+      if (existingDiscount > 0) {
+        _discountPercent = existingDiscount;
+        _discountController.text = existingDiscount.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+      }
       _loadExistingOrderItems();
     }
   }
@@ -78,6 +85,7 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
   @override
   void dispose() {
     _notesController.dispose();
+    _discountController.dispose();
     super.dispose();
   }
 
@@ -152,8 +160,16 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
     });
   }
 
-  double get _orderTotal {
+  double get _subtotal {
     return _orderItems.fold(0.0, (sum, item) => sum + (item['line_total'] ?? 0));
+  }
+
+  double get _discountAmount {
+    return _subtotal * _discountPercent / 100;
+  }
+
+  double get _finalTotal {
+    return _subtotal - _discountAmount;
   }
 
   Future<void> _submitOrder() async {
@@ -195,8 +211,10 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
             .update({
               'customer_id': _selectedCustomer!['id'],
               'customer_name': _selectedCustomer!['name'],
-              'total': _orderTotal,
-              'subtotal': _orderTotal,
+              'subtotal': _subtotal,
+              'discount_percent': _discountPercent > 0 ? _discountPercent : null,
+              'discount_amount': _discountPercent > 0 ? _discountAmount : 0,
+              'total': _finalTotal,
               'notes': _notesController.text.isNotEmpty ? _notesController.text : null,
               'updated_at': DateTime.now().toIso8601String(),
             })
@@ -215,8 +233,10 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
               'customer_name': _selectedCustomer!['name'],
               'order_number': orderNumber,
               'order_date': DateTime.now().toIso8601String().split('T')[0],
-              'total': _orderTotal,
-              'subtotal': _orderTotal,
+              'subtotal': _subtotal,
+              'discount_percent': _discountPercent > 0 ? _discountPercent : null,
+              'discount_amount': _discountPercent > 0 ? _discountAmount : 0,
+              'total': _finalTotal,
               'status': 'pending_approval',
               'payment_status': 'unpaid',
               'delivery_status': 'pending',
@@ -454,6 +474,68 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
             ),
             const SizedBox(height: 16),
 
+            // Discount section
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.discount, color: Colors.orange),
+                        const SizedBox(width: 8),
+                        const Text('Chiết khấu (%)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _discountController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              hintText: 'Nhập % chiết khấu (VD: 5)',
+                              suffixText: '%',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                _discountPercent = double.tryParse(value) ?? 0;
+                                if (_discountPercent < 0) _discountPercent = 0;
+                                if (_discountPercent > 100) _discountPercent = 100;
+                              });
+                            },
+                          ),
+                        ),
+                        if (_discountPercent > 0) ...[
+                          const SizedBox(width: 12),
+                          Text(
+                            '-${currencyFormat.format(_discountAmount)}',
+                            style: TextStyle(color: Colors.orange.shade700, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (_discountPercent > 0) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Tạm tính:', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                          Text(currencyFormat.format(_subtotal), style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
             // Notes and delivery date
             Card(
               child: Padding(
@@ -514,9 +596,12 @@ class _SalesCreateOrderFormPageState extends ConsumerState<SalesCreateOrderFormP
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (_discountPercent > 0)
+                      Text('CK ${_discountPercent.toStringAsFixed(1)}%: -${currencyFormat.format(_discountAmount)}', 
+                        style: TextStyle(color: Colors.orange.shade700, fontSize: 12)),
                     Text('Tổng cộng', style: TextStyle(color: Colors.grey.shade600)),
                     Text(
-                      currencyFormat.format(_orderTotal),
+                      currencyFormat.format(_finalTotal),
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.teal),
                     ),
                   ],

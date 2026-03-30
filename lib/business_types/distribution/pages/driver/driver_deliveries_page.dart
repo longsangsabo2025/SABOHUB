@@ -24,9 +24,10 @@ class DriverDeliveriesPage extends ConsumerStatefulWidget {
 }
 
 class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
   bool _isLoading = true;
+  bool _isProcessing = false; // Chống double-tap trên action buttons
   List<Map<String, dynamic>> _pendingDeliveries = [];  // Chờ nhận (pending)
   List<Map<String, dynamic>> _awaitingDeliveries = [];  // Chờ kho (awaiting_pickup)
   List<Map<String, dynamic>> _inProgressDeliveries = [];  // Đang giao (delivering)
@@ -35,19 +36,30 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
   final TextEditingController _searchController = TextEditingController();
   final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
   DateTimeRange? _deliveredDateFilter;
+  String _orderTypeFilter = 'all'; // 'all', 'regular', 'sample'
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: 4, vsync: this);
     _loadDeliveries();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Auto-refresh khi user quay lại app (phát hiện đơn bị hủy sớm)
+    if (state == AppLifecycleState.resumed) {
+      _loadDeliveries();
+    }
   }
 
   @override
@@ -119,7 +131,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             *,
             sales_orders:order_id(
               id, order_number, total, customer_name, payment_status, payment_method,
-              delivery_address, customer_address,
+              delivery_address, customer_address, rejected_at, order_type,
               customers(name, phone, address, lat, lng),
               sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
             )
@@ -138,7 +150,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             *,
             sales_orders:order_id(
               id, order_number, total, customer_name, payment_status, payment_method,
-              delivery_address, customer_address,
+              delivery_address, customer_address, rejected_at, order_type,
               customers(name, phone, address, lat, lng),
               sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
             )
@@ -156,7 +168,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             *,
             sales_orders:order_id(
               id, order_number, total, customer_name, payment_status, payment_method,
-              delivery_address, customer_address,
+              delivery_address, customer_address, rejected_at, order_type,
               customers(name, phone, address, lat, lng),
               sales_order_items(id, product_name, quantity, unit, unit_price, line_total)
             )
@@ -201,6 +213,58 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
       final address = (item['delivery_address'] ?? item['sales_orders']?['delivery_address'] ?? item['sales_orders']?['customer_address'] ?? '').toString().toLowerCase();
       return customerName.contains(q) || orderNumber.contains(q) || customerPhone.contains(q) || address.contains(q);
     }).toList();
+  }
+
+  String _getOrderType(Map<String, dynamic> item) {
+    // For pending (from sales_orders directly)
+    if (item['_source'] == 'sales_orders') {
+      return (item['order_type'] ?? 'regular').toString();
+    }
+    // For deliveries (joined sales_orders)
+    final salesOrder = item['sales_orders'] as Map<String, dynamic>?;
+    return (salesOrder?['order_type'] ?? 'regular').toString();
+  }
+
+  List<Map<String, dynamic>> _filterByOrderType(List<Map<String, dynamic>> items) {
+    if (_orderTypeFilter == 'all') return items;
+    return items.where((item) => _getOrderType(item) == _orderTypeFilter).toList();
+  }
+
+  Widget _buildFilterChip(String label, String value, IconData icon) {
+    final isSelected = _orderTypeFilter == value;
+    final color = value == 'sample' ? Colors.purple : (value == 'regular' ? AppColors.info : AppColors.grey600);
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _orderTypeFilter = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withOpacity(0.12) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? color : AppColors.grey300,
+              width: isSelected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: isSelected ? color : AppColors.grey500),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected ? color : AppColors.grey600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildContent() {
@@ -264,6 +328,19 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
 
                   AppSpacing.gapLG,
 
+                  // Order type filter
+                  Row(
+                    children: [
+                      _buildFilterChip('Tất cả', 'all', Icons.list_alt),
+                      AppSpacing.hGapSM,
+                      _buildFilterChip('Đơn hàng', 'regular', Icons.shopping_bag_outlined),
+                      AppSpacing.hGapSM,
+                      _buildFilterChip('Đơn mẫu', 'sample', Icons.science_outlined),
+                    ],
+                  ),
+
+                  AppSpacing.gapLG,
+
                   // Tab bar
                   Container(
                     decoration: BoxDecoration(
@@ -288,10 +365,10 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                       unselectedLabelColor: AppColors.grey600,
                       labelStyle: const TextStyle(fontSize: 12),
                       tabs: [
-                        _buildTab(Icons.pending_actions, 'Chờ nhận', _pendingDeliveries.length, AppColors.warning),
-                        _buildTab(Icons.hourglass_empty, 'Chờ kho', _awaitingDeliveries.length, Colors.purple),
-                        _buildTab(Icons.local_shipping, 'Đang giao', _inProgressDeliveries.length, AppColors.info),
-                        _buildTab(Icons.check_circle, 'Đã giao', _deliveredDeliveries.length, AppColors.success),
+                        _buildTab(Icons.pending_actions, 'Chờ nhận', _filterByOrderType(_pendingDeliveries).length, AppColors.warning),
+                        _buildTab(Icons.hourglass_empty, 'Chờ kho', _filterByOrderType(_awaitingDeliveries).length, Colors.purple),
+                        _buildTab(Icons.local_shipping, 'Đang giao', _filterByOrderType(_inProgressDeliveries).length, AppColors.info),
+                        _buildTab(Icons.check_circle, 'Đã giao', _filterByOrderType(_deliveredDeliveries).length, AppColors.success),
                       ],
                     ),
                   ),
@@ -306,10 +383,10 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                   : TabBarView(
                       controller: _tabController,
                       children: [
-                        _buildDeliveryList(_filterBySearch(_pendingDeliveries), isPending: true),
-                        _buildAwaitingList(_filterBySearch(_awaitingDeliveries)),
-                        _buildDeliveryList(_filterBySearch(_inProgressDeliveries), isPending: false),
-                        _buildDeliveredList(_filterBySearch(_deliveredDeliveries)),
+                        _buildDeliveryList(_filterByOrderType(_filterBySearch(_pendingDeliveries)), isPending: true),
+                        _buildAwaitingList(_filterByOrderType(_filterBySearch(_awaitingDeliveries))),
+                        _buildDeliveryList(_filterByOrderType(_filterBySearch(_inProgressDeliveries)), isPending: false),
+                        _buildDeliveredList(_filterByOrderType(_filterBySearch(_deliveredDeliveries))),
                       ],
                     ),
             ),
@@ -541,6 +618,9 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         : DateTime.now();
     final paymentStatus = salesOrder?['payment_status'] ?? delivery['payment_status'] ?? 'pending';
     final paymentMethod = salesOrder?['payment_method'] ?? delivery['payment_method'] ?? '';
+    final isSample = _getOrderType(delivery) == 'sample';
+    // Cho phép hoàn tác trong 30 phút
+    final canUndo = DateTime.now().difference(updatedAt).inMinutes < 30;
 
     String getPaymentMethodText() {
       if (paymentStatus != 'paid') return 'Chưa thu';
@@ -600,6 +680,20 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                     ),
                   ),
                 ),
+                if (isSample) ...[                  
+                  AppSpacing.hGapSM,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade50,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'MẪU',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple.shade700),
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 Text(
                   currencyFormat.format(totalAmount),
@@ -695,6 +789,25 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                 ),
               ],
             ),
+            
+            // Nút hoàn tác (trong 30 phút)
+            if (canUndo) ...[
+              AppSpacing.gapMD,
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _undoDelivery(delivery),
+                  icon: const Icon(Icons.undo, size: 16),
+                  label: const Text('Hoàn tác giao hàng'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: BorderSide(color: AppColors.error.withOpacity(0.5)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -707,6 +820,8 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     final customer = salesOrder?['customers'] as Map<String, dynamic>?;
     final orderNumber = salesOrder?['order_number'] ?? delivery['delivery_number'] ?? 'N/A';
     final total = (salesOrder?['total'] ?? delivery['total_amount'] ?? 0).toDouble();
+    final isOrderRejected = salesOrder == null || salesOrder['rejected_at'] != null;
+    final isSample = _getOrderType(delivery) == 'sample';
 
     return GestureDetector(
       onTap: () => _showOrderDetailSheet(delivery),
@@ -747,6 +862,19 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                   ),
                 ),
                 const Spacer(),
+                if (isSample)
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade50,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'MẪU',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple.shade700),
+                    ),
+                  ),
                 Text(
                   orderNumber,
                   style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.grey700),
@@ -812,7 +940,45 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
 
             AppSpacing.gapMD,
 
-            // Info text
+            // Info text or rejected warning
+            if (isOrderRejected) ...[
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.errorLight,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.error),
+                    AppSpacing.hGapSM,
+                    Expanded(
+                      child: Text(
+                        'Đơn hàng đã bị hủy bởi quản lý.',
+                        style: TextStyle(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AppSpacing.gapSM,
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _cancelDelivery(delivery['id'] as String),
+                  icon: const Icon(Icons.cancel, size: 18),
+                  label: const Text('Hủy giao'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    foregroundColor: Colors.white,
+                    padding: AppSpacing.paddingVMD,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ] else
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -854,14 +1020,21 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
       customer = salesOrder?['customers'] as Map<String, dynamic>?;
     }
     
+    // Detect if the linked sales_order was soft-deleted (rejected)
+    final isOrderRejected = !isFromSalesOrders && 
+        (salesOrder == null || salesOrder['rejected_at'] != null);
+    
     final orderNumber = salesOrder?['order_number']?.toString() ?? 
                         delivery['delivery_number']?.toString() ?? 
                         delivery['id'].toString().substring(0, 8).toUpperCase();
+    final isSample = _getOrderType(delivery) == 'sample';
     final total = (salesOrder?['total'] as num?)?.toDouble() ?? 
                   (salesOrder?['total_amount'] as num?)?.toDouble() ?? 0;
     final customerName = salesOrder?['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
     final customerAddress = salesOrder?['delivery_address'] ?? salesOrder?['customer_address'] ?? delivery['delivery_address'] ?? customer?['address'];
     final customerPhone = customer?['phone'];
+    final customerLat = (customer?['lat'] as num?)?.toDouble();
+    final customerLng = (customer?['lng'] as num?)?.toDouble();
 
     return GestureDetector(
       onTap: () => _showOrderDetailSheet(delivery, isFromSalesOrders: isFromSalesOrders),
@@ -900,6 +1073,20 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                     ),
                   ),
                 ),
+                if (isSample) ...[
+                  AppSpacing.hGapSM,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade50,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'MẪU',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple.shade700),
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 Text(
                   currencyFormat.format(total),
@@ -938,7 +1125,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
             if (customerAddress != null && customerAddress.isNotEmpty) ...[
               AppSpacing.gapSM,
               InkWell(
-                onTap: () => _openMaps(customerAddress),
+                onTap: () => _openMaps(customerAddress, lat: customerLat, lng: customerLng),
                 child: Row(
                   children: [
                     Icon(Icons.location_on_outlined, size: 18, color: AppColors.infoDark),
@@ -959,13 +1146,38 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
 
             AppSpacing.gapLG,
 
+            // Warning banner for rejected/deleted orders
+            if (isOrderRejected && !isPending) ...[
+              Container(
+                padding: const EdgeInsets.all(10),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.errorLight,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.error),
+                    AppSpacing.hGapSM,
+                    Expanded(
+                      child: Text(
+                        'Đơn hàng đã bị hủy bởi quản lý. Vui lòng hủy giao.',
+                        style: TextStyle(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             // Action buttons
             Row(
               children: [
-                if (!isPending) ...[
+                if (!isPending && !isOrderRejected) ...[
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => _openMaps(customerAddress),
+                      onPressed: () => _openMaps(customerAddress, lat: customerLat, lng: customerLng),
                       icon: const Icon(Icons.directions, size: 18),
                       label: const Text('Chỉ đường'),
                       style: OutlinedButton.styleFrom(
@@ -979,9 +1191,26 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                   AppSpacing.hGapMD,
                 ],
                 Expanded(
-                  flex: isPending ? 1 : 1,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
+                  child: isOrderRejected && !isPending
+                    ? ElevatedButton.icon(
+                        onPressed: () {
+                          final deliveryId = delivery['id'] as String;
+                          _cancelDelivery(deliveryId);
+                        },
+                        icon: const Icon(Icons.cancel, size: 18),
+                        label: const Text('Hủy giao'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                          foregroundColor: Colors.white,
+                          padding: AppSpacing.paddingVMD,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      )
+                    : ElevatedButton.icon(
+                    onPressed: _isProcessing ? null : () async {
                       if (isPending) {
                         if (isFromSalesOrders) {
                           final orderId = delivery['id'] as String;
@@ -1014,6 +1243,74 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                           );
                           return;
                         }
+                        // Xác nhận trước khi ghi nhận giao hàng (tránh thao tác nhầm)
+                        final orderNum = (delivery['sales_orders'] as Map<String, dynamic>?)?['order_number'] ?? '';
+                        final custName = (delivery['sales_orders'] as Map<String, dynamic>?)?['customer_name'] ?? 'Khách hàng';
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.warningLight,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(Icons.warning_amber_rounded, color: AppColors.warningDark, size: 24),
+                                ),
+                                AppSpacing.hGapMD,
+                                const Expanded(child: Text('Xác nhận giao hàng?', style: TextStyle(fontSize: 17))),
+                              ],
+                            ),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Đơn #$orderNum', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 4),
+                                Text('Khách: $custName'),
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.errorLight,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.info_outline, size: 16, color: AppColors.error),
+                                      const SizedBox(width: 8),
+                                      const Expanded(
+                                        child: Text(
+                                          'Thao tác này sẽ ghi nhận doanh thu. Vui lòng kiểm tra kỹ trước khi xác nhận.',
+                                          style: TextStyle(fontSize: 12, color: Colors.red),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Hủy'),
+                              ),
+                              ElevatedButton.icon(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                icon: const Icon(Icons.check_circle, size: 18),
+                                label: const Text('Xác nhận đã giao'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.success,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed != true) return;
                         _completeDelivery(deliveryId, orderId);
                       }
                     },
@@ -1044,6 +1341,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
   // ============================================================================
 
   Future<void> _acceptOrder(String orderId, Map<String, dynamic> orderData) async {
+    if (_isProcessing) return;
     // Validate orderId
     if (orderId.isEmpty) {
       if (mounted) {
@@ -1066,6 +1364,8 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
       if (driverId == null || companyId == null) {
         throw Exception('Chưa đăng nhập hoặc thiếu thông tin công ty');
       }
+
+      setState(() => _isProcessing = true);
 
       final now = DateTime.now().toIso8601String();
       await supabase.from('deliveries').insert({
@@ -1112,10 +1412,14 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
   Future<void> _pickupDelivery(String deliveryId, String orderId) async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
     try {
       final supabase = Supabase.instance.client;
 
@@ -1157,10 +1461,104 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _cancelDelivery(String deliveryId) async {
+    // Confirm with the driver
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.error),
+            AppSpacing.hGapSM,
+            const Expanded(child: Text('Hủy giao hàng', style: TextStyle(fontSize: 18))),
+          ],
+        ),
+        content: const Text(
+          'Đơn hàng đã bị hủy bởi quản lý.\nBạn có muốn hủy giao để dọn dẹp danh sách?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Không'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Hủy giao'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Lấy order_id từ delivery để reset sales_order
+      final deliveryData = await supabase
+          .from('deliveries')
+          .select('order_id')
+          .eq('id', deliveryId)
+          .maybeSingle();
+      final orderId = deliveryData?['order_id'] as String?;
+
+      await supabase.from('deliveries').update({
+        'status': 'cancelled',
+        'updated_at': DateTime.now().toIso8601String(),
+        'notes': 'Đơn hàng đã bị hủy bởi quản lý - driver cancel delivery',
+      }).eq('id', deliveryId);
+
+      // Reset sales_order delivery_status để đơn không bị kẹt
+      if (orderId != null && orderId.isNotEmpty) {
+        await supabase.from('sales_orders').update({
+          'delivery_status': 'pending',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', orderId);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                AppSpacing.hGapMD,
+                Text('Đã hủy giao hàng thành công'),
+              ],
+            ),
+            backgroundColor: AppColors.info,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        _loadDeliveries();
+      }
+    } catch (e) {
+      AppLogger.error('Failed to cancel delivery', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
   Future<void> _completeDelivery(String deliveryId, String orderId) async {
+    if (_isProcessing) return; // Chống double-tap
     AppLogger.info('🚛 _completeDelivery called with deliveryId: "$deliveryId", orderId: "$orderId"');
     
     if (orderId.isEmpty || orderId == 'null') {
@@ -1176,8 +1574,29 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
       return;
     }
 
+    setState(() => _isProcessing = true);
     try {
       final supabase = Supabase.instance.client;
+
+      // Safety check: kiểm tra đơn hàng có bị hủy/reject không trước khi hoàn tất
+      final safetyCheck = await supabase
+          .from('sales_orders')
+          .select('id, rejected_at, status')
+          .eq('id', orderId)
+          .maybeSingle();
+      if (safetyCheck == null || safetyCheck['rejected_at'] != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ Đơn hàng đã bị hủy bởi quản lý. Không thể ghi nhận giao hàng.'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          _loadDeliveries();
+        }
+        return;
+      }
       
       final orderResponse = await supabase
           .from('sales_orders')
@@ -1230,6 +1649,21 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
         }).eq('id', customerId);
         AppLogger.info('📝 Updated customer debt: $currentDebt -> $newDebt');
       }
+
+      // Handle cash payment - create customer_payments record for finance "Thu tiền" tab
+      if (result['updatePayment'] == true && result['paymentMethod'] == 'cash' && customerId != null) {
+        final user = ref.read(currentUserProvider);
+        await supabase.from('customer_payments').insert({
+          'company_id': user?.companyId,
+          'customer_id': customerId,
+          'amount': total,
+          'payment_date': DateTime.now().toIso8601String(),
+          'payment_method': 'cash',
+          'created_by': user?.id,
+          'notes': 'Thu tiền mặt khi giao hàng - $orderNumber',
+        });
+        AppLogger.info('💰 Created customer_payment for cash collection - $orderNumber');
+      }
       
       AppLogger.info('✅ Update completed for deliveryId: $deliveryId, orderId: $orderId');
 
@@ -1258,6 +1692,158 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
       }
     } catch (e) {
       AppLogger.error('Failed to complete delivery', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _undoDelivery(Map<String, dynamic> delivery) async {
+    final salesOrder = delivery['sales_orders'] as Map<String, dynamic>?;
+    final orderNumber = salesOrder?['order_number'] ?? '';
+    final customerName = salesOrder?['customer_name'] ?? 'Khách hàng';
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.errorLight,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.undo, color: AppColors.error, size: 24),
+            ),
+            AppSpacing.hGapMD,
+            const Expanded(child: Text('Hoàn tác giao hàng?', style: TextStyle(fontSize: 17))),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Đơn #$orderNumber', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('Khách: $customerName'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.warningLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Đơn hàng sẽ chuyển về trạng thái "Đang giao". Doanh thu và công nợ sẽ được hoàn lại.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.undo, size: 18),
+            label: const Text('Hoàn tác'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final supabase = Supabase.instance.client;
+      final deliveryId = delivery['id'] as String;
+      final orderId = delivery['order_id'] as String? ?? salesOrder?['id'] as String?;
+      
+      // Revert delivery status to in_progress
+      await supabase.from('deliveries').update({
+        'status': 'in_progress',
+        'updated_at': DateTime.now().toIso8601String(),
+        'notes': 'Hoàn tác bởi tài xế',
+      }).eq('id', deliveryId);
+
+      // Revert sales_order
+      if (orderId != null && orderId.isNotEmpty) {
+        // Check if payment was debt → revert customer debt
+        final paymentMethod = salesOrder?['payment_method']?.toString().toLowerCase();
+        final paymentStatus = salesOrder?['payment_status']?.toString().toLowerCase();
+        
+        await supabase.from('sales_orders').update({
+          'delivery_status': 'delivering',
+          'payment_status': 'unpaid',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', orderId);
+
+        // Revert debt if was ghi nợ
+        if (paymentMethod == 'debt' && paymentStatus == 'paid') {
+          final total = (salesOrder?['total'] ?? 0).toDouble();
+          final customerId = salesOrder?['customer_id']?.toString();
+          if (customerId != null && total > 0) {
+            final custData = await supabase
+                .from('customers')
+                .select('total_debt')
+                .eq('id', customerId)
+                .maybeSingle();
+            if (custData != null) {
+              final currentDebt = (custData['total_debt'] ?? 0).toDouble();
+              final revertedDebt = (currentDebt - total).clamp(0.0, double.infinity);
+              await supabase.from('customers').update({
+                'total_debt': revertedDebt,
+                'updated_at': DateTime.now().toIso8601String(),
+              }).eq('id', customerId);
+              AppLogger.info('📝 Reverted customer debt: $currentDebt -> $revertedDebt');
+            }
+          }
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.undo, color: Colors.white),
+                AppSpacing.hGapMD,
+                Text('Đã hoàn tác! Đơn chuyển về "Đang giao".'),
+              ],
+            ),
+            backgroundColor: AppColors.info,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        _loadDeliveries();
+      }
+    } catch (e) {
+      AppLogger.error('Failed to undo delivery', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1697,16 +2283,22 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     }
   }
 
-  Future<void> _openMaps(String? address) async {
-    if (address == null || address.isEmpty) return;
+  Future<void> _openMaps(String? address, {double? lat, double? lng}) async {
+    if ((address == null || address.isEmpty) && (lat == null || lng == null)) return;
 
-    String cleanAddress = address;
-    if (address.contains('--')) {
-      cleanAddress = address.split('--').first.trim();
+    final String destination;
+    if (lat != null && lng != null) {
+      destination = '$lat,$lng';
+    } else {
+      String cleanAddress = address!;
+      if (address.contains('--')) {
+        cleanAddress = address.split('--').first.trim();
+      }
+      destination = Uri.encodeComponent(cleanAddress);
     }
 
     final uri = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=${Uri.encodeComponent(cleanAddress)}&travelmode=driving',
+      'https://www.google.com/maps/dir/?api=1&origin=Current+Location&destination=$destination&travelmode=driving',
     );
 
     if (await canLaunchUrl(uri)) {
@@ -1744,6 +2336,8 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
     final customerName = salesOrder?['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
     final customerPhone = customer?['phone'] as String?;
     final customerAddress = salesOrder?['delivery_address'] ?? salesOrder?['customer_address'] ?? delivery['delivery_address'] ?? customer?['address'] ?? '';
+    final customerLat = (customer?['lat'] as num?)?.toDouble();
+    final customerLng = (customer?['lng'] as num?)?.toDouble();
     final paymentStatus = salesOrder?['payment_status'] ?? 'pending';
     final paymentMethod = salesOrder?['payment_method'] ?? '';
     final items = (isFromSalesOrders
@@ -1864,7 +2458,7 @@ class _DriverDeliveriesPageState extends ConsumerState<DriverDeliveriesPage>
                           Icons.location_on,
                           customerAddress,
                           AppColors.info,
-                          () => _openMaps(customerAddress),
+                          () => _openMaps(customerAddress, lat: customerLat, lng: customerLng),
                         ),
                     ]),
 

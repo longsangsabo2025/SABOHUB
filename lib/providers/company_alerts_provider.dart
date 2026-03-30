@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/app_logger.dart';
 
 /// Company Alerts Model
 /// Shows notification counts for each company
@@ -42,7 +43,8 @@ final companyAlertsProvider = FutureProvider.autoDispose.family<CompanyAlerts, S
     try {
       final res = await query;
       return (res as List).length;
-    } catch (_) {
+    } catch (e) {
+      AppLogger.warn('Alert count query failed: $e');
       return 0;
     }
   }
@@ -94,7 +96,8 @@ final multiCompanyAlertsProvider = FutureProvider.autoDispose.family<Map<String,
     try {
       final alerts = await ref.read(companyAlertsProvider(id).future);
       results[id] = alerts;
-    } catch (_) {
+    } catch (e) {
+      AppLogger.warn('Multi-company alert failed for $id: $e');
       results[id] = CompanyAlerts(companyId: id);
     }
   }

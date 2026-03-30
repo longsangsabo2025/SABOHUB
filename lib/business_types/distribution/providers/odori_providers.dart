@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_sabohub/utils/postgrest_sanitizer.dart';
+import '../../../utils/app_logger.dart';
 import '../models/odori_customer.dart';
 import '../models/odori_product.dart';
 import '../models/odori_sales_order.dart';
@@ -10,7 +11,6 @@ import '../../../models/inventory_movement.dart';
 import '../models/product_sample.dart';
 import '../../../models/referrer.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../utils/app_logger.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -530,7 +530,8 @@ final dashboardStatsProvider = FutureProvider.autoDispose<OdoriDashboardStats>((
       try {
         final updatedAt = DateTime.parse(updatedAtStr);
         return updatedAt.isAfter(yesterdayStart);
-      } catch (_) {
+      } catch (e) {
+        AppLogger.warn('Date parse error in completedToday filter: $e');
         return false;
       }
     }).length;
@@ -572,7 +573,8 @@ final dashboardStatsProvider = FutureProvider.autoDispose<OdoriDashboardStats>((
             monthRevenue += total;
           }
         }
-      } catch (_) {
+      } catch (e) {
+        AppLogger.warn('Order data parse error in dashboard: $e');
         continue;
       }
     }

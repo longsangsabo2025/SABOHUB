@@ -10,7 +10,7 @@ class DeliveryDetailSheet extends StatelessWidget {
   final VoidCallback onPickup;
   final VoidCallback onComplete;
   final Function(String?) onCall;
-  final Function(String?) onNavigate;
+  final void Function(String?, {double? lat, double? lng}) onNavigate;
   final VoidCallback onFailDelivery;
   final VoidCallback onCollectPayment;
 
@@ -43,6 +43,8 @@ class DeliveryDetailSheet extends StatelessWidget {
     final total = (effectiveOrder['total'] as num?)?.toDouble() ?? (delivery['total_amount'] as num?)?.toDouble() ?? 0;
     final customerName = effectiveOrder['customer_name'] ?? customer?['name'] ?? 'Khách hàng';
     final customerAddress = effectiveOrder['delivery_address'] ?? customer?['address'];
+    final customerLat = (customer?['lat'] as num?)?.toDouble();
+    final customerLng = (customer?['lng'] as num?)?.toDouble();
     final customerPhone = customer?['phone'] ?? effectiveOrder['customer_phone'];
     final notes = delivery['notes'] ?? effectiveOrder['delivery_notes'];
     final isPending = status == 'ready_for_delivery' || status == 'processing';
@@ -98,7 +100,7 @@ class DeliveryDetailSheet extends StatelessWidget {
                 children: [
                   _buildSectionTitle('Thông tin khách hàng', Icons.person),
                   const SizedBox(height: 12),
-                  _buildCustomerInfo(context, customerName, customerPhone, customerAddress),
+                  _buildCustomerInfo(context, customerName, customerPhone, customerAddress, customerLat, customerLng),
                   if (notes != null && notes.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     _buildSectionTitle('Ghi chú', Icons.notes),
@@ -123,13 +125,13 @@ class DeliveryDetailSheet extends StatelessWidget {
               ),
             ),
           ),
-          _buildActionButtons(context, isPending, isDelivering, needsPaymentCollection, customerAddress),
+          _buildActionButtons(context, isPending, isDelivering, needsPaymentCollection, customerAddress, customerLat, customerLng),
         ],
       ),
     );
   }
 
-  Widget _buildCustomerInfo(BuildContext context, String customerName, String? customerPhone, String? customerAddress) {
+  Widget _buildCustomerInfo(BuildContext context, String customerName, String? customerPhone, String? customerAddress, double? customerLat, double? customerLng) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(16)),
@@ -158,7 +160,7 @@ class DeliveryDetailSheet extends StatelessWidget {
           if (customerAddress != null && customerAddress.isNotEmpty) ...[
             const SizedBox(height: 12),
             GestureDetector(
-              onTap: () => onNavigate(customerAddress),
+              onTap: () => onNavigate(customerAddress, lat: customerLat, lng: customerLng),
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(12)),
@@ -319,7 +321,7 @@ class DeliveryDetailSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, bool isPending, bool isDelivering, bool needsPaymentCollection, String? customerAddress) {
+  Widget _buildActionButtons(BuildContext context, bool isPending, bool isDelivering, bool needsPaymentCollection, String? customerAddress, double? customerLat, double? customerLng) {
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05), blurRadius: 10, offset: Offset(0, -5))]),
@@ -331,7 +333,7 @@ class DeliveryDetailSheet extends StatelessWidget {
               if (customerAddress != null)
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => onNavigate(customerAddress),
+                    onPressed: () => onNavigate(customerAddress, lat: customerLat, lng: customerLng),
                     icon: const Icon(Icons.directions),
                     label: const Text('Chỉ đường'),
                     style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),

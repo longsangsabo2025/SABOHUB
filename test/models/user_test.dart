@@ -150,7 +150,7 @@ void main() {
         expect(json['id'], 'emp-001');
         expect(json['full_name'], 'Test User');
         expect(json['email'], 'test@sabohub.com');
-        expect(json['role'], 'MANAGER');
+        expect(json['role'], 'manager');
         expect(json['company_id'], 'comp-001');
         expect(json['business_type'], 'restaurant');
         expect(json['is_active'], true);

@@ -12,6 +12,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../services/debt_calculation_service.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../services/image_upload_service.dart';
 import '../../../../widgets/customer_avatar.dart';
@@ -35,6 +36,7 @@ class _AccountsReceivablePageState
   List<Map<String, dynamic>> _customersWithDebt = [];
   List<Map<String, dynamic>> _agingData = [];
   List<Map<String, dynamic>> _salesOrderAgingData = [];
+  Set<String> _overdueCustomerIds = {};
   bool _isLoading = true;
   final _searchController = TextEditingController();
   String _sortBy = 'debt_desc'; // debt_desc, debt_asc, name_asc
@@ -69,73 +71,9 @@ class _AccountsReceivablePageState
 
       final supabase = Supabase.instance.client;
 
-      // Build debt from source transactions to avoid stale cached totals.
-      List<Map<String, dynamic>> soAging = [];
-      final Map<String, double> debtByCustomer = {};
-      try {
-        final unpaidOrders = await supabase
-            .from('sales_orders')
-            .select('customer_id, total, paid_amount, created_at, order_date')
-            .eq('company_id', companyId)
-            .neq('payment_status', 'paid')
-            .neq('status', 'cancelled');
-        final now = DateTime.now();
-        for (final o in unpaidOrders) {
-          final total = (o['total'] ?? 0).toDouble();
-          final paid = (o['paid_amount'] ?? 0).toDouble();
-          final balance = total - paid;
-          if (balance <= 0) continue;
-          final custId = o['customer_id']?.toString() ?? '';
-          debtByCustomer[custId] = (debtByCustomer[custId] ?? 0) + balance;
-          final dateStr = (o['order_date'] ?? o['created_at'])?.toString();
-          if (dateStr == null) continue;
-          final date = DateTime.tryParse(dateStr);
-          if (date == null) continue;
-          final daysOverdue = now.difference(date).inDays;
-          String bucket = 'current';
-          if (daysOverdue > 90) {
-            bucket = '90+';
-          } else if (daysOverdue > 60) {
-            bucket = '61-90';
-          } else if (daysOverdue > 30) {
-            bucket = '31-60';
-          } else if (daysOverdue > 0) {
-            bucket = '1-30';
-          }
-          soAging.add({
-            'customer_id': custId,
-            'balance': balance,
-            'aging_bucket': bucket,
-            'days_overdue': daysOverdue,
-          });
-        }
-      } catch (e) {
-        AppLogger.warn('Sales order aging not available: $e');
-      }
-
-      // Add manual receivables (opening debt) to the same debt map.
-      try {
-        final manualReceivables = await supabase
-            .from('receivables')
-            .select('customer_id, original_amount, paid_amount, write_off_amount')
-            .eq('company_id', companyId)
-            .eq('reference_type', 'manual')
-            .neq('status', 'paid');
-
-        for (final r in manualReceivables) {
-          final original = (r['original_amount'] ?? 0).toDouble();
-          final paid = (r['paid_amount'] ?? 0).toDouble();
-          final writeOff = (r['write_off_amount'] ?? 0).toDouble();
-          final balance = original - paid - writeOff;
-          if (balance <= 0) continue;
-
-          final custId = r['customer_id']?.toString() ?? '';
-          if (custId.isEmpty) continue;
-          debtByCustomer[custId] = (debtByCustomer[custId] ?? 0) + balance;
-        }
-      } catch (e) {
-        AppLogger.warn('Manual receivables load failed: $e');
-      }
+      // Use shared DebtCalculationService as single source of truth
+      final debtSummary = await DebtCalculationService.computeDebtSummary(companyId);
+      final debtByCustomer = debtSummary.debtByCustomer;
 
       final customerMap = <String, Map<String, dynamic>>{};
 
@@ -175,7 +113,8 @@ class _AccountsReceivablePageState
       setState(() {
         _customersWithDebt = customerList;
         _agingData = aging;
-        _salesOrderAgingData = soAging;
+        _salesOrderAgingData = List<Map<String, dynamic>>.from(debtSummary.agingItems);
+        _overdueCustomerIds = debtSummary.overdueCustomerIds;
         _isLoading = false;
       });
     } catch (e) {
@@ -223,21 +162,8 @@ class _AccountsReceivablePageState
   }
 
   List<Map<String, dynamic>> get _overdueCustomers {
-    // Combine overdue from receivables view AND sales orders
-    final overdueCustomerIds = <dynamic>{};
-    // From receivables aging view
-    overdueCustomerIds.addAll(
-      _agingData
-          .where((a) => (a['days_overdue'] ?? 0) > 0)
-          .map((a) => a['customer_id']),
-    );
-    // From sales orders aging (> 30 days old counts as overdue)
-    overdueCustomerIds.addAll(
-      _salesOrderAgingData
-          .where((a) => (a['days_overdue'] ?? 0) > 30)
-          .map((a) => a['customer_id']),
-    );
-    return _filteredCustomers.where((c) => overdueCustomerIds.contains(c['id'])).toList();
+    // Use overdue customer IDs from shared DebtCalculationService
+    return _filteredCustomers.where((c) => _overdueCustomerIds.contains(c['id']?.toString())).toList();
   }
 
   // Aging summary for the header (combines receivables + sales orders)

@@ -1027,7 +1027,7 @@ final cachedWarehouseOrdersProvider =
       .from('sales_orders')
       .select('*, customers(name), sales_order_items(*, products(name, sku, unit))')
       .eq('company_id', companyId)
-      .inFilter('status', ['sent_to_warehouse', 'picking'])
+      .inFilter('status', ['confirmed', 'sent_to_warehouse', 'picking'])
       .order('created_at', ascending: true);
 
   final orders = (response as List)
@@ -1064,6 +1064,7 @@ final cachedWarehouseDashboardStatsProvider =
   
   final stats = {
     'total_orders': orders.length,
+    'confirmed': orders.where((o) => o.status == 'confirmed').length,
     'sent_to_warehouse': orders.where((o) => o.status == 'sent_to_warehouse').length,
     'picking': orders.where((o) => o.status == 'picking').length,
     'total_items': orders.fold<int>(0, (sum, o) => sum + o.items.length),

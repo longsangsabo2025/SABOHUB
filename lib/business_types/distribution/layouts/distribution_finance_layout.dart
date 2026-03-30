@@ -20,7 +20,7 @@ class _DistributionFinanceLayoutState
   int _currentIndex = 0;
 
   void _navigateToTab(int index) {
-    if (index >= 0 && index <= 4) {
+    if (index >= 0 && index <= 5) {
       setState(() => _currentIndex = index);
     }
   }
@@ -31,6 +31,7 @@ class _DistributionFinanceLayoutState
         const InvoicesPage(),
         const AccountsReceivablePage(),
         const PaymentsPage(),
+        const FinanceDeliveryHistoryPage(),
       ];
 
   @override
@@ -125,6 +126,18 @@ class _DistributionFinanceLayoutState
                   child: Icon(Icons.payments, color: Colors.green.shade700),
                 ),
                 label: 'Thu tiền',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.local_shipping_outlined, color: Colors.grey.shade600),
+                selectedIcon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.local_shipping, color: Colors.deepPurple.shade700),
+                ),
+                label: 'Giao hàng',
               ),
             ],
           ),

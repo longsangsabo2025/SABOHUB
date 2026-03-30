@@ -27,6 +27,8 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
   bool _isLoadingProducts = true;
   
   final _notesController = TextEditingController();
+  final _discountController = TextEditingController();
+  double _discountPercent = 0;
   DateTime _expectedDeliveryDate = DateTime.now().add(const Duration(days: 1));
   bool _isSubmitting = false;
 
@@ -39,6 +41,7 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
   @override
   void dispose() {
     _notesController.dispose();
+    _discountController.dispose();
     super.dispose();
   }
 
@@ -113,8 +116,16 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
     });
   }
 
-  double get _orderTotal {
+  double get _subtotal {
     return _orderItems.fold(0.0, (sum, item) => sum + (item['line_total'] ?? 0));
+  }
+
+  double get _discountAmount {
+    return _subtotal * _discountPercent / 100;
+  }
+
+  double get _finalTotal {
+    return _subtotal - _discountAmount;
   }
 
   Future<void> _submitOrder() async {
@@ -162,7 +173,7 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
         if (custData != null) {
           final creditLimit = ((custData['credit_limit'] ?? 0) as num).toDouble();
           final totalDebt = ((custData['total_debt'] ?? 0) as num).toDouble();
-          if (creditLimit > 0 && (totalDebt + _orderTotal) > creditLimit) {
+          if (creditLimit > 0 && (totalDebt + _finalTotal) > creditLimit) {
             if (!mounted) return;
             final proceed = await showDialog<bool>(
               context: context,
@@ -177,9 +188,9 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
                   'Đơn hàng sẽ vượt hạn mức tín dụng:\n\n'
                   '• Hạn mức: ${cf.format(creditLimit)}\n'
                   '• Nợ hiện tại: ${cf.format(totalDebt)}\n'
-                  '• Đơn mới: ${cf.format(_orderTotal)}\n'
-                  '• Tổng sau đơn: ${cf.format(totalDebt + _orderTotal)}\n\n'
-                  'Vượt: ${cf.format(totalDebt + _orderTotal - creditLimit)}',
+                  '• Đơn mới: ${cf.format(_finalTotal)}\n'
+                  '• Tổng sau đơn: ${cf.format(totalDebt + _finalTotal)}\n\n'
+                  'Vượt: ${cf.format(totalDebt + _finalTotal - creditLimit)}',
                 ),
                 actions: [
                   TextButton(
@@ -270,8 +281,10 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
             'status': 'pending_approval',
             'payment_status': 'unpaid',
             'delivery_status': 'pending',
-            'subtotal': _orderTotal,
-            'total': _orderTotal,
+            'subtotal': _subtotal,
+            'discount_percent': _discountPercent > 0 ? _discountPercent : null,
+            'discount_amount': _discountPercent > 0 ? _discountAmount : 0,
+            'total': _finalTotal,
             'notes': _notesController.text,
           })
           .select()
@@ -318,6 +331,8 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
           _selectedCustomer = null;
           _orderItems.clear();
           _notesController.clear();
+          _discountController.clear();
+          _discountPercent = 0;
           _expectedDeliveryDate = DateTime.now().add(const Duration(days: 1));
         });
       }
@@ -419,18 +434,82 @@ class _SalesCreateOrderPageState extends ConsumerState<SalesCreateOrderPage> {
                       const SizedBox(height: 8),
                       ..._orderItems.asMap().entries.map((entry) => _buildOrderItemCard(entry.key, entry.value)),
 
-                      // Order total
+                      // Discount input
+                      const SizedBox(height: 8),
                       Container(
-                        padding: EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.discount, color: Colors.orange.shade700, size: 20),
+                            const SizedBox(width: 8),
+                            const Text('Chiết khấu', style: TextStyle(fontWeight: FontWeight.w600)),
+                            const Spacer(),
+                            SizedBox(
+                              width: 80,
+                              child: TextField(
+                                controller: _discountController,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                textAlign: TextAlign.center,
+                                decoration: InputDecoration(
+                                  hintText: '0',
+                                  suffixText: '%',
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _discountPercent = double.tryParse(value) ?? 0;
+                                    if (_discountPercent < 0) _discountPercent = 0;
+                                    if (_discountPercent > 100) _discountPercent = 100;
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Order total summary
+                      Container(
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(colors: [Colors.green.shade400, Colors.green.shade600]),
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Column(
                           children: [
-                            Text('TỔNG CỘNG:', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.w600, fontSize: 16)),
-                            Text(currencyFormat.format(_orderTotal), style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold, fontSize: 22)),
+                            if (_discountPercent > 0) ...[
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Tạm tính:', style: TextStyle(color: Theme.of(context).colorScheme.surface.withOpacity(0.85), fontSize: 14)),
+                                  Text(currencyFormat.format(_subtotal), style: TextStyle(color: Theme.of(context).colorScheme.surface.withOpacity(0.85), fontSize: 14)),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('CK ${_discountPercent.toStringAsFixed(1)}%:', style: TextStyle(color: Colors.yellow.shade200, fontSize: 14)),
+                                  Text('-${currencyFormat.format(_discountAmount)}', style: TextStyle(color: Colors.yellow.shade200, fontSize: 14)),
+                                ],
+                              ),
+                              const Divider(color: Colors.white38, height: 16),
+                            ],
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('TỔNG CỘNG:', style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.w600, fontSize: 16)),
+                                Text(currencyFormat.format(_finalTotal), style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold, fontSize: 22)),
+                              ],
+                            ),
                           ],
                         ),
                       ),

@@ -53,7 +53,7 @@ void main() {
     );
     await PushNotificationService().initialize();
   } catch (e) {
-    print('Firebase not fully configured.');
+    debugPrint('Firebase not fully configured: $e');
   }
 
   // Initialize Supabase with persistent session

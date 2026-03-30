@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'app_errors.dart';
 
@@ -116,15 +117,25 @@ class ErrorHandler {
     }
   }
 
-  /// Report error to external service (placeholder for future implementation)
+  /// Report error to Sentry for production monitoring
   void _reportError(AppError error) {
-    // TODO: Implement error reporting to services like Sentry, Crashlytics, etc.
-    if (kDebugMode) {
+    if (!kReleaseMode) {
       developer.log(
-        'Would report error to external service: ${error.message}',
+        'Would report error to Sentry: ${error.message}',
         name: 'SABOHUB_ERROR_REPORT',
       );
     }
+    Sentry.captureException(
+      error is UnknownError ? (error.originalError ?? error) : error,
+      stackTrace: error.stackTrace,
+      withScope: (scope) {
+        scope.setTag('error_category', error.category.name);
+        scope.setTag('error_severity', error.severity.name);
+        scope.level = error.severity == ErrorSeverity.critical
+            ? SentryLevel.fatal
+            : SentryLevel.error;
+      },
+    );
   }
 }
 

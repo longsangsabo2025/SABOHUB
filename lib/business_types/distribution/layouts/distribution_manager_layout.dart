@@ -15,6 +15,7 @@ import '../pages/manager/customers_page.dart';
 import '../pages/manager/inventory_page.dart';
 import '../pages/manager/reports_page.dart';
 import '../pages/manager/referrers_page.dart';
+import '../pages/manager/survey_management_page.dart';
 import '../../../utils/app_logger.dart';
 // Distribution-specific layouts
 import 'distribution_warehouse_layout.dart';
@@ -699,6 +700,23 @@ class _DistributionManagerLayoutState
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const ReferrersPage(),
+                      ),
+                    );
+                  },
+                ),
+
+                // Surveys - Khảo sát
+                _buildRoleSection(
+                  icon: Icons.poll,
+                  title: 'Khảo sát',
+                  subtitle: 'Tạo, quản lý & xem kết quả',
+                  color: Colors.purple,
+                  isActive: false,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const SurveyManagementPage(),
                       ),
                     );
                   },

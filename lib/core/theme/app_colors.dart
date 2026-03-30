@@ -155,11 +155,14 @@ class AppColors {
     switch (status?.toLowerCase()) {
       case 'draft':
         return orderDraft;
+      case 'pending':
       case 'pending_approval':
         return orderPendingApproval;
       case 'confirmed':
+      case 'sent_to_warehouse':
         return orderConfirmed;
       case 'processing':
+      case 'picking':
         return orderProcessing;
       case 'ready':
         return orderReady;

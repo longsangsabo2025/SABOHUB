@@ -333,6 +333,106 @@ class Survey {
 }
 
 class SurveyService {
+  /// Get survey statistics for manager dashboard
+  Future<Map<String, dynamic>> getSurveyStats(String companyId) async {
+    try {
+      // Get all surveys for the company
+      final surveys = await supabase
+          .from('surveys')
+          .select('id, title, questions, is_active, target_responses, current_responses, created_at')
+          .eq('company_id', companyId)
+          .order('created_at', ascending: false);
+
+      final surveyList = List<Map<String, dynamic>>.from(surveys);
+      final totalSurveys = surveyList.length;
+      final activeSurveys = surveyList.where((s) => s['is_active'] == true).length;
+
+      // Get responses stats
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final responses = await supabase
+          .from('survey_responses')
+          .select('id, survey_id, completed_at, total_score, duration_seconds, respondent_id')
+          .eq('company_id', companyId)
+          .order('completed_at', ascending: false);
+
+      final responseList = List<Map<String, dynamic>>.from(responses);
+      final totalResponses = responseList.length;
+      final todayResponses = responseList.where((r) {
+        final completedAt = r['completed_at']?.toString() ?? '';
+        return completedAt.startsWith(today);
+      }).length;
+
+      // Average score
+      double avgScore = 0;
+      int scoredCount = 0;
+      for (final r in responseList) {
+        if (r['total_score'] != null) {
+          avgScore += (r['total_score'] as num).toDouble();
+          scoredCount++;
+        }
+      }
+      if (scoredCount > 0) avgScore = avgScore / scoredCount;
+
+      // Average duration
+      int avgDuration = 0;
+      int durationCount = 0;
+      for (final r in responseList) {
+        if (r['duration_seconds'] != null) {
+          avgDuration += (r['duration_seconds'] as num).toInt();
+          durationCount++;
+        }
+      }
+      if (durationCount > 0) avgDuration = avgDuration ~/ durationCount;
+
+      // Unique respondents
+      final uniqueRespondents = responseList
+          .map((r) => r['respondent_id'])
+          .where((id) => id != null)
+          .toSet()
+          .length;
+
+      // Per-survey breakdown
+      final surveyBreakdown = <Map<String, dynamic>>[];
+      for (final s in surveyList) {
+        final surveyResponses = responseList.where((r) => r['survey_id'] == s['id']).length;
+        final target = s['target_responses'] ?? 0;
+        final questions = s['questions'] as List? ?? [];
+        surveyBreakdown.add({
+          'id': s['id'],
+          'title': s['title'],
+          'questionCount': questions.length,
+          'responseCount': surveyResponses,
+          'targetResponses': target,
+          'completionRate': target > 0 ? (surveyResponses / target * 100).round() : 0,
+          'isActive': s['is_active'] ?? false,
+        });
+      }
+
+      return {
+        'totalSurveys': totalSurveys,
+        'activeSurveys': activeSurveys,
+        'totalResponses': totalResponses,
+        'todayResponses': todayResponses,
+        'avgScore': avgScore,
+        'avgDurationSeconds': avgDuration,
+        'uniqueRespondents': uniqueRespondents,
+        'surveyBreakdown': surveyBreakdown,
+      };
+    } catch (e) {
+      AppLogger.error('Failed to load survey stats', e);
+      return {
+        'totalSurveys': 0,
+        'activeSurveys': 0,
+        'totalResponses': 0,
+        'todayResponses': 0,
+        'avgScore': 0.0,
+        'avgDurationSeconds': 0,
+        'uniqueRespondents': 0,
+        'surveyBreakdown': <Map<String, dynamic>>[],
+      };
+    }
+  }
+
   Future<List<Survey>> getActiveSurveys(String companyId) async {
     try {
       final now = DateTime.now().toIso8601String().split('T')[0];
@@ -387,6 +487,32 @@ class SurveyService {
     }
   }
 
+  Future<String> createSurvey({
+    required String companyId,
+    required String title,
+    String? description,
+    required List<Map<String, dynamic>> questions,
+    String? createdBy,
+    String surveyType = 'customer',
+  }) async {
+    try {
+      final response = await supabase.from('surveys').insert({
+        'company_id': companyId,
+        'title': title,
+        'description': description,
+        'survey_type': surveyType,
+        'questions': questions,
+        'is_active': true,
+        'created_by': createdBy,
+      }).select('id').single();
+
+      return response['id'];
+    } catch (e) {
+      AppLogger.error('Failed to create survey', e);
+      rethrow;
+    }
+  }
+
   Future<bool> hasRespondedToday(String surveyId, String customerId) async {
     try {
       final today = DateTime.now().toIso8601String().split('T')[0];
@@ -402,6 +528,108 @@ class SurveyService {
       return response != null;
     } catch (e) {
       return false;
+    }
+  }
+
+  /// Get ALL surveys for company (active + inactive)
+  Future<List<Survey>> getAllSurveys(String companyId) async {
+    try {
+      final response = await supabase
+          .from('surveys')
+          .select()
+          .eq('company_id', companyId)
+          .order('created_at', ascending: false);
+
+      return (response as List).map((e) => Survey.fromJson(e)).toList();
+    } catch (e) {
+      AppLogger.error('Failed to load all surveys', e);
+      return [];
+    }
+  }
+
+  /// Toggle survey active status
+  Future<void> toggleSurveyActive(String surveyId, bool isActive) async {
+    await supabase.from('surveys').update({
+      'is_active': isActive,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', surveyId);
+  }
+
+  /// Delete a survey
+  Future<void> deleteSurvey(String surveyId) async {
+    await supabase.from('surveys').delete().eq('id', surveyId);
+  }
+
+  /// Update survey
+  Future<void> updateSurvey({
+    required String surveyId,
+    String? title,
+    String? description,
+    List<Map<String, dynamic>>? questions,
+    int? targetResponses,
+  }) async {
+    final updates = <String, dynamic>{
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (title != null) updates['title'] = title;
+    if (description != null) updates['description'] = description;
+    if (questions != null) updates['questions'] = questions;
+    if (targetResponses != null) updates['target_responses'] = targetResponses;
+
+    await supabase.from('surveys').update(updates).eq('id', surveyId);
+  }
+
+  /// Get responses for a specific survey with respondent info
+  Future<List<Map<String, dynamic>>> getSurveyResponses(String surveyId) async {
+    try {
+      final response = await supabase
+          .from('survey_responses')
+          .select('''
+            *,
+            customers(name),
+            employees:respondent_id(full_name)
+          ''')
+          .eq('survey_id', surveyId)
+          .order('completed_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      AppLogger.error('Failed to load survey responses', e);
+      return [];
+    }
+  }
+
+  /// Get aggregated answers for a survey (for charts/reports)
+  Future<Map<String, Map<String, int>>> getAnswerAggregation(String surveyId) async {
+    try {
+      final responses = await supabase
+          .from('survey_responses')
+          .select('answers')
+          .eq('survey_id', surveyId);
+
+      final aggregation = <String, Map<String, int>>{};
+
+      for (final r in responses) {
+        final answers = Map<String, dynamic>.from(r['answers'] ?? {});
+        for (final entry in answers.entries) {
+          aggregation.putIfAbsent(entry.key, () => {});
+          if (entry.value is List) {
+            // multiple_choice
+            for (final v in entry.value) {
+              final key = v.toString();
+              aggregation[entry.key]![key] = (aggregation[entry.key]![key] ?? 0) + 1;
+            }
+          } else if (entry.value != null) {
+            final key = entry.value.toString();
+            aggregation[entry.key]![key] = (aggregation[entry.key]![key] ?? 0) + 1;
+          }
+        }
+      }
+
+      return aggregation;
+    } catch (e) {
+      AppLogger.error('Failed to aggregate answers', e);
+      return {};
     }
   }
 }

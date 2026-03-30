@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/supabase_service.dart';
+import '../utils/app_logger.dart';
 import '../models/task_template.dart';
 import '../providers/auth_provider.dart';
 
@@ -149,7 +150,8 @@ class AutoTaskGenerator {
 
       final result = await query;
       return (result as List).isNotEmpty;
-    } catch (_) {
+    } catch (e) {
+      AppLogger.error('Auto task check failed', e);
       return false;
     }
   }

@@ -1305,7 +1305,7 @@ class _SalesCustomersPageState extends ConsumerState<SalesCustomersPage> {
               Navigator.pop(context);
               try {
                 final supabase = Supabase.instance.client;
-                await supabase.from('customers').update({'is_active': false, 'updated_at': DateTime.now().toIso8601String()}).eq('id', customer['id']);
+                await supabase.from('customers').update({'status': 'inactive', 'updated_at': DateTime.now().toIso8601String()}).eq('id', customer['id']);
                 if (mounted) {
                   scaffoldMessenger.showSnackBar(
                     SnackBar(

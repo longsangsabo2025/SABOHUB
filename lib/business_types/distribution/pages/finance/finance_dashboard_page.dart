@@ -10,6 +10,8 @@ import '../../../../providers/auth_provider.dart';
 import '../../../../utils/app_logger.dart';
 import '../../../../utils/quick_date_range_picker.dart';
 
+import '../../services/debt_calculation_service.dart';
+
 // ============================================================================
 // FINANCE DASHBOARD PAGE - Modern 2026 UI
 // ============================================================================
@@ -56,14 +58,9 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
       final rangeEnd = effectiveRange.end.add(const Duration(days: 1));
 
       // Run independent queries in parallel for better performance
-      final results = await Future.wait([
-        // [0] Get total receivables from unpaid orders
-        supabase
-            .from('sales_orders')
-            .select('customer_id, total, paid_amount, created_at, customers(name)')
-            .eq('company_id', companyId)
-            .neq('status', 'cancelled')
-          .inFilter('payment_status', ['unpaid', 'partial', 'pending_transfer']),
+      final results = await Future.wait<dynamic>([
+        // [0] Debt summary via shared service (single source of truth)
+        DebtCalculationService.computeDebtSummary(companyId),
         // [1] Get payments in date range
         supabase
             .from('customer_payments')
@@ -95,73 +92,13 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
             .eq('status', 'completed')
             .gte('created_at', rangeStart.toIso8601String())
             .lte('created_at', rangeEnd.toIso8601String()),
-        // [5] Manual receivables (not linked to sales orders)
-        supabase
-            .from('receivables')
-            .select('customer_id, original_amount, paid_amount, write_off_amount, due_date')
-            .eq('company_id', companyId)
-            .eq('reference_type', 'manual')
-            .neq('status', 'paid'),
       ]);
 
-      final unpaidOrders = results[0] as List;
+      final debtSummary = results[0] as DebtSummary;
       final paymentsData = results[1] as List;
       final recentPayments = results[2] as List;
       final pendingTransfers = results[3] as List;
       final ordersData = results[4] as List;
-      final manualReceivables = results[5] as List;
-
-      // Process unpaid orders for receivables
-      double totalReceivable = 0;
-      double overdueAmount = 0;
-      int overdueCustomers = 0;
-      final now = DateTime.now();
-      final Set<String> overdueCustomerIds = {};
-      final Set<String> customerIds = {};
-
-      for (var order in unpaidOrders) {
-        final total = (order['total'] ?? 0).toDouble();
-        final paid = (order['paid_amount'] ?? 0).toDouble();
-        final remaining = total - paid;
-        if (remaining <= 0) continue;
-        totalReceivable += remaining;
-        
-        final custId = order['customer_id'] as String?;
-        if (custId != null) customerIds.add(custId);
-
-        final createdAtStr = order['created_at'] as String?;
-        if (createdAtStr != null) {
-          final orderDate = DateTime.parse(createdAtStr);
-          if (now.difference(orderDate).inDays > 30) {
-            overdueAmount += remaining;
-            if (custId != null) overdueCustomerIds.add(custId);
-          }
-        }
-      }
-
-      // Add manual receivables to totals
-      for (var recv in manualReceivables) {
-        final original = (recv['original_amount'] ?? 0).toDouble();
-        final paid = (recv['paid_amount'] ?? 0).toDouble();
-        final writeOff = (recv['write_off_amount'] ?? 0).toDouble();
-        final remaining = original - paid - writeOff;
-        if (remaining <= 0) continue;
-        totalReceivable += remaining;
-
-        final custId = recv['customer_id'] as String?;
-        if (custId != null) customerIds.add(custId);
-
-        final dueDateStr = recv['due_date']?.toString();
-        if (dueDateStr != null) {
-          final dueDate = DateTime.tryParse(dueDateStr);
-          if (dueDate != null && now.isAfter(dueDate)) {
-            overdueAmount += remaining;
-            if (custId != null) overdueCustomerIds.add(custId);
-          }
-        }
-      }
-
-      overdueCustomers = overdueCustomerIds.length;
 
       // Process payments
       double paidThisMonth = 0;
@@ -176,12 +113,12 @@ class _FinanceDashboardPageState extends ConsumerState<FinanceDashboardPage> {
 
       setState(() {
         _stats = {
-          'totalReceivable': totalReceivable,
-          'overdueAmount': overdueAmount,
-          'overdueCustomers': overdueCustomers,
+          'totalReceivable': debtSummary.totalReceivable,
+          'overdueAmount': debtSummary.overdueAmount,
+          'overdueCustomers': debtSummary.overdueCustomerCount,
           'paidThisMonth': paidThisMonth,
           'paymentsCount': paymentsData.length,
-          'customersWithDebt': customerIds.length,
+          'customersWithDebt': debtSummary.totalCustomerCount,
           'pendingTransfersCount': pendingTransfers.length,
           'totalRevenue': totalRevenue,
           'orderCount': ordersData.length,

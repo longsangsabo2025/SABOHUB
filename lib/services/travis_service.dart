@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../utils/app_logger.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/travis_message.dart';
-import '../utils/app_logger.dart';
 
 /// Travis AI Service — REST client for Travis AI backend
 ///
@@ -108,7 +108,8 @@ class TravisService {
     try {
       final h = await health();
       return h.isOnline;
-    } catch (_) {
+    } catch (e) {
+      AppLogger.warn('Travis health check failed: $e');
       return false;
     }
   }

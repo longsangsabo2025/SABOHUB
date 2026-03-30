@@ -10,6 +10,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../../providers/auth_provider.dart';
 import '../../../../utils/quick_date_range_picker.dart';
 import '../../../../utils/app_logger.dart';
+import '../../services/debt_calculation_service.dart';
 
 // ==================== REPORTS PAGE ====================
 class ReportsPage extends ConsumerStatefulWidget {
@@ -657,113 +658,81 @@ class _ReceivablesReportTabState extends ConsumerState<_ReceivablesReportTab> {
       final companyId = user?.companyId;
       if (companyId == null) return;
 
-      final supabase = Supabase.instance.client;
+      // Use shared service with extended select for customer names
+      final results = await Future.wait([
+        DebtCalculationService.fetchUnpaidOrders(companyId,
+            select:
+                'customer_id, total, paid_amount, created_at, order_date, customers(name, phone, contact_person)'),
+        DebtCalculationService.fetchManualReceivables(companyId,
+            select:
+                'customer_id, original_amount, paid_amount, write_off_amount, due_date, customers(name, phone, code)'),
+      ]);
 
-        // Get all unpaid orders with customer info
-      final unpaidOrders = await supabase
-          .from('sales_orders')
-          .select('id, customer_id, total, paid_amount, created_at, payment_status, customers(name, phone, contact_person)')
-          .eq('company_id', companyId)
-          .neq('status', 'cancelled')
-          .inFilter('payment_status', ['unpaid', 'partial', 'pending_transfer'])
-          .order('created_at', ascending: false);
+      final unpaidOrders = results[0];
+      final manualReceivables = results[1];
 
-        // Manual receivables are debt sources too (not tied to sales orders)
-        final manualReceivables = await supabase
-          .from('receivables')
-          .select('customer_id, original_amount, paid_amount, write_off_amount, due_date, customers(name, phone, code)')
-          .eq('company_id', companyId)
-          .eq('reference_type', 'manual')
-          .neq('status', 'paid');
+      // Compute totals via shared service (single source of truth)
+      final debtSummary = DebtCalculationService.computeDebtSummaryFromData(
+          unpaidOrders, manualReceivables);
 
-      double totalReceivables = 0;
-      double overdueAmount = 0;
-      final now = DateTime.now();
+      // Build customer debt list with names for display
       final Map<String, Map<String, dynamic>> customerDebtMap = {};
 
-      for (var order in unpaidOrders) {
-        final total = (order['total'] ?? 0).toDouble();
-        final paid = (order['paid_amount'] ?? 0).toDouble();
-        final remaining = total - paid;
-        if (remaining <= 0) continue;
-        totalReceivables += remaining;
-
-        // Check if overdue (> 30 days)
-        final createdAtStr = order['created_at'] as String?;
-        if (createdAtStr != null && remaining > 0) {
-          final orderDate = DateTime.parse(createdAtStr);
-          if (now.difference(orderDate).inDays > 30) {
-            overdueAmount += remaining;
-          }
-        }
-
-        // Group by customer
+      for (final order in unpaidOrders) {
+        final balance = DebtCalculationService.orderBalance(order);
+        if (balance <= 0) continue;
         final custId = order['customer_id'] as String?;
+        if (custId == null) continue;
+
         final customerData = order['customers'] as Map<String, dynamic>?;
-        final custName = customerData?['contact_person'] as String? ?? 
-                        customerData?['name'] as String? ?? 
-                        customerData?['phone'] as String? ?? 
-                        'Khách hàng #${custId?.substring(0, 8) ?? 'N/A'}';
-        if (custId != null) {
-          if (!customerDebtMap.containsKey(custId)) {
-            customerDebtMap[custId] = {
-              'name': custName,
-              'total': 0.0,
-              'count': 0,
-              'oldestDate': order['created_at'],
-            };
-          }
-          customerDebtMap[custId]!['total'] += remaining;
-          customerDebtMap[custId]!['count'] += 1;
+        final custName = customerData?['contact_person'] as String? ??
+            customerData?['name'] as String? ??
+            customerData?['phone'] as String? ??
+            'Khách hàng #${custId.substring(0, 8)}';
+        if (!customerDebtMap.containsKey(custId)) {
+          customerDebtMap[custId] = {
+            'name': custName,
+            'total': 0.0,
+            'count': 0,
+            'oldestDate': order['created_at'],
+          };
         }
+        customerDebtMap[custId]!['total'] += balance;
+        customerDebtMap[custId]!['count'] += 1;
       }
 
       for (final recv in manualReceivables) {
-        final original = (recv['original_amount'] ?? 0).toDouble();
-        final paid = (recv['paid_amount'] ?? 0).toDouble();
-        final writeOff = (recv['write_off_amount'] ?? 0).toDouble();
-        final remaining = original - paid - writeOff;
-        if (remaining <= 0) continue;
-
-        totalReceivables += remaining;
-
+        final balance = DebtCalculationService.receivableBalance(recv);
+        if (balance <= 0) continue;
         final custId = recv['customer_id'] as String?;
+        if (custId == null) continue;
+
         final customerData = recv['customers'] as Map<String, dynamic>?;
         final custName = customerData?['name'] as String? ??
-                        customerData?['code'] as String? ??
-                        customerData?['phone'] as String? ??
-                        'Khách hàng #${custId?.substring(0, 8) ?? 'N/A'}';
-
-        if (custId != null) {
-          if (!customerDebtMap.containsKey(custId)) {
-            customerDebtMap[custId] = {
-              'name': custName,
-              'total': 0.0,
-              'count': 0,
-              'oldestDate': recv['due_date'],
-            };
-          }
-          customerDebtMap[custId]!['total'] += remaining;
-          customerDebtMap[custId]!['count'] += 1;
+            customerData?['code'] as String? ??
+            customerData?['phone'] as String? ??
+            'Khách hàng #${custId.substring(0, 8)}';
+        if (!customerDebtMap.containsKey(custId)) {
+          customerDebtMap[custId] = {
+            'name': custName,
+            'total': 0.0,
+            'count': 0,
+            'oldestDate': recv['due_date'],
+          };
         }
-
-        final dueDateStr = recv['due_date']?.toString();
-        if (dueDateStr != null) {
-          final dueDate = DateTime.tryParse(dueDateStr);
-          if (dueDate != null && dueDate.isBefore(now)) {
-            overdueAmount += remaining;
-          }
-        }
+        customerDebtMap[custId]!['total'] += balance;
+        customerDebtMap[custId]!['count'] += 1;
       }
 
       final customerDebtList = customerDebtMap.values.toList()
-        ..sort((a, b) => (b['total'] as double).compareTo(a['total'] as double));
+        ..sort(
+            (a, b) => (b['total'] as double).compareTo(a['total'] as double));
 
       setState(() {
         _receivablesData = {
-          'total': totalReceivables,
-          'overdue': overdueAmount,
-          'customerCount': customerDebtMap.length,
+          'total': debtSummary.totalReceivable,
+          'overdue': debtSummary.overdueAmount,
+          'customerCount': debtSummary.totalCustomerCount,
           'orderCount': unpaidOrders.length,
         };
         _customerDebts = customerDebtList;
