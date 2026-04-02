@@ -41,7 +41,7 @@ workflows:
         SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3OTcxMzYsImV4cCI6MjA3NzM3MzEzNn0.okmsG2R248fxOHUEFFl5OBuCtjtCIlO9q9yVSyCV25Y"
         SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTc5NzEzNiwiZXhwIjoyMDc3MzczMTM2fQ.kPmlYlVd7wi_Luzp3MHjXmR8gUqrqDHy9PSzwFDq3XI"
         # Google Drive credentials (for documents feature)
-GOOGLE_DRIVE_CLIENT_ID_IOS: "321771498359-ocllju34h6cd4040ipoeq41j8mmg08p8.apps.googleusercontent.com"
+        GOOGLE_DRIVE_CLIENT_ID_IOS: "321771498359-ocllju34h6cd4040ipoeq41j8mmg08p8.apps.googleusercontent.com"
         GOOGLE_DRIVE_CLIENT_ID_WEB: "321771498359-gcm0og29knjjmaevr7uv0aa27vam765u.apps.googleusercontent.com"
         GOOGLE_DRIVE_CLIENT_ID_ANDROID: "321771498359-tmnp2ks7n6ipjp10fsrjrefrilr6ts15.apps.googleusercontent.com"
         # Travis AI backend (production on Render)
@@ -219,7 +219,7 @@ GOOGLE_DRIVE_CLIENT_ID_IOS: "321771498359-ocllju34h6cd4040ipoeq41j8mmg08p8.apps.
         SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3OTcxMzYsImV4cCI6MjA3NzM3MzEzNn0.okmsG2R248fxOHUEFFl5OBuCtjtCIlO9q9yVSyCV25Y"
         SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZGR4b3d5aWtlZnFjZGlpb3loIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTc5NzEzNiwiZXhwIjoyMDc3MzczMTM2fQ.kPmlYlVd7wi_Luzp3MHjXmR8gUqrqDHy9PSzwFDq3XI"
         # Google Drive credentials
-GOOGLE_DRIVE_CLIENT_ID_ANDROID: "321771498359-tmnp2ks7n6ipjp10fsrjrefrilr6ts15.apps.googleusercontent.com"
+        GOOGLE_DRIVE_CLIENT_ID_ANDROID: "321771498359-tmnp2ks7n6ipjp10fsrjrefrilr6ts15.apps.googleusercontent.com"
         GOOGLE_DRIVE_CLIENT_ID_WEB: "321771498359-gcm0og29knjjmaevr7uv0aa27vam765u.apps.googleusercontent.com"
         # Travis AI backend (production on Render)
         TRAVIS_API_URL: "https://api.longsang.org"
