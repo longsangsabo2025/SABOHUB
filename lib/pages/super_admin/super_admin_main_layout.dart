@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../core/services/supabase_service.dart';
+import '../../models/business_type.dart';
 import '../../utils/app_logger.dart';
 import '../../widgets/realtime_notification_widgets.dart';
 import '../admin/bug_reports_management_page.dart';
@@ -972,12 +973,14 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
             DropdownButtonFormField<String>(
               value: selectedType,
               decoration: const InputDecoration(labelText: 'Business Type', border: OutlineInputBorder()),
-              items: const [
-                DropdownMenuItem(value: 'billiards', child: Text('Billiards')),
-                DropdownMenuItem(value: 'distribution', child: Text('Distribution')),
-                DropdownMenuItem(value: 'manufacturing', child: Text('Manufacturing')),
-                DropdownMenuItem(value: 'fnb', child: Text('F&B')),
-              ],
+              items: BusinessType.values.map((bt) => DropdownMenuItem(
+                value: bt.name,
+                child: Row(children: [
+                  Icon(bt.icon, size: 18, color: bt.color),
+                  const SizedBox(width: 8),
+                  Text(bt.label),
+                ]),
+              )).toList(),
               onChanged: (value) => selectedType = value!,
             ),
           ],
@@ -1024,12 +1027,14 @@ class _CompaniesManagementPageState extends ConsumerState<_CompaniesManagementPa
             DropdownButtonFormField<String>(
               value: selectedType,
               decoration: const InputDecoration(labelText: 'Business Type', border: OutlineInputBorder()),
-              items: const [
-                DropdownMenuItem(value: 'billiards', child: Text('Billiards')),
-                DropdownMenuItem(value: 'distribution', child: Text('Distribution')),
-                DropdownMenuItem(value: 'manufacturing', child: Text('Manufacturing')),
-                DropdownMenuItem(value: 'fnb', child: Text('F&B')),
-              ],
+              items: BusinessType.values.map((bt) => DropdownMenuItem(
+                value: bt.name,
+                child: Row(children: [
+                  Icon(bt.icon, size: 18, color: bt.color),
+                  const SizedBox(width: 8),
+                  Text(bt.label),
+                ]),
+              )).toList(),
               onChanged: (value) => selectedType = value!,
             ),
           ],

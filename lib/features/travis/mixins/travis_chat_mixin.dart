@@ -40,12 +40,18 @@ mixin TravisChatMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   }
 
   /// Send the current text input to Travis AI.
-  void handleSendMessage() {
+  ///
+  /// [forceSpecialist] and [forceTool] bypass auto-routing.
+  void handleSendMessage({String? forceSpecialist, String? forceTool}) {
     final text = chatTextController.text.trim();
     if (text.isEmpty) return;
 
     chatTextController.clear();
-    ref.read(travisChatViewModelProvider.notifier).sendMessage(text);
+    ref.read(travisChatViewModelProvider.notifier).sendMessage(
+          text,
+          forceSpecialist: forceSpecialist,
+          forceTool: forceTool,
+        );
     scrollToBottom();
   }
 

@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/viewmodels/travis_chat_view_model.dart';
 import '../../features/travis/constants/travis_quick_actions.dart';
 import '../../features/travis/mixins/travis_chat_mixin.dart';
+import '../../features/travis/widgets/travis_tool_menu.dart';
 import '../../models/travis_message.dart';
 
 /// Full-page Travis AI Chat — accessible from CEO routes.
@@ -30,6 +31,9 @@ class _TravisChatPageState extends ConsumerState<TravisChatPage>
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
 
+  /// Currently forced tool (set via ⚡ tool menu). Null = auto-routing.
+  TravisTool? _selectedTool;
+
   @override
   ScrollController get chatScrollController => _scrollController;
 
@@ -42,6 +46,28 @@ class _TravisChatPageState extends ConsumerState<TravisChatPage>
     _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _openToolMenu() async {
+    final tool = await showTravisToolMenu(context);
+    if (tool != null && mounted) {
+      setState(() => _selectedTool = tool);
+      _focusNode.requestFocus();
+    }
+  }
+
+  void _clearSelectedTool() {
+    setState(() => _selectedTool = null);
+  }
+
+  void _handleSendWithTool() {
+    final tool = _selectedTool;
+    handleSendMessage(
+      forceSpecialist: tool?.specialist,
+      forceTool: tool?.id,
+    );
+    // Clear forced tool after sending
+    setState(() => _selectedTool = null);
   }
 
   @override
@@ -83,8 +109,11 @@ class _TravisChatPageState extends ConsumerState<TravisChatPage>
           controller: _controller,
           scrollController: _scrollController,
           focusNode: _focusNode,
-          onSend: handleSendMessage,
+          onSend: _handleSendWithTool,
           onQuickAction: handleQuickAction,
+          selectedTool: _selectedTool,
+          onOpenToolMenu: _openToolMenu,
+          onClearTool: _clearSelectedTool,
         ),
         loading: () => const Center(
           child: Column(
@@ -127,6 +156,9 @@ class ChatContentBody extends StatelessWidget {
   final FocusNode focusNode;
   final VoidCallback onSend;
   final void Function(String action) onQuickAction;
+  final TravisTool? selectedTool;
+  final VoidCallback? onOpenToolMenu;
+  final VoidCallback? onClearTool;
 
   const ChatContentBody({
     super.key,
@@ -136,6 +168,9 @@ class ChatContentBody extends StatelessWidget {
     required this.focusNode,
     required this.onSend,
     required this.onQuickAction,
+    this.selectedTool,
+    this.onOpenToolMenu,
+    this.onClearTool,
   });
 
   @override
@@ -163,12 +198,21 @@ class ChatContentBody extends StatelessWidget {
           ),
         ),
 
+        // Selected tool indicator
+        if (selectedTool != null)
+          TravisToolIndicator(
+            tool: selectedTool!,
+            onClear: onClearTool ?? () {},
+          ),
+
         // Input
         _TravisChatInput(
           controller: controller,
           focusNode: focusNode,
           isSending: state.isSending,
           onSend: onSend,
+          onOpenToolMenu: onOpenToolMenu,
+          hasSelectedTool: selectedTool != null,
         ),
       ],
     );
@@ -601,19 +645,23 @@ class _TravisChatInput extends StatelessWidget {
   final FocusNode focusNode;
   final bool isSending;
   final VoidCallback onSend;
+  final VoidCallback? onOpenToolMenu;
+  final bool hasSelectedTool;
 
   const _TravisChatInput({
     required this.controller,
     required this.focusNode,
     required this.isSending,
     required this.onSend,
+    this.onOpenToolMenu,
+    this.hasSelectedTool = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.only(
-        left: 16,
+        left: 8,
         right: 8,
         top: 8,
         bottom: MediaQuery.of(context).padding.bottom + 8,
@@ -633,13 +681,40 @@ class _TravisChatInput extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // ⚡ Tool menu button
+          Material(
+            color: hasSelectedTool
+                ? AppColors.primary.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              onTap: isSending ? null : onOpenToolMenu,
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.bolt,
+                  size: 22,
+                  color: hasSelectedTool
+                      ? AppColors.primary
+                      : AppColors.textTertiary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+
           Expanded(
             child: TextField(
               controller: controller,
               focusNode: focusNode,
               enabled: !isSending,
               decoration: InputDecoration(
-                hintText: 'Nói gì đó với Travis...',
+                hintText: hasSelectedTool
+                    ? 'Nhập lệnh cho tool...'
+                    : 'Nói gì đó với Travis...',
                 hintStyle: const TextStyle(color: AppColors.textTertiary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),

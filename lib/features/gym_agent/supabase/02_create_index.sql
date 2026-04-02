@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_gym_daily_plans_user_date ON public.gym_daily_plans(user_id, plan_date DESC)

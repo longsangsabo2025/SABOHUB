@@ -16,7 +16,10 @@ enum BusinessType {
   
   // Distribution / Manufacturing (Odori)
   distribution('Phân Phối', Icons.local_shipping, Color(0xFF0EA5E9)),
-  manufacturing('Sản Xuất', Icons.factory, AppColors.success);
+  manufacturing('Sản Xuất', Icons.factory, AppColors.success),
+
+  // AI Assistant — Travis AI dedicated space
+  aiAssistant('AI Assistant', Icons.smart_toy, Color(0xFF8B5CF6));
 
   final String label;
   final IconData icon;
@@ -33,8 +36,11 @@ enum BusinessType {
   /// Check if this is specifically manufacturing (not pure distribution)
   bool get isManufacturing => this == BusinessType.manufacturing;
 
+  /// AI Assistant — Travis AI dedicated workspace
+  bool get isAiAssistant => this == BusinessType.aiAssistant;
+
   /// Service businesses (billiards, restaurant, hotel, cafe, retail)
-  bool get isService => !isDistribution;
+  bool get isService => !isDistribution && !isAiAssistant;
 
   /// Backward compatibility alias
   bool get isEntertainment => isService;
@@ -44,6 +50,7 @@ enum BusinessType {
     if (isCorporation) return 'Tổng Công Ty';
     if (isManufacturing) return 'Sản Xuất';
     if (isDistribution) return 'Phân Phối';
+    if (isAiAssistant) return 'AI Assistant';
     return 'Vận Hành';
   }
 }

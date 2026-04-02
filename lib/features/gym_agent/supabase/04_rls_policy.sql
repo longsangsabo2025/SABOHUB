@@ -1,0 +1,1 @@
+CREATE POLICY gym_daily_plans_own ON public.gym_daily_plans FOR ALL USING (auth.uid() = user_id)

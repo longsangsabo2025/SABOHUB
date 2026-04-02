@@ -65,6 +65,37 @@ class TravisMessage {
   bool get isUser => role == 'user';
   bool get isAssistant => role == 'assistant';
   bool get isSystem => role == 'system';
+
+  /// Serialize to JSON for local persistence.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'role': role,
+        'content': content,
+        'timestamp': timestamp.toIso8601String(),
+        if (specialist != null) 'specialist': specialist,
+        if (confidence != null) 'confidence': confidence,
+        if (toolsUsed.isNotEmpty) 'tools_used': toolsUsed,
+        if (latencyMs != null) 'latency_ms': latencyMs,
+      };
+
+  /// Deserialize from JSON (local persistence).
+  factory TravisMessage.fromJson(Map<String, dynamic> json) {
+    return TravisMessage(
+      id: json['id'] as String? ?? '',
+      role: json['role'] as String? ?? 'system',
+      content: json['content'] as String? ?? '',
+      timestamp: json['timestamp'] != null
+          ? DateTime.tryParse(json['timestamp'] as String) ?? DateTime.now()
+          : DateTime.now(),
+      specialist: json['specialist'] as String?,
+      confidence: (json['confidence'] as num?)?.toDouble(),
+      toolsUsed: (json['tools_used'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      latencyMs: json['latency_ms'] as int?,
+    );
+  }
 }
 
 /// Travis AI health status

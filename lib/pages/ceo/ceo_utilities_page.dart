@@ -6,6 +6,8 @@ import '../../core/keys/ceo_keys.dart';
 import 'ai_management/ai_management_dashboard.dart';
 import 'ceo_documents_page.dart';
 import '../travis/travis_chat_tab.dart';
+import '../../features/gym_agent/widgets/gym_coach_tab.dart';
+import '../../features/coaching/pages/coaching_page.dart';
 
 /// CEO Utilities Page — Gom: Tài liệu + AI Center
 /// Các tiện ích hỗ trợ CEO
@@ -23,7 +25,7 @@ class _CEOUtilitiesPageState extends ConsumerState<CEOUtilitiesPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -70,6 +72,14 @@ class _CEOUtilitiesPageState extends ConsumerState<CEOUtilitiesPage>
               icon: Icon(Icons.smart_toy_rounded, size: 20),
               text: 'Travis AI',
             ),
+            Tab(
+              icon: Icon(Icons.fitness_center_rounded, size: 20),
+              text: 'Gym Coach',
+            ),
+            Tab(
+              icon: Icon(Icons.self_improvement_rounded, size: 20),
+              text: 'Self Coach',
+            ),
           ],
         ),
       ),
@@ -82,6 +92,10 @@ class _CEOUtilitiesPageState extends ConsumerState<CEOUtilitiesPage>
           AIManagementDashboard(),
           // Tab 3: Travis AI Chat
           TravisChatTab(),
+          // Tab 4: Gym Coach AI
+          GymCoachTab(),
+          // Tab 5: Self-Improvement Coaching
+          CoachingPage(),
         ],
       ),
     );

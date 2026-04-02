@@ -68,6 +68,10 @@ import '../../pages/referral/referral_page.dart';
 import '../../pages/company_showcase/company_showcase_page.dart';
 // Travis AI
 import '../../pages/travis/travis_chat_page.dart';
+// Gym Coach AI
+import '../../features/gym_agent/layouts/gym_agent_layout.dart';
+// Self-Improvement Coaching
+import '../../features/coaching/pages/coaching_page.dart';
 import '../../providers/auth_provider.dart';
 import '../navigation/navigation_models.dart' as nav;
 
@@ -170,6 +174,12 @@ class AppRoutes {
 
   // Travis AI
   static const String travisChat = '/travis';
+
+  // Gym Coach AI
+  static const String gymCoach = '/gym-coach';
+
+  // Self-Improvement Coaching
+  static const String coaching = '/coaching';
 
   // Debug routes (temporarily disabled)
   // static const String debugSettings = '/debug/settings';
@@ -434,6 +444,20 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: AppRoutes.travisChat,
         builder: (BuildContext context, GoRouterState state) => const TravisChatPage(),
+      ),
+
+      // Gym Coach AI
+      GoRoute(
+        path: AppRoutes.gymCoach,
+        builder: (BuildContext context, GoRouterState state) => const GymAgentLayout(),
+      ),
+
+      // Self-Improvement Coaching
+      GoRoute(
+        path: AppRoutes.coaching,
+        builder: (BuildContext context, GoRouterState state) => const Scaffold(
+          body: CoachingPage(),
+        ),
       ),
 
       // CEO routes - Remove GlobalKey to fix navigation conflicts

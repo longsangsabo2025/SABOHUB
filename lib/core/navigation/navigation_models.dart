@@ -481,6 +481,24 @@ class NavigationConfig {
       allowedRoles: [UserRole.ceo],
     )),
 
+    // Gym Coach AI
+    SingleNav(const NavigationItem(
+      route: '/gym-coach',
+      icon: Icons.fitness_center,
+      activeIcon: Icons.fitness_center,
+      label: 'Gym Coach AI',
+      allowedRoles: [UserRole.ceo],
+    )),
+
+    // Self-Improvement Coaching
+    SingleNav(const NavigationItem(
+      route: '/coaching',
+      icon: Icons.self_improvement,
+      activeIcon: Icons.self_improvement,
+      label: 'Self Coach',
+      allowedRoles: [UserRole.ceo],
+    )),
+
     // Settings
     SingleNav(const NavigationItem(
       route: '/ceo/settings',

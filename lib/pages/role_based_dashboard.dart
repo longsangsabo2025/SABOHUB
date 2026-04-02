@@ -17,6 +17,7 @@ import '../business_types/manufacturing/layouts/manufacturing_manager_layout.dar
 import '../business_types/service/layouts/service_manager_layout.dart';
 import '../business_types/service/layouts/service_staff_layout.dart';
 import '../business_types/service/layouts/service_shift_leader_layout.dart';
+import '../business_types/ai_assistant/layouts/ai_assistant_ceo_layout.dart';
 import '../layouts/shift_leader_main_layout.dart';
 import '../layouts/driver_main_layout.dart';
 import '../layouts/warehouse_main_layout.dart';
@@ -477,6 +478,12 @@ class _RoleBasedDashboardState extends ConsumerState<RoleBasedDashboard> {
       'companyName': currentUser?.companyName ?? 'Unknown',
       'selectedSubsidiary': selectedSubsidiary?.name ?? 'NONE',
     });
+
+    // ── AI Assistant — Travis-centric layout for any role ──
+    if (businessType != null && businessType.isAiAssistant) {
+      AppLogger.nav('→ Routing to AiAssistantCeoLayout (businessType=aiAssistant)');
+      return const AiAssistantCeoLayout();
+    }
     
     switch (role) {
       case UserRole.superAdmin:

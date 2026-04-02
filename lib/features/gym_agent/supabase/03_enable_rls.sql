@@ -1,0 +1,1 @@
+ALTER TABLE public.gym_daily_plans ENABLE ROW LEVEL SECURITY
