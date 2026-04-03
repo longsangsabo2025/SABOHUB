@@ -93,10 +93,13 @@ class TravisService {
   // ─── Health ───────────────────────────────────────────────────
 
   /// Check if Travis AI is online and get system info.
-  /// Retries once on timeout (Render free tier cold start can take 10-30s).
+  /// Retries up to 3 times with exponential backoff (2s, 4s).
   Future<TravisHealth> health() async {
     final url = Uri.parse('$baseUrl/health');
-    for (int attempt = 0; attempt < 2; attempt++) {
+    const maxAttempts = 3;
+    const backoffDelays = [Duration(seconds: 2), Duration(seconds: 4)];
+
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         final response = await _client.get(url).timeout(_healthTimeout);
         if (response.statusCode == 200) {
@@ -109,8 +112,15 @@ class TravisService {
           statusCode: response.statusCode,
         );
       } catch (e) {
-        if (attempt == 0 && e.toString().contains('TimeoutException')) {
-          AppLogger.warn('Travis health timeout, retrying (cold start)...');
+        final isLastAttempt = attempt == maxAttempts - 1;
+        final isRetryable = e.toString().contains('TimeoutException') ||
+            e.toString().contains('SocketException') ||
+            e.toString().contains('Connection');
+
+        if (!isLastAttempt && isRetryable) {
+          final delay = backoffDelays[attempt];
+          AppLogger.warn('Travis health attempt ${attempt + 1} failed, retrying in ${delay.inSeconds}s...');
+          await Future.delayed(delay);
           continue;
         }
         rethrow;
